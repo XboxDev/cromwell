@@ -133,12 +133,11 @@ extern void BootResetAction ( void ) {
        	cache_disable();
 	// We Update the Microcode of the CPU
 	display_cpuid_update_microcode();
-	// We look how much memory we have ..
-	BootDetectMemorySize();
        	// We Enable The CPU Cache
        	cache_enable();
        	//setup_ioapic();
-       
+	// We look how much memory we have ..
+	BootDetectMemorySize();       
 	
 	BootEepromReadEntireEEPROM();
 	bprintf("BOOT: Read EEPROM\n\r");

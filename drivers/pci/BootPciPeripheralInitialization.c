@@ -193,26 +193,46 @@ void BootDetectMemorySize(void)
 	int i;
 	int result;
 	unsigned char *fillstring;
-	void *membase = (void*)((64*1024*1024) + 1);
+	void *membasetop = (void*)((64*1024*1024));
+	void *membaselow = (void*)((0));
 	
+	//(*(unsigned int*)(0xFD000000 + 0x100200)) = 0x03070103 ;
+	//(*(unsigned int*)(0xFD000000 + 0x100204)) = 0x11448000 ;
+        PciWriteDword(BUS_0, DEV_0, FUNC_0, 0x84, 0x7FFFFFF);  // 128 MB
+        
 	xbox_ram = 64;	
 	fillstring = malloc(0x200);
 	memset(fillstring,0xAA,0x200);
-	memset(membase,0xAA,0x200);
+	memset(membasetop,0xAA,0x200);
+	asm volatile ("wbinvd\n");
 	
-	if (_memcmp(membase,fillstring,0x200) == 0) {
+	if (_memcmp(membasetop,fillstring,0x200) == 0) {
 		// Looks like there is memory
-	
-		memset(membase,0xAA,0x200);
-		if (_memcmp(membase,fillstring,0x200) == 0) {
+
+		memset(fillstring,0x55,0x200);
+		memset(membasetop,0x55,0x200);
+		asm volatile ("wbinvd\n");
+
+		if (_memcmp(membasetop,fillstring,0x200) == 0) {
 			// Looks like there is memory 
 			// now we are sure, we set memory
   			
-  			// find out how much RAM is installed in the Xbox
-    
-        		xbox_ram = 128;
+                        if (_memcmp(membaselow,fillstring,0x200) == 0) {
+                             	// Hell, we find the Test-string at 0x0 too !
+                             	xbox_ram = 64;
+                             	PciWriteDword(BUS_0, DEV_0, FUNC_0, 0x84, 0x3FFFFFF);  // 64 MB
+                        } else {
+                        	xbox_ram = 128;
+                        	(*(unsigned int*)(0xFD000000 + 0x100200)) = 0x03070103 ;
+				(*(unsigned int*)(0xFD000000 + 0x100204)) = 0x11448000 ;
+                        }
 		}		
 		
+	}
+	if (xbox_ram == 64) {
+	//	(*(unsigned int*)(0xFD000000 + 0x100200)) = 0x03070103 ;
+	//	(*(unsigned int*)(0xFD000000 + 0x100204)) = 0x11338000 ;
+		PciWriteDword(BUS_0, DEV_0, FUNC_0, 0x84, 0x3FFFFFF);  // 64 MB
 	}
         free(fillstring);
 }
