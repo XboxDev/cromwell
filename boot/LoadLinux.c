@@ -19,8 +19,8 @@
 #include "cpu.h"
 #include "BootIde.h"
 #include "BootParser.h"
-
 #include "config.h"
+#include "iso_fs.h"
 
 //Grub bits
 unsigned long saved_drive;
@@ -32,8 +32,10 @@ static int nRet;
 static u32 dwKernelSize= 0, dwInitrdSize = 0;
 
 
-int ExittoLinux(CONFIGENTRY *config);
+void ExittoLinux(CONFIGENTRY *config);
 void startLinux(void* initrdStart, unsigned long initrdSize, const char* appendLine);
+void setup(void* KernelPos, void* PhysInitrdPos, unsigned long InitrdSize, const char* kernel_cmdline);
+void I2CRebootSlow(void);
 
 
 void BootPrintConfig(CONFIGENTRY *config) {
@@ -77,7 +79,6 @@ CONFIGENTRY* LoadConfigNative(int drive, int partition) {
 	unsigned int nLen;
 	u32 dwConfigSize=0;
 	char *szGrub;
-	u8* tempBuf;
 	
 	szGrub = (char *) malloc(265+4);
         memset(szGrub,0,256+4);
@@ -138,8 +139,6 @@ CONFIGENTRY* LoadConfigNative(int drive, int partition) {
 }
 
 int LoadKernelNative(CONFIGENTRY *config) {
-	int nLen;
-	u32 dwConfigSize=0;
 	char *szGrub;
 	u8* tempBuf;
 
@@ -212,8 +211,7 @@ int LoadKernelNative(CONFIGENTRY *config) {
 CONFIGENTRY* LoadConfigFatX(void) {
 	FATXPartition *partition = NULL;
 	FATXFILEINFO fileinfo;
-	FATXFILEINFO infokernel;
-	CONFIGENTRY *config, *currentConfigItem;
+	CONFIGENTRY *config=NULL, *currentConfigItem=NULL;
 	
 	partition = OpenFATXPartition(0,SECTOR_STORE,STORE_SIZE);
 	
@@ -412,10 +410,9 @@ int LoadKernelCdrom(CONFIGENTRY *config) {
 #ifdef FLASH 
 int BootLoadFlashCD(int cdromId) {
 	
-	u32 dwConfigSize=0, dw;
+	u32 dwConfigSize=0;
 	int n;
 	int cdPresent=0;
-	u8* tempBuf;
 	struct SHA1Context context;
 	unsigned char SHA1_result[20];
 	unsigned char checksum[20];
@@ -493,11 +490,12 @@ int BootLoadFlashCD(int cdromId) {
 		printk("Checksum in Flash not matching - MISTAKE - Reflashing!\n");
 		printk("Result code: %d\n", BootReflashAndReset((u8*) KERNEL_PM_CODE, (u32) 0, (u32) dwConfigSize));
 	}
+	return 0;
 }
 #endif //Flash
 
 
-int ExittoLinux(CONFIGENTRY *config) {
+void ExittoLinux(CONFIGENTRY *config) {
 	VIDEO_ATTR=0xff8888a8;
 	BootPrintConfig(config);
 	printk("     Kernel:  %s\n", (char *)(0x00090200+(*((u16 *)0x9020e)) ));

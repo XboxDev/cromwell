@@ -181,4 +181,6 @@ struct udf_anchor_volume_descriptor {
 
 #define ISOFS_SUPER_MAGIC 0x9660
 
+int BootIso9660GetFile(int driveId, char *szcPath, unsigned char *pbaFile, unsigned int dwFileLengthMax);
+
 #endif
