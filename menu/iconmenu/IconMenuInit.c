@@ -47,11 +47,14 @@ void IconMenuInit(void) {
 	iconPtr->functionPtr = BootFromEtherboot;
 	AddIcon(iconPtr);
 #endif	
+
+#ifdef ADVANCED_MENU
 	iconPtr = (ICON *)malloc(sizeof(ICON));
 	iconPtr->iconSlot = ICON_SOURCE_SLOT0;
 	iconPtr->szCaption = "Advanced";
 	iconPtr->functionPtr = MoveToTextMenu;
 	AddIcon(iconPtr);
+#endif
 	//Set this to point to the icon you want to be selected by default.
 	//Otherwise, leave it alone, and the first icon will be selected.
 	//selectedIcon = iconPtr;
