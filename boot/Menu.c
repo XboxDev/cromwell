@@ -131,7 +131,7 @@ int BootIconMenu(CONFIGENTRY *config,int nDrive,int nActivePartition, int nFATXP
 	
 	//Add the icons we want.
 		
-	if (nDrive) {
+	if (nFATXPresent) {
 		//FATX icon
 		ICON *icon1 = (ICON *)malloc(sizeof(ICON));
 		icon1->iconSlot = ICON_SOURCE_SLOT4;
