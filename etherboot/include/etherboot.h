@@ -272,7 +272,7 @@ extern void gateA20_unset P((void));
 #define gateA20_set()
 #define gateA20_unset()
 #endif
-extern void putchar P((int));
+extern int putchar P((int));
 extern int getchar P((void));
 extern int iskey P((void));
 

@@ -298,7 +298,7 @@ void gateA20_unset(void)
 }
 #endif
 
-void
+int
 putchar(int c)
 {
 	if (c == '\n')
