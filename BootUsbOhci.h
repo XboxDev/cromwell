@@ -110,6 +110,7 @@ typedef struct {
 
 
 void BootUsbInit(USB_CONTROLLER_OBJECT * pusbcontroller, const char * szcName, void * pvOperationalRegisterBase, void * pvHostControllerCommsArea, size_t sizeAllocation);
+void BootUsbTurnOff(USB_CONTROLLER_OBJECT * pusbcontroller);
 
 void BootUsbPrintStatus(USB_CONTROLLER_OBJECT *pusbcontroller);
 void BootUsbInterrupt();

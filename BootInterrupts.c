@@ -251,6 +251,7 @@ void IntHandlerCSmc(void)
 							BYTE b=I2CTransmitByteGetReturn(0x10, 0x04);
 							bprintf("Detected new AV type %d, cf %d\n", b, currentvideomodedetails.m_bAvPack);
 							if(b!=currentvideomodedetails.m_bAvPack ) {
+								VIDEO_LUMASCALING=VIDEO_RSCALING=VIDEO_BSCALING=0;
 								BootVgaInitializationKernel((CURRENT_VIDEO_MODE_DETAILS *)&currentvideomodedetails);
 							}
 						}

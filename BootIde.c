@@ -135,7 +135,7 @@ int BootIdeWaitNotBusy(unsigned uIoBase)
 
 int BootIdeWaitDataReady(unsigned uIoBase)
 {
-	WORD i = 0x8000;
+	int i = 0x800000;
 	Delay();
 	do {
 		if ( ((IoInputByte(IDE_REG_ALTSTATUS(uIoBase)) & 0x88) == 0x08)	)	{
@@ -160,7 +160,7 @@ int BootIdeIssueAtaCommand(
 	IoOutputByte(IDE_REG_CYLINDER_LSB(uIoBase), params->m_wCylinder & 0xFF);
 	IoOutputByte(IDE_REG_CYLINDER_MSB(uIoBase), (params->m_wCylinder >> 8) /* & 0x03 */);
 	IoOutputByte(IDE_REG_DRIVEHEAD(uIoBase), params->m_bDrivehead);
-
+	
 	IoOutputByte(IDE_REG_COMMAND(uIoBase), command);
 	Delay();
 
@@ -352,6 +352,17 @@ static int BootIdeDriveInit(unsigned uIoBase, int nIndexDrive)
 			}
 		}
 	} else { // slave... death if you send it IDE_CMD_GET_INFO, it needs an ATAPI request
+	
+	/*
+		if(BootIdeIssueAtaCommand(uIoBase, 0x08, &tsicp)) {  // ATAPI soft reset
+			printk("  %d: detect FAILED, error=%02X\n", nIndexDrive, IoInputByte(IDE_REG_ERROR(uIoBase)));
+			return 1;
+		}
+	*/
+		if (BootIdeWaitNotBusy(uIoBase))	{
+			printk_debug("Error after ATAPI soft reset error %02X\n", IoInputByte(IDE_REG_ERROR(uIoBase)));
+			return 1;
+		}
 		if(BootIdeIssueAtaCommand(uIoBase, 0xa1, &tsicp)) {
 			printk("  %d: detect FAILED, error=%02X\n", nIndexDrive, IoInputByte(IDE_REG_ERROR(uIoBase)));
 			return 1;
@@ -410,25 +421,28 @@ static int BootIdeDriveInit(unsigned uIoBase, int nIndexDrive)
 			tsaHarddiskInfo[nIndexDrive].m_szSerial
 		);
 
-
+#if 1
 		{  // this is the only way to clear the ATAPI ''I have been reset'' error indication
 			BYTE ba[128];
+
 			int nPacketLength=BootIdeAtapiAdditionalSenseCode(nIndexDrive, &ba[0], sizeof(ba));
 			if(nPacketLength<12) {
-				printk("Unable to get ASC from drive\n");
-				return 1;
+				printk("Unable to get first ASC from drive when clearing sticky DVD error\n");
+//				return 1;
 			}
 //			printk("ATAPI Drive reports ASC 0x%02X\n", ba[12]);  // normally 0x29 'reset' but clears the condition by reading
 			nPacketLength=BootIdeAtapiAdditionalSenseCode(nIndexDrive, &ba[0], sizeof(ba));
 			if(nPacketLength<12) {
-				printk("Unable to get ASC from drive\n");
-				return 1;
+				printk("Unable to get second ASC from drive when clearing sticky DVD error\n");
+//				return 1;
 			}
+/*
 //			printk("ATAPI Drive reports ASC 0x%02X\n", ba[12]);
 			if(ba[12]==0x3a) { // no media, this is normal if there is no CD in the drive
-
 			}
+*/
 		}
+#endif
 
 	} else { // HDD
 		BYTE bAdsBase=0x1b;
@@ -444,7 +458,7 @@ static int BootIdeDriveInit(unsigned uIoBase, int nIndexDrive)
 		VIDEO_ATTR=0xffc8c8c8;
 		printk("hd%c: ", nIndexDrive+'a');
 		VIDEO_ATTR=0xffc8c800;
-		
+
 		printk("%s %u.%uGB ",
 			tsaHarddiskInfo[nIndexDrive].m_szIdentityModelNumber,
 //			tsaHarddiskInfo[nIndexDrive].m_szSerial,
@@ -806,8 +820,8 @@ int BootIdeInit(void)
 {
 	tsaHarddiskInfo[0].m_bCableConductors=40;
 
-	BootIdeDriveInit(IDE_BASE1, 0);
 	BootIdeDriveInit(IDE_BASE1, 1);
+	BootIdeDriveInit(IDE_BASE1, 0);
 
 	if(tsaHarddiskInfo[0].m_fDriveExists) {
 		unsigned int uIoBase = tsaHarddiskInfo[0].m_fwPortBase;

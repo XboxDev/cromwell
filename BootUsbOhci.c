@@ -225,6 +225,16 @@ void BootUsbInit(
 }
 
 
+void BootUsbTurnOff(USB_CONTROLLER_OBJECT * pusbcontroller)
+{
+	pusbcontroller->m_pusboperationalregisters->m_dwHcControl=
+		((pusbcontroller->m_pusboperationalregisters->m_dwHcControl)&(~0xc0))|0x00;
+	pusbcontroller->m_pusboperationalregisters->m_dwHcInterruptDisable=0x8000007f; // kill all interrupts
+	pusbcontroller->m_pusboperationalregisters->m_dwHcHCCA=(DWORD)0; // kill HCCA is in memory
+}
+
+
+
 void BootUsbPrintStatus(USB_CONTROLLER_OBJECT * pusbcontroller)
 {
 	if(pusbcontroller->m_pusboperationalregisters->m_dwHcRevision<0x10) {

@@ -509,7 +509,10 @@ void vgaout(volatile BYTE * pb, unsigned char reg, unsigned char data) {
 	*pb=data;
 }
 
-
+BYTE vgain(volatile BYTE * pb, unsigned char reg) {
+	*pb++=reg;
+	return *pb;
+}
 
 
 // call with first arg video mode from enum in boot.h (eg, VIDEO_MODE_800x600)
@@ -623,8 +626,8 @@ void BootVgaInitializationKernel(CURRENT_VIDEO_MODE_DETAILS * pcurrentvidemodede
 		for(n=0x2e;n<0x100;n+=2) {
 
 			switch(n) {
-				case 0x6c:
-				case 0xb8:
+				case 0x6c: // reset
+				case 0xb8: // autoconfig
 					break;
 
 				case 0xa8:
@@ -660,6 +663,7 @@ void BootVgaInitializationKernel(CURRENT_VIDEO_MODE_DETAILS * pcurrentvidemodede
 	voutl(pcurrentvidemodedetails->m_pbBaseAddressVideo+0x600140, 0);
 	voutl(pcurrentvidemodedetails->m_pbBaseAddressVideo+0x609140, 0);
 	voutl(pcurrentvidemodedetails->m_pbBaseAddressVideo+0x680600, 0);  // without this, blue horrors
+	voutl(pcurrentvidemodedetails->m_pbBaseAddressVideo+0x682600, 0x0);
 
 
 	{
@@ -693,27 +697,95 @@ void BootVgaInitializationKernel(CURRENT_VIDEO_MODE_DETAILS * pcurrentvidemodede
 
 		// AV-pack specific init
 
-	switch(pcurrentvidemodedetails->m_bAvPack) {  // radically changes colours if enabled on composite
-		case 0:
+	switch(pcurrentvidemodedetails->m_bAvPack) {
+
+		case 0:  // SCART AV lead
 			{
-					// this might set up RGB out?
+				int nOctetsAdjust, nHorizontalOffsetAdjust;
+
 				voutl(pcurrentvidemodedetails->m_pbBaseAddressVideo+0x680880, 0x21121111);
-				voutl(pcurrentvidemodedetails->m_pbBaseAddressVideo+0x609140, 0);
-				voutl(pcurrentvidemodedetails->m_pbBaseAddressVideo+0x682600, 0x100030);
-				voutl(pcurrentvidemodedetails->m_pbBaseAddressVideo+0x682630, 0);
-				voutl(pcurrentvidemodedetails->m_pbBaseAddressVideo+0x682634, 0);
-				voutl(pcurrentvidemodedetails->m_pbBaseAddressVideo+0x682638, 0);
-				voutl(pcurrentvidemodedetails->m_pbBaseAddressVideo+0x68263c, 0);
+				voutl(pcurrentvidemodedetails->m_pbBaseAddressVideo+0x680630, 0);  // without this, light blue cast to everything
+
+					// scart mode has timing implications (different path through conexant??)
+					// the adjustment code underneath is a kludge
+					// it doesn't work properly except for 1024x576 at the moment
+					// particularly distressed to see other modes can be 1 character (8 pixels) out
+					// on different attempts without changing the code.
+					// Problem only exists on RGB cable.
+
+				switch(pcurrentvidemodedetails->m_nVideoModeIndex) {
+					case VIDEO_MODE_640x480: nOctetsAdjust=6; nHorizontalOffsetAdjust=16; break;
+					case VIDEO_MODE_640x576: nOctetsAdjust=4; nHorizontalOffsetAdjust=8; break;
+					case VIDEO_MODE_720x576: nOctetsAdjust=6; nHorizontalOffsetAdjust=8; break;
+					case VIDEO_MODE_800x600: nOctetsAdjust=9; nHorizontalOffsetAdjust=30; break;
+					case VIDEO_MODE_1024x576: nOctetsAdjust=2; nHorizontalOffsetAdjust=16; break;
+					default: nOctetsAdjust=8; nHorizontalOffsetAdjust=16; break;
+				}
+
+				{
+					int nBlank;
+					nBlank=vgain(pcurrentvidemodedetails->m_pbBaseAddressVideo+NVCRTC, 4);
+					nBlank-=nOctetsAdjust;
+
+											// CRTC_HSYNCSTART adjustment
+
+					vgaout(pcurrentvidemodedetails->m_pbBaseAddressVideo+NVCRTC, 4, nBlank&0xff);
+					vgaout(pcurrentvidemodedetails->m_pbBaseAddressVideo+NVCRTC, 5, (vgain(pcurrentvidemodedetails->m_pbBaseAddressVideo+NVCRTC, 5)&(~0x1f)) |((nBlank+4)&0x1f));
+
+							// Horizontal offset timing needs to be adjusted to get centering again
+
+					nBlank=((I2CTransmitByteGetReturn(0x45, 0x9a)<<2)&0x300)|I2CTransmitByteGetReturn(0x45, 0x80);
+					nBlank+=nHorizontalOffsetAdjust;
+					I2CTransmitWord(0x45, (0x80<<8)|(nBlank&0xff));
+					I2CTransmitWord(0x45, (0x9a<<8)|(I2CTransmitByteGetReturn(0x45, 0x9a)&(~0xc0))|((nBlank>>2)&0xc0));
+
+				}
+
+//				I2CTransmitWord(0x45, (0x92<<8)|(I2CTransmitByteGetReturn(0x45, 0x92)-1));
+
+
+						// change over to RGB Scart mode in Conexant
+
+				I2CTransmitWord(0x45, (0x6c<<8)|0x4e);
+				I2CTransmitWord(0x45, (0x5a<<8)|0xff);
+
+				I2CTransmitWord(0x45, (0xa4<<8)|0xe7);
+				I2CTransmitWord(0x45, (0xa6<<8)|0x77);
+/*
+				if(!pcurrentvidemodedetails->m_fForceEncoderLumaAndChromaToZeroInitially) {
+					I2CTransmitWord(0x45, (0xa8<<8)|0x7b);
+					I2CTransmitWord(0x45, (0xaa<<8)|0x45);
+					I2CTransmitWord(0x45, (0xac<<8)|0x87);
+				}
+
+				pcurrentvidemodedetails->m_bFinalConexantA8=0x7b;
+				pcurrentvidemodedetails->m_bFinalConexantAA=0x45;
+				pcurrentvidemodedetails->m_bFinalConexantAC=0x87;
+*/
+				I2CTransmitWord(0x45, (0xba<<8)|0x20);
+				I2CTransmitWord(0x45, (0xc6<<8)|0x98);
+				I2CTransmitWord(0x45, (0xce<<8)|0xe1);
+				I2CTransmitWord(0x45, (0xd6<<8)|(I2CTransmitByteGetReturn(0x45, 0xd6)&(~0x07))|0x0c);
+//				I2CTransmitWord(0x45, (0x6c<<8)|0xce);
+
+				IoOutputByte(0x80d8, 4);  // ACPI IO thing seen in kernel, set to 4
+				IoOutputByte(0x80d6, 5);  // ACPI IO thing seen in kernel, set to 4 or 5
+			
+				I2CTransmitWord(0x45, (0x60<<8)|0xc7);
+
 			}
 			break;
-		default:
+
+		default:  // every other AV lead as Composite
 			{
 				voutl(pcurrentvidemodedetails->m_pbBaseAddressVideo+0x680880, 0x21101100);
-				voutl(pcurrentvidemodedetails->m_pbBaseAddressVideo+0x682600,0 /* 0x100030 */);
+//				I2CTransmitWord(0x45, (0x6c<<8)|0xc6);
+				IoOutputByte(0x80d8, 4);  // ACPI IO thing seen in kernel, set to 4
+				IoOutputByte(0x80d6, 5);  // ACPI IO thing seen in kernel, set to 4 or 5
 			}
 			break;
 	};
-	
+
 		// resolution-specific init
 
 	switch(pcurrentvidemodedetails->m_nVideoModeIndex) {
@@ -779,12 +851,15 @@ void BootVgaInitializationKernel(CURRENT_VIDEO_MODE_DETAILS * pcurrentvidemodede
 				pcurrentvidemodedetails->m_dwMarginYInLinesRecommended=20; // lines
 			}
 			break;
-		
+
 		case VIDEO_MODE_1024x576: // 1024x576
 			{
 				pcurrentvidemodedetails->m_dwWidthInPixels=1024;
 				pcurrentvidemodedetails->m_dwHeightInLines=576;
 				pcurrentvidemodedetails->m_dwMarginYInLinesRecommended=20; // lines
+				I2CTransmitWord(0x45, (0x60<<8)|0xc7);
+				I2CTransmitWord(0x45, (0x62<<8)|0x0);
+				I2CTransmitWord(0x45, (0x64<<8)|0x0);
 			}
 			break;
 	}
@@ -802,28 +877,8 @@ void BootVgaInitializationKernel(CURRENT_VIDEO_MODE_DETAILS * pcurrentvidemodede
 	voutl(pcurrentvidemodedetails->m_pbBaseAddressVideo+0x000140, 1);  // enable VSYNC int
 #endif
 
-	{
-		DWORD dwVideoFootprint=pcurrentvidemodedetails->m_dwWidthInPixels *pcurrentvidemodedetails->m_dwHeightInLines *4;
-		DWORD dwSpare=0x400000 - dwVideoFootprint;  // what's left from the 4MByte allocation after the pixel stg is accounted for
-		voutl(pcurrentvidemodedetails->m_pbBaseAddressVideo+0x600800, 0x03c00000);   // set video start address to 4M back from end of RAM
-			// Oliver Schwartz's 2D accelleration mods
-		voutl(pcurrentvidemodedetails->m_pbBaseAddressVideo+0x400820, dwSpare);
-		voutl(pcurrentvidemodedetails->m_pbBaseAddressVideo+0x400824, dwSpare);
-		voutl(pcurrentvidemodedetails->m_pbBaseAddressVideo+0x400828, dwSpare);
-		voutl(pcurrentvidemodedetails->m_pbBaseAddressVideo+0x40082c, dwSpare);
-		voutl(pcurrentvidemodedetails->m_pbBaseAddressVideo+0x400684, 0x03ffffff);
-		voutl(pcurrentvidemodedetails->m_pbBaseAddressVideo+0x400688, 0x03ffffff);
-		voutl(pcurrentvidemodedetails->m_pbBaseAddressVideo+0x40068c, 0x03ffffff);
-		voutl(pcurrentvidemodedetails->m_pbBaseAddressVideo+0x400690, 0x03ffffff);
-	}
-		// timing reset for Conexant
-
-	I2CTransmitWord(0x45, 0x6cc6); // nb this was inside the #ifndef XBE above, I think it should be outside, will not affect XBE
-
 		// all these are necessary to bring up video through the conexant
 
-	IoOutputByte(0x80d6, 5);  // ACPI IO thing seen in kernel, set to 4 or 5
-	IoOutputByte(0x80d8, 4);  // ACPI IO thing seen in kernel, set to 4
 	IoOutputByte(0x80d3, 4);  // ACPI IO video enable REQUIRED <-- particularly crucial to get composite out
 
 
@@ -832,6 +887,8 @@ void BootVgaInitializationKernel(CURRENT_VIDEO_MODE_DETAILS * pcurrentvidemodede
 
 	voutb(pcurrentvidemodedetails->m_pbBaseAddressVideo+0x0C03C2, 0xe3);
 	vgaout(pcurrentvidemodedetails->m_pbBaseAddressVideo+NVCRTC, 0x11, 0x20);
+
+	voutl(pcurrentvidemodedetails->m_pbBaseAddressVideo+0x600800, 0x03c00000);   // set video start address to 4M back from end of RAM
 
 	BootPciInterruptGlobalPopState(dwTempIntState);
 

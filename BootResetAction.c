@@ -11,6 +11,7 @@
  *                                                                         *
  ***************************************************************************
 
+	2003-02-25 andy@warmcat.com  1024x576, and RGB AV cable support
 	2003-01-13 andy@warmcat.com  Moved out interrupt stuff into BootInterrupts.c
 	                             Dropped hardcoded GIMP tux, moved to icons stored
 	                             after line 480 of the backdrop JPG
@@ -34,7 +35,7 @@
 #endif
 #include "BootUsbOhci.h"
 
-// #define DO_USB
+#define DO_USB
 
 extern DWORD dwaTitleArea[1024*64];
 JPEG jpegBackdrop;
@@ -131,11 +132,15 @@ extern void BootResetAction ( void ) {
 	bprintf("BOOT: Read EEPROM\n\r");
 //	DumpAddressAndData(0, (BYTE *)&eeprom, 256);
 
-	if(((BYTE *)&eeprom)[0x96]&0x01) { // widescreen
+	if(((BYTE *)&eeprom)[0x96]&0x01) { // 16:9 widescreen TV
 		currentvideomodedetails.m_nVideoModeIndex=VIDEO_MODE_1024x576;
-	} else {
+	} else { // 4:3 TV
 		currentvideomodedetails.m_nVideoModeIndex=VIDEO_PREFERRED_MODE;
 	}
+
+//		currentvideomodedetails.m_nVideoModeIndex=VIDEO_MODE_800x600;
+
+
 	currentvideomodedetails.m_pbBaseAddressVideo=(BYTE *)0xfd000000;
 #ifdef XBE
 	currentvideomodedetails.m_fForceEncoderLumaAndChromaToZeroInitially=0;

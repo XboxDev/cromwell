@@ -32,7 +32,7 @@
 #else
 #include "config-rom.h"
 #include "BootUsbOhci.h"
-extern volatile USB_CONTROLLER_OBJECT usbcontroller;
+extern volatile USB_CONTROLLER_OBJECT usbcontroller[2];
 #endif
 
 #undef strcpy
@@ -401,6 +401,15 @@ void StartBios(	int nDrive, int nActivePartition ) {
 //			while(1);
 		}
 
+				// must reset USB before we start dumping into fixed memory areas
+
+#ifndef XBE
+		{  	// turn off USB
+			BootUsbTurnOff((USB_CONTROLLER_OBJECT *)&usbcontroller[0]);
+			BootUsbTurnOff((USB_CONTROLLER_OBJECT *)&usbcontroller[1]);
+		}
+#endif
+
 
 	VIDEO_ATTR=0xffd8d8d8;
 
@@ -629,13 +638,6 @@ void StartBios(	int nDrive, int nActivePartition ) {
 //		BootIdeSetTransferMode(0, 0x04);
 	}
 
-
-
-#ifndef XBE
-	{  	// turn off USB
-			usbcontroller.m_pusboperationalregisters->m_dwHcControl=((usbcontroller.m_pusboperationalregisters->m_dwHcControl)&(~0xc0))|0x00;
-	}
-#endif
 
 		__asm __volatile__ (
 

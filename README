@@ -1,4 +1,4 @@
-CROMWELL 1.9dev   2003-02-24
+CROMWELL 1.9dev   2003-02-25
 Xbox Linux Team
 
 Contact: andy@warmcat.com, mist@c64.org. xboxlinux@meriac.de
@@ -11,6 +11,7 @@ using any MS code.  Cromwell cannot launch native games, it can only
 boot into Linux (or more correctly, a file vmlinuz which can
 contain anything, but is usually the Linux kernel).
 
+ - new automatic RGB AV cable support (1024x576 only so far)
  - new 1024x576 automatic widescreen support (when widesceen was
    selected in MS native BIOS settings)
  - the ROM image is now 256KByte, works with all flashable modchips
@@ -46,11 +47,10 @@ for the next set of features.
 
 OTHER NOTES
 
- - COMPOSITE cable only right now if you want the right colours
  - defaults to 800x600 for PAL boxes and 640x480 for NTSC boxes
  - if you have selected Widescreen in the native MS BIOS settings,
    then 1024x576 is selected with WSS if you are in PAL
- - in PAL, 640x480, 640x576 and 720x576 are also available
+ - in PAL, 640x480, 640x576, 720x576 and 800x600 also available
 
 
 
@@ -132,6 +132,7 @@ Todo
 
 Improvements!
 
+ - RGB AV cable support (1024x576 only right now)
  - 1024x576 widescreen mode for PAL
  - 800x600 PAL mode!  Quite pleasant for browsing, etc.
  - works with v1.1 or v1.0
@@ -147,7 +148,21 @@ Improvements!
 	 4MByte of RAM for video)
 
 
-	 
+NOTE ABOUT RGB CABLE SUPPORT ON ED'S DEBIAN TESTING 0.1.0
+
+Anders' excellent extsmi driver has a small mistake in it which kills
+RGB output when it starts up.  It forces the video encoder to issue
+composite instead.
+
+In order to work around this, you will need to get xbv from CVS, and
+run
+
+xbv -m 4
+
+at some point after the extsmi driver has started.  Then you will be
+immediately returned to the fully glory of RGB (which is massively
+superior for text than composite).  On a modern widescreen TV with
+RGB AV cable, the 1024x576 mode is just like a monitor.
 
 
 
