@@ -65,6 +65,3 @@
 /* Size of the read chunks to use when reading the kernel; bigger = a lot faster */
 #define READ_CHUNK_SIZE 128*1024
 
-#define MemorymanagerStart 	0x01000000
-#define MemorymanagerSize 	 0x1000000 // 16 MB
-#define MemorymanagerEnd 	0x01FFFFFF

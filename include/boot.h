@@ -1,3 +1,6 @@
+#ifndef _Boot_H_
+#define _Boot_H_
+
 /***************************************************************************
       Includes used by XBox boot code
  ***************************************************************************/
@@ -42,14 +45,14 @@
 /////////////////////////////////
 // some typedefs to make for easy sizing
 
-  typedef unsigned int DWORD;
-  typedef unsigned short WORD;
-  typedef unsigned char BYTE;
+typedef unsigned int DWORD;
+typedef unsigned short WORD;
+typedef unsigned char BYTE;
 #ifndef bool_already_defined_
 	typedef int bool;
 #endif
-	typedef unsigned long RGBA; // LSB=R -> MSB = A
-	typedef long long __int64;
+typedef unsigned long RGBA; // LSB=R -> MSB = A
+typedef long long __int64;
 
 #define guint int
 #define guint8 unsigned char
@@ -75,6 +78,18 @@ extern volatile CURRENT_VIDEO_MODE_DETAILS currentvideomodedetails;
 
 #define FRAMEBUFFER_START ( /* 0xf0000000 */ (*((DWORD * )0xfd600800)) & 0x7fffffff  )
 
+volatile DWORD VIDEO_CURSOR_POSX;
+volatile DWORD VIDEO_CURSOR_POSY;
+volatile DWORD VIDEO_ATTR;
+volatile DWORD VIDEO_LUMASCALING;
+volatile DWORD VIDEO_RSCALING;
+volatile DWORD VIDEO_BSCALING;
+volatile DWORD VIDEO_VSYNC_COUNT;
+volatile DWORD BIOS_TICK_COUNT;
+volatile DWORD VIDEO_VSYNC_POSITION;
+volatile DWORD VIDEO_VSYNC_DIR;
+
+/*
 #define VIDEO_CURSOR_POSX (*((volatile DWORD * )0x430))
 #define VIDEO_CURSOR_POSY (*((volatile DWORD * )0x434))
 #define VIDEO_ATTR (*((volatile DWORD * )0x438))
@@ -85,7 +100,7 @@ extern volatile CURRENT_VIDEO_MODE_DETAILS currentvideomodedetails;
 #define BIOS_TICK_COUNT (*((volatile DWORD *)0x46c))
 #define VIDEO_VSYNC_POSITION (*((volatile DWORD * )0x470))
 #define VIDEO_VSYNC_DIR (*((volatile DWORD * )0x474))
-
+*/
 
 /////////////////////////////////
 // Superfunky i386 internal structures
@@ -552,3 +567,5 @@ void HMAC_SHA1( unsigned char *result,
 char *HelpGetToken(char *ptr,char token);
 void HelpGetParm(char *szBuffer, char *szOrig);
 char *strrchr0(char *string, char ch);
+
+#endif // _Boot_H_

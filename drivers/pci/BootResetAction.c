@@ -141,7 +141,7 @@ extern void BootResetAction ( void ) {
 
 	// init malloc() and free() structures
 
-	MemoryManagementInitialization((void *)MemorymanagerStart, MemorymanagerSize);
+	MemoryManagementInitialization((void *)MEMORYMANAGERSTART, MEMORYMANAGERSIZE);
 	
 	BootInterruptsWriteIdt();
 	bprintf("BOOT: done interrupts\n\r");

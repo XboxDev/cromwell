@@ -1,3 +1,6 @@
+#ifndef _Consts_H_
+#define _Consts_H_
+
 /*
  *
  * includes for startup code in a form usable by the .S files
@@ -13,7 +16,7 @@
  *                                                                         *
  ***************************************************************************/
 
-#define VERSION "1.24 dev"
+#define VERSION "1.25 dev"
 
 #define PCI_CFG_ADDR 0x0CF8
 #define PCI_CFG_DATA 0x0CFC
@@ -86,3 +89,9 @@
 #define FILT_DEBUG_FROMPC_LEN (FILT_DEBUG_BASE+FILT_DEBUG_FOOTPRINT-2)
 #define FILT_DEBUG_TOPC_CHECKSUM (FILT_DEBUG_BASE+(FILT_DEBUG_FOOTPRINT/2)-4)
 #define FILT_DEBUG_FROMPC_CHECKSUM (FILT_DEBUG_BASE+FILT_DEBUG_FOOTPRINT-4)
+
+#define MEMORYMANAGERSTART 	0x01000000
+#define MEMORYMANAGERSIZE 	 0x1000000 // 16 MB
+#define MEMORYMANAGEREND 	0x01FFFFFF
+
+#endif // _Consts_H_
