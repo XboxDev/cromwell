@@ -278,8 +278,15 @@ int romcopy (
 
 		// this is very nasty, but simple , we Dump a GDT to the TOP rom
 		
+        	memset(&loaderimage[0x3fe00],0x90,512);
         	memset(&loaderimage[0x3ffd0],0x00,32);
-		memset(&loaderimage[0x3fff0],0x90,16);
+                loaderimage[0x3ffcf] = 0xfc;
+        	loaderimage[0x3ffd0] = 0xea;
+    		loaderimage[0x3ffd2] = 0x10;
+    		loaderimage[0x3ffd3] = 0xfc;
+    		loaderimage[0x3ffd4] = 0xff;
+    		loaderimage[0x3ffd5] = 0x08;
+    		loaderimage[0x3ffd7] = 0x90;    		
     		
     		loaderimage[0x3ffe0] = 0xff;
     		loaderimage[0x3ffe1] = 0xff;
