@@ -2,7 +2,7 @@
 #include  "boot.h"
 #include "video.h"
 #include "memory_layout.h"
-#include "string.h"
+//#include "string.h"
 #include "fontx16.h"  // brings in font struct
 #include <stdarg.h>
 

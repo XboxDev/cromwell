@@ -110,6 +110,7 @@ void memPlaceKernel(const BYTE* kernelOrg, DWORD kernelSize)
 int BootLoadConfigNative(int nActivePartition, CONFIGENTRY *config, bool fJustTestingForPossible) {
 	DWORD dwConfigSize=0;
 	char szGrub[256+4];
+	BYTE* tempBuf;
         
         memset(szGrub,0,256+4);
         
@@ -149,8 +150,8 @@ int BootLoadConfigNative(int nActivePartition, CONFIGENTRY *config, bool fJustTe
 	if (nRet!=1 || (errnum)) {
 		if(!fJustTestingForPossible) printk("linuxboot.cfg not found, using defaults\n");
 	} else {
-		if(fJustTestingForPossible) return 1; // if there's a linuxboot.cfg it must be worth trying to boot
 		int nLen;
+		if(fJustTestingForPossible) return 1; // if there's a linuxboot.cfg it must be worth trying to boot
 		nLen=grub_read((void *)KERNEL_SETUP, filemax);
 		if(nLen>0) { ((char *)KERNEL_SETUP)[nLen]='\0'; }  // needed to terminate incoming string, reboot in ParseConfig without it
 		ParseConfig((char *)KERNEL_SETUP,config,&eeprom, NULL);
@@ -171,7 +172,7 @@ int BootLoadConfigNative(int nActivePartition, CONFIGENTRY *config, bool fJustTe
 	if(fJustTestingForPossible) return 1; // if there's a default kernel it must be worth trying to boot
         
 	// Use INITRD_START as temporary location for loading the Kernel 
-	BYTE* tempBuf = (BYTE*)INITRD_START;
+	tempBuf = (BYTE*)INITRD_START;
 	dwKernelSize=grub_read(tempBuf, MAX_KERNEL_SIZE);
 	memPlaceKernel(tempBuf, dwKernelSize);
 	grub_close();
@@ -210,6 +211,7 @@ int BootTryLoadConfigFATX(CONFIGENTRY *config) {
 	FATXFILEINFO fileinfo;
 	FATXFILEINFO infokernel;
 	int nConfig = 0;
+	BYTE *tempBuf;
 
 	partition = OpenFATXPartition(0,SECTOR_STORE,STORE_SIZE);
 	
@@ -233,7 +235,7 @@ int BootTryLoadConfigFATX(CONFIGENTRY *config) {
 	}
 
 	// Use INITRD_START as temporary location for loading the Kernel 
-	BYTE* tempBuf = (BYTE*)INITRD_START;
+	tempBuf = (BYTE*)INITRD_START;
 	if(! LoadFATXFilefixed(partition,config->szKernel,&infokernel,tempBuf)) {
 		CloseFATXPartition(partition);
 		return 0;
@@ -252,6 +254,7 @@ int BootLoadConfigFATX(CONFIGENTRY *config) {
 	static FATXFILEINFO fileinfo;
 	static FATXFILEINFO infokernel;
 	static FATXFILEINFO infoinitrd;
+	BYTE* tempBuf;
 
 	memset((BYTE *)KERNEL_SETUP,0,4096);
 	memset(&fileinfo,0x00,sizeof(fileinfo));
@@ -286,7 +289,7 @@ int BootLoadConfigFATX(CONFIGENTRY *config) {
 	BootPrintConfig(config);
 	
 	// Use INITRD_START as temporary location for loading the Kernel 
-	BYTE* tempBuf = (BYTE*)INITRD_START;
+	tempBuf = (BYTE*)INITRD_START;
 	if(! LoadFATXFilefixed(partition,config->szKernel,&infokernel,tempBuf)) {
 		printk("Error loading kernel %s\n",config->szKernel);
 		while(1);
@@ -327,14 +330,13 @@ int BootLoadConfigCD(CONFIGENTRY *config) {
 
 	DWORD dwConfigSize=0, dw;
 	BYTE ba[2048],baBackground[640*64*4]; 
-	
-
-
+	ISO_PRIMARY_VOLUME_DESCRIPTOR * pipvd;
+	char sz[64];
 	BYTE bCount=0, bCount1;
 	int n;
-	
 	DWORD dwY=VIDEO_CURSOR_POSY;
 	DWORD dwX=VIDEO_CURSOR_POSX;
+	BYTE* tempBuf;
 
 	memset((BYTE *)KERNEL_SETUP,0,4096);
 
@@ -442,8 +444,7 @@ selectinsert:
 		currentvideomodedetails.m_dwWidthInPixels*4, (DWORD *)&baBackground[0], 640*4, 64
 	);
  
-	ISO_PRIMARY_VOLUME_DESCRIPTOR * pipvd = (ISO_PRIMARY_VOLUME_DESCRIPTOR *)&ba[0];
-	char sz[64];
+	pipvd = (ISO_PRIMARY_VOLUME_DESCRIPTOR *)&ba[0];
 	memset(&sz,0x00,sizeof(sz));
 	BootIso9660DescriptorToString(pipvd->m_szSystemIdentifier, sizeof(pipvd->m_szSystemIdentifier), sz);
 	VIDEO_ATTR=0xffeeeeee;
@@ -475,7 +476,7 @@ selectinsert:
 	BootPrintConfig(config);
 
 	// Use INITRD_START as temporary location for loading the Kernel 
-	BYTE* tempBuf = (BYTE*)INITRD_START;
+	tempBuf = (BYTE*)INITRD_START;
 	dwKernelSize=BootIso9660GetFile(config->szKernel, tempBuf, MAX_KERNEL_SIZE, 0);
 
 	// If failed, lets look for an other name ...
@@ -539,6 +540,8 @@ int BootLoadFlashCD(CONFIGENTRY *config) {
 	BYTE bCount=0, bCount1;
 	unsigned char checksum[20];
 	unsigned int n;
+	ISO_PRIMARY_VOLUME_DESCRIPTOR * pipvd;
+	char sz[64];
 	
 	DWORD dwY=VIDEO_CURSOR_POSY;
 	DWORD dwX=VIDEO_CURSOR_POSX;
@@ -636,8 +639,7 @@ selectinsert:
 	);
  
         
-	ISO_PRIMARY_VOLUME_DESCRIPTOR * pipvd = (ISO_PRIMARY_VOLUME_DESCRIPTOR *)&ba[0];
-	char sz[64];
+	pipvd = (ISO_PRIMARY_VOLUME_DESCRIPTOR *)&ba[0];
 	memset(&sz,0x00,sizeof(sz));
 	BootIso9660DescriptorToString(pipvd->m_szSystemIdentifier, sizeof(pipvd->m_szSystemIdentifier), sz);
 	VIDEO_ATTR=0xffeeeeee;

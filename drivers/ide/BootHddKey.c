@@ -1,9 +1,9 @@
 
 #include "boot.h"
-#include <stdarg.h>
-#include <string.h>
 #include "sha1.h"
 #include "rc4.h"
+#include <stdarg.h>
+//#include <string.h>
 
 
 

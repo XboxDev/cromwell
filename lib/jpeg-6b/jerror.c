@@ -27,10 +27,6 @@
 #include "jerror.h"
 
 
-#ifdef USE_WINDOWS_MESSAGEBOX
-#include <windows.h>
-#endif
-
 #ifndef EXIT_FAILURE		/* define exit() codes if not provided */
 #define EXIT_FAILURE  1
 #endif
@@ -78,8 +74,7 @@ error_exit (j_common_ptr cinfo)
   /* Let the memory manager delete any temp files before we die */
   jpeg_destroy(cinfo);
 
-	while(1);
-//  exit(EXIT_FAILURE);
+  while(1);
 }
 
 

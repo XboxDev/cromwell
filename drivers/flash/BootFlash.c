@@ -11,7 +11,7 @@
 #include "boot.h"
 #include "BootFlash.h"
 #include <stdio.h>
-#include <string.h>
+//#include <string.h>
 
 	// gets device ID, sets pof up accordingly
 	// returns true if device okay or false for unrecognized device

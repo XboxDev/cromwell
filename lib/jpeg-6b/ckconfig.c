@@ -53,9 +53,9 @@
 #undef NEED_BSD_STRINGS
 
 #ifdef NEED_BSD_STRINGS
-#include <strings.h>
+//#include <strings.h>
 #else
-#include <string.h>
+//#include <string.h>
 #endif
 
 /* On some systems (especially older Unix machines), type size_t is

@@ -19,7 +19,6 @@
  */
 
 #include <shared.h>
-#include <term.h>
 
 char *
 convert_to_ascii (char *buf, int c,...)

@@ -11,8 +11,8 @@
 */
 
 #include "boot.h"
-#include <ctype.h>
-#include <string.h>
+//#include <ctype.h>
+//#include <string.h>
 
 // ISO9660 likes fixed length, space-padded strings, we don't.
 

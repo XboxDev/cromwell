@@ -250,11 +250,12 @@ int xstart32(unsigned long entry_point, ...)
 	void* initrd = NULL;
 	va_list list;
 	void* eb;
+	union infoblock *header = NULL;
+	struct bootp_t *bootp = NULL;
+
 	va_start(list, entry_point);
 	eb = va_arg(list, void*);
 	va_end(list);
-	union infoblock *header = NULL;
-	struct bootp_t *bootp = NULL;
 	parse_elf_boot_notes(eb, &header, &bootp);
 	if ((header != NULL) && (bootp != NULL))
 	{

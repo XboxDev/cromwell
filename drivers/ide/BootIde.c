@@ -738,11 +738,11 @@ int DriveSecurityChange(unsigned uIoBase, int driveId, ide_command_t ide_cmd, ch
 	char ide_cmd_data[2+512];	
 	char baBuffer[512];
 	unsigned short*	drive_info = (unsigned short*)baBuffer;
-
-	memset(ide_cmd_data,0x00,512);
 	tsIdeCommandParams tsicp = IDE_DEFAULT_COMMAND;
 	tsIdeCommandParams tsicp1 = IDE_DEFAULT_COMMAND;
 
+	memset(ide_cmd_data,0x00,512);
+	
 	//Password is only 20 bytes long - the rest is 0-padded.
 	memcpy(&ide_cmd_data[2],password,20);
 
