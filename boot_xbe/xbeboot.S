@@ -332,16 +332,17 @@ ptr_newloc:
 	.word	0x0008
 
 newloc:
-        // esi = phys_kernelram
-	mov	edi, 0x02f00000 // 64 MB
+
+	mov	edi, 0x03B00000 // 64 MB
 	mov	ecx, KERNEL_SIZE / 4
+	
 	.byte	0xF3, 0xA5  // rep movsd
 
 	//jmp newflash
-// start kernel
+	// start kernel
 	.byte	0xea //  = ljmp
 
-	.long	0x02fffe00
+	.long	0x03Bffe00
 	.word	0x0008
 
 newflash:

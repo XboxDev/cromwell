@@ -676,7 +676,7 @@ void StartBios(	int nDrive, int nActivePartition , int nFATXPresent) {
 	}
 
 #ifdef DEFAULT_FATX
-nDrive=0;
+//nDrive=0;
 #endif
 
 	if(nIcon >= ICONCOUNT) {
@@ -736,7 +736,9 @@ nDrive=0;
 		}	
 		}	
 		*/	
-			
+		
+		printk("%08x",BootResetAction);
+		while(1);	
 			
 			
 			
