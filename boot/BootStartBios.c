@@ -208,10 +208,12 @@ int BootTryLoadConfigFATX(CONFIGENTRY *config) {
 
 		if(!LoadFATXFile(partition,"/linuxboot.cfg",&fileinfo)) {
 			if(LoadFATXFile(partition,"/debian/linuxboot.cfg",&fileinfo) ) {
+				fileinfo.buffer[fileinfo.fileSize]=0;
 				ParseConfig(fileinfo.buffer,config,&eeprom,"/debian");
 				free(fileinfo.buffer);
 			}
 		} else {
+			fileinfo.buffer[fileinfo.fileSize]=0;
 			ParseConfig(fileinfo.buffer,config,&eeprom,NULL);
 			free(fileinfo.buffer);
 		}
@@ -256,11 +258,13 @@ int BootLodaConfigFATX(CONFIGENTRY *config) {
 	if(partition != NULL) {
 		if(LoadFATXFile(partition,"/linuxboot.cfg",&fileinfo) ) {
 			wait_ms(50);
+			fileinfo.buffer[fileinfo.fileSize]=0;
 			ParseConfig(fileinfo.buffer,config,&eeprom, NULL);
 			free(fileinfo.buffer);
 		} else {
 			if(LoadFATXFile(partition,"/debian/linuxboot.cfg",&fileinfo) ) {
 				wait_ms(50);
+				fileinfo.buffer[fileinfo.fileSize]=0;
 				ParseConfig(fileinfo.buffer,config,&eeprom, "/debian");
 				free(fileinfo.buffer);
 			} else {
@@ -470,6 +474,7 @@ selectinsert:
         
         // LinuxBoot.cfg File Loaded
         
+        ((char *)INITRD_POS)[dwConfigSize]=0;
 	ParseConfig((char *)INITRD_POS,config,&eeprom, NULL);
 	BootPrintConfig(config);
 
