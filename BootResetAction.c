@@ -126,9 +126,14 @@ extern void IntHandlerTimer0(void);
 
 
 extern void BootResetAction ( void ) {
+	BYTE bAvPackType;
+	__int64 i64Timestamp;
+	BYTE * pb;
+	int n=0, nPos=0;
+	char sz[512];
 
 #if INCLUDE_FILTROR
-		// clear down channel quality stats
+	// clear down channel quality stats
 	bfcqs.m_dwBlocksFromPc=0;
 	bfcqs.m_dwCountChecksumErrorsSeenFromPc=0;
 	bfcqs.m_dwBlocksToPc=0;
@@ -143,22 +148,21 @@ extern void BootResetAction ( void ) {
 	WATCHDOG;
 	WATCHDOG;
 
-			// if we don't make the PIC happy within 200mS, the damn thing will reset us
+	// if we don't make the PIC happy within 200mS, the damn thing will reset us
 	BootPerformPicChallengeResponseAction();
 	WATCHDOG;
 
 	I2CTransmitWord( 0x10, 0x0c00, false );
 
-									// bring up Video (2BL portion)
+	// bring up Video (2BL portion)
 	BootVgaInitialization();
 	WATCHDOG;
-	BYTE bAvPackType=BootVgaInitializationKernel(VIDEO_PREFERRED_LINES);
+	bAvPackType=BootVgaInitializationKernel(VIDEO_PREFERRED_LINES);
 	WATCHDOG;
-						// initialize the PCI devices
+	// initialize the PCI devices
 	BootPciPeripheralInitialization();
 	WATCHDOG;
 
-	__int64 i64Timestamp;
 
 	{
 		int a2, a3;
@@ -167,7 +171,7 @@ extern void BootResetAction ( void ) {
 	}
 
 
-		// prep our BIOS console print state
+	// prep our BIOS console print state
 
 	VIDEO_ATTR=0xffffffff;
 	VIDEO_LUMASCALING=0;
@@ -462,9 +466,8 @@ extern void BootResetAction ( void ) {
 			} else {
 				VIDEO_ATTR=0xffe8e8e8;
 				printk("MBR Partition Table:\n");
-				BYTE * pb=&ba[0x1be];
-				int n=0, nPos=0;
-				char sz[512];
+				(BYTE *)pb=&ba[0x1be];
+				n=0; nPos=0;
 				while(n<4) {
 					nPos=sprintf(sz, " hda%d: ", n+1);
 					if(pb[0]&0x80) { fSeenActive=true; nPos+=sprintf(&sz[nPos], "boot\t"); } else { nPos+=sprintf(&sz[nPos], "   \t"); }

@@ -160,6 +160,7 @@ int BootVideoOverlayCharacter(
 	BYTE bCharacter,
 	bool fDouble
 ) {
+	int nSpace;
 	unsigned int n, nStart, nWidth, y, nHeight
 //		nOpaquenessMultiplied,
 //		nTransparentnessMultiplied
@@ -174,7 +175,7 @@ int BootVideoOverlayCharacter(
 		DWORD dw1=((dw+1)%(32<<2));  // distance from previous boundary
 		return ((32<<2)-dw1)>>2;
 	}
-	int nSpace=WIDTH_SPACE_PIXELS;
+	nSpace=WIDTH_SPACE_PIXELS;
 	if(fDouble) nSpace=8;
 	if(bCharacter<'!') return nSpace;
 	if(bCharacter>'~') return nSpace;
@@ -322,6 +323,8 @@ BYTE * BootVideoJpegUnpackAsRgb(
 {
 	struct jpeg_decompress_struct cinfo;
   struct jpeg_error_mgr jerr;
+  BYTE *pbaResultAsRgb;
+  BYTE *pbaResultAsRgbStart;
   JSAMPARRAY buffer;		/* Output row buffer */
   int row_stride;		/* physical row width in output buffer */
 
@@ -335,8 +338,8 @@ BYTE * BootVideoJpegUnpackAsRgb(
   (void) jpeg_start_decompress(&cinfo);
 
   row_stride = cinfo.output_width * cinfo.output_components;
-	BYTE *pbaResultAsRgb=(BYTE *)malloc(row_stride * cinfo.output_height);
-	BYTE *pbaResultAsRgbStart=pbaResultAsRgb;
+	(BYTE *)pbaResultAsRgb=(BYTE *)malloc(row_stride * cinfo.output_height);
+	(BYTE *)pbaResultAsRgbStart=pbaResultAsRgb;
 
 	//printk("0x%x, 0x%x, %d, %d, %d, 0x%x, 0x%x\n",
 	//	(DWORD)pbaJpegFileImage, nFileLength, cinfo.output_width,  cinfo.output_height, cinfo.output_components,

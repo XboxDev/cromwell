@@ -400,6 +400,7 @@ void BootVgaInitialization() {
 			///  2bl Video init
 			///////////////
 
+ 
 
 		{  // functionality as in 2bl
 		const BYTE * pbaVideoInitSelected = baVideoInitTable2Alternate;
@@ -722,6 +723,7 @@ BYTE BootVgaInitializationKernel(int nLinesPref)
 	int nVar14=1; // 1 or 2 ONLY
 	int arg_8=1, nArg10=640, arg_C=0x43, arg_14=0x01;
 	DWORD dwStash;
+	int nCtr=0;
 
 
 	BYTE bAvPack=I2CTransmitByteGetReturn(0x10, 0x04);
@@ -931,7 +933,7 @@ BYTE BootVgaInitializationKernel(int nLinesPref)
 
 		// frankenvideo results
 
-	int nCtr=0;
+	nCtr=0;
 //	BYTE bTrue=bAvPack;
 //	bAvPack=0;
 	while(nCtr++<1) {

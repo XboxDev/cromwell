@@ -30,6 +30,9 @@ extern unsigned long current_drive;
 
 void setup(void* KernelPos, void* PhysInitrdPos, void* InitrdSize, char* kernel_cmdline);
 
+	int nRet;
+	DWORD dwKernelSize;
+	int nSizeHeader;
 const BYTE baGdt[] = {
 	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // 0x00 dummy
 	0xff, 0xff, 0x00, 0x00, 0x00, 0x9a, 0xcf, 0x00, // 0x08 code32
@@ -50,8 +53,6 @@ void StartBios() {
 	disk_read_hook=NULL;
 	disk_read_func=NULL;
 
-	int nRet;
-	DWORD dwKernelSize;
 
 //	__asm __volatile ( "cli");
 	VIDEO_ATTR=0xffd8d8d8;
@@ -62,7 +63,7 @@ void StartBios() {
 	if(nRet==1) {
 
 		dwKernelSize=grub_read((void *)0x90000, 0x400);
-		int nSizeHeader=((*((BYTE *)0x901f1))+1)*512;
+		nSizeHeader=((*((BYTE *)0x901f1))+1)*512;
 //		printk("Header size = 0x%x (0x%x)\n", nSizeHeader, *((BYTE *)0x901f1) );
 		dwKernelSize+=grub_read((void *)0x90400, nSizeHeader-0x400);
 		dwKernelSize+=grub_read((void *)0x00100000, filemax-nSizeHeader);
