@@ -91,10 +91,10 @@ static inline unsigned char peekb(unsigned int a) {
    because we don't have a stack yet. (mist)
 */
 void MachineInit() {
-//#if 1
+#ifdef MACHINE_INIT_IN_C
+	unsigned int i;
 #ifndef XBE
 	unsigned int temp;
-	unsigned int i;
 
 	asm ("cli");
 
@@ -335,6 +335,398 @@ donea1c:
 
 		"cld;"
 	);
+
+#else // !MACHINE_INIT_IN_C
+
+
+	asm("
+//#ifdef XBE
+//	jmp bootloader2
+//#endif
+
+	cli
+
+	mov %cr0, %eax
+	orl	$0x60000000, %eax
+	mov	%eax, %cr0
+	invd
+
+	xorl	%edx, %edx
+	movl	$0x2ff, %ecx
+	movl	$0x000, %eax
+	wrmsr
+
+//		mov	$0, %al
+//		mov	$0x72, %dx
+//		out	%al, %dx
+
+	mov	$0x8, %al
+	mov	$0x61, %dx
+	out	%al, %dx
+
+		// xcode actions first of all
+
+	mov $0x80000810, %eax ;	movw $0xcf8, %dx ; outl	%eax, %dx ;	movw $0xcfc, %dx ;	mov	$0x8001, %eax ;	outl	%eax, %dx
+	mov $0x80000884, %eax ;	movw $0xcf8, %dx ; outl	%eax, %dx ;	movw $0xcfc, %dx ;	mov	$0x8001, %eax ;	outl	%eax, %dx
+	movw $0x8026, %dx ;	movw $0x2201, %ax ;	outb %al, %dx
+
+	mov $0x80000804, %eax ;	movw $0xcf8, %dx ;	outl	%eax, %dx ;	movw $0xcfc, %dx ;	mov	$0x3, %eax ;	outl	%eax, %dx
+
+	movw $0x80d6, %dx ;	movb $4, %al ;	outb %al, %dx
+	movw $0x80d8, %dx ;	movb $4, %al ;	outb %al, %dx
+	movw $0x8049, %dx ;	movb $8, %al ;	outb %al, %dx
+//	movw $0x80d9, %dx ;	movb $0, %al ;	outb %al, %dx
+
+//	mov $0x8000036c, %eax ;	movw $0xcf8, %dx ;	outl	%eax, %dx ;	movw $0xcfc, %dx ;	mov	$0x0, %eax ;	outl	%eax, %dx
+//	mov $0x80000340, %eax ;	movw $0xcf8, %dx ;	outl	%eax, %dx ;	movw $0xcfc, %dx ;	mov	$0xf81c4400, %eax ;	outl	%eax, %dx
+
+	mov $0x8000f04c, %eax ;	movw $0xcf8, %dx ;	outl	%eax, %dx ;	movw $0xcfc, %dx ;	mov	$0x00000001, %eax ;	outl	%eax, %dx
+	mov $0x8000f018, %eax ;	movw $0xcf8, %dx ;	outl	%eax, %dx ;	movw $0xcfc, %dx ;	mov	$0x00010100, %eax ;	outl	%eax, %dx
+	mov $0x80000084, %eax ;	movw $0xcf8, %dx ;	outl	%eax, %dx ;	movw $0xcfc, %dx ;	mov	$0x07ffffff, %eax ;	outl	%eax, %dx
+	mov $0x8000f020, %eax ;	movw $0xcf8, %dx ;	outl	%eax, %dx ;	movw $0xcfc, %dx ;	mov	$0x0ff00f00, %eax ;	outl	%eax, %dx
+	mov $0x8000f024, %eax ;	movw $0xcf8, %dx ;	outl	%eax, %dx ;	movw $0xcfc, %dx ;	mov	$0xf7f0f000, %eax ;	outl	%eax, %dx
+	mov $0x80010010, %eax ;	movw $0xcf8, %dx ;	outl	%eax, %dx ;	movw $0xcfc, %dx ;	mov	$0x0f000000, %eax ;	outl	%eax, %dx
+	mov $0x80010014, %eax ;	movw $0xcf8, %dx ;	outl	%eax, %dx ;	movw $0xcfc, %dx ;	mov	$0xf0000000, %eax ;	outl	%eax, %dx
+	mov $0x80010004, %eax ;	movw $0xcf8, %dx ;	outl	%eax, %dx ;	movw $0xcfc, %dx ;	mov	$0x00000007, %eax ;	outl	%eax, %dx
+	mov $0x8000f004, %eax ;	movw $0xcf8, %dx ;	outl	%eax, %dx ;	movw $0xcfc, %dx ;	mov	$0x00000007, %eax ;	outl	%eax, %dx
+
+	movl $0x07633461, 0x0f0010b0
+	movl $0x66660000, 0x0f0010cc
+
+	movl $0x03c00000, 0x0f600800
+//	movl $0x0, 0x0f680600
+
+	cld
+
+	movl 0x0f101000, %eax
+	testl $0x000c0000, %eax
+	jnz nota1a
+
+	andl	$0xe1f3ffff, %eax
+	orl $0x80000000, %eax
+	movl %eax, 0x0f101000
+	movl	$0xeeee0000, 0x0f0010b8
+
+//	movl $0x07633451, 0x0f0010b0
+//	movl $0x0, 0x0f0010cc
+//	movl $0xffff0000, 0x0f0010b8
+//	movl $0x5, 0x0f0010d4
+
+	jmp donea1a
+
+nota1a:
+
+	andl	$0xe1f3ffff, %eax
+	orl $0x860c0000, %eax
+	movl %eax, 0x0f101000
+	movl	$0xffff0000, 0x0f0010b8
+
+//	movl $0x07633461, 0x0f0010b0
+//	movl $0x66660000, 0x0f0010cc
+//	movl $0xffff0000, 0x0f0010b8
+//	movl $0x9, 0x0f0010d4
+
+donea1a:
+
+	movl $0x0, 0x0f0010b4
+	movl $0x5866, 0x0f0010bc
+	movl $0x0351c858, 0x0f0010c4
+	movl $0x30007d67, 0x0f0010c8
+	movl $0x0, 0x0f0010d8
+	movl $0xa0423635, 0x0f0010dc
+	movl $0x0c6558c6, 0x0f0010e8
+
+	movl $0x03070103, 0x0f100200
+
+	movl $0x11000016, 0x0f100410
+	movl $0x11000016, 0x0f100410
+	movl $0x84848888, 0x0f100330
+
+	movl $0xffffcfff, 0x0f10032c
+	movl $0x00000001, 0x0f100328
+	movl $0x000000df, 0x0f100338
+
+	movb 0x0f000000, %al
+	cmpb $0xa1, %al
+	jnz nota1b
+
+	mov $0x803d4401, %eax ; mov 0x0f101000, %eax
+
+nota1b:
+
+	mov $0x80000904, %eax ;	movw $0xcf8, %dx ;	outl	%eax, %dx ;	movw $0xcfc, %dx ;	mov	$0x00000001, %eax ;	outl	%eax, %dx
+	mov $0x80000914, %eax ;	movw $0xcf8, %dx ;	outl	%eax, %dx ;	movw $0xcfc, %dx ;	mov	$0x0000c001, %eax ;	outl	%eax, %dx
+	mov $0x80000918, %eax ;	movw $0xcf8, %dx ;	outl	%eax, %dx ;	movw $0xcfc, %dx ;	mov	$0x0000c201, %eax ;	outl	%eax, %dx
+
+	mov $0x8000093c, %eax ;	movw $0xcf8, %dx ;	outl	%eax, %dx ;	movw $0xcfc, %dx ;	inl %dx, %eax ; orl	$0x7, %eax ;	outl	%eax, %dx
+
+	movw $0xc200, %dx ;	movb $0x70, %al ;	outb %al, %dx
+//	movw $0xc002, %dx ;	movb $0x10, %al ;	outb %al, %dx
+
+		// skipped unnecessary conexant init
+
+	movw $0xc000, %dx ;	movb $0x10, %al ;	outb %al, %dx
+	movw $0xc004, %dx ;	movb $0x20, %al ;	outb %al, %dx
+	movw $0xc008, %dx ;	movb $0x01, %al ;	outb %al, %dx
+	movw $0xc006, %dx ;	movb $0x00, %al ;	outb %al, %dx
+	movw $0xc002, %dx ;	movb $0x0a, %al ;	outb %al, %dx
+
+spin1:
+	movw $0xc000, %dx
+	inb %dx, %al
+	cmp $0x10, %al
+	jnz	spin1
+
+	  // (skipped PIC test here)
+	movw $0xc000, %dx ;	movb $0x10, %al ;	outb %al, %dx
+	movw $0xc004, %dx ;	movb $0x21, %al ;	outb %al, %dx
+	movw $0xc008, %dx ;	movb $0x01, %al ;	outb %al, %dx
+	movw $0xc002, %dx ;	movb $0x0a, %al ;	outb %al, %dx
+
+spin1a:
+	movw $0xc000, %dx
+	inb %dx, %al
+	cmp $0x10, %al
+	jnz	spin1a
+
+	movw $0xc006, %dx
+	inb %dx, %al
+	cmp $0x50, %al
+	jz skipPicDecidedInit
+
+	mov $0x8000036c, %eax ;	movw $0xcf8, %dx ;	outl	%eax, %dx ;	movw $0xcfc, %dx ;	mov	$0x01000000, %eax ;	outl	%eax, %dx
+
+skipPicDecidedInit:
+
+	movb 0x0f000000, %al
+	cmpb $0xa1, %al
+	jnz nota1c
+
+	mov $0x10101010, %eax ; mov 0x0f001214, %eax
+
+	jmp donea1c
+
+nota1c:
+
+	mov $0x12121212, %eax ; mov 0x0f001214, %eax
+
+donea1c:
+
+	movl $0xaaaaaaaa, 0x0f00122c
+	movl $0xaaaaaaaa, 0x0f001230
+	movl $0xaaaaaaaa, 0x0f001234
+	movl $0xaaaaaaaa, 0x0f001238
+	movl $0x8b8b8b8b, 0x0f00123c
+	movl $0x8b8b8b8b, 0x0f001240
+	movl $0x8b8b8b8b, 0x0f001244
+	movl $0x8b8b8b8b, 0x0f001248
+	movl $0x00000001, 0x0f1002d4
+	movl $0x00100042, 0x0f1002c4
+	movl $0x00100042, 0x0f1002cc
+	movl $0x11, 0x0f1002c0
+	movl $0x11, 0x0f1002c8
+	movl $0x32, 0x0f1002c0
+	movl $0x32, 0x0f1002c8
+	movl $0x132, 0x0f1002c0
+	movl $0x132, 0x0f1002c8
+	movl $0x1, 0x0f1002d0
+	movl $0x1, 0x0f1002d0
+	movl $0x80000000, 0x0f100210
+	movl $0xaa8baa8b, 0x0f00124c
+	movl $0x0000aa8b, 0x0f001250
+	movl $0x081205ff, 0x0f100228
+	movl $0x00010000, 0x0f000218
+
+	mov $0x80000860, %eax ;	movw $0xcf8, %dx ;	outl	%eax, %dx ;	movw $0xcfc, %dx ;	in %dx, %eax ; orl $0x400, %eax ;	outl	%eax, %dx
+	mov $0x8000084c, %eax ;	movw $0xcf8, %dx ;	outl	%eax, %dx ;	movw $0xcfc, %dx ;	mov	$0xfdde, %eax ;	outl	%eax, %dx
+	mov $0x8000089c, %eax ;	movw $0xcf8, %dx ;	outl	%eax, %dx ;	movw $0xcfc, %dx ;	mov	$0x871cc707, %eax ;	outl	%eax, %dx
+
+	mov $0x800008b4, %eax ;	movw $0xcf8, %dx ;	outl	%eax, %dx ;	movw $0xcfc, %dx ;	in %dx, %eax ; orl $0xf00, %eax ;	outl	%eax, %dx
+
+	mov $0x80000340, %eax ;	movw $0xcf8, %dx ;	outl	%eax, %dx ;	movw $0xcfc, %dx ;	mov	$0xf0f0c0c0, %eax ;	outl	%eax, %dx
+	mov $0x80000344, %eax ;	movw $0xcf8, %dx ;	outl	%eax, %dx ;	movw $0xcfc, %dx ;	mov	$0x00c00000, %eax ;	outl	%eax, %dx
+	mov $0x8000035c, %eax ;	movw $0xcf8, %dx ;	outl	%eax, %dx ;	movw $0xcfc, %dx ;	mov	$0x04070000, %eax ;	outl	%eax, %dx
+	mov $0x8000036c, %eax ;	movw $0xcf8, %dx ;	outl	%eax, %dx ;	movw $0xcfc, %dx ;	mov	$0x00230801, %eax ;	outl	%eax, %dx
+	mov $0x8000036c, %eax ;	movw $0xcf8, %dx ;	outl	%eax, %dx ;	movw $0xcfc, %dx ;	mov	$0x01230801, %eax ;	outl	%eax, %dx
+
+	mov $8, %eax ; timloop2: dec %eax ; cmp $0, %eax ; jnz timloop2
+
+		// 5F1
+
+	movl $0x03070103, 0x0f100200
+	movl $0x11448000, 0x0f100204
+
+			// skipped actual memory test
+
+		// A95
+	movl $0x03070003, 0x0f100200
+
+		// A9E
+	mov $0x80000084, %eax ;	movw $0xcf8, %dx ;	outl	%eax, %dx ;	movw $0xcfc, %dx ;	mov	$0x03ffffff, %eax ;	outl	%eax, %dx
+
+	movw $0xc006, %dx ;	movb $0x0f, %al ;	outb %al, %dx
+
+	movw $0xc004, %dx ;	movb $0x20, %al ;	outb %al, %dx
+	movw $0xc008, %dx ;	movb $0x13, %al ;	outb %al, %dx
+	movw $0xc002, %dx ;	movb $0x0a, %al ;	outb %al, %dx
+
+		// B2E
+spin2:
+	movw $0xc000, %dx
+	inb %dx, %al
+	cmp $0x10, %al
+	jnz	spin2
+
+	movw $0xc000, %dx ;	movb $0x10, %al ;	outb %al, %dx
+	movw $0xc006, %dx ;	movb $0xf0, %al ;	outb %al, %dx
+	movw $0xc004, %dx ;	movb $0x20, %al ;	outb %al, %dx
+	movw $0xc008, %dx ;	movb $0x12, %al ;	outb %al, %dx
+	movw $0xc006, %dx ;	movb $0xf0, %al ;	outb %al, %dx
+	movw $0xc002, %dx ;	movb $0x0a, %al ;	outb %al, %dx
+
+		// B76
+spin3:
+	movw $0xc000, %dx
+	inb %dx, %al
+	cmp $0x10, %al
+	jnz	spin3
+
+	movw $0xc000, %dx ;	movb $0x10, %al ;	outb %al, %dx
+
+	mov $0x8000f020, %eax ;	movw $0xcf8, %dx ;	outl	%eax, %dx ;	movw $0xcfc, %dx ;	mov	$0xfdf0fd00, %eax ;	outl	%eax, %dx
+	mov $0x80010010, %eax ;	movw $0xcf8, %dx ;	outl	%eax, %dx ;	movw $0xcfc, %dx ;	mov	$0xfd000000, %eax ;	outl	%eax, %dx
+
+
+
+
+
+bootloader2:
+
+	lidt tableIdtDescriptor
+	lgdt tableGdtDescriptor
+	ljmp $0x10, $selftarget
+
+selftarget:
+
+	// this from 2bl first init
+
+		// kill the cache
+
+	mov %cr0, %eax
+	orl	$0x60000000, %eax
+	mov	%eax, %cr0
+	wbinvd
+
+	mov	%cr3, %eax
+	mov	%eax, %cr3
+
+	movl	$0x2ff, %ecx
+		xor		%eax, %eax
+		xor		%edx, %edx
+		wrmsr
+
+		// Init the MTRR for Ram
+
+		movl	$0x200, %ecx
+
+			// MTRR for RAM
+			// from address 0, Writeback Caching, 64MB range
+
+		movl	$0x00000000, %edx
+		movl	$0x00000006, %eax
+		wrmsr
+		inc		%ecx
+
+			// MASK0 set to 0xffc000[000] == 64M
+		movl	$0x0f, %edx
+		movl	$0xfc000800, %eax
+		wrmsr
+		inc %ecx
+
+
+			// MTRR for BIOS
+
+		movl	$0x00000000, %edx
+		movl	$0xFFF00006, %eax
+		wrmsr
+		inc		%ecx
+
+			// MASK0 set to 0xff0000[000] == 16M
+		movl	$0x0000000f, %edx
+		movl	$0xFFF00800, %eax
+		wrmsr
+		inc %ecx
+
+
+			// MTRR for Video Memory (last 4MByte of shared Ram)
+			// Writethrough type trumps Writeback for overlapping region
+
+		movl	$0x00000000, %edx
+		movl	$0x03C00004, %eax
+		wrmsr
+		inc		%ecx
+			// MASK0 set to 0xfffC00[000] == 4M
+		movl	$0x0000000f, %edx
+		movl	$0xFFC00800, %eax
+		wrmsr
+		inc %ecx
+
+/*
+			// MTRR for Filtror comms area
+
+		movl	$0x00000000, %edx // 0x00
+		movl	$0xffffe000, %eax // == Writethrough == 4
+		wrmsr
+		inc		%ecx
+			// MASK0 set to 0xfffC00[000] == 4M
+		movl	$0x00000000, %edx // 0x0f
+		movl	$0xFFFFF800, %eax  // 0xffC00800
+		wrmsr
+		inc %ecx
+*/
+
+		xor		%eax, %eax
+		xor		%edx, %edx
+cleardown:
+		wrmsr
+		inc	%ecx
+		cmpb	$0xf, %cl
+		jna cleardown
+
+// madeline
+
+		movl	$0x2ff, %ecx
+		movl	$0x800, %eax
+		wrmsr
+
+			/* turn on normal cache */
+//		invd
+		movl	%cr0, %eax
+		mov %eax, %ebx
+		andl	$0x9FFFFFFF,%eax
+		movl	%eax, %cr0
+
+
+			// set up selectors for everything
+
+		mov	$0x18, %eax
+		.byte 0x8e, 0xd8
+//		movl	$ 0x00200000,%esp
+		movl	$ 0x00080000,%esp
+		movw    %ax, %ds
+		movw    %ax, %es
+		movw    %ax, %ss
+
+		xor		%eax, %eax
+		movw    %ax, %fs
+		movw    %ax, %gs
+
+		cld
+
+
+");
+#endif // MACHINE_INIT_IN_C
+
 
 	/* We do the rest in assembly. This should be rewritten in C, too!
 	   (mist)
