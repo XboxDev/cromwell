@@ -74,8 +74,16 @@ void BootVgaInitializationKernelNG(CURRENT_VIDEO_MODE_DETAILS * pcurrentvideomod
 	mapNvMem(&riva,pcurrentvideomodedetails->m_pbBaseAddressVideo);
 	unlockCrtNv(&riva,0);
 
-	MMIO_H_OUT32 (riva.PCRTC, 0, 0x800, pcurrentvideomodedetails->m_dwFrameBufferStart);
+	if (xbox_ram == 128)
+	{
+		MMIO_H_OUT32(riva.PFB    ,0,0x200,0x03070103);
+	}
+	else
+	{
+		MMIO_H_OUT32(riva.PFB    ,0,0x200,0x03070003);
+	}
 
+	MMIO_H_OUT32 (riva.PCRTC, 0, 0x800, pcurrentvideomodedetails->m_dwFrameBufferStart);
 
 	IoOutputByte(0x80d3, 5);  // definitively kill video out using an ACPI control pin
 
