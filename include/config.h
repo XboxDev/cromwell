@@ -43,4 +43,4 @@
 
 
 #undef DEBUG_MODE
-#define XPAD_VIBRA_STARTUP
+#undef XPAD_VIBRA_STARTUP
