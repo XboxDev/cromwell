@@ -6,6 +6,7 @@
  *   (at your option) any later version.                                   *
  *                                                                         *
  ***************************************************************************/
+#include "ResetMenuActions.h"
 
 void SlowReboot(void *ignored){
 	I2CRebootSlow();

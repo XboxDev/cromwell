@@ -10,6 +10,7 @@
 /* This is where you should customise the menu, by adding your own icons.
  * The code in IconMenu.c should normally be left alone.
  */
+#include "include/config.h"
 #include "BootIde.h"
 #include "IconMenu.h"
 #include "MenuActions.h"
@@ -48,12 +49,14 @@ void IconMenuInit(void) {
 #endif	
 
 #ifdef FLASH
+/*
 	//Flash icon - if it's compiled in, it's always available.
 	iconPtr = (ICON *)malloc(sizeof(ICON));
 	iconPtr->iconSlot = ICON_SOURCE_SLOT0;
 	iconPtr->szCaption = "Flash Bios";
 	iconPtr->functionPtr = FlashBios;
 	AddIcon(iconPtr);
+*/
 #endif	
 
 	//Uncomment this one to test the new text menu system.

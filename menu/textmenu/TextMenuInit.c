@@ -7,7 +7,7 @@
  *                                                                         *
  ***************************************************************************/
 
-#include "include/boot.h"
+#include "include/config.h"
 #include "TextMenu.h"
 
 #include "VideoInitialization.h"
@@ -30,6 +30,14 @@ void TextMenuInit(void) {
 	TextMenuAddItem(firstMenu, itemPtr);
 	VideoMenuInit(itemPtr);
 
+#ifdef FLASH
+	//RESET MENU
+	itemPtr = (TEXTMENUITEM*)malloc(sizeof(TEXTMENUITEM));
+	memset(itemPtr,0x00,sizeof(TEXTMENUITEM));
+	itemPtr->szCaption="Flash Menu";	
+	TextMenuAddItem(firstMenu, itemPtr);
+	FlashMenuInit(itemPtr);
+#endif
 	//RESET MENU
 	itemPtr = (TEXTMENUITEM*)malloc(sizeof(TEXTMENUITEM));
 	memset(itemPtr,0x00,sizeof(TEXTMENUITEM));

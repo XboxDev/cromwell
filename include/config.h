@@ -8,7 +8,7 @@
 #define VIDEO_PREFERRED_MODE VIDEO_MODE_640x480
 
 //Uncomment to include BIOS flashing support
-//#define FLASH
+#define FLASH
 
 // uncomment to force CD boot mode even if MBR present
 // default is to boot from HDD if MBR present, else CD
