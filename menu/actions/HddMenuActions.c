@@ -83,6 +83,9 @@ void DisplayHddPassword(void *driveId) {
 			printk("\n\n                              ");
 		}
 	}	
+
+	VIDEO_ATTR=0xffffff;
+
 	printk("\n\nPress Button A to continue");
 
 	while ((risefall_xpad_BUTTON(TRIGGER_XPAD_KEY_A) != 1)) wait_ms(100);

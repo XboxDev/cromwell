@@ -39,7 +39,7 @@ void TextMenuDraw(TEXTMENU* menu, TEXTMENUITEM *firstVisibleMenuItem, TEXTMENUIT
 	VIDEO_CURSOR_POSY=125;
 	
 	//Draw the menu title.
-	VIDEO_ATTR=0x000000;
+	VIDEO_ATTR=0xff00ff;
 	printk("\2          %s\n",menu->szCaption);
 	VIDEO_CURSOR_POSY+=30;
 	
@@ -54,8 +54,8 @@ void TextMenuDraw(TEXTMENU* menu, TEXTMENUITEM *firstVisibleMenuItem, TEXTMENUIT
 			//No more menu items to draw
 			return;
 		}
-		//Selected item in red
-		if (item == selectedItem) VIDEO_ATTR=0xff0000;
+		//Selected item in yellow
+		if (item == selectedItem) VIDEO_ATTR=0xffef37;
 		else VIDEO_ATTR=0xffffff;
 		//Font size 2=big.
 		printk("\n\2               %s\n",item->szCaption);
