@@ -271,25 +271,23 @@ int BootLoadConfigFATX(CONFIGENTRY *config) {
 			SECTOR_STORE,
 			STORE_SIZE);
 	
-	if(partition != NULL) {
-		if(LoadFATXFile(partition,"/linuxboot.cfg",&fileinfo) ) {
-			wait_ms(50);
-			fileinfo.buffer[fileinfo.fileSize]=0;
-			ParseConfig(fileinfo.buffer,config,&eeprom, NULL);
-			free(fileinfo.buffer);
-		} else {
-			if(LoadFATXFile(partition,"/debian/linuxboot.cfg",&fileinfo) ) {
-				wait_ms(50);
-				fileinfo.buffer[fileinfo.fileSize]=0;
-				ParseConfig(fileinfo.buffer,config,&eeprom, "/debian");
-				free(fileinfo.buffer);
-			} else {
-				wait_ms(50);
-				printk("linuxboot.cfg not found, using defaults\n");
-			}
-		}
+	if(partition == NULL) return 0;
 
+	if(LoadFATXFile(partition,"/linuxboot.cfg",&fileinfo) ) {
+		wait_ms(50);
+		fileinfo.buffer[fileinfo.fileSize]=0;
+		ParseConfig(fileinfo.buffer,config,&eeprom, NULL);
+		free(fileinfo.buffer);
 	} 
+	else if(LoadFATXFile(partition,"/debian/linuxboot.cfg",&fileinfo) ) {
+		wait_ms(50);
+		fileinfo.buffer[fileinfo.fileSize]=0;
+		ParseConfig(fileinfo.buffer,config,&eeprom, "/debian");
+		free(fileinfo.buffer);
+	} else {
+		wait_ms(50);
+		printk("linuxboot.cfg not found, using defaults\n");
+	}
 
 	BootPrintConfig(config);
 	
@@ -448,7 +446,6 @@ selectinsert:
 			while(1);
 		} else {
 			printk("\n");
-//			printk("HAPPY\n");
 		}
 	}
 
@@ -459,33 +456,30 @@ selectinsert:
 		currentvideomodedetails.m_dwWidthInPixels*4, (DWORD *)&baBackground[0], 640*4, 64
 	);
  
-        
-
-	{
-		ISO_PRIMARY_VOLUME_DESCRIPTOR * pipvd = (ISO_PRIMARY_VOLUME_DESCRIPTOR *)&ba[0];
-		char sz[64];
-		memset(&sz,0x00,sizeof(sz));
-		BootIso9660DescriptorToString(pipvd->m_szSystemIdentifier, sizeof(pipvd->m_szSystemIdentifier), sz);
-		VIDEO_ATTR=0xffeeeeee;
-		printk("Cdrom: ");
-		VIDEO_ATTR=0xffeeeeff;
-		printk("%s", sz);
-		VIDEO_ATTR=0xffeeeeee;
-		printk(" - ");
-		VIDEO_ATTR=0xffeeeeff;
-		BootIso9660DescriptorToString(pipvd->m_szVolumeIdentifier, sizeof(pipvd->m_szVolumeIdentifier), sz);
-		printk("%s\n", sz);
-	}
+	ISO_PRIMARY_VOLUME_DESCRIPTOR * pipvd = (ISO_PRIMARY_VOLUME_DESCRIPTOR *)&ba[0];
+	char sz[64];
+	memset(&sz,0x00,sizeof(sz));
+	BootIso9660DescriptorToString(pipvd->m_szSystemIdentifier, sizeof(pipvd->m_szSystemIdentifier), sz);
+	VIDEO_ATTR=0xffeeeeee;
+	printk("Cdrom: ");
+	VIDEO_ATTR=0xffeeeeff;
+	printk("%s", sz);
+	VIDEO_ATTR=0xffeeeeee;
+	printk(" - ");
+	VIDEO_ATTR=0xffeeeeff;
+	BootIso9660DescriptorToString(pipvd->m_szVolumeIdentifier, sizeof(pipvd->m_szVolumeIdentifier), sz);
+	printk("%s\n", sz);
 
 	printk("  Loading linuxboot.cfg from CDROM... \n");
+	
 	dwConfigSize=BootIso9660GetFile("/linuxboot.cfg", (BYTE *)INITRD_POS, 0x800, 0x0);
 
-	if(((int)dwConfigSize)<0) { // not found, try mangled 8.3 version
+	if(((int)dwConfigSize)<0) // not found, try mangled 8.3 version
 		dwConfigSize=BootIso9660GetFile("/LINUXBOO.CFG", (BYTE *)INITRD_POS, 0x800, 0x0);
-		if(((int)dwConfigSize)<0) { // has to be there on CDROM
-			printk("Unable to find it, halting\n");
+		
+	if(((int)dwConfigSize)<0) { // has to be there on CDROM
+			printk("linuxboot.cfg not found on CDROM... Halting\n");
 			while(1) ;
-		}
 	}
         
         // LinuxBoot.cfg File Loaded
@@ -521,8 +515,6 @@ selectinsert:
 		// Fillup
 		memset((BYTE *)(0x00100000+dwKernelSize-nSizeHeader),0xff,0x10000);
 		printk(" -  %d bytes...\n", dwKernelSize);
-		
-				
 	} else {
 		printk("Not Found, error %d\nHalting\n", dwKernelSize); 
 		while(1);
@@ -666,21 +658,19 @@ selectinsert:
 	);
  
         
-	{
-		ISO_PRIMARY_VOLUME_DESCRIPTOR * pipvd = (ISO_PRIMARY_VOLUME_DESCRIPTOR *)&ba[0];
-		char sz[64];
-		memset(&sz,0x00,sizeof(sz));
-		BootIso9660DescriptorToString(pipvd->m_szSystemIdentifier, sizeof(pipvd->m_szSystemIdentifier), sz);
-		VIDEO_ATTR=0xffeeeeee;
-		printk("Cdrom: ");
-		VIDEO_ATTR=0xffeeeeff;
-		printk("%s", sz);
-		VIDEO_ATTR=0xffeeeeee;
-		printk(" - ");
-		VIDEO_ATTR=0xffeeeeff;
-		BootIso9660DescriptorToString(pipvd->m_szVolumeIdentifier, sizeof(pipvd->m_szVolumeIdentifier), sz);
-		printk("%s\n", sz);
-	}
+	ISO_PRIMARY_VOLUME_DESCRIPTOR * pipvd = (ISO_PRIMARY_VOLUME_DESCRIPTOR *)&ba[0];
+	char sz[64];
+	memset(&sz,0x00,sizeof(sz));
+	BootIso9660DescriptorToString(pipvd->m_szSystemIdentifier, sizeof(pipvd->m_szSystemIdentifier), sz);
+	VIDEO_ATTR=0xffeeeeee;
+	printk("Cdrom: ");
+	VIDEO_ATTR=0xffeeeeff;
+	printk("%s", sz);
+	VIDEO_ATTR=0xffeeeeee;
+	printk(" - ");
+	VIDEO_ATTR=0xffeeeeff;
+	BootIso9660DescriptorToString(pipvd->m_szVolumeIdentifier, sizeof(pipvd->m_szVolumeIdentifier), sz);
+	printk("%s\n", sz);
     
 	dwConfigSize=0;
         dwConfigSize=BootIso9660GetFile("/IMAGE.BIN", (BYTE *)0x100000, 256*1024, 0x0);   
@@ -722,14 +712,13 @@ selectinsert:
 	} else {
 		printk("Checksum in Flash not matching - MISTAKE -Reflashing!\n"); 
 		printk("Error code: $i\n", BootReflashAndReset((BYTE*) 0x100000, (DWORD) 0, (DWORD) dwConfigSize));   
-	//	while(1);		
 	}		
 
 
 	return true;
 }
 
-#endif
+#endif //Flash
 
 void BootIcons(int nXOffset, int nYOffset, int nTextOffsetX, int nTextOffsetY) {
 	memset(icon,0,sizeof(ICON) * ICONCOUNT);
