@@ -93,7 +93,7 @@ tableIdtDescriptor:
 	.globl start_linux
 start_linux:
 
-#ifndef ROM
+#ifdef XBE
 	jmp bootloader2
 #endif
 	cli
