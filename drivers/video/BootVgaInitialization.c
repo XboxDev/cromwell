@@ -25,7 +25,7 @@
 #include "encoder.h"
 
 void DetectVideoEncoder(void) {
-	if (I2CTransmitByteGetReturn(0x6a,0x000) == ERR_I2C_ERROR_BUS) video_encoder = ENCODER_CONEXANT;
+	if (I2CTransmitByteGetReturn(0x45,0x000) != ERR_I2C_ERROR_BUS) video_encoder = ENCODER_CONEXANT;
 	else video_encoder = ENCODER_FOCUS;
 }
 
