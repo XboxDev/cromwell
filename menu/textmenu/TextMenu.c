@@ -95,8 +95,8 @@ void TextMenu(void) {
 	while(1)
 	{
 		int changed=0;
-		USBGetEvents();
-		
+		wait_ms(50);
+
 		if (risefall_xpad_BUTTON(TRIGGER_XPAD_PAD_UP) == 1)
 		{
 			if (selectedMenuItem->previousMenuItem!=0l) {

@@ -129,8 +129,7 @@ void IconMenu(void) {
 	while(1)
 	{
 		int changed=0;
-		USBGetEvents();
-		
+		wait_ms(50);	
 		if (risefall_xpad_BUTTON(TRIGGER_XPAD_PAD_RIGHT) == 1)
 		{
 			if (selectedIcon->nextIcon!=0l) {
@@ -194,6 +193,7 @@ void IconMenu(void) {
 			IconMenuDraw(nModeDependentOffset, nTempCursorY);
 			changed=0;
 		}
+		
 	}
 }
 
