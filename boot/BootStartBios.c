@@ -932,8 +932,7 @@ int BootMenu(CONFIGENTRY *config,int nDrive,int nActivePartition, int nFATXPrese
 		HH = IoInputDword(0x8008);
 		temp = HH-COUNT_start;
 
-		// timeout 30 sec ....
-		if ((risefall_xpad_BUTTON(TRIGGER_XPAD_KEY_A) == 1) || (temp>(0x369E99*30))) {
+		if ((risefall_xpad_BUTTON(TRIGGER_XPAD_KEY_A) == 1) || (temp>(0x369E99*BOOT_TIMEWAIT))) {
 		
 			change=1; 
 			memcpy((void*)FRAMEBUFFER_START,videosavepage,FRAMEBUFFER_SIZE);
