@@ -40,21 +40,6 @@ typedef struct {
 	long vscale;
 } BLANKING_PARAMETER;
 
-typedef struct {
-	long xres;
-	long crtchdispend;
-	long nvhstart;
-	long nvhtotal;
-	long yres;
-	long nvvstart;
-	long crtcvstart;
-	long crtcvtotal;
-	long nvvtotal;
-	long pixelDepth;
-} GPU_PARAMETER;
-
-static void SetGPURegister(const GPU_PARAMETER* gpu, BYTE* pbRegs);
-
 #ifndef JUSTVIDEO
 static double fabs(double d) {
 	if (d > 0) return d;
@@ -454,7 +439,7 @@ static void SetTVConexantRegister(const TV_MODE_PARAMETER* mode, const BLANKING_
 }
 
 
-static void SetGPURegister(const GPU_PARAMETER* gpu, BYTE *pbRegs) {
+void SetGPURegister(const GPU_PARAMETER* gpu, BYTE *pbRegs) {
 	BYTE b;
 	DWORD m = 0;
 

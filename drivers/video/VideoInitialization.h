@@ -56,9 +56,7 @@ typedef struct {
 } VGA_MODE_PARAMETER;
 
 // this struct defines the final video timing
-
 typedef struct {
-
 	double m_dHzBurstFrequency;
 	double m_dSecBurstStart;
 	double m_dSecBurstEnd;
@@ -84,6 +82,19 @@ static const VID_STANDARD vidstda[] = {
 	{ 4433619.49, 0.0000053, 0.00000755, 0.0000047, 0.000063555, 0.0000105, 0.000036407, 0.0000015, 243, 262.5, 0.0000092 }
 };
 
+typedef struct {
+	long xres;
+	long crtchdispend;
+	long nvhstart;
+	long nvhtotal;
+	long yres;
+	long nvvstart;
+	long crtcvstart;
+	long crtcvtotal;
+    	long nvvtotal;
+	long pixelDepth;
+} GPU_PARAMETER;
+
 static const double dPllBaseClockFrequency = 13500000.0;
 static const double dPllBasePeriod = (1.0/13500000.0);
 
@@ -104,5 +115,5 @@ int FindOverscanValues(
 
 void SetTvModeParameter(const TV_MODE_PARAMETER* mode, unsigned char *pbRegs);
 void SetVgaHdtvModeParameter(const VGA_MODE_PARAMETER* mode, unsigned char *pbRegs);
-
+void SetGPURegister(const GPU_PARAMETER* gpu, unsigned char *pbRegs);
 #endif
