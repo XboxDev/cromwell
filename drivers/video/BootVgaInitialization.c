@@ -332,12 +332,14 @@ void BootVgaInitializationKernelNG(CURRENT_VIDEO_MODE_DETAILS * pvmode) {
 	}
 
 	if (encoder_ok) {
-		//Set up the GPU 
-		SetGPURegister(&gpu, pvmode->m_pbBaseAddressVideo);
 		//Load registers into chip
 		unsigned char *regs;
 		unsigned long *XCal_Reg;
 		int n1=0;
+
+		//Set up the GPU 
+		SetGPURegister(&gpu, pvmode->m_pbBaseAddressVideo);
+		
 		switch (video_encoder) {
 			case ENCODER_CONEXANT:
 				I2CWriteBytetoRegister(0x45,0xc4, 0x00); // EN_OUT = 1
