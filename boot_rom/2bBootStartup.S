@@ -328,7 +328,10 @@
 	xcode_poke(0x0f00124c, 0xaa8baa8b);
 	xcode_poke(0x0f001250, 0x0000aa8b);
 	xcode_poke(0x0f100228, 0x081205ff);
-	xcode_poke(0x0f001218, 0x00010000);
+        // The following poke has been disabled as it stopped Cromwell
+        // from booting on v1.6 Xboxes with Hynix RAM
+        // (These Xboxes have been labelled "v1.6b" boxes)
+	//xcode_poke(0x0f001218, 0x00010000);
 	
 	xcode_pciin_a(0x80000860);
 	xcode_bittoggle(0xffffffff,0x00000400);   
