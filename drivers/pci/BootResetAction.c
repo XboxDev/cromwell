@@ -43,6 +43,8 @@ JPEG jpegBackdrop;
 
 int nTempCursorMbrX, nTempCursorMbrY;
 
+extern volatile int nInteruptable;
+
 volatile CURRENT_VIDEO_MODE_DETAILS currentvideomodedetails;
 volatile ohci_t usbcontroller[2];
 
@@ -143,11 +145,6 @@ extern void BootResetAction ( void ) {
 
 	MemoryManagementInitialization((void *)MEMORYMANAGERSTART, MEMORYMANAGERSIZE);
 	
-
-	bprintf("BOOT: starting PCI init\n\r");
-	BootPciPeripheralInitialization();
-	bprintf("BOOT: done with PCI initialization\n\r");
-
 	BootInterruptsWriteIdt();	// Save Mode, not all fully Setup
 	bprintf("BOOT: done interrupts\n\r");
 
@@ -160,6 +157,9 @@ extern void BootResetAction ( void ) {
 	memset((ohci_t *)&usbcontroller[1],0,sizeof(ohci_t));
 
 	// initialize the PCI devices
+	bprintf("BOOT: starting PCI init\n\r");
+	BootPciPeripheralInitialization();
+	bprintf("BOOT: done with PCI initialization\n\r");
 
 	
 	BootEepromReadEntireEEPROM();
@@ -199,10 +199,7 @@ extern void BootResetAction ( void ) {
 	BootVideoClearScreen(&jpegBackdrop, 0, 0xffff);
 	bprintf("BOOT: done backdrop\n\r");
 
-	
 
-//#ifndef XBE
-		
 	{
 	DWORD dw=0;
 	BootPciInterruptGlobalStackStateAndDisable(&dw);
@@ -218,11 +215,6 @@ extern void BootResetAction ( void ) {
 	I2CTransmitWord(0x10, 0x1b04); // unknown
 	BootPciInterruptGlobalPopState(dw);
 	}
-//#endif
-
-
-
-
 
 	// Audio Section
 	
@@ -240,6 +232,7 @@ extern void BootResetAction ( void ) {
 	BootAudioPlayDescriptors(&ac97device);
 
 
+	nInteruptable = 1;	
 	
 
 	// display solid red frontpanel LED while we start up
@@ -275,7 +268,7 @@ extern void BootResetAction ( void ) {
 	printk("(C)2002-2003 Xbox Linux Team - Licensed under the GPL\n");
 	printk("\n");
 
-		// capture title area
+	// capture title area
 	BootVideoBlit(&dwaTitleArea[0], currentvideomodedetails.m_dwWidthInPixels*4, ((DWORD *)FRAMEBUFFER_START)+(currentvideomodedetails.m_dwMarginYInLinesRecommended*currentvideomodedetails.m_dwWidthInPixels), currentvideomodedetails.m_dwWidthInPixels*4, 64);
 
 	nTempCursorX=VIDEO_CURSOR_POSX;
@@ -288,20 +281,11 @@ extern void BootResetAction ( void ) {
 		printk("v1.0  ");
 	} else {
 		printk("v1.1  ");
-//		printk("v1.1  %x", PciReadDword(BUS_0, DEV_1, 0, 0x08)&0xff);
 	}
 
 
 	BootPciInterruptEnable();
 
-/*
-	{
-		DWORD dw1, dw2;
-		rdmsr(0x2a, dw1, dw2);
-//		printk("%x %x  ", dw1, dw2);
-
-	}
-*/
 	{
 		int n, nx;
 		I2CGetTemperature(&n, &nx);

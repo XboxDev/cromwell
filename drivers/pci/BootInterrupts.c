@@ -25,6 +25,8 @@ volatile int nCountI2cinterrupts, nCountUnusedInterrupts, nCountUnusedInterrupts
 volatile bool fSeenPowerdown;
 volatile TRAY_STATE traystate;
 
+volatile int nInteruptable = 0;
+
 extern volatile AC97_DEVICE ac97device;
 extern volatile AUDIO_ELEMENT_SINE aesTux;
 extern volatile AUDIO_ELEMENT_NOISE aenTux;
@@ -253,12 +255,14 @@ void IntHandlerCSmc(void)
 					{
 						bprintf("SMC Interrupt %d: AV cable plugged in\n", nCountInterruptsSmc);
 #ifndef XBE
-						{
-							BYTE b=I2CTransmitByteGetReturn(0x10, 0x04);
-							bprintf("Detected new AV type %d, cf %d\n", b, currentvideomodedetails.m_bAvPack);
-							if(b!=currentvideomodedetails.m_bAvPack ) {
-								VIDEO_LUMASCALING=VIDEO_RSCALING=VIDEO_BSCALING=0;
-								BootVgaInitializationKernel((CURRENT_VIDEO_MODE_DETAILS *)&currentvideomodedetails);
+						if(nInteruptable) {
+							{
+								BYTE b=I2CTransmitByteGetReturn(0x10, 0x04);
+								bprintf("Detected new AV type %d, cf %d\n", b, currentvideomodedetails.m_bAvPack);
+								if(b!=currentvideomodedetails.m_bAvPack ) {
+									VIDEO_LUMASCALING=VIDEO_RSCALING=VIDEO_BSCALING=0;
+									BootVgaInitializationKernel((CURRENT_VIDEO_MODE_DETAILS *)&currentvideomodedetails);
+								}
 							}
 						}
 #endif
@@ -296,6 +300,7 @@ void IntHandlerCSmc(void)
 
 void IntHandlerCIde(void)
 {
+	if(!nInteruptable) return;
 	IoInputByte(0x1f7);
 	bprintf("IDE Interrupt\n");
 	nCountInterruptsIde++;
@@ -303,10 +308,12 @@ void IntHandlerCIde(void)
 
 void IntHandlerCI2C(void)
 {
+	if(!nInteruptable) return;
 	nCountI2cinterrupts++;
 }
 void IntHandlerUnusedC(void)
 {
+	if(!nInteruptable) return;
 	bprintf("Unhandled Interrupt\n");
 	//printk("Unhandled Interrupt");
 	nCountUnusedInterrupts++;
@@ -316,6 +323,8 @@ void IntHandlerUnusedC(void)
 
 void IntHandlerUnusedC2(void)
 {
+	if(!nInteruptable) return;
+
 	bprintf("Unhandled Interrupt 2\n");
 	nCountUnusedInterruptsPic2++;
 }
@@ -333,18 +342,24 @@ void IntHandlerCTimer0(void)
 void IntHandler1C(void)
 {
         extern volatile ohci_t usbcontroller[2];
+	
+	if(!nInteruptable) return;
+
 	BootUsbInterrupt((ohci_t *)&usbcontroller[0]);
 }
 
 
 void IntHandler2C(void)
 {
+	if(!nInteruptable) return;
 	bprintf("Interrupt 2\n");
 }
 void IntHandler3VsyncC(void)  // video VSYNC
 {
 	DWORD dwTempInt;
-//	bprintf("Interrupt 3\n");
+	
+	if(!nInteruptable) return;
+	
 	BootPciInterruptGlobalStackStateAndDisable(&dwTempInt);
 	VIDEO_VSYNC_COUNT++;
 
@@ -453,10 +468,12 @@ void IntHandler3VsyncC(void)  // video VSYNC
 
 void IntHandler4C(void)
 {
+	if(!nInteruptable) return;
 	bprintf("Interrupt 4\n");
 }
 void IntHandler5C(void)
 {
+	if(!nInteruptable) return;
 	bprintf("Interrupt 5\n");
 }
 
@@ -464,11 +481,12 @@ void IntHandler5C(void)
 
 void IntHandler6C(void)
 {
-//	bprintf("Interrupt 6\n");
+	if(!nInteruptable) return;
 	BootAudioInterrupt(&ac97device);
 }
 void IntHandler7C(void)
 {
+	if(!nInteruptable) return;
 	bprintf("Interrupt 7\n");
 }
 
@@ -480,11 +498,15 @@ void IntHandler8C(void)
 void IntHandler9C(void)
 {
         extern volatile ohci_t usbcontroller[2];
+	
+	if(!nInteruptable) return;
+	
 	BootUsbInterrupt((ohci_t *)&usbcontroller[1]);
 }
 
 void IntHandler10C(void)
 {
+	if(!nInteruptable) return;
 	bprintf("Interrupt 10\n");
 }
 
@@ -495,6 +517,7 @@ void IntHandler13C(void)
 
 void IntHandler15C(void)
 {
+	if(!nInteruptable) return;
 	bprintf("Unhandled Interrupt 15\n");
 }
 
