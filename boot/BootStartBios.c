@@ -890,13 +890,13 @@ int BootMenu(CONFIGENTRY *config,int nDrive,int nActivePartition, int nFATXPrese
 		if (risefall_xpad_BUTTON(TRIGGER_XPAD_PAD_LEFT) == 1)
 		{
 			icon[menu].nSelected = 0;
-			menu--;
+			if (menu>0) menu--;
 			while (menu>0 && !icon[menu].nEnabled) 
 				menu--;
 			/* If there are no more enabled icons this way,
 			 * leave the currently enabled icon enabled.
 			 * Hence, no change */
-			if (menu<0 || !icon[menu].nEnabled) menu = old_nIcon;
+			if (!icon[menu].nEnabled) menu = old_nIcon;
 			else change = 1;
 			icon[menu].nSelected = 1;
 
@@ -907,13 +907,13 @@ int BootMenu(CONFIGENTRY *config,int nDrive,int nActivePartition, int nFATXPrese
 		if (risefall_xpad_BUTTON(TRIGGER_XPAD_PAD_RIGHT) == 1)
 		{
 			icon[menu].nSelected = 0;
-			menu++;		
-			while (menu<ICONCOUNT && !icon[menu].nEnabled) 
+			if (menu<ICONCOUNT-1) menu++;		
+			while ((menu<ICONCOUNT-1) && !icon[menu].nEnabled) 
 				menu++;
 			/* If there are no more enabled icons this way,
 			 * leave the currently enabled icon enabled.
 			 * Hence, no change */
-			if (menu==ICONCOUNT || !icon[menu].nEnabled) menu = old_nIcon;
+			if (!icon[menu].nEnabled) menu = old_nIcon;
 			else change = 1;
 			icon[menu].nSelected = 1;
 			
