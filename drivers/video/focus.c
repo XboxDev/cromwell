@@ -1,9 +1,7 @@
 /*
  * linux/drivers/video/riva/focus.c - Xbox driver for Focus encoder
  *
- * Maintainer: Oliver Schwartz <Oliver.Schwartz@gmx.de>
- *
- * Contributors: David Pye (dmp) <dmp@davidmpye.dyndns.org>
+ * Maintainer: David Pye (dmp) <dmp@davidmpye.dyndns.org>
  *
  * This file is subject to the terms and conditions of the GNU General Public
  * License.  See the file COPYING in the main directory of this archive
@@ -11,10 +9,7 @@
  *
  * Known bugs and issues:
  *
- * HDTV/VGA SoG/internal sync not yet implemented
- * NTSC untested
- * hoc/voc ratios ignored
- * Only 800x600 and 640x480 work at present
+ * VGA SoG/internal sync not yet implemented
 */
 #include "focus.h"
 #include "encoder.h"
@@ -62,19 +57,9 @@ int focus_calc_hdtv_mode(
 		regs[m] = focus_defaults[m];
 	}
 
-	/* Uncomment for SDTV colour bars */
-	//regs[0x45]=0x02;
+	/* Uncomment for HDTV 480p colour bars */
+	//regs[0x0d]|=0x02;
 	
-
-	/* Legacy Conexant code - not sure what to do with it here.
-	if (pll_int > 36) {
-             pll_int = 36; // 36 / 6 * 13.5 MHz = 81 MHz, just above the limit.
-        }
-        if (pll_int == 0) {
-             pll_int = 1;  // 0 will cause a burnout ...
-        }
-	*/
-
 	/* Turn on bridge bypass */
 	regs[0x0a] |= 0x10;
 	/* Turn on the HDTV clock, and turn off the SDTV one */	
@@ -83,11 +68,6 @@ int focus_calc_hdtv_mode(
 	/* HDTV Hor start */
 	regs[0xb8] = 0xbe;
 	
-	//HACK - hdtv porches
-	regs[0x94] = 0x40;
-	regs[0x95] = 0x05;
-	regs[0x96] = 0x50;
-
 	/* Colour scaling */
 	regs[0xa8] = 0x92;
 	regs[0x09] = 0x00;
@@ -101,10 +81,76 @@ int focus_calc_hdtv_mode(
 	
 	switch (hdtv_mode) {
 		case HDTV_480p:
+			/* PLL settings */
+			regs[0x10] = 0x00;
+			regs[0x11] = 0x00;
+			regs[0x12] = 0x00;
+			regs[0x13] = 0x00;
+			regs[0x14] = 0x00;
+			regs[0x15] = 0x00;
+			regs[0x16] = 0x00;
+			regs[0x17] = 0x00;
+			regs[0x18] = 0xD7;
+			regs[0x19] = 0x03;
+			regs[0x1A] = 0x7C;
+			regs[0x1B] = 0x00;
+			regs[0x1C] = 0x07;
+			regs[0x1D] = 0x07;
+			/* Porches/HSync width/Luma offset */
+			regs[0x94] = 0x3F;
+			regs[0x95] = 0x2D;
+			regs[0x96] = 0x3B;
+			regs[0x97] = 0x00;
+			regs[0x98] = 0x1B;
+			regs[0x99] = 0x03;
 			break;
 		case HDTV_720p:
+			/* PLL settings */
+			regs[0x10] = 0x00;
+			regs[0x11] = 0x00;
+			regs[0x12] = 0x00;
+			regs[0x13] = 0x00;
+			regs[0x14] = 0x00;
+			regs[0x15] = 0x00;
+			regs[0x16] = 0x00;
+			regs[0x17] = 0x00;
+			regs[0x18] = 0x3B;
+			regs[0x19] = 0x04;
+			regs[0x1A] = 0xC7;
+			regs[0x1B] = 0x00;
+			regs[0x1C] = 0x01;
+			regs[0x1D] = 0x01;
+			/* Porches/HSync width/Luma offset */
+			regs[0x94] = 0x28;
+			regs[0x95] = 0x46;
+			regs[0x96] = 0xDC;
+			regs[0x97] = 0x00;
+			regs[0x98] = 0x2C;
+			regs[0x99] = 0x06;
 			break;
 		case HDTV_1080i:
+			/* PLL settings */
+			regs[0x10] = 0x00;
+			regs[0x11] = 0x00;
+			regs[0x12] = 0x00;
+			regs[0x13] = 0x00;
+			regs[0x14] = 0x00;
+			regs[0x15] = 0x00;
+			regs[0x16] = 0x00;
+			regs[0x17] = 0x00;
+			regs[0x18] = 0x3B;
+			regs[0x19] = 0x04;
+			regs[0x1A] = 0xC7;
+			regs[0x1B] = 0x00;
+			regs[0x1C] = 0x01;
+			regs[0x1D] = 0x01;
+			/* Porches/HSync width/Luma offset */
+			regs[0x94] = 0x2C;
+			regs[0x95] = 0x2C;
+			regs[0x96] = 0x58;
+			regs[0x97] = 0x00;
+			regs[0x98] = 0x6C;
+			regs[0x99] = 0x08;
 			/* Set mode to interlaced */
 			regs[0x92] |= 0x80;
 			break;
@@ -125,6 +171,10 @@ int focus_calc_mode(xbox_video_mode * mode, struct riva_regs * riva_out)
 	for (m=0x00; m<sizeof(focus_defaults); m++) {
 		regs[m] = focus_defaults[m];
 	}
+	
+	/* Uncomment for SDTV colour bars */
+	//regs[0x45]=0x02;
+	
 	switch(mode->tv_encoding) {
 		case TV_ENC_NTSC:
 			tv_vtotal=525;

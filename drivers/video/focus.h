@@ -1,9 +1,7 @@
 /*
  * linux/drivers/video/riva/focus.c - Xbox driver for Focus encoder
  *
- * Maintainer: Oliver Schwartz <Oliver.Schwartz@gmx.de>
- *
- * Contributors: David Pye (dmp) <dmp@davidmpye.dyndns.org>
+ * Maintainer: David Pye (dmp) <dmp@davidmpye.dyndns.org>
  *
  * This file is subject to the terms and conditions of the GNU General Public
  * License.  See the file COPYING in the main directory of this archive
