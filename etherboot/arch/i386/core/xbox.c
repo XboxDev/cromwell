@@ -2,6 +2,9 @@
 #include "pci.h"
 #include "nic.h"
 
+typedef unsigned char BYTE;
+#include "BootParser.h"
+
 extern struct pci_driver forcedeth_driver;
 extern uint8_t PciReadByte(unsigned int bus, unsigned int dev, unsigned int func, unsigned int reg_off);
 extern uint16_t PciReadWord(unsigned int bus, unsigned int dev, unsigned int func, unsigned int reg_off);
@@ -128,13 +131,70 @@ void restart_etherboot(int status)
 	sleep(5);
 	BootResetAction();
 }
+static const unsigned char vendorext_magic[] = {0xE4,0x45,0x74,0x68}; /* Eth */
+static unsigned char    rfc1533_cookie[5] = { RFC1533_COOKIE, RFC1533_END };
+
+static int find_cmdline(char ** cmd_line, char* length)
+{
+	unsigned char* p = BOOTP_DATA_ADDR->bootp_reply.bp_vend;
+	int vendorext_isvalid = 0;
+	int found = 0;
+	if (memcmp(p, rfc1533_cookie, 4))
+	{
+		found = 0;
+	}
+	else
+	{
+		p += 4;
+		while (p < end_of_rfc1533) {
+			unsigned char c = *p;
+			if (c == RFC1533_PAD) {
+				p++;
+				continue;
+			}
+			else if (ENCAP_OPT c == RFC1533_VENDOR_MAGIC
+				&& TAG_LEN(p) >= 6 &&
+				!memcmp(p+2,vendorext_magic,4) &&
+				p[6] == RFC1533_VENDOR_MAJOR
+				)
+				vendorext_isvalid++;
+			else if (ENCAP_OPT c == RFC1533_VENDOR_ADDPARM && TAG_LEN(p) > 3 && vendorext_isvalid)
+			{
+				*length = *(p+1);
+				*cmd_line = p+2;
+				found = 1;
+				break;
+			}
+			p += TAG_LEN(p) + 2;
+		}
+	}
+	return found;
+}
 
 void xstart16 (unsigned long a, unsigned long b, char * c)
 {
-	while (1);
+	printf("xstart16() is not supported for Xbox\n");
+	restart_etherboot(-1);
 }
+
+extern int ExittoLinux(CONFIGENTRY *config);
+extern unsigned int dwInitrdSize;
 
 int xstart32(unsigned long entry_point, ...)
 {
-	while (1);
+	CONFIGENTRY config;
+	char* cmdline;
+	char length;
+	if (find_cmdline(&cmdline, &length))
+	{
+		memcpy(config.szAppend, cmdline, length);
+		config.szAppend[length] = '\0';
+		printf("Using cmdline from BOOTP: %s\n", cmdline);
+	}
+	else
+	{
+		config.szAppend[0] = '\0';
+	}
+	dwInitrdSize = 0;
+	ExittoLinux(&config);
 }
