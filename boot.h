@@ -299,6 +299,7 @@ int BootIdeReadSector(int nDriveIndex, void * pbBuffer, unsigned int block, int 
 int BootIdeBootSectorHddOrElTorito(int nDriveIndex, BYTE * pbaResult);
 int BootIdeAtapiAdditionalSenseCode(int nDrive, BYTE * pba, int nLengthMaxReturn);
 BYTE BootIdeGetTrayState();
+int BootIdeSetTransferMode(int nIndexDrive, int nMode);
 
 	// video helpers
 
