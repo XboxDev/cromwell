@@ -120,7 +120,6 @@ CONFIGENTRY* LoadConfigNative(int drive, int partition) {
 		//Set the drive ID and partition IDs for the returned config items
 		currentConfigItem->drive=drive;
 		currentConfigItem->partition=partition;
-
 	}
 	
 	grub_close();
@@ -268,7 +267,7 @@ int LoadKernelFatX(CONFIGENTRY *config) {
 		// moving the kernel to its final location
 		memPlaceKernel(tempBuf, dwKernelSize);
 		
-		printk(" -  %d %d bytes...\n", dwKernelSize, infokernel.fileRead);
+		printk(" -  %d bytes...\n", infokernel.fileRead);
 	}
 	
 	if( (strncmp(config->szInitrd, "/no", strlen("/no")) != 0) && config->szInitrd[0]) {
@@ -294,31 +293,29 @@ int LoadKernelFatX(CONFIGENTRY *config) {
 }
 
 
-
-CONFIGENTRY *BootLoadConfigCD(int cdromId) {
-
-	u32 dwConfigSize=0, dw;
+CONFIGENTRY *LoadConfigCD(int cdromId) {
+	long dwConfigSize=0;
 	int n;
-	int cdPresent=0;
+	int configLoaded=0;
 	u32 dwY=VIDEO_CURSOR_POSY;
 	u32 dwX=VIDEO_CURSOR_POSX;
-	u8* tempBuf;
-	CONFIGENTRY *config;
-	
+	CONFIGENTRY *config, *currentConfigItem;
+
 	memset((u8 *)KERNEL_SETUP,0,4096);
 
 	//See if we already have a CDROM in the drive
 	//Try for 8 seconds - takes a while to 'spin up'.
 	I2CTransmitWord(0x10, 0x0c01); // close DVD tray
 	for (n=0;n<32;++n) {
-		if((BootIso9660GetFile(cdromId,"/linuxboo.cfg", (u8 *)KERNEL_SETUP, 0x800)) >=0 ) {
-			cdPresent=1;
+		dwConfigSize = BootIso9660GetFile(cdromId,"/linuxboo.cfg", (u8 *)KERNEL_SETUP, 0x800);
+		if (dwConfigSize>0) {
+			configLoaded=1;
 			break;
 		}
 		wait_ms(250);
 	}
 
-	if (!cdPresent) {
+	if (!configLoaded) {
 		//Needs to be changed for non-xbox drives, which don't have an eject line
 		//Need to send ATA eject command.
 		I2CTransmitWord(0x10, 0x0c00); // eject DVD tray
@@ -335,36 +332,52 @@ CONFIGENTRY *BootLoadConfigCD(int cdromId) {
 				wait_ms(500);
 				break;
 			}
-        	        USBGetEvents();
 			wait_ms(10);
+		
+			//Keep trying to read, in case somebody puts the tray in manually, without pressing A
+			dwConfigSize = BootIso9660GetFile(cdromId,"/linuxboo.cfg", (u8 *)KERNEL_SETUP, 0x800);
+			if (dwConfigSize>0) {
+				configLoaded=1;
+				break;
+			}
 		}						
 
 		VIDEO_ATTR=0xffffffff;
 
-		// wait until the media is readable
-
-		while(1) {
-			if((BootIso9660GetFile(cdromId,"/linuxboo.cfg", (u8 *)KERNEL_SETUP, 0x800)) >=0 ) {
+		printk("Loading linuxboot.cfg from CDROM... \n");
+		//Try to load linuxboot.cfg - if we can't after a while, give up.
+		for (n=0;n<48;++n) {
+			dwConfigSize = BootIso9660GetFile(cdromId,"/linuxboo.cfg", (u8 *)KERNEL_SETUP, 0x800);
+			if (dwConfigSize>0) {
+				configLoaded=1;
 				break;
 			}
-			wait_ms(200);
+			wait_ms(250);
 		}
 	}
-	printk("CDROM: ");
-	printk("Loading linuxboot.cfg from CDROM... \n");
-	dwConfigSize=BootIso9660GetFile(cdromId,"/linuxboo.cfg", (u8 *)KERNEL_SETUP, 0x800);
 
-	if( dwConfigSize < 0 ) { // has to be there on CDROM
-		printk("linuxboot.cfg not found on CDROM... Halting\n");
-		while(1) ;
-	}
-        // LinuxBoot.cfg File Loaded
+	//Failed to load the config file
+	if (!configLoaded) return NULL;
+        
+	// LinuxBoot.cfg File Loaded
 	config = ParseConfig((char *)KERNEL_SETUP, dwConfigSize, NULL);
+	//Populate the configs with the drive ID
+	for (currentConfigItem = (CONFIGENTRY*) config; currentConfigItem; currentConfigItem = (CONFIGENTRY*)currentConfigItem->nextConfigEntry) {
+		//Set the drive ID and partition IDs for the returned config items
+		currentConfigItem->drive=cdromId;
+	}
+	
+	return config;
+}
+
+int LoadKernelCdrom(CONFIGENTRY *config) {
+	u8* tempBuf;
+	
 	BootPrintConfig(config);
 
 	// Use INITRD_START as temporary location for loading the Kernel 
 	tempBuf = (u8*)INITRD_START;
-	dwKernelSize=BootIso9660GetFile(cdromId,config->szKernel, tempBuf, MAX_KERNEL_SIZE);
+	dwKernelSize=BootIso9660GetFile(config->drive,config->szKernel, tempBuf, MAX_KERNEL_SIZE);
 
 	if( dwKernelSize < 0 ) {
 		printk("Not Found, error %d\nHalting\n", dwKernelSize); 
@@ -379,12 +392,11 @@ CONFIGENTRY *BootLoadConfigCD(int cdromId) {
 		printk("  Loading %s from CDROM", config->szInitrd);
 		VIDEO_ATTR=0xffa8a8a8;
 		
-		dwInitrdSize=BootIso9660GetFile(cdromId, config->szInitrd, (void*)INITRD_START, MAX_INITRD_SIZE);
+		dwInitrdSize=BootIso9660GetFile(config->drive, config->szInitrd, (void*)INITRD_START, MAX_INITRD_SIZE);
 		if( dwInitrdSize < 0 ) {
 			printk("Not Found, error %d\nHalting\n", dwInitrdSize); 
 			while(1);
 		}
-		
 		printk(" - %d bytes\n", dwInitrdSize);
 	} else {
 		VIDEO_ATTR=0xffd8d8d8;
@@ -393,8 +405,9 @@ CONFIGENTRY *BootLoadConfigCD(int cdromId) {
 		dwInitrdSize=0;
 		printk("");
 	}
-	return config;
+	return true;
 }
+
 
 #ifdef FLASH 
 int BootLoadFlashCD(int cdromId) {

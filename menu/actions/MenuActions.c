@@ -26,7 +26,16 @@ void MoveToTextMenu(void *nothing) {
 }
 
 void BootFromCD(void *data) {
-	CONFIGENTRY *config = (CONFIGENTRY*)BootLoadConfigCD(*(int*)data);
+	int nTempCursorY = VIDEO_CURSOR_POSY; 
+	CONFIGENTRY *config = (CONFIGENTRY*)LoadConfigCD(*(int*)data);
+	if (config==NULL) {
+		printk("Boot from CD failed.\nCheck that linuxboot.cfg exists.\n");
+		wait_ms(2000);
+		//Clear the screen and return to the menu
+		BootVideoClearScreen(&jpegBackdrop, nTempCursorY, VIDEO_CURSOR_POSY+1);	
+		return;
+	}
+	LoadKernelCdrom(config);
 	ExittoLinux(config);
 }
 
