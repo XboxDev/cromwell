@@ -188,7 +188,34 @@ void BootAGPBUSInitialization(void)
     
 }
 
-
+void BootDetectMemorySize(void)
+{
+	int i;
+	int result;
+	unsigned char *fillstring;
+	
+	xbox_ram = 64;	
+	fillstring = malloc(0x200);
+	memset(fillstring,0xAA,0x200);
+	memcpy((void*)(64*1024*1024),fillstring,0x200);
+	
+	if (_memcmp((void*)(64*1024*1024),fillstring,0x200) == 0) {
+		// Looks like there is memory
+	
+		memset(fillstring,0x55,0x200);
+		memcpy((void*)(64*1024*1024),fillstring,0x200);
+		if (_memcmp((void*)(64*1024*1024),fillstring,0x200) == 0) {
+			// Looks like there is memory 
+			// now we are sure, we set memory
+  			
+  			// find out how much RAM is installed in the Xbox
+    
+        		xbox_ram = 128;
+		}		
+		
+	}
+        free(fillstring);
+}
 
 void BootPciPeripheralInitialization()
 {
@@ -420,11 +447,6 @@ void BootPciPeripheralInitialization()
 	
 	PciWriteDword(BUS_1, DEV_0, FUNC_0, 0x0c, 0x0);
 	PciWriteDword(BUS_1, DEV_0, FUNC_0, 0x18, 0x08);
-        
-        // find out how much RAM is installed in the Xbox
-        xbox_ram = PciReadDword(BUS_0, DEV_0, FUNC_0, 0x84);
-        xbox_ram ++;
-        xbox_ram = xbox_ram / 0x100000;
         
         
 }

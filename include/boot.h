@@ -395,6 +395,7 @@ BYTE BiosCmosRead(BYTE bAds);
 ///////// BootPciPeripheralInitialization.c
 void BootPciPeripheralInitialization(void);
 void BootAGPBUSInitialization(void);
+void BootDetectMemorySize(void);
 extern void	ReadPCIByte(unsigned int bus, unsigned int dev, unsigned intfunc, 	unsigned int reg_off, unsigned char *pbyteval);
 extern void	WritePCIByte(unsigned int bus, unsigned int dev, unsigned int func,	unsigned int reg_off, unsigned char byteval);
 extern void	ReadPCIDword(unsigned int bus, unsigned int dev, unsigned int func,	unsigned int reg_off, unsigned int *pdwordval);
