@@ -39,7 +39,8 @@ struct ICON;
 typedef struct {
 	int iconSlot;
 	char *szCaption;
-	void (*functionPtr) (void);
+	void (*functionPtr) (void *);
+	void *functionDataPtr;
 	struct ICON *previousIcon;
 	struct ICON *nextIcon;
 } ICON;
@@ -244,7 +245,7 @@ int BootIconMenu(CONFIGENTRY *config,int nDrive,int nActivePartition, int nFATXP
 			VIDEO_CURSOR_POSX=nTempCursorResumeX;
 			VIDEO_CURSOR_POSY=nTempCursorResumeY;
 			//Icon selected - invoke function pointer.
-			if (selectedIcon->functionPtr!=0l) selectedIcon->functionPtr();
+			if (selectedIcon->functionPtr!=0l) selectedIcon->functionPtr(selectedIcon->functionDataPtr);
 			//Should never come back but at least if we do, the menu can
 			//continue to work.
 			//Setting changed means the icon menu will redraw itself.

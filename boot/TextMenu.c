@@ -28,7 +28,9 @@ typedef struct {
 	//Menu item text
 	char *szCaption;
 	//Pointer to function to run when menu item selected.
-	void (*functionPtr) (void);
+	void (*functionPtr) (void *);
+	//Pointer data, 0l if none.
+	void *functionDataPtr;
 	//Child menu, if any, attached to this menu item
 	struct TEXTMENU *childMenu;
 	//Next / previous menu items within this menu
@@ -240,7 +242,7 @@ int BootTextMenu(void) {
 			memcpy((void*)FB_START,textmenusavepage,FB_SIZE);
 			free(textmenusavepage);
 			//Menu item selected - invoke function pointer.
-			if (selectedMenuItem->functionPtr!=0l) selectedMenuItem->functionPtr();
+			if (selectedMenuItem->functionPtr!=0l) selectedMenuItem->functionPtr(selectedMenuItem->functionDataPtr);
 			//Re-malloc these if the function pointer did return us to the menu.	
 			textmenusavepage = malloc(FB_SIZE);
 			memcpy(textmenusavepage,(void*)FB_START,FB_SIZE);

@@ -1,7 +1,7 @@
 #ifdef ETHERBOOT
-void BootFromEtherboot(void);
+void BootFromEtherboot(void *);
 #endif
 
-void BootFromCD(void);
-void BootFromNative(void);
-void BootFromFATX(void);
+void BootFromCD(void *);
+void BootFromNative(void *);
+void BootFromFATX(void *);

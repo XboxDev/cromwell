@@ -10,7 +10,7 @@
 #include "BootFlash.h"
 #include "cpu.h"
 
-void BootFromCD(void) {
+void BootFromCD(void *data) {
 	CONFIGENTRY config;
 	BootLoadConfigCD(&config);
 	ExittoLinux(&config);
@@ -18,12 +18,12 @@ void BootFromCD(void) {
 
 #ifdef ETHERBOOT 
 extern int etherboot(void);
-void BootFromEtherboot(void) {
+void BootFromEtherboot(void *data) {
 	etherboot();
 }
 #endif
 
-void BootFromFATX(void) {
+void BootFromFATX(void *configEntry) {
 	CONFIGENTRY config;
 	BootLoadConfigFATX(&config);
 	ExittoLinux(&config);
@@ -37,7 +37,7 @@ unsigned long boot_drive;
 
 extern unsigned long current_drive;
 
-void BootFromNative(void) {
+void BootFromNative(void *configEntry) {
 	CONFIGENTRY config;
 	//This stuff is needed to keep the grub FS code happy.
 	char szGrub[256+4];
