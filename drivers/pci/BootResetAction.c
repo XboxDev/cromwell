@@ -140,19 +140,18 @@ extern void BootResetAction ( void ) {
 
 	// init malloc() and free() structures
 
-	memset((void *)0x1000000, 0x00,0x0E00000);
 	MemoryManagementInitialization((void *)0x1000000, 0x0E00000);
-
-	memset((ohci_t *)&usbcontroller[0],0,sizeof(ohci_t));
-	memset((ohci_t *)&usbcontroller[1],0,sizeof(ohci_t));
 	
-//	BootInterruptsWriteIdt();
-//	bprintf("BOOT: done interrupts\n\r");
+	BootInterruptsWriteIdt();
+	bprintf("BOOT: done interrupts\n\r");
 
 	// if we don't make the PIC happy within 200mS, the damn thing will reset us
 
-//	BootPerformPicChallengeResponseAction();
-//	bprintf("BOOT: done with PIC challenge\n\r");
+	BootPerformPicChallengeResponseAction();
+	bprintf("BOOT: done with PIC challenge\n\r");
+
+	memset((ohci_t *)&usbcontroller[0],0,sizeof(ohci_t));
+	memset((ohci_t *)&usbcontroller[1],0,sizeof(ohci_t));
 
 	// initialize the PCI devices
 

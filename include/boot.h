@@ -23,7 +23,7 @@
 // details are at http://warmcat.com/milksop
 // if you don't have one, or are building a final ROM image, keep this at zero
 
-#define INCLUDE_FILTROR 1
+#define INCLUDE_FILTROR 0
 
 // enable logging to serial port.  You probably don't have this.
 
