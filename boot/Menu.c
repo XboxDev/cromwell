@@ -38,8 +38,6 @@ struct ICON;
 
 typedef struct {
 	int iconSlot;
-	int nTextX;
-	int nTextY;
 	char *szCaption;
 	void (*functionPtr) (void);
 	struct ICON *previousIcon;
@@ -50,7 +48,7 @@ ICON *firstIcon;
 ICON *selectedIcon;
 ICON *firstVisibleIcon;
 
-void BootIcons(int nTextOffsetX, int nTextOffsetY) {
+void BootIcons(void) {
 	//Root node
 	firstIcon = (ICON*)malloc(sizeof(ICON));
 
@@ -59,8 +57,6 @@ void BootIcons(int nTextOffsetX, int nTextOffsetY) {
 
 	//FATX icon
 	iconPtr->iconSlot = ICON_SOURCE_SLOT4;
-	iconPtr->nTextX = (nTextOffsetX+118)<<2;;
-	iconPtr->nTextY = nTextOffsetY;
 	iconPtr->szCaption = "FatX (E:)";
 	iconPtr->functionPtr = BootFromFATX;
 	
@@ -68,8 +64,6 @@ void BootIcons(int nTextOffsetX, int nTextOffsetY) {
 	iconPtr->nextIcon = malloc(sizeof(ICON));
 	iconPtr=(ICON *)iconPtr->nextIcon;
 	iconPtr->iconSlot = ICON_SOURCE_SLOT1;
-	iconPtr->nTextX = (nTextOffsetX+230)<<2;;
-	iconPtr->nTextY = nTextOffsetY;
 	iconPtr->szCaption = "HDD";
 	iconPtr->functionPtr = BootFromNative;
 	
@@ -77,19 +71,15 @@ void BootIcons(int nTextOffsetX, int nTextOffsetY) {
 	iconPtr->nextIcon = malloc(sizeof(ICON));
 	iconPtr=(ICON *)iconPtr->nextIcon;
 	iconPtr->iconSlot = ICON_SOURCE_SLOT2;
-	iconPtr->nTextX = (nTextOffsetX+340)<<2;
-	iconPtr->nTextY = nTextOffsetY;
 	iconPtr->szCaption = "CD-ROM";
 	iconPtr->functionPtr = BootFromCD;
 	iconPtr->nextIcon=0l;
-
+	
 #ifdef ETHERBOOT
 	//Etherboot icon
 	iconPtr->nextIcon = malloc(sizeof(ICON));
 	iconPtr=(ICON *)iconPtr->nextIcon;
 	iconPtr->iconSlot = ICON_SOURCE_SLOT3;
-	iconPtr->nTextX = (nTextOffsetX+451)<<2;
-	iconPtr->nTextY = nTextOffsetY;
 	iconPtr->szCaption = "Etherboot";
 	iconPtr->functionPtr = BootFromEtherboot;
 	iconPtr->nextIcon=0l;
@@ -109,7 +99,7 @@ void BootIcons(int nTextOffsetX, int nTextOffsetY) {
 void IconMenuDraw(int nXOffset, int nYOffset, int nTextOffsetX, int nTextOffsetY) {
 	ICON *iconPtr = firstVisibleIcon;
 	int iconcount;
-	//There are four 'bays' for displaying icons in - we only draw the four.
+	//There are max four 'bays' for displaying icons in - we only draw the four.
 	for (iconcount=0; iconcount<4; iconcount++) {
 		if (iconPtr==0l) {
 			//No more icons to draw
@@ -120,8 +110,8 @@ void IconMenuDraw(int nXOffset, int nYOffset, int nTextOffsetX, int nTextOffsetY
 			//Selected icon has less transparency
 			//and has a caption drawn underneath it
 			opaqueness = SELECTED;
-			VIDEO_CURSOR_POSX=iconPtr->nTextX;
-			VIDEO_CURSOR_POSY=iconPtr->nTextY;
+			VIDEO_CURSOR_POSX=nXOffset+112*(iconcount+1)*4;
+			VIDEO_CURSOR_POSY=nYOffset+20;
 			printk("%s\n",iconPtr->szCaption);
 		}
 		else opaqueness = TRANSPARENTNESS;
@@ -131,7 +121,8 @@ void IconMenuDraw(int nXOffset, int nYOffset, int nTextOffsetX, int nTextOffsetY
 			vmode.width, // dest bytes per line
 			&jpegBackdrop, // source jpeg object
 			(BYTE *)(jpegBackdrop.pData+(iconPtr->iconSlot * jpegBackdrop.bpp)),
-			0xff00ff|(((DWORD)opaqueness)<<24),
+			//0xff00ff|(((DWORD)opaqueness)<<24),
+			0xff33ff|(((DWORD)opaqueness)<<24),
 			(BYTE *)(jpegBackdrop.pBackdrop + ((jpegBackdrop.width * (nYOffset-74)) + nXOffset+(112*(iconcount+1))) * jpegBackdrop.bpp),
 			ICON_WIDTH, ICON_HEIGHT
 		);
@@ -140,21 +131,15 @@ void IconMenuDraw(int nXOffset, int nYOffset, int nTextOffsetX, int nTextOffsetY
 }
 
 int BootMenu(CONFIGENTRY *config,int nDrive,int nActivePartition, int nFATXPresent){
-	
 	extern int nTempCursorMbrX, nTempCursorMbrY;
-	int old_nIcon = 0;
-	int nSelected = -1;
-	unsigned int menu=0;
 	int change=0;
 
 	int nTempCursorResumeX, nTempCursorResumeY ;
 	int nTempCursorX, nTempCursorY;
 	int nModeDependentOffset=(vmode.width-640)/2;  // icon offsets computed for 640 modes, retain centering in other modes
-	int nShowSelect = false;
         unsigned char *videosavepage;
         
         DWORD COUNT_start;
-        DWORD HH;
         DWORD temp=1;
         
 	nTempCursorResumeX=nTempCursorMbrX;
@@ -174,7 +159,7 @@ int BootMenu(CONFIGENTRY *config,int nDrive,int nActivePartition, int nFATXPrese
 	printk("Select from Menu\n");
 	VIDEO_ATTR=0xffffffff;
 	
-	BootIcons(nModeDependentOffset, nTempCursorY);
+	BootIcons();
 	//For now, mark the first icon as selected.
 	selectedIcon = firstIcon;
 	firstVisibleIcon = firstIcon;
@@ -225,8 +210,7 @@ int BootMenu(CONFIGENTRY *config,int nDrive,int nActivePartition, int nFATXPrese
 		}
 		//If anybody has toggled the xpad left/right, disable the timeout.
 		if (temp!=0) {
-			HH = IoInputDword(0x8008);
-			temp = HH-COUNT_start;
+			temp = IoInputDword(0x8008) - COUNT_start;
 		}
 		
 		if ((risefall_xpad_BUTTON(TRIGGER_XPAD_KEY_A) == 1) || (DWORD)(temp>(0x369E99*BOOT_TIMEWAIT))) {
@@ -239,6 +223,11 @@ int BootMenu(CONFIGENTRY *config,int nDrive,int nActivePartition, int nFATXPrese
 			selectedIcon->functionPtr();
 			//Should never come back but at least if we do, the menu can
 			//continue to work.
+			//Setting changed means the icon menu will redraw itself.
+			changed=1;
+			videosavepage = malloc(FB_SIZE);
+			memcpy(videosavepage,(void*)FB_START,FB_SIZE);
+	
 		}
 		if (changed) {
 			BootVideoClearScreen(&jpegBackdrop, nTempCursorY, VIDEO_CURSOR_POSY+1);
