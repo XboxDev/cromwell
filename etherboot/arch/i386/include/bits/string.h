@@ -1,5 +1,6 @@
 #ifndef ETHERBOOT_BITS_STRING_H
 #define ETHERBOOT_BITS_STRING_H
+
 /*
  * Taken from Linux /usr/include/asm/string.h
  * All except memcpy, memmove, memset and memcmp removed.
