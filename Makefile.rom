@@ -5,11 +5,8 @@
 # free bios project.
 #
 # $Log$
-# Revision 1.7  2002/12/25 11:04:20  huceke
-# Cosmetic changes in the build procedure
-#
-# Revision 1.6  2002/12/24 03:53:33  huceke
-# Added loading the cromwell as an xbe
+# Revision 1.9  2003/01/13 12:29:07  warmcat
+# Left off BootInterrupts.c from last commit :-)
 #
 # Revision 1.5  2002/12/18 10:38:25  warmcat
 # ISO9660 support added allowing CD boot; linuxboot.cfg support; some extra compiletime options and CD tray management stuff
@@ -37,8 +34,16 @@
 
 ### compilers and options
 CC	= gcc
-#CFLAGS	= -g -O2 -Wall -Werror
-CFLAGS	= -g -Wall -Werror -DFSYS_REISERFS -Igrub -DSTAGE1_5 -DNO_DECOMPRESSION -Ijpeg-6b -DNO_GETENV
+#
+# andy@warmcat.com 2003-01-11: problems with using -O2 tracked to BootPerformPicChallengeResponseAction ONLY
+# this guy is handled specially with CFLAGSBR instead of CFLAGS, so almost everything is faster now
+#
+CFLAGS	= -g -O2 -Wall -Werror -DFSYS_REISERFS -Igrub -DSTAGE1_5 -DNO_DECOMPRESSION -Ijpeg-6b -DNO_GETENV -DCROMWELL
+CFLAGSBR	= -g -Wall -Werror -DFSYS_REISERFS -Igrub -DSTAGE1_5 -DNO_DECOMPRESSION -Ijpeg-6b -DNO_GETENV -DCROMWELL
+CFLAGSNV = -c -DLINUX -DEXPORT_SYMTAB -D__KERNEL__ -O \
+        -Wstrict-prototypes -DCONFIG_PM  -fno-strict-aliasing \
+        -mpreferred-stack-boundary=2 -march=i686 -falign-functions=4 \
+        -DMODULE -I/lib/modules/$(uname -r)/build/include
 LD	= ld
 LDFLAGS	= -s -S -T ldscript.ld
 OBJCOPY	= objcopy
@@ -56,12 +61,18 @@ BCC = /usr/lib/bcc/bcc-cc1
 OBJECTS	= BootStartup.o BootResetAction.o BootPerformPicChallengeResponseAction.o  \
 BootPciPeripheralInitialization.o BootVgaInitialization.o BootIde.o \
 BootHddKey.o rc4.o sha1.o BootVideoHelpers.o vsprintf.o filtror.o BootStartBios.o setup.o BootFilesystemIso9660.o \
+BootLibrary.o BootInterrupts.o \
 grub/fsys_reiserfs.o grub/char_io.o grub/disk_io.o \
 jpeg-6b/jdapimin.o jpeg-6b/jdapistd.o jpeg-6b/jdtrans.o jpeg-6b/jdatasrc.o jpeg-6b/jdmaster.o \
 jpeg-6b/jdinput.o jpeg-6b/jdmarker.o jpeg-6b/jdhuff.o jpeg-6b/jdphuff.o jpeg-6b/jdmainct.o jpeg-6b/jdcoefct.o \
 jpeg-6b/jdpostct.o jpeg-6b/jddctmgr.o jpeg-6b/jidctfst.o jpeg-6b/jidctflt.o jpeg-6b/jidctint.o jpeg-6b/jidctred.o \
 jpeg-6b/jdsample.o jpeg-6b/jdcolor.o jpeg-6b/jquant1.o jpeg-6b/jquant2.o jpeg-6b/jdmerge.o jpeg-6b/jmemnobs.o \
-jpeg-6b/jmemmgr.o jpeg-6b/jcomapi.o jpeg-6b/jutils.o jpeg-6b/jerror.o
+jpeg-6b/jmemmgr.o jpeg-6b/jcomapi.o jpeg-6b/jutils.o jpeg-6b/jerror.o \
+BootFlash.o \
+# !!! killed temporarily to allow clean CVS checkin
+#BootEthernet.o \
+#nvn/nvnetlib.o
+
 
 #RESOURCES = rombios.elf amended2bl.elf xcodes11.elf
 #RESOURCES = rombios.elf xcodes11.elf
@@ -72,7 +83,9 @@ RESOURCES = xcodes11.elf backdrop.elf
 all	: image.bin
 
 clean	:
+	mv nvn/nvnetlib.o nvn/nvnetlib.o.tmp
 	rm -rf *.o *~ core *.core ${OBJECTS} ${RESOURCES} image.elf image.bin
+	mv nvn/nvnetlib.o.tmp nvn/nvnetlib.o
 	rm -f  *.a _rombios_.c _rombios_.s rombios.s rombios.bin rombios.txt
 	rm -f  backdrop.elf
 
@@ -93,12 +106,17 @@ backdrop.elf : backdrop.jpg
 
 
 ### rules:
-
 %.o	: %.c boot.h consts.h BootFilesystemIso9660.h
 	${CC} ${CFLAGS} -o $@ -c $<
 
 %.o	: %.S consts.h
-	${CC} -DASSEMBLER ${CFLAGS} -o $@ -c $<
+	${CC} -DASSEMBLER ${CFLAGSBR} -o $@ -c $<
+
+BootEthernet.o: BootEthernet.c boot.h consts.h
+	${CC} ${CFLAGSNV} -O2 -o $@ -c $<
+
+BootPerformPicChallengeResponseAction.o: BootPerformPicChallengeResponseAction.c boot.h consts.h
+	${CC} ${CFLAGSBR} -o $@ -c $<
 
 image.bin : image.elf
 	${OBJCOPY} --output-target=binary --strip-all $< $@
@@ -118,6 +136,7 @@ install:
 
 bios: rombios.bin
 
+# note that the 16-bit Boch BIOS (rombios.*) is now deprecated
 
 rombios.bin: rombios.c biosconfig.h
 	${GCC295} -E $< > _rombios_.c
