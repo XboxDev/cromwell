@@ -580,7 +580,7 @@ ext2fs_dir (char *dirname)
 #endif /* E2DEBUG */
 
       /* copy inode to fixed location */
-      memmove ((void *) INODE, (void *) raw_inode, sizeof (struct ext2_inode));
+      grub_memmove ((void *) INODE, (void *) raw_inode, sizeof (struct ext2_inode));
 
 #ifdef E2DEBUG
       printf ("first word=%x\n", *((int *) INODE));
@@ -613,7 +613,7 @@ ext2fs_dir (char *dirname)
 	    {
 	      /* Copy the remaining name to the end of the symlink data.
 	         Note that DIRNAME and LINKBUF may overlap! */
-	      memmove (linkbuf + filemax, dirname, len);
+	      grub_memmove (linkbuf + filemax, dirname, len);
 	    }
 	  linkbuf[filemax + len] = '\0';
 
@@ -630,7 +630,7 @@ ext2fs_dir (char *dirname)
 	    {
 	      /* Copy the data directly from the inode. */
 	      len = filemax;
-	      memmove (linkbuf, (char *) INODE->i_block, len);
+	      grub_memmove (linkbuf, (char *) INODE->i_block, len);
 	    }
 
 #ifdef E2DEBUG

@@ -417,23 +417,14 @@ sane_partition (void)
 static void
 attempt_mount (void)
 {
-#ifndef STAGE1_5
-  for (fsys_type = 0; fsys_type < NUM_FSYS
-       && (*(fsys_table[fsys_type].mount_func)) () != 1; fsys_type++);
-
-  if (fsys_type == NUM_FSYS && errnum == ERR_NONE)
-    errnum = ERR_FSYS_MOUNT;
-#else
-  fsys_type = 0;
-
-//		printk("Attempting mount... %x\n", (int)fsys_table[fsys_type].mount_func);
-//		__asm__ __volatile__ ( "wbinvd");
-	if ((*(fsys_table[fsys_type].mount_func)) () != 1)
-    {
-      fsys_type = NUM_FSYS;
-      errnum = ERR_FSYS_MOUNT;
-    }
-#endif
+	fsys_type=0;
+	while (fsys_type<NUM_FSYS) {
+		//printk("Attempting mount... %x\n", (int)fsys_table[fsys_type].mount_func);
+		if ((*(fsys_table[fsys_type].mount_func)) () == 1) break;
+		++fsys_type;
+  		if (fsys_type == NUM_FSYS && errnum == ERR_NONE)
+   		 errnum = ERR_FSYS_MOUNT;
+	}
 }
 
 
