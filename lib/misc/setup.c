@@ -82,7 +82,7 @@ struct kernel_setup_t {
 
 extern void* framebuffer;
 
-void setup(void* KernelPos, void* PhysInitrdPos, void* InitrdSize, char* kernel_cmdline) {
+void setup(void* KernelPos, void* PhysInitrdPos, unsigned long InitrdSize, const char* kernel_cmdline) {
     
     struct kernel_setup_t *kernel_setup = (struct kernel_setup_t*)KernelPos;
 
@@ -103,9 +103,9 @@ void setup(void* KernelPos, void* PhysInitrdPos, void* InitrdSize, char* kernel_
     /* initrd */
     /* ED : only if initrd */
 
-    if((long)InitrdSize != 0) {
+    if(InitrdSize != 0) {
 	    kernel_setup->ramdisk = (long)PhysInitrdPos;
-	    kernel_setup->ramdisk_size = (long)InitrdSize;
+	    kernel_setup->ramdisk_size = InitrdSize;
     	kernel_setup->initrd_addr_max = RAMSIZE_USE - 1;
     }
 

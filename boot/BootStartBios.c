@@ -33,12 +33,11 @@ unsigned long boot_drive;
 extern unsigned int CACHE_VSYNC_WRITEBACK;
 extern int nTempCursorMbrX, nTempCursorMbrY;
 
-void console_putchar(char c) { printk("%c", c); }
 extern unsigned long current_drive;
 char * strcpy(char *sz, const char *szc);
 int _strncmp(const char *sz1, const char *sz2, int nMax);
 
-void setup(void* KernelPos, void* PhysInitrdPos, void* InitrdSize, char* kernel_cmdline);
+void setup(void* KernelPos, void* PhysInitrdPos, unsigned long InitrdSize, const char* kernel_cmdline);
 
 extern int etherboot(void);
 
@@ -963,6 +962,7 @@ int BootMenu(CONFIGENTRY *config,int nDrive,int nActivePartition, int nFATXPrese
 
 
 int ExittoLinux(CONFIGENTRY *config);
+void startLinux(void* initrdStart, unsigned long initrdSize, const char* appendLine);
 int ExittoRomBios(void);
 int etherboot(void);
 
@@ -1047,8 +1047,6 @@ void StartBios(CONFIGENTRY *config, int nActivePartition , int nFATXPresent,int 
 			printk("Selection not implemented\n");
 			break;
 	}
-
-
 }
 
 
@@ -1069,29 +1067,32 @@ int ExittoLinux(CONFIGENTRY *config) {
 		VIDEO_ATTR=0xff9f9fbf;
 		printk(sz);
 	}
-        CACHE_VSYNC_WRITEBACK = 0;
-        
-        I2cSetFrontpanelLed(I2C_LED_RED0 | I2C_LED_RED1 | I2C_LED_RED2 | I2C_LED_RED3 );
+	CACHE_VSYNC_WRITEBACK = 0;
+	
+	I2cSetFrontpanelLed(I2C_LED_RED0 | I2C_LED_RED1 | I2C_LED_RED2 | I2C_LED_RED3 );
+	startLinux((void *)INITRD_POS, dwInitrdSize, config->szAppend);
+}
+	
 
-	setup( (void *)0x90000, (void *)INITRD_POS, (void *)dwInitrdSize, config->szAppend);
+void startLinux(void* initrdStart, unsigned long initrdSize, const char* appendLine)
+{
+	int nAta=0;
+	setup( (void *)0x90000, initrdStart, initrdSize, appendLine);
         
-	{
-		int nAta=0;
-		if(tsaHarddiskInfo[0].m_bCableConductors == 80) {
-			if(tsaHarddiskInfo[0].m_wAtaRevisionSupported&2) nAta=1;
-			if(tsaHarddiskInfo[0].m_wAtaRevisionSupported&4) nAta=2;
-			if(tsaHarddiskInfo[0].m_wAtaRevisionSupported&8) nAta=3;
-			if(tsaHarddiskInfo[0].m_wAtaRevisionSupported&16) nAta=4;
-			if(tsaHarddiskInfo[0].m_wAtaRevisionSupported&32) nAta=5;
-		} else {
-			// force the HDD into a good mode 0x40 ==UDMA | 2 == UDMA2
-			nAta=2; // best transfer mode without 80-pin cable
-		}
-//		nAta=1;
-		BootIdeSetTransferMode(0, 0x40 | nAta);
-		BootIdeSetTransferMode(1, 0x40 | nAta);
-//		BootIdeSetTransferMode(0, 0x04);
+	if(tsaHarddiskInfo[0].m_bCableConductors == 80) {
+		if(tsaHarddiskInfo[0].m_wAtaRevisionSupported&2) nAta=1;
+		if(tsaHarddiskInfo[0].m_wAtaRevisionSupported&4) nAta=2;
+		if(tsaHarddiskInfo[0].m_wAtaRevisionSupported&8) nAta=3;
+		if(tsaHarddiskInfo[0].m_wAtaRevisionSupported&16) nAta=4;
+		if(tsaHarddiskInfo[0].m_wAtaRevisionSupported&32) nAta=5;
+	} else {
+		// force the HDD into a good mode 0x40 ==UDMA | 2 == UDMA2
+		nAta=2; // best transfer mode without 80-pin cable
 	}
+	// nAta=1;
+	BootIdeSetTransferMode(0, 0x40 | nAta);
+	BootIdeSetTransferMode(1, 0x40 | nAta);
+	// BootIdeSetTransferMode(0, 0x04);
 
 	// orangeness, people seem to like that colour
        
@@ -1099,11 +1100,8 @@ int ExittoLinux(CONFIGENTRY *config) {
 		I2C_LED_GREEN0 | I2C_LED_GREEN1 | I2C_LED_GREEN2 | I2C_LED_GREEN3 |
 		I2C_LED_RED0 | I2C_LED_RED1 | I2C_LED_RED2 | I2C_LED_RED3
 	);
-         
-
-	
+	         
 	asm volatile ("wbinvd\n");
-	
 	
 	// Tell Video Card we have changed the offset to higher up
 	(*(unsigned int*)0xFD600800) = (0xf0000000 | ((xbox_ram*0x100000) - FRAMEBUFFER_SIZE));

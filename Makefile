@@ -21,10 +21,7 @@ LDFLAGS-ROMBOOT = -s -S -T $(TOPDIR)/boot_rom/bootrom.ld
 LDFLAGS-VMLBOOT = -s -S -T $(TOPDIR)/boot_vml/vml_start.ld
 
 #### Etherboot specific stuff
-ETH_INCLUDE = 	-I$(TOPDIR)/etherboot/include -I$(TOPDIR)/etherboot/arch/i386/include \
-	-I$(TOPDIR)/lib/misc \
-	-I$(TOPDIR)/lib/eeprom
-	
+ETH_INCLUDE = 	-I$(TOPDIR)/etherboot/include -I$(TOPDIR)/etherboot/arch/i386/include	
 ETH_CFLAGS  = 	-O2 -mcpu=pentium -Werror $(ETH_INCLUDE) -Wstrict-prototypes -fomit-frame-pointer -fno-zero-initialized-in-bss -pipe -Ui386
 #### End Etherboot specific stuff
 

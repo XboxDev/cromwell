@@ -99,7 +99,7 @@ char * strcpy(char *sz, const char *szc)
 	return szStart;
 }
 
-char * _strncpy (char * dest,char * src, size_t n)
+char * _strncpy (char * dest,const char * src, size_t n)
 {
 	char *szStart=dest;
 	while((*src) && (n--)) *dest++=*src++;

@@ -5,9 +5,6 @@
 
 #include <stdarg.h>
 
-typedef unsigned char BYTE;
-#include "BootParser.h"
-
 extern struct pci_driver forcedeth_driver;
 extern uint8_t PciReadByte(unsigned int bus, unsigned int dev, unsigned int func, unsigned int reg_off);
 extern uint16_t PciReadWord(unsigned int bus, unsigned int dev, unsigned int func, unsigned int reg_off);
@@ -137,9 +134,8 @@ void restart_etherboot(int status)
 static const unsigned char vendorext_magic[] = {0xE4,0x45,0x74,0x68}; /* Eth */
 static unsigned char    rfc1533_cookie[5] = { RFC1533_COOKIE, RFC1533_END };
 
-static int find_cmdline(char ** cmd_line, char* length)
+static int find_cmdline(uint8_t* p, char ** cmd_line, char* length)
 {
-	unsigned char* p = BOOTP_DATA_ADDR->bootp_reply.bp_vend;
 	int vendorext_isvalid = 0;
 	int found = 0;
 	if (memcmp(p, rfc1533_cookie, 4))
@@ -174,7 +170,7 @@ static int find_cmdline(char ** cmd_line, char* length)
 	return found;
 }
 
-static void parse_elf_boot_notes(void *notes, union infoblock **rheader)
+static void parse_elf_boot_notes(void *notes, union infoblock **rheader, struct bootp_t **rbootp)
 {
 	unsigned char *note, *end;
 	Elf_Nhdr *hdr;
@@ -207,6 +203,9 @@ static void parse_elf_boot_notes(void *notes, union infoblock **rheader)
 			case EB_HEADER:
 				*rheader = *((void **)n_desc);
 				break;
+			case EB_BOOTP_DATA:
+				*rbootp = *((void **)n_desc);
+				break;
 			default:
 				break;
 			}
@@ -234,49 +233,60 @@ void xstart16 (unsigned long a, unsigned long b, char * c)
 	restart_etherboot(-1);
 }
 
-extern int ExittoLinux(CONFIGENTRY *config);
-extern unsigned int dwInitrdSize;
+extern void startLinux(void* initrdPos, unsigned long initrdSize, const char* appendLine);
 #define INITRD_POS 0x02000000
 
 int xstart32(unsigned long entry_point, ...)
 {
-	CONFIGENTRY config;
-	char* cmdline;
-	char length;
 	int ret = 1;
-	if (find_cmdline(&cmdline, &length))
-	{
-		memcpy(config.szAppend, cmdline, length);
-		config.szAppend[length] = '\0';
-		printf("Using cmdline from BOOTP: %s\n", cmdline);
-	}
-	else
-	{
-		config.szAppend[0] = '\0';
-	}
+	char* bootpCmdline;
+	char appendLine[257];
+	char length;
+	int initrdSize = 0;
 	va_list list;
 	void* eb;
 	va_start(list, entry_point);
 	eb = va_arg(list, void*);
 	va_end(list);
-	union infoblock *header;
-	parse_elf_boot_notes(eb, &header);
-	switch(header->img.magic)
+	union infoblock *header = NULL;
+	struct bootp_t *bootp = NULL;
+	parse_elf_boot_notes(eb, &header, &bootp);
+	if ((header != NULL) && (bootp != NULL))
 	{
-	case ELF_MAGIC:
-		locate_elf_segs(header);
-		break;
-	default:
-		printf("Error: Unrecognized header format\n");
-		dwInitrdSize = 0;
-		ret = 0;
-		break;
+		// look for kernel command line
+		if (find_cmdline(bootp->bp_vend, &bootpCmdline, &length))
+		{
+			memcpy(appendLine, bootpCmdline, length);
+			appendLine[length] = '\0';
+			printf("Using cmdline from BOOTP: %s\n", appendLine);
+		}
+		else
+		{
+			appendLine[0] = '\0';
+		}
+		// ramdisk setup
+		switch(header->img.magic)
+		{
+		case ELF_MAGIC:
+			locate_elf_segs(header);
+			break;
+		default:
+			printf("Error: Unrecognized header format\n");
+			initrdSize = 0;
+			ret = 0;
+			break;
+		}
+		if (ret && seg[S_RAMDISK] != 0)
+		{
+			initrdSize = seg[S_RAMDISK]->p_filesz;
+			printf("Using ramdisk at 0x%X, size 0x%X\n", seg[S_RAMDISK]->p_paddr, initrdSize);
+			memcpy((void*)INITRD_POS, (void*)seg[S_RAMDISK]->p_paddr, initrdSize);
+		}
+		startLinux((void*)INITRD_POS, initrdSize, appendLine);
 	}
-	if (ret && seg[S_RAMDISK] != 0)
+	else
 	{
-		dwInitrdSize = seg[S_RAMDISK]->p_filesz;
-		printf("Using ramdisk at 0x%X, size 0x%X\n", seg[S_RAMDISK]->p_paddr, dwInitrdSize);
-		memcpy((void*)INITRD_POS, (void*)seg[S_RAMDISK]->p_paddr, dwInitrdSize);
+		printf("Error parsing ELF boot notes\n");
+		restart_etherboot(-1);
 	}
-	ExittoLinux(&config);
 }

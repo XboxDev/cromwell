@@ -2,6 +2,7 @@
 #include  "boot.h"
 #include "string.h"
 #include "fontx16.h"  // brings in font struct
+#include <stdarg.h>
 
 // These are helper functions for displaying bitmap video
 // includes an antialiased (4bpp) proportional bitmap font (n x 16 pixel)
@@ -529,11 +530,16 @@ int serialprint(const char *szFormat, ...) {
 }
 #endif
 
-int putchar(int c)
+int console_putchar(int c)
 {
 	char buf[2];
 	buf[0] = (char)c;
 	buf[1] = 0;
 	BootVideoChunkedPrint(buf);
-	return (int)buf[0];
+	return (int)buf[0];	
+}
+
+int putchar(int c)
+{
+	return console_putchar(c);
 }
