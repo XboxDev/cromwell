@@ -78,7 +78,6 @@ extern void BootResetAction ( void ) {
 	BootDetectMemorySize();     
 	
 	BootEepromReadEntireEEPROM();
-	bprintf("BOOT: Read EEPROM\n\r");
         
         // Load and Init the Background image
         // clear the Video Ram
@@ -112,7 +111,7 @@ extern void BootResetAction ( void ) {
          
 	VIDEO_CURSOR_POSY=vmode.ymargin;
 	VIDEO_CURSOR_POSX=(vmode.xmargin/*+64*/)*4;
-	
+#ifndef SILENT_MODE	
 	if (cromwell_config==XROMWELL) 	printk("\2Xbox Linux Xromwell  " VERSION "\2\n" );
 	if (cromwell_config==CROMWELL)	printk("\2Xbox Linux Cromwell BIOS  " VERSION "\2\n" );
 	VIDEO_CURSOR_POSY=vmode.ymargin+32;
@@ -146,7 +145,7 @@ extern void BootResetAction ( void ) {
 	printk("\n");
 	nTempCursorX=VIDEO_CURSOR_POSX;
 	nTempCursorY=VIDEO_CURSOR_POSY;
-		
+#endif
 	I2cSetFrontpanelLed(I2C_LED_RED0 | I2C_LED_RED1 | I2C_LED_RED2 | I2C_LED_RED3 );
 
 	VIDEO_ATTR=0xffffffff;
@@ -161,8 +160,10 @@ extern void BootResetAction ( void ) {
 	int n;
 	for(n=5;n>=0;n--) { *pb++=	eeprom.MACAddress[n]; } // send it in backwards, its reversed by the driver
         }
-
+#ifndef SILENT_MODE
 	BootEepromPrintInfo();
+#endif
+/*
 #ifdef FLASH
 	{
 		OBJECT_FLASH of;
@@ -175,17 +176,22 @@ extern void BootResetAction ( void ) {
 		printk("%s\n", of.m_szFlashDescription);
 	}
 #endif
+*/
+#ifndef SILENT_MODE
 	printk("BOOT: start USB init\n");
+#endif
 	BootStartUSB();
 
 	// init the IDE devices
+#ifndef SILENT_MODE
 	VIDEO_ATTR=0xffc8c8c8;
 	printk("Initializing IDE Controller\n");
+#endif
 	BootIdeWaitNotBusy(0x1f0);
        	wait_ms(200);
-	
+#ifndef SILENT_MODE
 	printk("Ready\n");
-	
+#endif	
 	// reuse BIOS status area
 
 #ifndef DEBUG_MODE
@@ -194,7 +200,6 @@ extern void BootResetAction ( void ) {
 	VIDEO_CURSOR_POSX=nTempCursorX;
 	VIDEO_CURSOR_POSY=nTempCursorY;
 
-	bprintf("Entering BootIdeInit()\n");
 	BootIdeInit();
 	printk("\n");
 
@@ -207,7 +212,6 @@ extern void BootResetAction ( void ) {
 	);
 
 //	printk("i2C=%d SMC=%d, IDE=%d, tick=%d una=%d unb=%d\n", nCountI2cinterrupts, nCountInterruptsSmc, nCountInterruptsIde, BIOS_TICK_COUNT, nCountUnusedInterrupts, nCountUnusedInterruptsPic2);
-
 	IconMenuInit();
 	IconMenu();
 	//Should never come back here.

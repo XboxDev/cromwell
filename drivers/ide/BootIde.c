@@ -405,7 +405,7 @@ int BootIdeDriveInit(unsigned uIoBase, int nIndexDrive)
 	 // CDROM/DVD
                 // We Detected a CD-DVD or so, as there are no Heads ...
 		tsaHarddiskInfo[nIndexDrive].m_fAtapi=true;
-
+#ifndef SILENT_MODE
 		printk("hd%c: ", nIndexDrive+'a');
 		VIDEO_ATTR=0xffc8c800;
 
@@ -413,6 +413,7 @@ int BootIdeDriveInit(unsigned uIoBase, int nIndexDrive)
 			tsaHarddiskInfo[nIndexDrive].m_szIdentityModelNumber,
 			tsaHarddiskInfo[nIndexDrive].m_szSerial,
 			tsaHarddiskInfo[nIndexDrive].m_szFirmware);
+#endif
 
 		if (cromwell_config==CROMWELL) 
 		{
@@ -438,6 +439,7 @@ int BootIdeDriveInit(unsigned uIoBase, int nIndexDrive)
 	if (!tsaHarddiskInfo[nIndexDrive].m_fAtapi) {
 		unsigned long ulDriveCapacity1024=((tsaHarddiskInfo[nIndexDrive].m_dwCountSectorsTotal /1000)*512)/1000;
 		
+#ifndef SILENT_MODE
 		printk("hd%c: ", nIndexDrive+'a');
 		VIDEO_ATTR=0xffc8c800;
 
@@ -446,7 +448,7 @@ int BootIdeDriveInit(unsigned uIoBase, int nIndexDrive)
 			tsaHarddiskInfo[nIndexDrive].m_szFirmware,
 			ulDriveCapacity1024/1000, ulDriveCapacity1024%1000 
 		);
-
+#endif
 		tsaHarddiskInfo[nIndexDrive].m_securitySettings = drive_info[128];
 		
 		if (cromwell_config==CROMWELL) {
@@ -461,7 +463,11 @@ int BootIdeDriveInit(unsigned uIoBase, int nIndexDrive)
 				if (DriveSecurityChange(uIoBase, nIndexDrive, IDE_CMD_SECURITY_UNLOCK, password)) {
 					printk("Unlock failed!");
 				}
-				else printk("Unlock OK");	
+				else {
+#ifndef SILENT_MODE
+					printk("Unlock OK");	
+#endif
+				}
 			}
 		}  
 	}
@@ -487,9 +493,13 @@ int BootIdeDriveInit(unsigned uIoBase, int nIndexDrive)
 			if( (ba[0]=='B') && (ba[1]=='R') && (ba[2]=='F') && (ba[3]=='R') ) 
 			{
 				tsaHarddiskInfo[nIndexDrive].m_enumDriveType=EDT_UNKNOWN;
+#ifndef SILENT_MODE
 				printk(" - FATX", nIndexDrive);
+#endif
 			} else {
+#ifndef SILENT_MODE
 				printk(" - No FATX", nIndexDrive);
+#endif
 			}
 		}
 
@@ -501,12 +511,15 @@ int BootIdeDriveInit(unsigned uIoBase, int nIndexDrive)
 		} else {
 			if( (ba[0x1fe]==0x55) && (ba[0x1ff]==0xaa) ) 
 			{
-				printk(" - MBR", nIndexDrive);
 				tsaHarddiskInfo[nIndexDrive].m_fHasMbr=1;
-			
+#ifndef SILENT_MODE
+				printk(" - MBR", nIndexDrive);
+#endif
 			} else {
 				tsaHarddiskInfo[nIndexDrive].m_fHasMbr=0;
+#ifndef SILENT_MODE
 				printk(" - No MBR", nIndexDrive);
+#endif
 			}
 		}
 		printk("\n");
@@ -662,7 +675,9 @@ int BootIdeInit(void)
 
 	if(tsaHarddiskInfo[0].m_bCableConductors==40) 
 	{
+#ifndef SILENT_MODE
 		printk("UDMA2\n");
+#endif
 	} else 
 	{
 		int nAta=0;
@@ -671,7 +686,9 @@ int BootIdeInit(void)
 		if(tsaHarddiskInfo[0].m_wAtaRevisionSupported&8) nAta=3;
 		if(tsaHarddiskInfo[0].m_wAtaRevisionSupported&16) nAta=4;
 		if(tsaHarddiskInfo[0].m_wAtaRevisionSupported&32) nAta=5;
+#ifndef SILENT_MODE
 		printk("UDMA%d\n", nAta);
+#endif
 	}
 
 	return 0;
