@@ -249,7 +249,7 @@ bool BootVideoJpegUnpackAsRgb(BYTE *pbaJpegFileImage, JPEG * pJpeg) {
 
 BYTE * BootVideoGetPointerToEffectiveJpegTopLeft(JPEG * pJpeg)
 {
-	return ((BYTE *)(pJpeg->pData + pJpeg->width * ICON_HEIGH * pJpeg->bpp));
+	return ((BYTE *)(pJpeg->pData + pJpeg->width * ICON_HEIGHT * pJpeg->bpp));
 }
 
 void BootVideoClearScreen(JPEG *pJpeg, int nStartLine, int nEndLine)

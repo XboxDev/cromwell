@@ -20,7 +20,6 @@
 #include "BootIde.h"
 #include "MenuActions.h"
 #include "config.h"
-
 enum {
 	ICON_FATX = 0,
 	ICON_NATIVE,
@@ -31,20 +30,29 @@ enum {
 	ICONCOUNT // always last
 };
 
-/* Need to turn this into a linked list */
-//and enumerate icons.
+#define ICON_SLOT0 0
+#define ICON_SLOT1 ICON_WIDTH
+#define ICON_SLOT2 ICON_WIDTH*2
+#define ICON_SLOT3 ICON_WIDTH*3
+#define ICON_SLOT4 ICON_WIDTH*4
+#define ICON_SLOT5 ICON_WIDTH*5
+#define ICON_SLOT6 ICON_WIDTH*6
+#define ICON_SLOT7 ICON_WIDTH*7
+#define ICON_SLOT8 ICON_WIDTH*8
+
+struct ICON;
+
 typedef struct {
 	int nDestX;
 	int nDestY;
-	int nSrcX;
-	int nSrcLength;
-	int nSrcHeight;
+	int iconSlot;
 	int nTextX;
 	int nTextY;
 	int nEnabled;
 	int nSelected;
 	char *szCaption;
 	void (*functionPtr) (void);
+	struct ICON* nextIcon;
 } ICON;
 
 ICON icon[ICONCOUNT];
@@ -53,9 +61,7 @@ void BootIcons(int nXOffset, int nYOffset, int nTextOffsetX, int nTextOffsetY) {
 	memset(icon,0,sizeof(ICON) * ICONCOUNT);
 	icon[ICON_FATX].nDestX = nXOffset + 120;
 	icon[ICON_FATX].nDestY = nYOffset - 74;
-	icon[ICON_FATX].nSrcX = ICON_WIDTH*4;
-	icon[ICON_FATX].nSrcLength = ICON_WIDTH;
-	icon[ICON_FATX].nSrcHeight = ICON_HEIGH;
+	icon[ICON_FATX].iconSlot = ICON_SLOT4;
 	icon[ICON_FATX].nTextX = (nTextOffsetX+118)<<2;;
 	icon[ICON_FATX].nTextY = nTextOffsetY;
 	icon[ICON_FATX].szCaption = "FatX (E:)";
@@ -63,9 +69,7 @@ void BootIcons(int nXOffset, int nYOffset, int nTextOffsetX, int nTextOffsetY) {
 	
 	icon[ICON_NATIVE].nDestX = nXOffset + 232;
 	icon[ICON_NATIVE].nDestY = nYOffset - 74;
-	icon[ICON_NATIVE].nSrcX = ICON_WIDTH;
-	icon[ICON_NATIVE].nSrcLength = ICON_WIDTH;
-	icon[ICON_NATIVE].nSrcHeight = ICON_HEIGH;
+	icon[ICON_NATIVE].iconSlot = ICON_SLOT1;
 	icon[ICON_NATIVE].nTextX = (nTextOffsetX+230)<<2;;
 	icon[ICON_NATIVE].nTextY = nTextOffsetY;
 	icon[ICON_NATIVE].szCaption = "HDD";
@@ -73,9 +77,7 @@ void BootIcons(int nXOffset, int nYOffset, int nTextOffsetX, int nTextOffsetY) {
 	
 	icon[ICON_CD].nDestX = nXOffset + 344;
 	icon[ICON_CD].nDestY = nYOffset - 74;
-	icon[ICON_CD].nSrcX = ICON_WIDTH*2;
-	icon[ICON_CD].nSrcLength = ICON_WIDTH;
-	icon[ICON_CD].nSrcHeight = ICON_HEIGH;
+	icon[ICON_CD].iconSlot = ICON_SLOT2;
 	icon[ICON_CD].nTextX = (nTextOffsetX+340)<<2;
 	icon[ICON_CD].nTextY = nTextOffsetY;
 	icon[ICON_CD].szCaption = "CD-ROM";
@@ -84,9 +86,7 @@ void BootIcons(int nXOffset, int nYOffset, int nTextOffsetX, int nTextOffsetY) {
 #ifdef ETHERBOOT
 	icon[ICON_ETHERBOOT].nDestX = nXOffset + 456;
 	icon[ICON_ETHERBOOT].nDestY = nYOffset - 74;
-	icon[ICON_ETHERBOOT].nSrcX = ICON_WIDTH*3;
-	icon[ICON_ETHERBOOT].nSrcLength = ICON_WIDTH;
-	icon[ICON_ETHERBOOT].nSrcHeight = ICON_HEIGH;
+	icon[ICON_ETHERBOOT].iconSlot = ICON_SLOT3;
 	icon[ICON_ETHERBOOT].nTextX = (nTextOffsetX+451)<<2;
 	icon[ICON_ETHERBOOT].nTextY = nTextOffsetY;
 	icon[ICON_ETHERBOOT].szCaption = "Etherboot";
@@ -100,11 +100,10 @@ void IconMenuDrawIcon(ICON *icon, BYTE bOpaqueness)
 		(BYTE *)(FB_START+((vmode.width * icon->nDestY)+icon->nDestX) * 4),
 		vmode.width, // dest bytes per line
 		&jpegBackdrop, // source jpeg object
-		(BYTE *)(jpegBackdrop.pData+(icon->nSrcX * jpegBackdrop.bpp)),
+		(BYTE *)(jpegBackdrop.pData+(icon->iconSlot * jpegBackdrop.bpp)),
 		0xff00ff|(((DWORD)bOpaqueness)<<24),
 		(BYTE *)(jpegBackdrop.pBackdrop + ((jpegBackdrop.width * icon->nDestY) + icon->nDestX) * jpegBackdrop.bpp),
-		icon->nSrcLength, 
-		icon->nSrcHeight
+		ICON_WIDTH, ICON_HEIGHT
 	);
 }
 

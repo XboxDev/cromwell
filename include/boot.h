@@ -34,7 +34,7 @@ unsigned int xbox_ram;
 #define CROMWELL	1
 
 #define ICON_WIDTH 64
-#define ICON_HEIGH 64
+#define ICON_HEIGHT 64
 
 static inline double min (double a, double b)
 {
