@@ -42,10 +42,14 @@ int xberepair (unsigned char * xbeimage)
 	FILE *f;
 	unsigned int xbesize;
 	void * xbe;
-
+        int a;
+	unsigned char sha_Message_Digest[SHA1HashSize];
+         
 	XBE_HEADER *header;
-  //  XBE_CERTIFICATE *cert;
-	XBE_SECTION *sechdr;
+ 	XBE_SECTION *sechdr;
+
+       	printf("ImageBLD Hasher by XBL Project (c) hamtitampti\n");
+       	printf("XBE Modus\n");
 	
 	f = fopen(xbeimage, "rb");
     	if (f!=NULL) 
@@ -75,8 +79,17 @@ int xberepair (unsigned char * xbeimage)
 	        
 	 //       printf("Sections: %d\n",header->NumSections);
 
-        	shax((unsigned char *)sechdr->ShaHash, ((unsigned char *)xbe)+(int)sechdr->FileAddress ,sechdr->FileSize);
+        	shax(&sha_Message_Digest[0], ((unsigned char *)xbe)+(int)sechdr->FileAddress ,sechdr->FileSize);
+	  	memcpy(&sechdr->ShaHash[0],&sha_Message_Digest[0],20);
 	  	
+	  	#ifdef debug
+		printf("Section 0 Hash XBE       : ");
+		for(a=0; a<SHA1HashSize; a++) {
+			printf("%02x",sha_Message_Digest[a]);
+		}
+	      	printf("\n");
+	      	#endif
+	      	
 		// Write back the Image to Disk
 		f = fopen(xbeimage, "wb");
     		if (f!=NULL) 
@@ -84,7 +97,9 @@ int xberepair (unsigned char * xbeimage)
 		 fwrite(xbe, 1, xbesize, f);
         	 fclose(f);			
 		}	  	
-	
+	        
+	        printf("XRomwell File Created    : %s\n",xbeimage);
+	        
 		free(xbe);
 	}
 
@@ -116,6 +131,9 @@ int romcopy (
        	int a;
 //       	unsigned int compressedimagestart;
        	unsigned int temp;
+       	
+       	printf("ImageBLD Hasher by XBL Project (c) hamtitampti\n");
+       	printf("ROM Modus\n");
        	
        	memset(flash256,0x00,sizeof(flash256));
 	memset(flash1024,0x00,sizeof(flash1024));
@@ -175,10 +193,10 @@ int romcopy (
 		memcpy(&flash1024[bootloderpos],&bootloaderstruct,sizeof(struct Checksumstruct));		
 		
 		#ifdef debug		
-		printf("%08x\n",bootloderpos);
-		printf("%08x\n",bootloaderstruct.Size_ramcopy);		
-		printf("%08x\n",bootloaderstruct.compressed_image_start);
-		printf("%08x\n",bootloaderstruct.compressed_image_size);
+		printf("BootLoaderPos            : %08x\n",bootloderpos);
+		printf("Size2blRamcopy           : %08x\n",bootloaderstruct.Size_ramcopy);		
+		printf("ROM Image Start          : %08x\n",bootloaderstruct.compressed_image_start);
+		printf("ROM Image Size           : %08x\n",bootloaderstruct.compressed_image_size);
 		#endif
 		
 		// We have calculated the size of the kompressed image and where it can start (where the 2bl ends)
@@ -194,7 +212,7 @@ int romcopy (
 	      	memcpy(&flash256[bootloderpos],&SHA1_result[0],20);
 
 		#ifdef debug
-		printf("2bl Hash 256Kb image :");
+		printf("2bl Hash 256Kb image     : ");
 		for(a=0; a<SHA1HashSize; a++) {
 			printf("%02X",SHA1_result[a]);
 		}
@@ -212,7 +230,7 @@ int romcopy (
 	      	memcpy(&flash1024[bootloderpos],&SHA1_result[0],20);
               
 		#ifdef debug
-		printf("2bl Hash 1MB image   :");
+		printf("2bl Hash 1MB image       : ");
 		for(a=0; a<SHA1HashSize; a++) {
 			printf("%02X",SHA1_result[a]);
 		}
@@ -238,7 +256,13 @@ int romcopy (
 		memcpy(&flash1024[bootloaderstruct.compressed_image_start+(2*256*1024)],SHA1_result,20);			
 	      	memcpy(&flash1024[bootloaderstruct.compressed_image_start+20+(2*256*1024)],&crom[0],compressedromsize);
 	      	
-	      	
+	      	#ifdef debug
+		printf("ROM Hash 1MB             : ");
+		for(a=0; a<SHA1HashSize; a++) {
+			printf("%02X",SHA1_result[a]);
+		}
+	      	printf("\n");
+	      	#endif
 	      	
 	      	
 	      	// Write the 256 /1024 Kbyte Image Back
@@ -249,8 +273,11 @@ int romcopy (
 	      	f = fopen(binname1024, "wb");               
 		fwrite(flash1024, 1, 1024*1024, f);
          	fclose(f);	
-
-		printf("Checksum Successfully Created for %s\n",binname256);	              
+                
+                #ifdef debug
+		printf("Binary 256k File Created : %s\n",binname256);
+		printf("Binary 1MB  File Created : %s\n",binname1024);
+		#endif	              
 		
 	} 
 	
