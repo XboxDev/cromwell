@@ -162,7 +162,7 @@ extern void BootStartBiosLoader ( void ) {
 			// The Checksum is good                          
 			// We start the Cromwell immediatly
                         
-                        I2cSetFrontpanelLed(I2C_LED_RED0 | I2C_LED_RED1 | I2C_LED_RED2 | I2C_LED_RED3 );
+			setLED("rrrr");
 		
 			BufferIN = (unsigned char*)(CROMWELL_compress_temploc);
 			BufferINlen=compressed_image_size;
@@ -181,14 +181,10 @@ extern void BootStartBiosLoader ( void ) {
 		}
 	}
         
-        if (validimage==1) {
-                
-                I2cSetFrontpanelLed(
-		I2C_LED_GREEN0 | I2C_LED_GREEN1 | I2C_LED_GREEN2 | I2C_LED_GREEN3 |
-		I2C_LED_RED0 | I2C_LED_RED1 | I2C_LED_RED2 | I2C_LED_RED3
-		);
-	
-	        // We now jump to the cromwell, Good bye 2bl loader
+	if (validimage==1) {
+		setLED("oooo");
+
+		// We now jump to the cromwell, Good bye 2bl loader
 		// This means: jmp CROMWELL_Memory_pos == 0x03A00000
 		__asm __volatile__ (
 		"wbinvd\n"
@@ -199,12 +195,9 @@ extern void BootStartBiosLoader ( void ) {
 	}
 	
 	// Bad, we did not get a valid im age to RAM, we stop and display a error
-	//I2cSetFrontpanelLed(I2C_LED_RED0 | I2C_LED_RED1 | I2C_LED_RED2 | I2C_LED_RED3 );	
+	//setLED("rrrr");	
 
-	I2cSetFrontpanelLed(
-		I2C_LED_GREEN0 | I2C_LED_GREEN1 | I2C_LED_GREEN2 | I2C_LED_GREEN3 |
-		I2C_LED_RED0 | I2C_LED_RED1 | I2C_LED_RED2 | I2C_LED_RED3
-	);
+	setLED("oooo");
         
 //	I2CTransmitWord(0x10, 0x1901); // no reset on eject
 //	I2CTransmitWord(0x10, 0x0c00); // eject DVD tray        

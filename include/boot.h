@@ -333,4 +333,6 @@ void HMAC_SHA1( unsigned char *result,
 
 char *strrchr0(char *string, char ch);
 
+void setLED(void *pattern);
+
 #endif // _Boot_H_

@@ -13,6 +13,19 @@
 
 #include "stdint.h"
 
+size_t strlen(const char * s)
+{
+   int d0;
+   register int __res;
+   __asm__ __volatile__(
+         "repne\n\t"
+            "scasb\n\t"
+         "notl %0\n\t"
+            "decl %0"
+      :"=c" (__res), "=&D" (d0) :"1" (s),"a" (0), "0" (0xffffffffu));
+   return __res;
+}
+
 void * memcpy(void * to, const void * from, size_t n)
 {
 	int d0, d1, d2;

@@ -63,6 +63,7 @@ OBJECTS-ROMBOOT += $(TOPDIR)/obj/2bBootStartBios.o
 OBJECTS-ROMBOOT += $(TOPDIR)/obj/sha1.o
 OBJECTS-ROMBOOT += $(TOPDIR)/obj/2bBootLibrary.o
 OBJECTS-ROMBOOT += $(TOPDIR)/obj/misc.o
+OBJECTS-ROMBOOT += $(TOPDIR)/obj/LED.o
                                              
 OBJECTS-CROM = $(TOPDIR)/obj/BootStartup.o
 OBJECTS-CROM += $(TOPDIR)/obj/BootResetAction.o
@@ -79,6 +80,7 @@ OBJECTS-CROM += $(TOPDIR)/obj/rc4.o
 OBJECTS-CROM += $(TOPDIR)/obj/sha1.o
 OBJECTS-CROM += $(TOPDIR)/obj/BootVideoHelpers.o
 OBJECTS-CROM += $(TOPDIR)/obj/vsprintf.o
+OBJECTS-CROM += $(TOPDIR)/obj/LED.o
 OBJECTS-CROM += $(TOPDIR)/obj/IconMenu.o
 OBJECTS-CROM += $(TOPDIR)/obj/IconMenuInit.o
 OBJECTS-CROM += $(TOPDIR)/obj/TextMenu.o

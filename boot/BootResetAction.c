@@ -93,7 +93,7 @@ extern void BootResetAction ( void ) {
 		);
 	}
 	// display solid red frontpanel LED while we start up
-	I2cSetFrontpanelLed(I2C_LED_RED0 | I2C_LED_RED1 | I2C_LED_RED2 | I2C_LED_RED3 );
+	setLED("rrrr");
 	// paint the backdrop
 #ifndef DEBUG_MODE
 	BootVideoClearScreen(&jpegBackdrop, 0, 0xffff);
@@ -146,13 +146,13 @@ extern void BootResetAction ( void ) {
 	nTempCursorX=VIDEO_CURSOR_POSX;
 	nTempCursorY=VIDEO_CURSOR_POSY;
 #endif
-	I2cSetFrontpanelLed(I2C_LED_RED0 | I2C_LED_RED1 | I2C_LED_RED2 | I2C_LED_RED3 );
+	setLED("rrrr");
 
 	VIDEO_ATTR=0xffffffff;
 
 	// gggb while waiting for Ethernet & Hdd
 
-	I2cSetFrontpanelLed(I2C_LED_GREEN0 | I2C_LED_GREEN1 | I2C_LED_GREEN2);
+	setLED("gggx");
 
 	// set Ethernet MAC address from EEPROM
         {
@@ -207,9 +207,7 @@ extern void BootResetAction ( void ) {
 	nTempCursorMbrY=VIDEO_CURSOR_POSY;
 
 	// if we made it this far, lets have a solid green LED to celebrate
-	I2cSetFrontpanelLed(
-		I2C_LED_GREEN0 | I2C_LED_GREEN1 | I2C_LED_GREEN2 | I2C_LED_GREEN3
-	);
+	setLED("gggg");
 
 //	printk("i2C=%d SMC=%d, IDE=%d, tick=%d una=%d unb=%d\n", nCountI2cinterrupts, nCountInterruptsSmc, nCountInterruptsIde, BIOS_TICK_COUNT, nCountUnusedInterrupts, nCountUnusedInterruptsPic2);
 	IconMenuInit();

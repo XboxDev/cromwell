@@ -513,7 +513,7 @@ void ExittoLinux(CONFIGENTRY *config) {
 		VIDEO_ATTR=0xff9f9fbf;
 		printk(sz);
 	}
-	I2cSetFrontpanelLed(I2C_LED_RED0 | I2C_LED_RED1 | I2C_LED_RED2 | I2C_LED_RED3 );
+	setLED("rrrr");
 	startLinux((void*)INITRD_START, dwInitrdSize, config->szAppend);
 }
 	
@@ -540,10 +540,7 @@ void startLinux(void* initrdStart, unsigned long initrdSize, const char* appendL
 	BootIdeSetTransferMode(1, 0x40 | nAta);
 
 	// orange, people seem to like that colour
-	I2cSetFrontpanelLed(
-		I2C_LED_GREEN0 | I2C_LED_GREEN1 | I2C_LED_GREEN2 | I2C_LED_GREEN3 |
-		I2C_LED_RED0 | I2C_LED_RED1 | I2C_LED_RED2 | I2C_LED_RED3
-	);
+	setLED("oooo");
 	         
 	// Set framebuffer address to final location (for vesafb driver)
 	(*(unsigned int*)0xFD600800) = (0xf0000000 | ((xbox_ram*0x100000) - FB_SIZE));
