@@ -29,8 +29,7 @@ strip_blank(char *buffer, unsigned char len) {
 	}
 }
 
-int iso9660_name_translate(char *old) {
-  int len = strlen(old);
+int iso9660_name_translate(char *translated, char *old, unsigned len) {
   int i;
   
   for (i = 0; i < len; i++) {
@@ -53,9 +52,9 @@ int iso9660_name_translate(char *old) {
     if (c == ';')
       c = '.';
     
-    old[i] = c;
+    translated[i] = c;
   }
-  old[i] = '\0';
+  translated[i] = '\0';
   return i;
 }
 
@@ -89,13 +88,14 @@ unsigned long read_dir(int driveId, struct iso_directory_record *dir_read, char 
 		dir = (struct iso_directory_record *)&buffer[offset];
 		dir_length = *((unsigned char *)(dir->length));
 		if(!dir_length) {
-			offset++;
+			/* Skip to next sector */
+			offset = (offset + ISOFS_BLOCK_SIZE) & ~(ISOFS_BLOCK_SIZE - 1);
 			continue;
 		}
 		if(dir->name[0] != 0 && dir->name[0] != 1) {
-			dir->name[(unsigned char)dir->name_len[0]] = 0;
-			iso9660_name_translate(dir->name);
-			sprintf(newfilename,"%s/%s",filename, dir->name);
+			sprintf(newfilename, "%s/",filename);
+			iso9660_name_translate(newfilename + strlen(newfilename), 
+					dir->name, (unsigned char)dir->name_len[0]);
 //			printk("Read : Sector %d Filename %s %d\n", 
 //					*((unsigned long *)(dir->extent)),  newfilename,
 //					(unsigned char)dir->ext_attr_length[0]);
@@ -114,15 +114,12 @@ unsigned long read_dir(int driveId, struct iso_directory_record *dir_read, char 
 			}
 		}
 		if((*((char *)(dir->flags)) & IS_DIR) && (*((unsigned char *)(dir->name_len)) > 1)) {
-			if((strlen(newfilename) + strlen(dir->name)) > 1024) {
-				free(newfilename);
-				free(buffer);
-				return 0;
-			}
-			sprintf(newfilename,"%s/%s",filename, dir->name);
 //			printk("Directory %s Filename %s\n", newfilename, search);
-			sect = read_dir(driveId, dir, search, newfilename, dir_found);
-			if(sect != 0) return sect;
+			if (strlen(newfilename) < strlen(search) && !memcmp(search,newfilename,
+						strlen(newfilename)) && search[strlen(newfilename)]=='/') {
+				sect = read_dir(driveId, dir, search, newfilename, dir_found);
+				return sect;
+			}	
 		}
 		offset+=dir_length;
 		sect = 0;
