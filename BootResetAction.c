@@ -45,6 +45,10 @@ int nTempCursorMbrX, nTempCursorMbrY;
 volatile CURRENT_VIDEO_MODE_DETAILS currentvideomodedetails;
 volatile USB_CONTROLLER_OBJECT usbcontroller[2];
 
+volatile AC97_DEVICE ac97device;
+
+volatile AUDIO_ELEMENT_SINE aesTux;
+volatile AUDIO_ELEMENT_NOISE aenTux;
 
 const KNOWN_FLASH_TYPE aknownflashtypesDefault[] = {
 	{ 0xbf, 0x61, "SST49LF020", 0x40000 },  // default flash types
@@ -77,6 +81,7 @@ BYTE BiosCmosRead(BYTE bAds)
 		IoOutputByte(0x70, bAds);
 		return IoInputByte(0x71);
 }
+
 
 
 //////////////////////////////////////////////////////////////////////
@@ -187,6 +192,17 @@ extern void BootResetAction ( void ) {
 	}
 //#endif
 
+			// do audio
+	{
+		BootAudioInit(&ac97device);
+
+		ConstructAUDIO_ELEMENT_SINE(&aesTux, 1000);  // constructed silent, manipulated in video IRQ that moves tux
+		BootAudioAttachAudioElement(&ac97device, (AUDIO_ELEMENT *)&aesTux);
+		ConstructAUDIO_ELEMENT_NOISE(&aenTux);  // constructed silent, manipulated in video IRQ that moves tux
+		BootAudioAttachAudioElement(&ac97device, (AUDIO_ELEMENT *)&aenTux);
+		BootAudioPlayDescriptors(&ac97device);
+	}
+
 	// init USB
 #ifdef DO_USB
 	{
@@ -254,7 +270,6 @@ extern void BootResetAction ( void ) {
 
 
 	BootPciInterruptEnable();
-
 
 /*
 	{

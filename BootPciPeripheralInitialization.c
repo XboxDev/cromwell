@@ -219,10 +219,18 @@ void BootPciPeripheralInitialization()
 //
 
 	PciWriteDword(BUS_0, DEV_6, FUNC_0, 4, PciReadDword(BUS_0, DEV_6, FUNC_0, 4) | 7 );
-	PciWriteDword(BUS_0, DEV_6, FUNC_0, 0x3c, (PciReadDword(BUS_0, DEV_6, FUNC_0, 0x3c) &0xffff0000) | 0x0006 );
-	PciWriteDword(BUS_0, DEV_6, FUNC_0, 0x10, (PciReadDword(BUS_0, DEV_6, FUNC_0, 0x10) &0xffff0000) | 0xd001 );
-	PciWriteDword(BUS_0, DEV_6, FUNC_0, 0x14, (PciReadDword(BUS_0, DEV_6, FUNC_0, 0x14) &0xffff0000) | 0xd201 );
+	PciWriteDword(BUS_0, DEV_6, FUNC_0, 0x10, (PciReadDword(BUS_0, DEV_6, FUNC_0, 0x10) &0xffff0000) | 0xd001 );  // MIXER at IO 0xd000
+	PciWriteDword(BUS_0, DEV_6, FUNC_0, 0x14, (PciReadDword(BUS_0, DEV_6, FUNC_0, 0x14) &0xffff0000) | 0xd201 );  // BusMaster at IO 0xD200
 	PciWriteDword(BUS_0, DEV_6, FUNC_0, 0x18, 0xfec00000);	// memory base address 0xfec00000
+//	PciWriteDword(BUS_0, DEV_6, FUNC_0, 0x4c, (PciReadDword(BUS_0, DEV_6, FUNC_0, 0x4c) ) | 0x0101 ); // was wrongly 0x01010000
+
+		// frankenregister from working Linux driver
+
+	PciWriteDword(BUS_0, DEV_6, FUNC_0, 8, 0x40100b1 );
+	PciWriteDword(BUS_0, DEV_6, FUNC_0, 0xc, 0x800000 );
+	PciWriteDword(BUS_0, DEV_6, FUNC_0, 0x3c, 0x05020106 );
+	PciWriteDword(BUS_0, DEV_6, FUNC_0, 0x44, 0x20001 );
+	PciWriteDword(BUS_0, DEV_6, FUNC_0, 0x4c, 0x107 );
 
 //
 // Bus 0, Device 5, Function 0 = nForce MCP APU
@@ -259,12 +267,6 @@ void BootPciPeripheralInitialization()
 //#endif
 
 	bprintf("b\n");
-
-//
-// Bus 0, Device 6, Function 0 = nForce Audio Codec Interface
-//
-	PciWriteDword(BUS_0, DEV_6, FUNC_0, 0x4c, (PciReadDword(BUS_0, DEV_6, FUNC_0, 0x4c) ) | 0x0101 ); // was wrongly 0x01010000
-
 
 //
 // Bus 0, Device 1e, Function 0 = nForce AGP Host to PCI Bridge
@@ -323,7 +325,7 @@ void BootPciPeripheralInitialization()
 		PciWriteDword(BUS_1, DEV_0, FUNC_0, 0x0c, 0x0);
 		PciWriteDword(BUS_1, DEV_0, FUNC_0, 0x18, 0x08);
 
-
+#if 0
 		__asm__ __volatile__(
 
 		" wbinvd \n"
@@ -378,7 +380,8 @@ void BootPciPeripheralInitialization()
 //		" sti\n"
 
 		);
-
+#endif
+	bprintf("c\n");
 
 
 }

@@ -35,9 +35,18 @@ void DestructHC_GENERAL_TRANSFER_DESCRIPTOR(
 	USB_CONTROLLER_OBJECT * pusbcontrollerOwner,
 	HC_GENERAL_TRANSFER_DESCRIPTOR * phcgeneraltransferdescriptor
 ) {
-	BootUsbDescriptorFree(pusbcontrollerOwner, phcgeneraltransferdescriptor, 1);
+	BootUsbDescriptorFree(pusbcontrollerOwner, phcgeneraltransferdescriptor, 2);
 }
 
+
+void AppendHC_GENERAL_TRANSFER_DESCRIPTORtoHC_ENDPOINT_DESCRIPTOR(
+	HC_ENDPOINT_DESCRIPTOR * phcendpointdescriptor,
+	HC_GENERAL_TRANSFER_DESCRIPTOR * phcgeneraltransferdescriptor
+) {
+	if( (((int)phcendpointdescriptor->m_pvHeadP)&0xfffffff0) == 0 ) {  // first TD on this ED
+//		phcendpointdescriptor->m_pvHeadP
+	}
+}
 
 void ConstructHC_ENDPOINT_DESCRIPTOR(HC_ENDPOINT_DESCRIPTOR * phcendpointdescriptor)
 {
@@ -71,7 +80,7 @@ void DestructHC_ENDPOINT_DESCRIPTOR(USB_CONTROLLER_OBJECT * pusbcontrollerOwner,
 void ConstructUSB_DEVICE(USB_DEVICE * pusbdevice, USB_CONTROLLER_OBJECT * pusbcontrollerOwner, USB_DEVICE * pusbdeviceParent, const char * szName)
 {
 	HC_ENDPOINT_DESCRIPTOR * phcendpointdescriptor=BootUsbDescriptorMalloc(pusbcontrollerOwner, 1);
-	ConstructHC_ENDPOINT_DESCRIPTOR(phcendpointdescriptor);
+	ConstructHC_ENDPOINT_DESCRIPTOR(phcendpointdescriptor);  // create an endpoint descriptor for the default pipe at endpoint 0
 
 	pusbdevice->m_pusbcontrollerOwner=pusbcontrollerOwner;
 	pusbdevice->m_pParentDevice=pusbdeviceParent;
@@ -81,12 +90,6 @@ void ConstructUSB_DEVICE(USB_DEVICE * pusbdevice, USB_CONTROLLER_OBJECT * pusbco
 	pusbdevice->m_bAddressUsb=0;
 
 	pusbdevice->m_phcendpointdescriptorFirst=phcendpointdescriptor; // attach our default endpoint descriptor
-/*
-			// cook a transfer descriptor
-
-	pgeneraltransferdescriptor=BootUsbDescriptorMalloc(pusbcontrollerOwner, 1);
-	pgeneraltransferdescriptor->m_hctransfercontrolControl=0;
-	*/
 }
 
 
@@ -144,6 +147,8 @@ void ConstructUSB_CONTROLLER_OBJECT(
 
 		ppLastUsbDevicePtr=&pusbdevice->m_pNextSiblingDevice; // subsequently update last root hub's USB_DEVICE next sibling pointer
 	}
+
+		// We can just leave it at that, because shortly we can expect a RootHub Status Change interrupt for each of these guys
 }
 
 void DestructUSB_CONTROLLER_OBJECT(USB_CONTROLLER_OBJECT * pusbcontroller)  // does not deallocate mem for controller object!
@@ -244,11 +249,131 @@ void BootUsbPrintStatus(USB_CONTROLLER_OBJECT * pusbcontroller)
 	}
 }
 
+
+
+void ConstructUSB_IRP(
+	USB_IRP * m_pusbirp,
+	USB_DEVICE *pusbdevice,
+	HC_ENDPOINT_DESCRIPTOR * phcendpointdescriptor,
+	USB_TRANSFER_TYPE usbtransfertype,
+	BYTE * pbBuffer,
+	int nLengthBuffer
+) {
+	m_pusbirp->m_pusbdevice=pusbdevice;
+	m_pusbirp->m_phcendpointdescriptor=phcendpointdescriptor;
+	m_pusbirp->m_usbtransfertype=usbtransfertype;
+	m_pusbirp->m_pHC_GENERAL_TRANSFER_DESCRIPTORfirst=NULL;
+	m_pusbirp->m_pbBuffer=pbBuffer;
+	m_pusbirp->m_nLengthBuffer=nLengthBuffer;
+	m_pusbirp->m_nCompletionCode=0;
+}
+
+void DestructUSB_IRP(USB_IRP * m_pusbirp)  // deletes IRP object too
+{
+		// FIXME: needs to cancel all pending transfer descriptors first
+		//  without this code you can only destruct unstarted, completed or failed IRPs
+
+		// kill all transfer descriptors created to service this IRP
+
+	HC_GENERAL_TRANSFER_DESCRIPTOR * phcgeneraltransferdescriptor=m_pusbirp->m_pHC_GENERAL_TRANSFER_DESCRIPTORfirst;
+	while(phcgeneraltransferdescriptor!=NULL) {
+		HC_GENERAL_TRANSFER_DESCRIPTOR * phcgeneraltransferdescriptorTemp=phcgeneraltransferdescriptor->m_pHC_GENERAL_TRANSFER_DESCRIPTORnext;
+		DestructHC_GENERAL_TRANSFER_DESCRIPTOR(m_pusbirp->m_pusbdevice->m_pusbcontrollerOwner, phcgeneraltransferdescriptor); // frees TD object too
+		phcgeneraltransferdescriptor=phcgeneraltransferdescriptorTemp;
+	}
+
+	free(m_pusbirp);
+}
+
+	// construction and service are totally separate
+	// service can be done in ISR
+
+void ServiceUSB_IRP(USB_IRP *pirp)
+{
+	HC_GENERAL_TRANSFER_DESCRIPTOR * pgeneraltransferdescriptor, * pgeneraltransferdescriptorPrev;
+	DWORD dwControl=0x00000000, dwControlPayload=0x00000000, dwControlAck=0x00000000;
+	bool fHasPayload=true;
+	int nCount=pirp->m_nLengthBuffer;
+	BYTE * pb=pirp->m_pbBuffer;
+
+	switch(pirp->m_usbtransfertype) {
+		case UTT_SETUP: // two stage, p106 Mindshare book  setup pkt / ack in to host
+			dwControl=0x00000000; // setup
+			dwControlAck=0x00100000; // IN
+			fHasPayload=false;
+			break;
+		case UTT_OUT: // out pkt / data to device / ack in to host
+			dwControl=0x00080000; // OUT PID is going OUT to device
+			dwControlPayload=0x00080000; // OUT payload
+			dwControlAck=0x00100000; // IN
+			break;
+		case UTT_IN:  // in pkt / data to host / ack out to device
+			dwControl=0x00080000; // IN PID going OUT to device
+			dwControlPayload=0x00100000; // IN payload
+			dwControlAck=0x00080000; // OUT
+			break;
+		case UTT_SETUP_OUT:	// setup pkt / data to device / ack in to host
+			dwControl=0x00000000; // setup pkt going OUT to device
+			dwControlPayload=0x00080000; // OUT
+			dwControlAck=0x00100000; // IN
+			break;
+		case UTT_SETUP_IN:  // setup pkt / data to host / ack out to device
+			dwControl=0x00000000; // setup pkt going OUT to device
+			dwControlPayload=0x00100000; // IN
+			dwControlAck=0x00080000; // OUT
+			break;
+	}
+
+		// issue PID
+
+	pgeneraltransferdescriptor=BootUsbDescriptorMalloc(pirp->m_pusbdevice->m_pusbcontrollerOwner, 2);
+	ConstructHC_GENERAL_TRANSFER_DESCRIPTOR(pgeneraltransferdescriptor, dwControl, NULL, 0); // no payload for PID
+	pirp->m_pHC_GENERAL_TRANSFER_DESCRIPTORfirst=pgeneraltransferdescriptor; // track what we create, PID is first
+	pgeneraltransferdescriptorPrev=pgeneraltransferdescriptor;
+
+		// payload packets
+
+	if(fHasPayload) {
+		while(nCount) {
+			int nThisTime=(pirp->m_phcendpointdescriptor->m_hcendpointcontrolControl >>16)&0x7ff; // endpoint max payload per transfer in bytes
+			if(nCount<nThisTime) nThisTime=nCount;
+
+			pgeneraltransferdescriptor=BootUsbDescriptorMalloc(pirp->m_pusbdevice->m_pusbcontrollerOwner, 2);
+			ConstructHC_GENERAL_TRANSFER_DESCRIPTOR(pgeneraltransferdescriptor, dwControlPayload, pb, nThisTime); // part of total payload
+			pgeneraltransferdescriptorPrev->m_pHC_GENERAL_TRANSFER_DESCRIPTORnext=pgeneraltransferdescriptor; // track what we create, PID is first
+			pgeneraltransferdescriptorPrev=pgeneraltransferdescriptor;
+
+			nCount-=nThisTime;
+			pb+=nThisTime;
+		}
+	}
+
+		// ACK packet
+
+	pgeneraltransferdescriptor=BootUsbDescriptorMalloc(pirp->m_pusbdevice->m_pusbcontrollerOwner, 2);
+	ConstructHC_GENERAL_TRANSFER_DESCRIPTOR(pgeneraltransferdescriptor, dwControlAck, NULL, 0); // part of total payload
+	pgeneraltransferdescriptorPrev->m_pHC_GENERAL_TRANSFER_DESCRIPTORnext=pgeneraltransferdescriptor; // track what we create, PID is first
+
+}
+
+
 	// manage response to detection of roothub status change - called by ISR
 	// we get one of these after coming out of OHCI reset
 
 void BootUsbRootHubStatusChange(USB_DEVICE *pusbdeviceRootHub)
 {
+//	HC_GENERAL_TRANSFER_DESCRIPTOR * phcgeneraltransferdescriptor;
+			// cook a transfer descriptor
+
+//	pgeneraltransferdescriptor=BootUsbDescriptorMalloc(pusbdeviceRootHub->m_pusbcontrollerOwner, 2);
+/*
+	ConstructHC_GENERAL_TRANSFER_DESCRIPTOR(
+		phcgeneraltransferdescriptor,
+		dwControl,
+		pbBuffer,
+		dwLengthBuffer
+	);
+*/
 
 }
 
@@ -290,7 +415,7 @@ void BootUsbInterrupt(USB_CONTROLLER_OBJECT * pusbcontroller)
 		bprintf("%s Interrupt (%u): RootHub Status Change\n", pusbcontroller->m_szName, pusbcontroller->m_dwCountInterrupts);
 		for(n=0;n<COUNT_ROOTHUBS;n++) {
 			if(pusbcontroller->m_pusboperationalregisters->m_dwHcRhPortStatus[n]&0x10000) {
-					// change in connection status detected in n-th root hub
+						// change in connection status detected in n-th root hub
 					pusbcontroller->m_pusboperationalregisters->m_dwHcRhPortStatus[n]=0x10000; // clear it
 					BootUsbRootHubStatusChange(pusbdeviceRootHub);
 			}
@@ -1159,7 +1284,7 @@ bool HcdInterruptService( IN HCD_DEVICE_DATA DeviceData ) {
 			PHCD_ENDPOINT_DESCRIPTOR ED;
 			ED = CONTAINING_RECORD( DeviceData->StalledEDReclamation.FLink, HCD_ENDPOINT_DESCRIPTOR, Link);
 			RemoveListEntry(&ED->Link);
-			if (ED->PhysicalAddress == Temp) 
+			if (ED->PhysicalAddress == Temp)
 				DeviceData->HC->HcControlCurrentED = Temp = ED->HcED.NextED;
 			else if (ED->PhysicalAddress == Temp2) DeviceData->HC->HcBulkCurrentED = Temp2 = ED->HcED.NextED;
 			if (ED->Endpoint != NULL) {

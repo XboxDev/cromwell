@@ -25,6 +25,10 @@ volatile int nCountI2cinterrupts, nCountUnusedInterrupts, nCountUnusedInterrupts
 volatile bool fSeenPowerdown;
 volatile TRAY_STATE traystate;
 
+extern volatile AC97_DEVICE ac97device;
+extern volatile AUDIO_ELEMENT_SINE aesTux;
+extern volatile AUDIO_ELEMENT_NOISE aenTux;
+
 DWORD dwaTitleArea[1024*64];
 
 
@@ -386,10 +390,18 @@ void IntHandler3VsyncC(void)  // video VSYNC
 
 		switch(VIDEO_VSYNC_DIR) {
 			case 0:
-//				dw+=64; dw<<=24;
-				dw=(((VIDEO_VSYNC_POSITION * 192)/currentvideomodedetails.m_dwWidthInPixels)+64)<<24;
-				VIDEO_VSYNC_POSITION+=2;
-				if(VIDEO_VSYNC_POSITION>=(currentvideomodedetails.m_dwWidthInPixels-64-(currentvideomodedetails.m_dwMarginXInPixelsRecommended*2))) VIDEO_VSYNC_DIR=2;
+				{
+					int nTux=(((VIDEO_VSYNC_POSITION * 0x3fff)/currentvideomodedetails.m_dwWidthInPixels));
+					dw=(((VIDEO_VSYNC_POSITION * 192)/currentvideomodedetails.m_dwWidthInPixels)+64)<<24;
+					VIDEO_VSYNC_POSITION+=2;
+					if(VIDEO_VSYNC_POSITION>=(currentvideomodedetails.m_dwWidthInPixels-64-(currentvideomodedetails.m_dwMarginXInPixelsRecommended*2))) VIDEO_VSYNC_DIR=2;
+						// manipulate the tux noise
+					aesTux.m_saVolumePerHarmonicZeroIsNone7FFFIsFull[0]=nTux;
+					aesTux.m_saVolumePerHarmonicZeroIsNone7FFFIsFull[1]=nTux/6;
+					aesTux.m_saVolumePerHarmonicZeroIsNone7FFFIsFull[2]=nTux/10;
+					aesTux.m_dwComputedFundamentalPhaseIncrementFor48kHzSamples=0x10000 * (((350-(nTux>>7)) <<16)/48000);
+					aesTux.m_paudioelement.m_sPanZeroIsAllLeft7FFFIsAllRight=(nTux*2);
+				}
 				break;
 			case 1:
 				dw+=64; dw<<=24;
@@ -397,6 +409,14 @@ void IntHandler3VsyncC(void)  // video VSYNC
 				if((int)VIDEO_VSYNC_POSITION<=0) VIDEO_VSYNC_DIR=0;
 				break;
 			case 2:
+					// manipulate the tux noise
+				aesTux.m_saVolumePerHarmonicZeroIsNone7FFFIsFull[0]=(dw<<5);
+				aesTux.m_saVolumePerHarmonicZeroIsNone7FFFIsFull[1]=(dw<<5)/12;
+				aesTux.m_saVolumePerHarmonicZeroIsNone7FFFIsFull[2]=(dw<<5)/16;
+				aesTux.m_dwComputedFundamentalPhaseIncrementFor48kHzSamples=0x10000 * (((230+dw) <<16)/48000);
+
+				aenTux.m_sVolumeZeroIsNone7FFFIsFull=((128-dw)<<6);
+
 				dw+=128; dw<<=24;
 				break;
 		}
@@ -434,9 +454,13 @@ void IntHandler5C(void)
 {
 	bprintf("Interrupt 5\n");
 }
+
+// Audio
+
 void IntHandler6C(void)
 {
-	bprintf("Interrupt 6\n");
+//	bprintf("Interrupt 6\n");
+	BootAudioInterrupt(&ac97device);
 }
 void IntHandler7C(void)
 {

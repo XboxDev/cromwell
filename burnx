@@ -1,4 +1,4 @@
 #!/bin/sh
 make clean
-make -f Makefile.xbe
+make -f Makefile.xbe &&
 make burn

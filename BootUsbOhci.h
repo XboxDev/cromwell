@@ -61,10 +61,13 @@ typedef struct {
 // Host Controller Endpoint Descriptor, refer to Section 4.2, Endpoint Descriptor
 //
 typedef struct {
-	DWORD m_hcendpointcontrolControl; // dword 0
+	DWORD m_hcendpointcontrolControl; // dword 0  Max Packet Size ==b26..b16
 	volatile void * m_pvTailP; //physical pointer to HC_TRANSFER_DESCRIPTOR
 	volatile void * m_pvHeadP; //flags + phys ptr to HC_TRANSFER_DESCRIPTOR
 	volatile void * m_pvNextED; //phys ptr to HC_ENDPOINT_DESCRIPTOR
+
+		// past here is for driver tracking only
+
 } HC_ENDPOINT_DESCRIPTOR;
 
 #define HcEDHeadP_HALT 0x00000001 //hardware stopped bit
@@ -72,11 +75,16 @@ typedef struct {
 //
 // Host Controller Transfer Descriptor, refer to Section 4.3, Transfer Descriptors
 //
-typedef struct {
+typedef struct _HC_GENERAL_TRANSFER_DESCRIPTOR {
 	DWORD m_hctransfercontrolControl; // dword 0
 	void * m_pvCBP;  // buffer start, current position
 	volatile void * m_pvNextTD; // phys ptr to HC_TRANSFER_DESCRIPTOR
 	void * m_pvBE; // buffer end address
+	
+		// past here is for driver tracking only
+		
+	struct _HC_GENERAL_TRANSFER_DESCRIPTOR * m_pHC_GENERAL_TRANSFER_DESCRIPTORnext; // NULL ends list - chain of transfer descriptors made for same IRP
+
 } HC_GENERAL_TRANSFER_DESCRIPTOR;
 
 	// representation of USB device in driver (can be a hub)
@@ -103,6 +111,7 @@ typedef struct {
 	USB_DEVICE * m_pusbdevice;
 	HC_ENDPOINT_DESCRIPTOR * m_phcendpointdescriptor;
 	USB_TRANSFER_TYPE m_usbtransfertype; // decribes global transaction
+	HC_GENERAL_TRANSFER_DESCRIPTOR * m_pHC_GENERAL_TRANSFER_DESCRIPTORfirst;
 	BYTE * m_pbBuffer; //
 	int m_nLengthBuffer;
 	int m_nCompletionCode;
@@ -118,6 +127,17 @@ void BootUsbInterrupt();
 void * BootUsbDescriptorMalloc(USB_CONTROLLER_OBJECT *pusbcontroller, int nCount16ByteContiguousRegion);
 void BootUsbDescriptorFree(USB_CONTROLLER_OBJECT *pusbcontroller, void *pvoid, int nCount16ByteContiguousRegion);
 void BootUsbDump(USB_CONTROLLER_OBJECT *pusbcontroller);
+
+
+void ConstructUSB_IRP(
+	USB_IRP * m_pusbirp,
+	USB_DEVICE *pusbdevice,
+	HC_ENDPOINT_DESCRIPTOR * phcendpointdescriptor,
+	USB_TRANSFER_TYPE usbtransfertype,
+	BYTE * pbBuffer,
+	int nLengthBuffer
+);
+
 
 #if 0
 

@@ -1,4 +1,4 @@
-CROMWELL 1.9dev   2003-02-25
+CROMWELL 1.20dev   2003-03-10
 Xbox Linux Team
 
 Contact: andy@warmcat.com, mist@c64.org. xboxlinux@meriac.de
@@ -11,6 +11,8 @@ using any MS code.  Cromwell cannot launch native games, it can only
 boot into Linux (or more correctly, a file vmlinuz which can
 contain anything, but is usually the Linux kernel).
 
+ - new Audio up in Cromwell - functional but sort of stupid sounds
+    due to not having any room for samples in the ROM
  - new Fixed having to reset time and date when going back to MS BIOS
  - new Linux now aware that HDD and DVD are DMA compatible and uses
     them in DMA mode automatically

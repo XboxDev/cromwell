@@ -1,5 +1,7 @@
 #include "boot.h"
+#include <string.h>
 #include "BootParser.h"
+
 
 int ParseConfig(char *szBuffer, CONFIGENTRY *entry, EEPROMDATA *eeprom) {
 	char szLine[MAX_LINE];

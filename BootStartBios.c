@@ -37,6 +37,7 @@ extern EEPROMDATA eeprom;
 
 #include "BootUsbOhci.h"
 extern volatile USB_CONTROLLER_OBJECT usbcontroller[2];
+extern volatile AC97_DEVICE ac97device;
 
 #undef strcpy
 
@@ -437,19 +438,10 @@ void StartBios(	int nDrive, int nActivePartition , int nFATXPresent) {
 #ifdef MENU
 	int nTempCursorResumeX, nTempCursorResumeY;
 #endif
-	/*
-	unsigned char hash[16];
-	int a;
-	*/
 	int nIcon = ICONCOUNT;
-	/*
-	struct SHA1Context context;
-	*/
 
-//#ifndef XBE
+
 	BootPciInterruptEnable();
-//#else
-//#endif
 
 	memset(&config,0,sizeof(CONFIGENTRY));
 
@@ -467,6 +459,8 @@ void StartBios(	int nDrive, int nActivePartition , int nFATXPresent) {
 	{
 		int nTempCursorX, nTempCursorY, nTempStartMessageCursorX, nTempStartMessageCursorY, nTempEntryX, nTempEntryY;
 		int nModeDependentOffset=(currentvideomodedetails.m_dwWidthInPixels-640)/2;  // icon offsets computed for 640 modes, retain centering in other modes
+		AUDIO_ELEMENT_SINE aesIconSound;
+		
 		#define DELAY_TICKS 72
 		#define TRANPARENTNESS 0x30
 		#define OPAQUENESS 0xc0
@@ -491,21 +485,14 @@ void StartBios(	int nDrive, int nActivePartition , int nFATXPresent) {
 
 		BootIcons(nModeDependentOffset, nTempCursorY, nModeDependentOffset, nTempCursorY);
 
+
 		for(nIcon = 0; nIcon < ICONCOUNT;nIcon ++) {
 			BootStartBiosDoIcon(&icon[nIcon], TRANPARENTNESS);
 		}
 
 		{
 			int nShowSelect = false;
-//#ifndef XBE
 			DWORD dwTick=BIOS_TICK_COUNT;
-//#endif
-//#ifdef XBE
-//			int n,m;
-//#endif
-//#ifdef XBE
-//			for(n=0;n<10000;n++){for(m=0;m<100000;m++){;}}
-//#endif
 
 			for(nIcon = 0; nIcon < ICONCOUNT;nIcon ++) {
 #ifdef XBE
@@ -514,6 +501,17 @@ void StartBios(	int nDrive, int nActivePartition , int nFATXPresent) {
 				nShowSelect = false;
 				VIDEO_CURSOR_POSX=icon[nIcon].nTextX;
 				VIDEO_CURSOR_POSY=icon[nIcon].nTextY;
+
+				{
+					DestructAUDIO_ELEMENT_SINE(&ac97device, &aesIconSound); // harmless if not yet constructed or attached
+					ConstructAUDIO_ELEMENT_SINE(&aesIconSound, 1000+200 * nIcon);  // constructed silent
+					aesIconSound.m_saVolumePerHarmonicZeroIsNone7FFFIsFull[0]=0x3000;
+					aesIconSound.m_paudioelement.m_dwVolumeSustainRate=0x2800;
+					aesIconSound.m_paudioelement.m_dwVolumeSustainLimit=0;
+					BootAudioAttachAudioElement(&ac97device, (AUDIO_ELEMENT *)&aesIconSound);
+				}
+
+
 				switch(nIcon){
 					case ICON_FATX:
 						if(nFATXPresent) {
@@ -541,31 +539,37 @@ void StartBios(	int nDrive, int nActivePartition , int nFATXPresent) {
 						break;
 				}
 				if(nShowSelect) {
-//#ifndef XBE
-					while((BIOS_TICK_COUNT<(dwTick+DELAY_TICKS)) &&
-							(traystate==ETS_OPEN_OR_OPENING)) {
-						BootStartBiosDoIcon(&icon[nIcon], OPAQUENESS-((OPAQUENESS-TRANPARENTNESS)
-									*(BIOS_TICK_COUNT-dwTick))/DELAY_TICKS);
+
+					while(
+						(BIOS_TICK_COUNT<(dwTick+DELAY_TICKS)) &&
+						(traystate==ETS_OPEN_OR_OPENING)
+					) {
+						BootStartBiosDoIcon(
+							&icon[nIcon], OPAQUENESS-((OPAQUENESS-TRANPARENTNESS)
+							 *(BIOS_TICK_COUNT-dwTick))/DELAY_TICKS
+						);
 					}
 					dwTick=BIOS_TICK_COUNT;
-//#endif
-/*
-#ifdef XBE
-					BootStartBiosDoIcon(&icon[nIcon], OPAQUENESS);
-					for(n=0;n<20000;n++){for(m=0;m<100000;m++){;}}
-					if(BootIdeGetTrayState()<=8) {
-						traystate=ETS_CLOSED;
-					}
-#endif
-*/
 
-					if(traystate!=ETS_OPEN_OR_OPENING) {
+
+					if(traystate!=ETS_OPEN_OR_OPENING) {  // try went in, specific choice made
+						{
+							DestructAUDIO_ELEMENT_SINE(&ac97device, &aesIconSound); // harmless if not yet constructed or attached
+							ConstructAUDIO_ELEMENT_SINE(&aesIconSound, 1800);  // constructed silent
+							aesIconSound.m_saVolumePerHarmonicZeroIsNone7FFFIsFull[0]=0x4000;
+							aesIconSound.m_paudioelement.m_dwVolumeSustainRate=0x7000;
+							aesIconSound.m_paudioelement.m_dwVolumeSustainLimit=0;
+							BootAudioAttachAudioElement(&ac97device, (AUDIO_ELEMENT *)&aesIconSound);
+						}
 						VIDEO_CURSOR_POSX=icon[nIcon].nTextX;
 						VIDEO_CURSOR_POSY=icon[nIcon].nTextY;
 						RecoverMbrArea();
 						BootStartBiosDoIcon(&icon[nIcon], SELECTED);
 						break;
 					}
+
+						// timeout
+
 					BootStartBiosDoIcon(&icon[nIcon], TRANPARENTNESS);
 				}
 				BootVideoClearScreen(&jpegBackdrop, nTempCursorY, VIDEO_CURSOR_POSY+1);
@@ -584,18 +588,17 @@ void StartBios(	int nDrive, int nActivePartition , int nFATXPresent) {
 #endif
 #endif
 
-	{  	// turn off USB
+	{
+	  	// turn off USB
+
 		BootUsbTurnOff((USB_CONTROLLER_OBJECT *)&usbcontroller[0]);
 		BootUsbTurnOff((USB_CONTROLLER_OBJECT *)&usbcontroller[1]);
+
+			// silence the audio
+
+		BootAudioSilence(&ac97device);
 	}
 
-/*
-	{
-		char c='1'+nActivePartition;
-		if(nDrive==1) c=' ';
-		printk("Booting from /dev/hd%c%c\n", 'a'+nDrive, c);
-	}
-*/	
 
 	if(nIcon >= ICONCOUNT) {
 		if(nDrive == 0) {
@@ -643,21 +646,6 @@ void StartBios(	int nDrive, int nActivePartition , int nFATXPresent) {
 	}
 
 
-
-	/*
-        SHA1Reset(&context);
-        SHA1Input(&context,infokernel.buffer,infokernel.fileSize);
-        SHA1Result(&context,hash);
-        for (a=0;a<20;a++) printk("%02X:",hash[a]);
-        printk("\n");
-
-        SHA1Reset(&context);
-        SHA1Input(&context,infoinitrd.buffer,infoinitrd.fileSize);
-        SHA1Result(&context,hash);
-	for (a=0;a<20;a++) printk("%02X:",hash[a]);
-	printk("\n");
-	*/
-
 	VIDEO_ATTR=0xff8888a8;
 	printk("     Kernel:  %s\n", (char *)(0x00090200+(*((WORD *)0x9020e)) ));
 	printk("\n");
@@ -672,7 +660,7 @@ void StartBios(	int nDrive, int nActivePartition , int nFATXPresent) {
 	}
 
 		// we have to copy the GDT to a safe place, because one of the first
-		// things Linux is going to do is switch to paging, making the BIOS
+		// things Linux is going to do is reinint the paging, making the BIOS
 		// inaccessible and so crashing if we leave the GDT in BIOS
 
 	memcpy((void *)0xa0000, (void *)&baGdt[0], 0x50);

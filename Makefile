@@ -5,6 +5,13 @@
 # free bios project.
 #
 # $Log$
+# Revision 1.16  2003/03/04 11:01:39  warmcat
+# Fixed Xromwell CD Boot problem
+# Cromwell and Xromwell both tell Linux to use DMA on HDD and DVD now
+# Problem with MS BIOS wanting to reset time and date after Xromwell or Cromwell used solved
+# Bunch of interrupts up in Xromwell, smoother UI, extsmi up - added fade back in to Xromwell icons
+# Added a tiny script and changes to Makefiles to simplify CDRW dev (see README)
+#
 # Revision 1.15  2003/02/26 11:43:23  huceke
 # Reworked the bootmenu. The CVS is taged with CROMWELL_1_9_OLDMENU.
 # So we can switch back easily. Cromwell now can also boot from fatx
@@ -107,6 +114,7 @@ jpeg-6b/jdpostct.o jpeg-6b/jddctmgr.o jpeg-6b/jidctfst.o jpeg-6b/jidctflt.o jpeg
 jpeg-6b/jdsample.o jpeg-6b/jdcolor.o jpeg-6b/jquant1.o jpeg-6b/jquant2.o jpeg-6b/jdmerge.o jpeg-6b/jmemnobs.o \
 jpeg-6b/jmemmgr.o jpeg-6b/jcomapi.o jpeg-6b/jutils.o jpeg-6b/jerror.o \
 BootFlash.o BootEEPROM.o\
+BootAudio.o\
 BootUsbOhci.o BootParser.o BootFATX.o
 # !!! killed temporarily to allow clean CVS checkin
 #BootEthernet.o \

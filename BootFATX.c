@@ -5,6 +5,7 @@
 #include <unistd.h>
 #include <sys/types.h>
 #include "boot.h"
+#include <string.h>
 #include "BootFATX.h"
 
 #undef FATX_DEBUG
