@@ -7,7 +7,7 @@
 #include <sys/ioctl.h>
 #include <unistd.h>
 
-#include <linux/hdreg.h>
+// #include <linux/hdreg.h>
 #include <string.h>
 
 #include <stdarg.h>
@@ -100,14 +100,14 @@ int romcopy (
 		)
 {
 	
-	unsigned char SHA1_result[SHA1HashSize];
+	static unsigned char SHA1_result[SHA1HashSize];
 	struct SHA1Context context;
 	FILE *f;
-	unsigned char loaderimage[256*1024];
-	unsigned char flash256[256*1024];
-	unsigned char flash1024[1024*1024];
-	unsigned char crom[256*1024];
-	unsigned char compressedcrom[256*1024];
+	static unsigned char loaderimage[256*1024];
+	static unsigned char flash256[256*1024];
+	static unsigned char flash1024[1024*1024];
+	static unsigned char crom[256*1024];
+	static unsigned char compressedcrom[256*1024];
 	
        	unsigned int romsize=0;
        	unsigned int compressedromsize=0;
@@ -260,10 +260,13 @@ int romcopy (
 
 int main (int argc, const char * argv[])
 {
+	if( argc < 3 ) 	return -1;
+	
 	if (strcmp(argv[1],"-xbe")==0) { 
 		xberepair((unsigned char*)argv[2]);
 		}
 	if (strcmp(argv[1],"-rom")==0) { 
+		if( argc < 4 ) return -1;
 		romcopy((unsigned char*)argv[2],(unsigned char*)argv[3],(unsigned char*)argv[4]);
 		}
 	return 0;	
