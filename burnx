@@ -1,4 +1,5 @@
 #!/bin/sh
 make clean
 make -f Makefile.xbe &&
-make burn
+mkisofs -R -J -udf -o boot.iso xbe
+cdrecord -dao -dev=0,0,0 -driveropts=burnfree speed=4 -eject boot.iso

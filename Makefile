@@ -36,6 +36,9 @@ clean:
 	rm -f $(TOPDIR)/obj/*.bin rm -f $(TOPDIR)/obj/*.elf
 	rm -f $(TOPDIR)/image/*.bin rm -f $(TOPDIR)/image/*.xbe
 
+erase:
+	cdrecord -dao -dev=0,0,0 -driveropts=burnfree blank=fast
+
 backdrop.elf:
 	${LD} -r --oformat elf32-i386 -o $(TOPDIR)/obj/$@ -T $(TOPDIR)/scripts/backdrop.ld -b binary $(TOPDIR)/pics/backdrop.jpg
 
