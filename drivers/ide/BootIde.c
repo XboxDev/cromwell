@@ -484,27 +484,19 @@ int BootIdeDriveInit(unsigned uIoBase, int nIndexDrive,int drivetype)
 
 
 	VIDEO_ATTR=0xffc8c8c8;
-        /* 48-bit LBA */   
-	if( drive_info[83] & 1ul<<10 ) 
-	{   
-	        unsigned long long maxLBA;   
-	        /*   
-	           Do a sanity check here since the T13 spec is not clear on byte/word ordering of this value   
-	           The lower 28 bits of the Max 48 bit LBA should match the previously returned 28 bit max LBA.   
-	           If it does match, then we are reading the 48-bit Max LBA correctly and we can go ahead and use it...   
-	           Once this code is actually tested this check can be removed.   
-	        */   
-	        printk("ATA 48-bit LBA Supported\n");   
-	        maxLBA = *((unsigned long long*)&(drive_info[100]));   
-	        if( tsaHarddiskInfo[nIndexDrive].m_dwCountSectorsTotal == (unsigned int)(maxLBA & 0xFFFFFFF) ) {   
-	                tsaHarddiskInfo[nIndexDrive].m_dwCountSectorsTotal = (unsigned int)maxLBA;   
-	        } else {   
-	                printk("28 LSBs of Max 48-bit LBA's don't match.  Using Max 28-bit LBA\n");   
-	        }   
-	} else {   
-	        printk("ATA 28-bit LBA Support Only\n");   
-	} 
+        /* 48-bit LBA - we should check bits 83 AND 86 to check both
+	 * supported AND enabled  - however, some drives do not set
+	 * Bit 83. Bit 86 seems to be the accepted way to detect whether
+	 * 48-bit LBA is available. */
+        if( drive_info[86] & 1ul<<10 )  {
+               printk("ATA 48-bit LBA Supported\n");
+                if (!(drive_info[83] & 1ul<<10))
+			printk("Warning - ATA Bit 83 is not set - attempting LBA48 anyway\n");
 	
+		tsaHarddiskInfo[nIndexDrive].m_dwCountSectorsTotal = 
+			*((unsigned int*)&(drive_info[100]));
+	}
+	else	printk("ATA 28-bit LBA Support Only\n");
 	/* End 48-bit LBA */   
 	
 	{ 
