@@ -374,7 +374,7 @@ int BootPerformXCodeActions(void);
 ////////// BootStartBios.c
 
 void StartBios(CONFIGENTRY *config,int nActivePartition, int nFATXPresent,int bootfrom);
-int BootMenue(CONFIGENTRY *config,int nDrive,int nActivePartition, int nFATXPresent);
+int BootMenu(CONFIGENTRY *config,int nDrive,int nActivePartition, int nFATXPresent);
 
 ////////// BootResetActions.c
 void ClearIDT (void);
