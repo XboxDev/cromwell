@@ -37,7 +37,9 @@ struct kernel_setup_t {
 	unsigned short vesapm_seg;              /* 0x2e */
 	unsigned short vesapm_off;              /* 0x30 */
 	unsigned short pages;                   /* 0x32 */
-	char __pad2[445];
+	char __pad2[436];
+	unsigned char  e820_map_nr; /* 488: 0x1e8 number of entries in e820 map */
+	char __pad3[8];
 	unsigned char  setup_sects; /* 497: 0x1f1  setup size in sectors (512) */
 	unsigned short root_flags;	/* 498: 0x1f2  1 = ro ; 0 = rw */
 	unsigned short kernel_para;	/* 500: 0x1f4 kernel size in paragraphs (16) syssize bootsect.S */
@@ -60,9 +62,22 @@ struct kernel_setup_t {
 	unsigned long ramdisk_size; /* 540: 0x21c RAM disk size */
 	unsigned short b,c;         /* 544: 0x220 bzImage hacks */
 	unsigned short heap_end_ptr;/* 548: 0x224 end of free area after setup code */
-	unsigned char __pad3[2];  // was wrongfully [4]
+	unsigned char __pad4[2];  // was wrongfully [4]
 	unsigned int cmd_line_ptr;  /* 552: pointer to command line */
 	unsigned int initrd_addr_max;/*556: highest address that can be used by initrd */
+	unsigned char __pad5[160];
+	unsigned long long e820_addr1; /* 720: first e820 map entry */
+	unsigned long long e820_size1;
+	unsigned long e820_type1;
+	unsigned long long e820_addr2; /* 740: second e820 map entry */
+	unsigned long long e820_size2;
+	unsigned long e820_type2;
+	unsigned long long e820_addr3; /* 760: third e820 map entry */
+	unsigned long long e820_size3;
+	unsigned long e820_type3;
+	unsigned long long e820_addr4; /* 780: fourth e820 map entry */
+	unsigned long long e820_size4;
+	unsigned long e820_type4;
 };
 
 extern void* framebuffer;
@@ -73,7 +88,9 @@ void setup(void* KernelPos, void* PhysInitrdPos, void* InitrdSize, char* kernel_
 
     memset(kernel_setup->__pad2,0x00,sizeof(kernel_setup->__pad2));
     memset(kernel_setup->__pad3,0x00,sizeof(kernel_setup->__pad3));
-    kernel_setup->unused2=0; 
+    memset(kernel_setup->__pad4,0x00,sizeof(kernel_setup->__pad4));
+    memset(kernel_setup->__pad5,0x00,sizeof(kernel_setup->__pad5));
+    kernel_setup->unused2=0;
     kernel_setup->unused3=0;
     
     /* init kernel parameters */
@@ -81,8 +98,8 @@ void setup(void* KernelPos, void* PhysInitrdPos, void* InitrdSize, char* kernel_
     kernel_setup->heap_end_ptr = 0xffff;	/* 64K heap */
     kernel_setup->flags = 0x81;			/* loaded high, heap existant */
     kernel_setup->start = PM_KERNEL_DEST;
-    kernel_setup->ext_mem_k = ((xbox_ram-5) * 1024); /* *extended* (minus first MB) memory in kilobytes */
-	
+    kernel_setup->ext_mem_k = (((xbox_ram-1) * 1024) - FRAMEBUFFER_SIZE / 1024) & 0xffff ; /* now replaced by e820 map */
+
     /* initrd */
     /* ED : only if initrd */
 
@@ -138,6 +155,21 @@ void setup(void* KernelPos, void* PhysInitrdPos, void* InitrdSize, char* kernel_
     kernel_setup->c=0;
     
     kernel_setup->root_flags=0; // allow read/write
+
+    /* setup e820 memory map */
+    kernel_setup->e820_map_nr=4;
+    kernel_setup->e820_addr1=0x0000000000000000;
+    kernel_setup->e820_size1=0x000000000009f000;
+    kernel_setup->e820_type1=1; /* RAM */
+    kernel_setup->e820_addr2=0x000000000009f000;
+    kernel_setup->e820_size2=0x0000000000061000;
+    kernel_setup->e820_type2=2; /* Reserved, legacy memory region */
+    kernel_setup->e820_addr3=0x0000000000100000;
+    kernel_setup->e820_size3=(xbox_ram - 1) * 1024 * 1024 - FRAMEBUFFER_SIZE;
+    kernel_setup->e820_type3=1; /* RAM*/
+    kernel_setup->e820_addr4=(xbox_ram * 1024 * 1024) - FRAMEBUFFER_SIZE;
+    kernel_setup->e820_size4=FRAMEBUFFER_SIZE;
+    kernel_setup->e820_type4=2; /* Reserved, framebuffer */
 
     /* set command line */
 
