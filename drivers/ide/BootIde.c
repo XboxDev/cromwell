@@ -7,6 +7,7 @@
 #include "boot.h"
 #include "shared.h"
 #include "BootEEPROM.h"
+#include "BootIde.h"
 
 #undef sprintf
 
@@ -95,11 +96,6 @@ typedef enum {
 #define printk_debug bprintf
 
 
-//////////////////////////////////
-//  Statics
-
-tsHarddiskInfo tsaHarddiskInfo[2];  // static struct stores data about attached drives
-
 const char * const szaSenseKeys[] = {
 	"No Sense", "Recovered Error", "Not Ready", "Medium Error",
 	"Hardware Error", "Illegal request", "Unit Attention", "Data Protect",
@@ -110,8 +106,6 @@ const char * const szaSenseKeys[] = {
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 //  Helper routines
 //
-
-int DriveSecurityChange(unsigned uIoBase, int driveId, ide_command_t ide_cmd, char *password);
 /* -------------------------------------------------------------------------------- */
 
 int BootIdeWaitNotBusy(unsigned uIoBase)
@@ -492,18 +486,7 @@ int BootIdeDriveInit(unsigned uIoBase, int nIndexDrive)
 				}
 		
           		}
-/*
 
-	// Xbox drives can't handle ALLOW REMOVAL??
-			memset(&ba[0], 0, 12);
-			ba[0]=0x1e;
-			if(BootIdeIssueAtapiPacketCommandAndPacket(nIndexDrive, &ba[0])) {
-				printk("Unable to issue allow media removal command\n");
-				while(1) ;
-			} else {
-				BootIdeAtapiPrintkFriendlyError(nIndexDrive);
-			}
-*/
 		}
 
 
@@ -607,23 +590,11 @@ int BootIdeDriveInit(unsigned uIoBase, int nIndexDrive)
 		tsaHarddiskInfo[nIndexDrive].m_bLbaMode = IDE_DH_CHS;
 	}
 
-//			tsaHarddiskInfo[nIndexDrive].m_bLbaMode = IDE_DH_CHS;
-
-/*
-	if(tsaHarddiskInfo[nIndexDrive].m_bLbaMode == IDE_DH_CHS) {
-			printk("      CHS Mode\n");
-	} else {
-			printk("      LBA Mode\n");
-	}
-*/
+	//If drive is a hard disk, see what type of partitioning it has.
 	if (!tsaHarddiskInfo[nIndexDrive].m_fAtapi) {
 
 		unsigned char ba[512];
 		int nError;
-
-//		printk("Looking at capabilities\n");
-
-			// report on the FATX-ness of the drive contents
 
 		if((nError=BootIdeReadSector(nIndexDrive, &ba[0], 3, 0, 512))) 
 		{
