@@ -4,21 +4,25 @@
 //#define VIDEO_PREFERRED_MODE VIDEO_MODE_800x600
 #define VIDEO_PREFERRED_MODE VIDEO_MODE_640x480
 
+//Uncomment to include BIOS flashing support
 //#define FLASH
 
-//
 // uncomment to force CD boot mode even if MBR present
 // default is to boot from HDD if MBR present, else CD
 //#define FORCE_CD_BOOT
 //#define IS_XBE_CDLOADER
+
 #define MENU
+
+//Time to wait in seconds before auto-selecting default item
+#define BOOT_TIMEWAIT 15
 
 // uncomment to default to FATX boot if you
 // run xromwell as bootloader for FATX
 
 //#define DEFAULT_FATX
 
-// Usefull combinations
+// Useful combinations
 //
 // Booting from CD
 // 
@@ -41,7 +45,6 @@
 
 // uncomment to do Ethernet init
 //#define DO_ETHERNET 1
-
 
 #undef DEBUG_MODE
 //#define XPAD_VIBRA_STARTUP
