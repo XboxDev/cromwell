@@ -234,7 +234,7 @@ void BootVgaInitializationKernelNG(CURRENT_VIDEO_MODE_DETAILS * pvmode) {
 				break;
 		}
 	}
-	else if ((av_type == AV_VGA_SOG) || (av_type == AV_HDTV)) {
+	else if ((av_type == AV_VGA_SOG) || (av_type == AV_VGA)) {
 		unsigned char pll_int;
 		// Settings for 800x600@56Hz, 35 kHz HSync
 		pvmode->width=800;
