@@ -450,8 +450,6 @@ int ExittoLinux(CONFIGENTRY *config) {
 	VIDEO_ATTR=0xff8888a8;
 	printk("     Kernel:  %s\n", (char *)(0x00090200+(*((u16 *)0x9020e)) ));
 	printk("\n");
-	printk("     Append:  %s\n", config->szAppend);
-	
 	{
 		char *sz="\2Starting Linux\2";
 		VIDEO_CURSOR_POSX=((vmode.width-BootVideoGetStringTotalWidth(sz))/2)*4;
