@@ -5,6 +5,10 @@
 # free bios project.
 #
 # $Log$
+# Revision 1.13  2003/02/09 18:41:08  warmcat
+# Merged Ed's WD drive fixes
+# Made a start on USB init
+#
 # Revision 1.12  2003/02/01 14:36:50  warmcat
 # 800x600 video mode now default for PAL, thanks to Petteri Kangaslampi's work on nvtv.
 # Set encoder bit for Luma LPF for 800x600, which voids Chroma artifacts on composite when the Luma if too HF.
@@ -93,7 +97,7 @@ jpeg-6b/jdpostct.o jpeg-6b/jddctmgr.o jpeg-6b/jidctfst.o jpeg-6b/jidctflt.o jpeg
 jpeg-6b/jdsample.o jpeg-6b/jdcolor.o jpeg-6b/jquant1.o jpeg-6b/jquant2.o jpeg-6b/jdmerge.o jpeg-6b/jmemnobs.o \
 jpeg-6b/jmemmgr.o jpeg-6b/jcomapi.o jpeg-6b/jutils.o jpeg-6b/jerror.o \
 BootFlash.o BootEEPROM.o\
-BootUsbOhci.o
+BootUsbOhci.o BootParser.o BootFATX.o
 # !!! killed temporarily to allow clean CVS checkin
 #BootEthernet.o \
 #nvn/nvnetlib.o
@@ -113,7 +117,7 @@ clean	:
 	rm -rf *.o *~ core *.core ${OBJECTS} ${RESOURCES} image.elf image.bin
 #	mv nvn/nvnetlib.o.tmp nvn/nvnetlib.o
 	rm -f  *.a _rombios_.c _rombios_.s rombios.s rombios.bin rombios.txt
-	rm -f  backdrop.elf
+	rm -f  backdrop.elf image_1024.bin
 
 image.elf : ${OBJECTS} ${RESOURCES}
 	${LD} -o $@ ${OBJECTS} ${RESOURCES} ${LDFLAGS}
@@ -146,6 +150,7 @@ BootPerformPicChallengeResponseAction.o: BootPerformPicChallengeResponseAction.c
 
 image.bin : image.elf
 	${OBJCOPY} --output-target=binary --strip-all $< $@
+	cat $@ $@ $@ $@ > image_1024.bin
 	@ls -l $@
 
 #     the following send the patched result to a Filtror and starts up the

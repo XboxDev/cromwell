@@ -25,6 +25,7 @@
 #include "boot.h"
 #include "BootEEPROM.h"
 #include "BootFlash.h"
+#include "BootFATX.h"
 
 #ifdef XBE
 #include "config-xbe.h"
@@ -506,25 +507,16 @@ extern void BootResetAction ( void ) {
 							sz[nPos++]='\n'; sz[nPos]='\0';
 						}
 						printk(sz);
-	#endif
+#endif
 						n++; pb+=16;
 					}
 
 					printk("\n");
 
-// If there is no active partition, it's posible
-// that the HDD has and empty MBR and we want
-// to boot from cdrom
-//
-//					if(!fSeenActive) {
-//						printk("No active partition.  Cannot boot, halting\n");
-//						while(1) ;
-//					}
 					VIDEO_ATTR=0xffffffff;
 				} else { // no mbr signature
 					;
 				}
-
 			}
 		}
 

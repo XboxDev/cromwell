@@ -6,7 +6,7 @@
 //
 // uncomment to force CD boot mode even if MBR present
 // default is to boot from HDD if MBR present, else CD
-#define FORCE_CD_BOOT
+//#define FORCE_CD_BOOT
 
 // uncomment the following if you use cromwell
 // as bootloader from CD
@@ -18,5 +18,9 @@
 // show the MBR table if the MBR is valid
 #define DISPLAY_MBR_INFO
 
+// Enable FATX Support
+//#define ENABLE_FATX
+
 // uncomment to do Ethernet init
 //#define DO_ETHERNET 1
+

@@ -21,6 +21,10 @@
 #include "boot.h"
 #include <shared.h>
 #include <filesys.h>
+#include "rc4.h"
+#include "sha1.h"
+#include "BootParser.h"
+#include "BootFATX.h"
 #include "xbox.h"
 
 #ifdef XBE
@@ -86,7 +90,7 @@ void RecoverMbrArea()
 
 
 void StartBios(	int nDrive, int nActivePartition ) {
-	char szKernelFile[128], szInitrdFile[128], szCommandline[1024];
+	CONFIGENTRY config;
 	DWORD dwConfigSize=0;
 	bool fHaveConfig=false;
 	bool fUseConfig=true;
@@ -95,10 +99,30 @@ void StartBios(	int nDrive, int nActivePartition ) {
 #ifndef IS_XBE_BOOTLOADER
 	int nTempCursorResumeX, nTempCursorResumeY;
 #endif
+#ifdef ENABLE_FATX
+	/*
+	unsigned char hash[16];
+	int a;
+	*/
+	bool fFATXConfig = false;
+	FATXFILEINFO fileinfo;
+	FATXFILEINFO infokernel;
+	FATXFILEINFO infoinitrd;
+	FATXPartition *partition = NULL;
+	struct SHA1Context context;
+#endif
 
 #ifndef XBE
 	BootPciInterruptEnable();
+#else
+#ifdef ENABLE_FATX
+	memset(&fileinfo,0,sizeof(CONFIGENTRY));	
+	memset(&infokernel,0,sizeof(CONFIGENTRY));	
+	memset(&infoinitrd,0,sizeof(CONFIGENTRY));	
 #endif
+#endif
+
+	memset(&config,0,sizeof(CONFIGENTRY));
 
 	szGrub[0]=0xff; szGrub[1]=0xff; szGrub[2]=nActivePartition; szGrub[3]=0x00;
 
@@ -108,9 +132,9 @@ void StartBios(	int nDrive, int nActivePartition ) {
 	disk_read_func=NULL;
 
 
-	strcpy(szCommandline, "root=/dev/hda2 devfs=mount kbd-reset"); // default
-	strcpy(szKernelFile, "/boot/vmlinuz");
-	strcpy(szInitrdFile, "/boot/initrd");
+	strcpy(config.szAppend, "root=/dev/hda2 devfs=mount kbd-reset"); // default
+	strcpy(config.szKernel, "/boot/vmlinuz");
+	strcpy(config.szInitrd, "/boot/initrd");
 
 #ifndef IS_XBE_BOOTLOADER
 #ifdef MENU
@@ -312,6 +336,26 @@ void StartBios(	int nDrive, int nActivePartition ) {
 							for(n=0;n<1000000;n++) { ; }
 						}
 
+// If cromwell acts as an xbeloader it falls back to try reading
+//	the config file from fatx
+						
+#ifdef ENABLE_FATX
+						if(fMore) {
+							printk("Try loading linuxboot.cfg form FATX\n");
+							fFATXConfig = true;
+							partition = OpenFATXPartition(0,
+									SECTOR_STORE,
+									STORE_SIZE);
+							if(partition != NULL) {
+								if(!LoadFATXFile(partition,"/linuxboot.cfg",&fileinfo) ) {
+									fFATXConfig = false;
+									printk("Loading of linuxboot.cfg failed\n");
+									while(1);
+								}
+							}
+							fMore=false;
+						}
+#else
 						if(!fOkay) {
 							void BootFiltrorDebugShell();
 							printk("cdrom unhappy\n");
@@ -322,6 +366,7 @@ void StartBios(	int nDrive, int nActivePartition ) {
 						}
 					} else {
 						fMore=false;
+#endif
 					}
 				}
 			}
@@ -376,47 +421,36 @@ void StartBios(	int nDrive, int nActivePartition ) {
 		}
 	} else {  // ISO9660 traversal on CDROM
 
-		printk("  Loading linuxboot.cfg from CDROM... ");
-		dwConfigSize=BootIso9660GetFile("/linuxboot.cfg", (BYTE *)0x90000, 0x800, 0x0);
+#ifdef ENABLE_FATX
+		if(fFATXConfig) {
+			memcpy((BYTE *)0x90000,fileinfo.buffer,fileinfo.fileSize);
+			dwConfigSize = fileinfo.fileSize;
+		} else {
+#endif
+			printk("  Loading linuxboot.cfg from CDROM... ");
+			dwConfigSize=BootIso9660GetFile("/linuxboot.cfg", (BYTE *)0x90000, 0x800, 0x0);
 
-		if((int)dwConfigSize<0) { // not found, try mangled 8.3 version
-			dwConfigSize=BootIso9660GetFile("/LINUXBOO.CFG", (BYTE *)0x90000, 0x800, 0x0);
-			if((int)dwConfigSize<0) { // has to be there on CDROM
-				printk("Unable to find it, halting\n");
-				while(1) ;
+			if((int)dwConfigSize<0) { // not found, try mangled 8.3 version
+				dwConfigSize=BootIso9660GetFile("/LINUXBOO.CFG", (BYTE *)0x90000, 0x800, 0x0);
+				if((int)dwConfigSize<0) { // has to be there on CDROM
+					printk("Unable to find it, halting\n");
+					while(1) ;
+				}
 			}
+#ifdef ENABLE_FATX
 		}
+#endif
 		printk("okay\n");
 		fHaveConfig=true;
 	}
 
-	if(fHaveConfig) {
-		char * szaTokens[] = { "kernel ", "initrd ", "append " };
-		char * szaDestinations[] = { szKernelFile, szInitrdFile, szCommandline };
-		int n1=0;
-		while(n1<(sizeof(szaTokens)/sizeof(char *))) {
-			char * sz=(char *)0x90000;
-			int nSpan=dwConfigSize;
-			while(nSpan--) {
-				if(_strncmp(sz, szaTokens[n1], strlen(szaTokens[n1]))==0) { // hit
-					int n=0;
-					sz+=strlen(szaTokens[n1]);
-					if(*sz!='/') szaDestinations[n1][n++]='/'; // prepend with / if not present
-					while((*sz!='\n') && (*sz!=0x0d)) szaDestinations[n1][n++]=*sz++;
-					szaDestinations[n1][n]='\0';
-					n1++; nSpan=0;
-				}
-				sz++;
-			}
-		}
-		if(szCommandline[0] == '/') szCommandline[0] = ' ';
-	}
+	if(fHaveConfig) ParseConfig((char *)0x90000,&config);
 
 	if(nDrive==0) { // grub/reiserfs on HDD
-		printk("  Command line: %s\n", szCommandline);
-		printk("  Loading %s ", szKernelFile);
+		printk("  Command line: %s\n", config.szAppend);
+		printk("  Loading %s ", config.szKernel);
 		VIDEO_ATTR=0xffa8a8a8;
-		strcpy(&szGrub[4], szKernelFile);
+		strcpy(&szGrub[4], config.szKernel);
 		nRet=grub_open(szGrub);
 
 		if(nRet!=1) {
@@ -431,11 +465,11 @@ void StartBios(	int nDrive, int nActivePartition ) {
 		grub_close();
 		printk(" -  %d bytes...\n", dwKernelSize);
 
-		if( _strncmp(szInitrdFile, "/no", strlen("/no")) != 0) {
+		if( (_strncmp(config.szInitrd, "/no", strlen("/no")) != 0) && config.szInitrd[0]) {
 			VIDEO_ATTR=0xffd8d8d8;
-			printk("  Loading %s ", szInitrdFile);
+			printk("  Loading %s ", config.szInitrd);
 			VIDEO_ATTR=0xffa8a8a8;
-			strcpy(&szGrub[4], szInitrdFile);
+			strcpy(&szGrub[4], config.szInitrd);
 			nRet=grub_open(szGrub);
 			if(filemax==0) {
 				printf("Empty file\n"); while(1);
@@ -457,50 +491,106 @@ void StartBios(	int nDrive, int nActivePartition ) {
 
 	} else {  // ISO9660 traversal on CDROM
 
-		printk("  Bootconfig : Kernel  %s\n", szKernelFile);
+		printk("  Bootconfig : Kernel  %s\n", config.szKernel);
 		VIDEO_ATTR=0xffa8a8a8;
-		printk("  Bootconfig : Initrd  %s\n", szInitrdFile);
+		printk("  Bootconfig : Initrd  %s\n", config.szInitrd);
 		VIDEO_ATTR=0xffa8a8a8;
-		printk("  Bootconfig : Command %s\n", szCommandline);
+		printk("  Bootconfig : Command %s\n", config.szAppend);
 		VIDEO_ATTR=0xffa8a8a8;
-		printk("  Loading %s from CDROM ", szKernelFile);
-		VIDEO_ATTR=0xffa8a8a8;
-
-		dwKernelSize=BootIso9660GetFile(szKernelFile, (BYTE *)0x90000, 0x400, 0x0);
-		if((int)dwKernelSize<0) { // not found, try 8.3
-			strcpy(szKernelFile, "/VMLINUZ.");
-			dwKernelSize=BootIso9660GetFile(szKernelFile, (BYTE *)0x90000, 0x400, 0x0);
+#ifdef ENABLE_FATX
+		if(fFATXConfig) {
+			printk("  Loading %s from FATX ", config.szKernel);
+		} else {			
+#endif
+			printk("  Loading %s from CDROM ", config.szKernel);
+#ifdef ENABLE_FATX
 		}
-		nSizeHeader=((*((BYTE *)0x901f1))+1)*512;
-		dwKernelSize+=BootIso9660GetFile(szKernelFile, (void *)0x90400, nSizeHeader-0x400, 0x400);
-		dwKernelSize+=BootIso9660GetFile(szKernelFile, (void *)0x00100000, 4096*1024, nSizeHeader);
+#endif
+		VIDEO_ATTR=0xffa8a8a8;
 
-		printk(" -  %d bytes...\n", dwKernelSize);
-
-		if( _strncmp(szInitrdFile, "/no", strlen("/no")) != 0) {
-			VIDEO_ATTR=0xffd8d8d8;
-			printk("  Loading %s from CDROM", szInitrdFile);
-			VIDEO_ATTR=0xffa8a8a8;
-
-			dwInitrdSize=BootIso9660GetFile(szInitrdFile, (void *)0x03000000, 4096*1024, 0);
-			if((int)dwInitrdSize<0) { // not found, try 8.3
-				strcpy(szInitrdFile, "/INITRD.");
-				dwInitrdSize=BootIso9660GetFile(szInitrdFile, (void *)0x03000000, 4096*1024, 0);
+#ifdef ENABLE_FATX
+		if(fFATXConfig) {
+			if(! LoadFATXFile(partition,config.szKernel,&infokernel)) {
+				printk("Error loading kernel %s\n",config.szKernel);
+				while(1);
+			} else {
+				dwKernelSize = infokernel.fileSize;
+				// moving the kernel to its final location
+				memcpy((BYTE *)0x90000,&infokernel.buffer[0],0x400);	
+				nSizeHeader=((*((BYTE *)0x901f1))+1)*512;
+				memcpy((BYTE *)0x90400,&infokernel.buffer[0x400],nSizeHeader-0x400);
+				memcpy((BYTE *)0x00100000,&infokernel.buffer[nSizeHeader],infokernel.fileSize);
+			printk(" -  %d %d bytes...\n", dwKernelSize, infokernel.fileRead);
 			}
-			printk(" - %d bytes\n", dwInitrdSize);
 		} else {
-			VIDEO_ATTR=0xffd8d8d8;
-			printk("  No initrd from config file");
-			VIDEO_ATTR=0xffa8a8a8;
-			dwInitrdSize=0;
-			printk("");
+#endif
+			dwKernelSize=BootIso9660GetFile(config.szKernel, (BYTE *)0x90000, 0x400, 0x0);
+			if((int)dwKernelSize<0) { // not found, try 8.3
+				strcpy(config.szKernel, "/VMLINUZ.");
+				dwKernelSize=BootIso9660GetFile(config.szKernel, (BYTE *)0x90000, 0x400, 0x0);
+			}
+			nSizeHeader=((*((BYTE *)0x901f1))+1)*512;
+			dwKernelSize+=BootIso9660GetFile(config.szKernel, (void *)0x90400, nSizeHeader-0x400, 0x400);
+			dwKernelSize+=BootIso9660GetFile(config.szKernel, (void *)0x00100000, 4096*1024, nSizeHeader);
+			printk(" -  %d bytes...\n", dwKernelSize);
+#ifdef ENABLE_FATX
 		}
-	}
+#endif
+
+			if( (_strncmp(config.szInitrd, "/no", strlen("/no")) != 0) && config.szInitrd) {
+				VIDEO_ATTR=0xffd8d8d8;
+#ifdef ENABLE_FATX
+				if(fFATXConfig) {
+					printk("  Loading %s from FATX", config.szInitrd);
+					if(! LoadFATXFile(partition,config.szInitrd,&infoinitrd)) {
+						printk("Error loading initrd %s\n",config.szInitrd);
+						while(1);
+					} else {
+						dwInitrdSize = infoinitrd.fileSize;
+						memcpy((BYTE *)0x03000000,infoinitrd.buffer,infoinitrd.fileSize);	// moving the initrd to its final location
+					}
+					printk(" - %d %d bytes\n", dwInitrdSize,infoinitrd.fileRead);
+				} else {
+#endif
+					printk("  Loading %s from CDROM", config.szInitrd);
+					VIDEO_ATTR=0xffa8a8a8;
+
+					dwInitrdSize=BootIso9660GetFile(config.szInitrd, (void *)0x03000000, 4096*1024, 0);
+					if((int)dwInitrdSize<0) { // not found, try 8.3
+						strcpy(config.szInitrd, "/INITRD.");
+						dwInitrdSize=BootIso9660GetFile(config.szInitrd, (void *)0x03000000, 4096*1024, 0);
+					}
+					printk(" - %d bytes\n", dwInitrdSize);
+#ifdef ENABLE_FATX
+				}
+#endif
+			} else {
+				VIDEO_ATTR=0xffd8d8d8;
+				printk("  No initrd from config file");
+				VIDEO_ATTR=0xffa8a8a8;
+				dwInitrdSize=0;
+				printk("");
+			}
+		}
+
+	/*
+        SHA1Reset(&context);
+        SHA1Input(&context,infokernel.buffer,infokernel.fileSize);
+        SHA1Result(&context,hash);
+        for (a=0;a<20;a++) printk("%02X:",hash[a]);
+        printk("\n");
+	
+        SHA1Reset(&context);
+        SHA1Input(&context,infoinitrd.buffer,infoinitrd.fileSize);
+        SHA1Result(&context,hash);
+	for (a=0;a<20;a++) printk("%02X:",hash[a]);
+	printk("\n");
+	*/
 
 	VIDEO_ATTR=0xff8888a8;
 	printk("     Kernel:  %s\n", (char *)(0x00090200+(*((WORD *)0x9020e)) ));
+	printk("\n");
 
-	printf("\n");
 	{
 		char *sz="\2Starting Linux\2";
 		VIDEO_CURSOR_POSX=((currentvideomodedetails.m_dwWidthInPixels-BootVideoGetStringTotalWidth(sz))/2)*4;
@@ -518,7 +608,7 @@ void StartBios(	int nDrive, int nActivePartition ) {
 
 		// prep the Linux startup struct
 
-	setup( (void *)0x90000, (void *)0x03000000, (void *)dwInitrdSize, szCommandline);
+	setup( (void *)0x90000, (void *)0x03000000, (void *)dwInitrdSize, config.szAppend);
 
 	{
 		int nAta=0;

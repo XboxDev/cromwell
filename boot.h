@@ -458,3 +458,9 @@ void HMAC_SHA1( unsigned char *result,
                 unsigned char *key, int key_length,
                 unsigned char *text1, int text1_length,
                 unsigned char *text2, int text2_length );
+
+char *HelpGetToken(char *ptr,char token);
+void HelpGetParm(char *szBuffer, char *szOrig);
+char *HelpStrrchr(const char *string, int ch);
+char *HelpCopyUntil(char* d, char* s, int max);
+char *HelpScan0(char* s);

@@ -17,6 +17,9 @@
 // show the MBR table if the MBR is valid
 #define DISPLAY_MBR_INFO
 
+// Enable FATX Support
+//#define ENABLE_FATX
+
 // show simple menu selection
 #define MENU
 
