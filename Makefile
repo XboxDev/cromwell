@@ -21,8 +21,8 @@ LDFLAGS-ROMBOOT = -s -S -T $(TOPDIR)/boot_rom/bootrom.ld
 
 RESOURCES-ROMBOOT = $(TOPDIR)/obj/xcodes11.elf 
 
-OBJECTS-IMAGEBLD = $(TOPDIR)/obj/imagebld.o
-OBJECTS-IMAGEBLD += $(TOPDIR)/obj/sha1.o
+OBJECTS-IMAGEBLD = $(TOPDIR)/bin/imagebld.o
+OBJECTS-IMAGEBLD += $(TOPDIR)/bin/sha1.o
 
 OBJECTS-XBE = $(TOPDIR)/boot_xbe/xbeboot.o
                                              
@@ -109,10 +109,10 @@ image.elf:
 
 image.bin:
 	${OBJCOPY} --output-target=binary --strip-all $(TOPDIR)/obj/image.elf $(TOPDIR)/image/$@
-	$(TOPDIR)/obj/imagebld -rom $(TOPDIR)/image/image.bin $(TOPDIR)/obj/image-crom.bin  $(TOPDIR)/image/image_1024.bin
+	$(TOPDIR)/bin/imagebld -rom $(TOPDIR)/image/image.bin $(TOPDIR)/obj/image-crom.bin  $(TOPDIR)/image/image_1024.bin
 
 imagebld:
-	gcc $(OBJECTS-IMAGEBLD) -o $(TOPDIR)/obj/imagebld $(INCLUDE)
+	gcc $(OBJECTS-IMAGEBLD) -o $(TOPDIR)/bin/imagebld $(INCLUDE)
 
 install:
 	lmilk -f -p $(TOPDIR)/image/image.bin
@@ -124,8 +124,9 @@ clean:
 	rm -f $(TOPDIR)/image/*.bin rm -f $(TOPDIR)/image/*.xbe rm -f $(TOPDIR)/xbe/*.xbe $(TOPDIR)/xbe/*.bin
 	rm -f $(TOPDIR)/xbe/*.elf
 	rm -f $(TOPDIR)/image/*.bin
-	rm -f $(TOPDIR)/obj/imagebld
+	rm -f $(TOPDIR)/bin/imagebld*
 	mkdir $(TOPDIR)/obj -p
+	mkdir $(TOPDIR)/bin -p
 	
 
 backdrop.elf:
@@ -137,7 +138,7 @@ default.elf: ${OBJECTS-XBE}
 default.xbe: default.elf
 	${OBJCOPY} --output-target=binary --strip-all $(TOPDIR)/obj/default.elf $(TOPDIR)/xbe/$@
 	cat $(TOPDIR)/obj/image-crom.bin >> $(TOPDIR)/xbe/default.xbe
-	$(TOPDIR)/obj/imagebld -xbe $(TOPDIR)/xbe/default.xbe 
+	$(TOPDIR)/bin/imagebld -xbe $(TOPDIR)/xbe/default.xbe 
 	#mv $(TOPDIR)/out.xbe $(TOPDIR)/xbe/default.xbe -f
 	@ls -l $(TOPDIR)/xbe/$@
 				
