@@ -31,9 +31,10 @@
 #include "config-xbe.h"
 #else
 #include "config-rom.h"
+#endif
+
 #include "BootUsbOhci.h"
 extern volatile USB_CONTROLLER_OBJECT usbcontroller[2];
-#endif
 
 #undef strcpy
 
@@ -51,33 +52,365 @@ int _strncmp(const char *sz1, const char *sz2, int nMax);
 
 void setup(void* KernelPos, void* PhysInitrdPos, void* InitrdSize, char* kernel_cmdline);
 
-	int nRet;
-	DWORD dwKernelSize, dwInitrdSize;
-	int nSizeHeader;
-	const BYTE baGdt[] = {
-		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // 0x00 dummy
-		0xff, 0xff, 0x00, 0x00, 0x00, 0x9a, 0xcf, 0x00, // 0x08 code32
-		0xff, 0xff, 0x00, 0x00, 0x00, 0x9a, 0xcf, 0x00, // 0x10 code32
-		0xff, 0xff, 0x00, 0x00, 0x00, 0x92, 0xcf, 0x00, // 0x18 data32
-		0xff, 0xff, 0x00, 0x00, 0x00, 0x9a, 0x8f, 0x00, // 0x20 code16 (8f indicates 4K granularity, ie, huge limit)
-		0xff, 0xff, 0x00, 0x00, 0x00, 0x92, 0x8f, 0x00, // 0x28 data16
+int nRet;
+DWORD dwKernelSize, dwInitrdSize;
+int nSizeHeader;
+const BYTE baGdt[] = {
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // 0x00 dummy
+	0xff, 0xff, 0x00, 0x00, 0x00, 0x9a, 0xcf, 0x00, // 0x08 code32
+	0xff, 0xff, 0x00, 0x00, 0x00, 0x9a, 0xcf, 0x00, // 0x10 code32
+	0xff, 0xff, 0x00, 0x00, 0x00, 0x92, 0xcf, 0x00, // 0x18 data32
+	0xff, 0xff, 0x00, 0x00, 0x00, 0x9a, 0x8f, 0x00, // 0x20 code16 (8f indicates 4K granularity, ie, huge limit)
+	0xff, 0xff, 0x00, 0x00, 0x00, 0x92, 0x8f, 0x00, // 0x28 data16
 
-		0x30, 0x00, 0x00, 0x00, 0x0a, 0x00, 0x00, 0x00,
-		0x00, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
-	};
+	0x30, 0x00, 0x00, 0x00, 0x0a, 0x00, 0x00, 0x00,
+	0x00, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+};
 
-void BootStartBiosDoIcon(int nDestX, int nDestY, int nSrcX, int nSrcLength, int nSrcHeight, BYTE bOpaqueness)
+
+#define ICON_FATX 	0
+#define ICON_NATIVE 	1
+#define ICON_CD 	2
+#define ICON_SETUP	3
+
+#define ICONCOUNT	4
+
+typedef struct {
+	int nDestX;
+	int nDestY;
+	int nSrcX;
+	int nSrcLength;
+	int nSrcHeight;
+	int nTextX;
+	int nTextY;
+} ICON;
+
+ICON icon[ICONCOUNT];
+
+void BootPrintConfig(CONFIGENTRY *config) {
+	printk("  Bootconfig : Kernel  %s\n", config->szKernel);
+	VIDEO_ATTR=0xffa8a8a8;
+	printk("  Bootconfig : Initrd  %s\n", config->szInitrd);
+	VIDEO_ATTR=0xffa8a8a8;
+	printk("  Bootconfig : Command %s\n", config->szAppend);
+	VIDEO_ATTR=0xffa8a8a8;
+}
+
+int BootLodaConfigNative(int nActivePartition, CONFIGENTRY *config) {
+	DWORD dwConfigSize=0;
+	char szGrub[256+4];
+
+	szGrub[0]=0xff; szGrub[1]=0xff; szGrub[2]=nActivePartition; szGrub[3]=0x00;
+
+	errnum=0; boot_drive=0; saved_drive=0; saved_partition=0x0001ffff; buf_drive=-1;
+	current_partition=0x0001ffff; current_drive=0xff; buf_drive=-1; fsys_type = NUM_FSYS;
+	disk_read_hook=NULL;
+	disk_read_func=NULL;
+
+	
+	VIDEO_ATTR=0xffa8a8a8;
+
+	strcpy(&szGrub[4], "/boot/linuxboot.cfg");
+	nRet=grub_open(szGrub);
+	dwConfigSize=filemax;
+	if(nRet!=1 || (errnum)) {
+		printk("linuxboot.cfg not found, using defaults\n");
+	} else {
+		grub_read((void *)0x90000, filemax);
+		ParseConfig((char *)0x90000,config);
+		BootPrintConfig(config);
+		printf("linuxboot.cfg is %d bytes long.\n", dwConfigSize);
+	}
+	grub_close();
+	
+	strcpy(&szGrub[4], config->szKernel);
+	nRet=grub_open(szGrub);
+
+	if(nRet!=1) {
+		printk("Unable to load kernel, Grub error %d\n", errnum);
+		while(1) ;
+	}
+	dwKernelSize=grub_read((void *)0x90000, 0x400);
+	nSizeHeader=((*((BYTE *)0x901f1))+1)*512;
+	dwKernelSize+=grub_read((void *)0x90400, nSizeHeader-0x400);
+	dwKernelSize+=grub_read((void *)0x00100000, filemax-nSizeHeader);
+	grub_close();
+	printk(" -  %d bytes...\n", dwKernelSize);
+
+	if( (_strncmp(config->szInitrd, "/no", strlen("/no")) != 0) && config->szInitrd[0]) {
+		VIDEO_ATTR=0xffd8d8d8;
+		printk("  Loading %s ", config->szInitrd);
+		VIDEO_ATTR=0xffa8a8a8;
+		strcpy(&szGrub[4], config->szInitrd);
+		nRet=grub_open(szGrub);
+		if(filemax==0) {
+			printf("Empty file\n"); while(1);
+		}
+		if( (nRet!=1 ) || (errnum)) {
+			printk("Unable to load initrd, Grub error %d\n", errnum);
+			while(1) ;
+		}
+		printk(" - %d bytes\n", filemax);
+		dwInitrdSize=grub_read((void *)0x03000000, filemax);
+		grub_close();
+	} else {
+		VIDEO_ATTR=0xffd8d8d8;
+		printk("  No initrd from config file");
+		VIDEO_ATTR=0xffa8a8a8;
+		dwInitrdSize=0;
+	}
+	
+	return true;
+}
+
+int BootLodaConfigFATX(CONFIGENTRY *config) {
+	
+	FATXPartition *partition = NULL;
+	FATXFILEINFO fileinfo;
+	FATXFILEINFO infokernel;
+	FATXFILEINFO infoinitrd;
+	
+	printk("Loading linuxboot.cfg form FATX\n");
+	partition = OpenFATXPartition(0,
+			SECTOR_STORE,
+			STORE_SIZE);
+	if(partition != NULL) {
+		if(!LoadFATXFile(partition,"/linuxboot.cfg",&fileinfo) ) {
+			printk("Loading of linuxboot.cfg failed\n");
+			while(1);
+		}
+	}
+	ParseConfig(fileinfo.buffer,config);
+	BootPrintConfig(config);
+	if(! LoadFATXFile(partition,config->szKernel,&infokernel)) {
+		printk("Error loading kernel %s\n",config->szKernel);
+		while(1);
+	} else {
+		dwKernelSize = infokernel.fileSize;
+		// moving the kernel to its final location
+		memcpy((BYTE *)0x90000,&infokernel.buffer[0],0x400);	
+		nSizeHeader=((*((BYTE *)0x901f1))+1)*512;
+		memcpy((BYTE *)0x90400,&infokernel.buffer[0x400],nSizeHeader-0x400);
+		memcpy((BYTE *)0x00100000,&infokernel.buffer[nSizeHeader],infokernel.fileSize);
+		printk(" -  %d %d bytes...\n", dwKernelSize, infokernel.fileRead);
+	}
+	if( (_strncmp(config->szInitrd, "/no", strlen("/no")) != 0) && config->szInitrd[0]) {
+		VIDEO_ATTR=0xffd8d8d8;
+		printk("  Loading %s from FATX", config->szInitrd);
+		if(! LoadFATXFile(partition,config->szInitrd,&infoinitrd)) {
+			printk("Error loading initrd %s\n",config->szInitrd);
+			while(1);
+		} else {
+			dwInitrdSize = infoinitrd.fileSize;
+			memcpy((BYTE *)0x03000000,infoinitrd.buffer,infoinitrd.fileSize);	// moving the initrd to its final location
+		}
+		printk(" - %d %d bytes\n", dwInitrdSize,infoinitrd.fileRead);
+	} else {
+		VIDEO_ATTR=0xffd8d8d8;
+		printk("  No initrd from config file");
+		VIDEO_ATTR=0xffa8a8a8;
+		dwInitrdSize=0;
+		printk("");
+	}
+	return true;
+}
+
+int BootLodaConfigCD(CONFIGENTRY *config) {
+
+	DWORD dwConfigSize=0;
+	BYTE ba[2048], baBackground[320*32*4];
+#ifndef IS_XBE_CDLOADER
+	BYTE b;
+#endif
+	BYTE bCount=0, bCount1;
+	int n;
+
+	DWORD dwY=VIDEO_CURSOR_POSY;
+	DWORD dwX=VIDEO_CURSOR_POSX;
+
+	BootVideoBlit((DWORD *)&baBackground[0], 320*4, (DWORD *)(FRAMEBUFFER_START+(VIDEO_CURSOR_POSY*currentvideomodedetails.m_dwWidthInPixels*4)+VIDEO_CURSOR_POSX), currentvideomodedetails.m_dwWidthInPixels*4, 32);
+
+#ifndef IS_XBE_CDLOADER
+	while((b=BootIdeGetTrayState())>=8) {
+		VIDEO_CURSOR_POSX=dwX;
+		VIDEO_CURSOR_POSY=dwY;
+		bCount++;
+		bCount1=bCount; if(bCount1&0x80) { bCount1=(-bCount1)-1; }
+		if(b>=16) {
+			VIDEO_ATTR=0xff000000|(((bCount1>>1)+64)<<16)|(((bCount1>>1)+64)<<8)|0 ;
+		} else {
+			VIDEO_ATTR=0xff000000|(((bCount1>>2)+192)<<16)|(((bCount1>>2)+192)<<8)|(((bCount1>>2)+192)) ;
+		}
+		printk("\2Please insert CD\2");
+		for(n=0;n<1000000;n++) { ; }
+	}
+#endif
+
+	VIDEO_ATTR=0xffffffff;
+
+	VIDEO_CURSOR_POSX=dwX;
+	VIDEO_CURSOR_POSY=dwY;
+	BootVideoBlit(
+		(DWORD *)(FRAMEBUFFER_START+(VIDEO_CURSOR_POSY*currentvideomodedetails.m_dwWidthInPixels*4)+VIDEO_CURSOR_POSX),
+		currentvideomodedetails.m_dwWidthInPixels*4, (DWORD *)&baBackground[0], 320*4, 32
+	);
+
+		// wait until the media is readable
+
+	{
+		bool fMore=true, fOkay=true;
+		while(fMore) {
+			if(BootIdeReadSector(1, &ba[0], 0x10, 0, 2048)) { // starts at 16
+
+				if(BootIdeAtapiAdditionalSenseCode(1, &ba[0], 2048)<12) {
+					fMore=false; fOkay=false;
+				} else {
+					VIDEO_CURSOR_POSX=dwX;
+					VIDEO_CURSOR_POSY=dwY;
+					bCount++;
+					bCount1=bCount; if(bCount1&0x80) { bCount1=(-bCount1)-1; }
+
+					VIDEO_ATTR=0xff000000|(((bCount1)+64)<<16)|(((bCount1>>1)+128)<<8)|(((bCount1)+128)) ;
+
+					printk("\2Waiting for drive\2");
+					for(n=0;n<1000000;n++) { ; }
+				}
+
+// If cromwell acts as an xbeloader it falls back to try reading
+//	the config file from fatx
+
+					if(!fOkay) {
+						void BootFiltrorDebugShell();
+						printk("cdrom unhappy\n");
+#if INCLUDE_FILTROR
+						BootFiltrorDebugShell();
+#endif
+						while(1);
+					}
+				} else {
+					fMore=false;
+				}
+			}
+		}
+
+		VIDEO_CURSOR_POSX=dwX;
+		VIDEO_CURSOR_POSY=dwY;
+		BootVideoBlit(
+			(DWORD *)(FRAMEBUFFER_START+(VIDEO_CURSOR_POSY*currentvideomodedetails.m_dwWidthInPixels*4)+VIDEO_CURSOR_POSX),
+			currentvideomodedetails.m_dwWidthInPixels*4, (DWORD *)&baBackground[0], 320*4, 32
+		);
+
+//			BootVideoClearScreen();
+//			VideoDumpAddressAndData(0, &ba[0x1d0], 0x200);
+
+		{
+			ISO_PRIMARY_VOLUME_DESCRIPTOR * pipvd = (ISO_PRIMARY_VOLUME_DESCRIPTOR *)&ba[0];
+			char sz[64];
+			BootIso9660DescriptorToString(pipvd->m_szSystemIdentifier, sizeof(pipvd->m_szSystemIdentifier), sz);
+			VIDEO_ATTR=0xffeeeeee;
+			printk("Cdrom: ");
+			VIDEO_ATTR=0xffeeeeff;
+			printk("%s", sz);
+			VIDEO_ATTR=0xffeeeeee;
+			printk(" - ");
+			VIDEO_ATTR=0xffeeeeff;
+			BootIso9660DescriptorToString(pipvd->m_szVolumeIdentifier, sizeof(pipvd->m_szVolumeIdentifier), sz);
+			printk("%s\n", sz);
+		}
+
+	printk("  Loading linuxboot.cfg from CDROM... \n");
+	dwConfigSize=BootIso9660GetFile("/linuxboot.cfg", (BYTE *)0x90000, 0x800, 0x0);
+
+	if((int)dwConfigSize<0) { // not found, try mangled 8.3 version
+		dwConfigSize=BootIso9660GetFile("/LINUXBOO.CFG", (BYTE *)0x90000, 0x800, 0x0);
+		if((int)dwConfigSize<0) { // has to be there on CDROM
+			printk("Unable to find it, halting\n");
+			while(1) ;
+		}
+	}
+	
+	ParseConfig((char *)0x90000,config);
+	BootPrintConfig(config);
+	
+	dwKernelSize=BootIso9660GetFile(config->szKernel, (BYTE *)0x90000, 0x400, 0x0);
+	if((int)dwKernelSize<0) { // not found, try 8.3
+		strcpy(config->szKernel, "/VMLINUZ.");
+		dwKernelSize=BootIso9660GetFile(config->szKernel, (BYTE *)0x90000, 0x400, 0x0);
+	}
+	nSizeHeader=((*((BYTE *)0x901f1))+1)*512;
+	dwKernelSize+=BootIso9660GetFile(config->szKernel, (void *)0x90400, nSizeHeader-0x400, 0x400);
+	dwKernelSize+=BootIso9660GetFile(config->szKernel, (void *)0x00100000, 4096*1024, nSizeHeader);
+	printk(" -  %d bytes...\n", dwKernelSize);
+	
+	if( (_strncmp(config->szInitrd, "/no", strlen("/no")) != 0) && config->szInitrd) {
+		VIDEO_ATTR=0xffd8d8d8;
+		printk("  Loading %s from CDROM", config->szInitrd);
+		VIDEO_ATTR=0xffa8a8a8;
+
+		dwInitrdSize=BootIso9660GetFile(config->szInitrd, (void *)0x03000000, 4096*1024, 0);
+		if((int)dwInitrdSize<0) { // not found, try 8.3
+			strcpy(config->szInitrd, "/INITRD.");
+			dwInitrdSize=BootIso9660GetFile(config->szInitrd, (void *)0x03000000, 4096*1024, 0);
+		}
+		printk(" - %d bytes\n", dwInitrdSize);
+	} else {
+		VIDEO_ATTR=0xffd8d8d8;
+		printk("  No initrd from config file");
+		VIDEO_ATTR=0xffa8a8a8;
+		dwInitrdSize=0;
+		printk("");
+	}
+	
+	return true;
+}
+
+void BootIcons(int nXOffset, int nYOffset, int nTextOffsetX, int nTextOffsetY) {
+	icon[ICON_FATX].nDestX = nXOffset + 120;
+	icon[ICON_FATX].nDestY = nYOffset - 74;
+	icon[ICON_FATX].nSrcX = 640;
+	icon[ICON_FATX].nSrcLength = 90;
+	icon[ICON_FATX].nSrcHeight = 64;
+	icon[ICON_FATX].nTextX = (nTextOffsetX+60)<<2;;
+	icon[ICON_FATX].nTextY = nTextOffsetY;
+	
+	icon[ICON_NATIVE].nDestX = nXOffset + 245;
+	icon[ICON_NATIVE].nDestY = nYOffset - 74;
+	icon[ICON_NATIVE].nSrcX = 396;
+	icon[ICON_NATIVE].nSrcLength = 90;
+	icon[ICON_NATIVE].nSrcHeight = 64;
+	icon[ICON_NATIVE].nTextX = (nTextOffsetX+240)<<2;;
+	icon[ICON_NATIVE].nTextY = nTextOffsetY;
+	
+	icon[ICON_CD].nDestX = nXOffset + 350;
+	icon[ICON_CD].nDestY = nYOffset - 74;
+	icon[ICON_CD].nSrcX = 488;
+	icon[ICON_CD].nSrcLength = 555-488;
+	icon[ICON_CD].nSrcHeight = 64;
+	icon[ICON_CD].nTextX = (nTextOffsetX+350)<<2;
+	icon[ICON_CD].nTextY = nTextOffsetY;
+	
+	icon[ICON_SETUP].nDestX = nXOffset + 440;
+	icon[ICON_SETUP].nDestY = nYOffset - 74;
+	icon[ICON_SETUP].nSrcX = 556;
+	icon[ICON_SETUP].nSrcLength = 639-556;
+	icon[ICON_SETUP].nSrcHeight = 64;
+	icon[ICON_SETUP].nTextX = (nTextOffsetX+440)<<2;
+	icon[ICON_SETUP].nTextY = nTextOffsetY;
+}
+
+void BootStartBiosDoIcon(ICON *icon, BYTE bOpaqueness)
 {
+
 		BootVideoJpegBlitBlend(
-			(DWORD *)(FRAMEBUFFER_START+/*(640*4*currentvideomodedetails.m_dwMarginYInLinesRecommended)*/+(nDestX<<2)+(currentvideomodedetails.m_dwWidthInPixels*4*nDestY)),
+			(DWORD *)(FRAMEBUFFER_START+/*(640*4*currentvideomodedetails.m_dwMarginYInLinesRecommended)*/+(icon->nDestX<<2)+(currentvideomodedetails.m_dwWidthInPixels*4*icon->nDestY)),
 			currentvideomodedetails.m_dwWidthInPixels * 4, // dest bytes per line
 			&jpegBackdrop, // source jpeg object
-			(DWORD *)(((BYTE *)jpegBackdrop.m_pBitmapData)+((jpegBackdrop.m_nHeight-64)*jpegBackdrop.m_nWidth*jpegBackdrop.m_nBytesPerPixel)+(nSrcX *jpegBackdrop.m_nBytesPerPixel)),
+			(DWORD *)(((BYTE *)jpegBackdrop.m_pBitmapData)+((jpegBackdrop.m_nHeight-64)*jpegBackdrop.m_nWidth*jpegBackdrop.m_nBytesPerPixel)+(icon->nSrcX *jpegBackdrop.m_nBytesPerPixel)),
 			0xff00ff|(((DWORD)bOpaqueness)<<24),
-			(DWORD *)(((BYTE *)BootVideoGetPointerToEffectiveJpegTopLeft(&jpegBackdrop))+(jpegBackdrop.m_nWidth * (nDestY) *jpegBackdrop.m_nBytesPerPixel)+((nDestX) *jpegBackdrop.m_nBytesPerPixel)),
+			(DWORD *)(((BYTE *)BootVideoGetPointerToEffectiveJpegTopLeft(&jpegBackdrop))+(jpegBackdrop.m_nWidth * (icon->nDestY) *jpegBackdrop.m_nBytesPerPixel)+((icon->nDestX) *jpegBackdrop.m_nBytesPerPixel)),
 			jpegBackdrop.m_nWidth*jpegBackdrop.m_nBytesPerPixel,
 			jpegBackdrop.m_nBytesPerPixel,
-			nSrcLength, nSrcHeight
+			icon->nSrcLength, icon->nSrcHeight
 		);
 }
 
@@ -89,39 +422,24 @@ void RecoverMbrArea()
 }
 
 
-void StartBios(	int nDrive, int nActivePartition ) {
+void StartBios(	int nDrive, int nActivePartition , int nFATXPresent) {
 	CONFIGENTRY config;
-	DWORD dwConfigSize=0;
-	bool fHaveConfig=false;
-	bool fUseConfig=true;
-	bool fSettings=false;
 	char szGrub[256+4];
-#ifndef IS_XBE_BOOTLOADER
+#ifdef MENU
 	int nTempCursorResumeX, nTempCursorResumeY;
 #endif
-#ifdef ENABLE_FATX
 	/*
 	unsigned char hash[16];
 	int a;
 	*/
-	bool fFATXConfig = false;
-	FATXFILEINFO fileinfo;
-	FATXFILEINFO infokernel;
-	FATXFILEINFO infoinitrd;
-	FATXPartition *partition = NULL;
+	int nIcon = ICONCOUNT;
 	/*
 	struct SHA1Context context;
 	*/
-#endif
 
 #ifndef XBE
 	BootPciInterruptEnable();
 #else
-#ifdef ENABLE_FATX
-	memset(&fileinfo,0,sizeof(CONFIGENTRY));	
-	memset(&infokernel,0,sizeof(CONFIGENTRY));	
-	memset(&infoinitrd,0,sizeof(CONFIGENTRY));	
-#endif
 #endif
 
 	memset(&config,0,sizeof(CONFIGENTRY));
@@ -138,11 +456,10 @@ void StartBios(	int nDrive, int nActivePartition ) {
 	strcpy(config.szKernel, "/boot/vmlinuz");
 	strcpy(config.szInitrd, "/boot/initrd");
 
-#ifndef IS_XBE_BOOTLOADER
+#ifndef IS_XBE_CDLOADER
 #ifdef MENU
 	{
 		int nTempCursorX, nTempCursorY, nTempStartMessageCursorX, nTempStartMessageCursorY, nTempEntryX, nTempEntryY;
-		DWORD dwTick=BIOS_TICK_COUNT;
 		int nModeDependentOffset=(currentvideomodedetails.m_dwWidthInPixels-640)/2;  // icon offsets computed for 640 modes, retain centering in other modes
 		#define DELAY_TICKS 72
 		#define TRANPARENTNESS 0x30
@@ -166,423 +483,142 @@ void StartBios(	int nDrive, int nActivePartition ) {
 		printk("Close DVD tray to select\n");
 		VIDEO_ATTR=0xffffffff;
 
-		BootStartBiosDoIcon(nModeDependentOffset+120, nTempCursorY-74, 396, 90, 64, TRANPARENTNESS);
-		BootStartBiosDoIcon(nModeDependentOffset+240, nTempCursorY-74, 396, 90, 64, TRANPARENTNESS);
-		BootStartBiosDoIcon(nModeDependentOffset+350, nTempCursorY-74, 488, 555-488, 64, TRANPARENTNESS);
-		BootStartBiosDoIcon(nModeDependentOffset+440, nTempCursorY-74, 556, 639-556, 64, TRANPARENTNESS);
+		BootIcons(nModeDependentOffset, nTempCursorY, nModeDependentOffset, nTempCursorY);
+		BootStartBiosDoIcon(&icon[ICON_FATX], TRANPARENTNESS);
+		BootStartBiosDoIcon(&icon[ICON_NATIVE], TRANPARENTNESS);
+		BootStartBiosDoIcon(&icon[ICON_CD], TRANPARENTNESS);
+		BootStartBiosDoIcon(&icon[ICON_SETUP], TRANPARENTNESS);
 
-		  // if no MBR, don't ask, just boot CDROM
 		{
+			int nShowSelect = false;
+#ifndef XBE
+			DWORD dwTick=BIOS_TICK_COUNT;
+#endif
+#ifdef XBE
+			int n,m;
+#endif
+#ifdef XBE
+			for(n=0;n<10000;n++){for(m=0;m<100000;m++){;}}
+#endif
 
-			VIDEO_CURSOR_POSX=(60+nModeDependentOffset)<<2;
-			VIDEO_CURSOR_POSY=nTempCursorY;
-			if(nDrive != 1) printk("/dev/hda/boot/linuxboot.cfg\n");
-			while((BIOS_TICK_COUNT<(dwTick+DELAY_TICKS)) && (traystate==ETS_OPEN_OR_OPENING) && (nDrive != 1)) {
-				BootStartBiosDoIcon(nModeDependentOffset+120, nTempCursorY-74, 396, 90, 64, OPAQUENESS-((OPAQUENESS-TRANPARENTNESS)*(BIOS_TICK_COUNT-dwTick))/DELAY_TICKS);
-			}
-			if((traystate!=ETS_OPEN_OR_OPENING) && (nDrive != 1)) {
-				VIDEO_CURSOR_POSX=nTempEntryX;
-				VIDEO_CURSOR_POSY=nTempEntryY;
-				RecoverMbrArea();
-				BootStartBiosDoIcon(nModeDependentOffset+120, nTempCursorY-74, 396, 90, 64, SELECTED);
-				fUseConfig=true;
-			} else {
-				dwTick=BIOS_TICK_COUNT;
-				BootVideoClearScreen(&jpegBackdrop, nTempCursorY, VIDEO_CURSOR_POSY+1);  // blank out volatile data area
-				VIDEO_CURSOR_POSX=(nModeDependentOffset+200)<<2;
-				VIDEO_CURSOR_POSY=nTempCursorY;
-				if(nDrive != 1) printk("/dev/hda/boot/vmlinuz\n");
-				while((BIOS_TICK_COUNT<(dwTick+DELAY_TICKS)) && (traystate==ETS_OPEN_OR_OPENING) && (nDrive != 1)) {
-					BootStartBiosDoIcon((nModeDependentOffset+240), nTempCursorY-74, 396, 90, 64, OPAQUENESS-((OPAQUENESS-TRANPARENTNESS)*(BIOS_TICK_COUNT-dwTick))/DELAY_TICKS);
-				}
-				if((traystate!=ETS_OPEN_OR_OPENING) && (nDrive != 1)) {
-					VIDEO_CURSOR_POSX=nTempEntryX;
-					VIDEO_CURSOR_POSY=nTempEntryY;
-					RecoverMbrArea();
-					BootStartBiosDoIcon((nModeDependentOffset+240), nTempCursorY-74, 396, 90, 64, SELECTED);
-					fUseConfig=false;
-				} else {
-					dwTick=BIOS_TICK_COUNT;
-					BootVideoClearScreen(&jpegBackdrop, nTempCursorY, VIDEO_CURSOR_POSY+1);  // blank out volatile data area
-					VIDEO_CURSOR_POSX=((nModeDependentOffset+350)<<2)+currentvideomodedetails.m_dwMarginXInPixelsRecommended;
-					VIDEO_CURSOR_POSY=nTempCursorY;
-					printk("/dev/hdb\n");
-					while((BIOS_TICK_COUNT<(dwTick+DELAY_TICKS)) && (traystate==ETS_OPEN_OR_OPENING)) {
-						BootStartBiosDoIcon(nModeDependentOffset+350, nTempCursorY-74, 488, 555-488, 64, OPAQUENESS-((OPAQUENESS-TRANPARENTNESS)*(BIOS_TICK_COUNT-dwTick))/DELAY_TICKS);
-					}
-					if(traystate!=ETS_OPEN_OR_OPENING) {
-						VIDEO_CURSOR_POSX=nTempEntryX;
-						VIDEO_CURSOR_POSY=nTempEntryY;
-						RecoverMbrArea();
-						BootStartBiosDoIcon(nModeDependentOffset+350, nTempCursorY-74, 488, 555-488, 64, SELECTED);
-						fUseConfig=true;
-						nDrive=1;
-					} else {
-						dwTick=BIOS_TICK_COUNT;
-						BootVideoClearScreen(&jpegBackdrop, nTempCursorY, VIDEO_CURSOR_POSY+1);  // blank out volatile data area
-						VIDEO_CURSOR_POSX=((440+nModeDependentOffset)<<2)+currentvideomodedetails.m_dwMarginXInPixelsRecommended;
-						VIDEO_CURSOR_POSY=nTempCursorY;
-						printk("Setup [TBD]\n");
-						while((BIOS_TICK_COUNT<(dwTick+DELAY_TICKS)) && (traystate==ETS_OPEN_OR_OPENING)) {
-							BootStartBiosDoIcon(nModeDependentOffset+440, nTempCursorY-74, 556, 639-556, 64, OPAQUENESS-((OPAQUENESS-TRANPARENTNESS)*(BIOS_TICK_COUNT-dwTick))/DELAY_TICKS);
-						}
-						if(traystate!=ETS_OPEN_OR_OPENING) {
-							VIDEO_CURSOR_POSX=nTempEntryX;
-							VIDEO_CURSOR_POSY=nTempEntryY;
-							RecoverMbrArea();
-							BootStartBiosDoIcon(nModeDependentOffset+440, nTempCursorY-74, 556, 639-556, 64, SELECTED);
-							fSettings=true;
-							// settings mode
+			for(nIcon = 0; nIcon < ICONCOUNT;nIcon ++) {
+#ifdef XBE
+				traystate = ETS_OPEN_OR_OPENING;
+#endif
+				nShowSelect = false;
+				VIDEO_CURSOR_POSX=icon[nIcon].nTextX;
+				VIDEO_CURSOR_POSY=icon[nIcon].nTextY;
+				switch(nIcon){
+					case ICON_FATX:
+						if(nFATXPresent) {
+							printk("/linuxboot.cfg from FATX\n");
+							nShowSelect = true;
 						} else {
-							if(nDrive != 1) {
-								BootStartBiosDoIcon(nModeDependentOffset+120, nTempCursorY-74, 396, 90, 64, SELECTED);
-								BootVideoClearScreen(&jpegBackdrop, nTempCursorY, VIDEO_CURSOR_POSY+1);  // blank out volatile data area
-								VIDEO_CURSOR_POSX=nTempEntryX;
-								VIDEO_CURSOR_POSY=nTempEntryY;
-								RecoverMbrArea();
-								printk("Defaulting to HDD boot\n");
-								nTempCursorResumeX=VIDEO_CURSOR_POSX;
-								nTempCursorResumeY=VIDEO_CURSOR_POSY;
-							} else {
-								BootStartBiosDoIcon(nModeDependentOffset+350, nTempCursorY-74, 488, 555-488, 64, SELECTED);
-								BootVideoClearScreen(&jpegBackdrop, nTempCursorY, VIDEO_CURSOR_POSY+1);  // blank out volatile data area
-								VIDEO_CURSOR_POSX=nTempEntryX;
-								VIDEO_CURSOR_POSY=nTempEntryY;
-								RecoverMbrArea();
-								printk("Defaulting to CD boot\n");
-								nTempCursorResumeX=VIDEO_CURSOR_POSX;
-								nTempCursorResumeY=VIDEO_CURSOR_POSY;
-							}
+							continue;
 						}
-					}
+						break;
+					case ICON_NATIVE:
+						if(nDrive != 1) {
+							printk("/dev/hda\n");
+							nShowSelect = true;
+						} else {
+							continue;
+						}
+						break;
+					case ICON_CD:
+						printk("/dev/hdb\n");
+						nShowSelect = true;
+						break;
+					case ICON_SETUP:
+						printk("Setup [TBD]\n");
+						nShowSelect = false;
+						break;
 				}
+				if(nShowSelect) {
+#ifndef XBE
+					while((BIOS_TICK_COUNT<(dwTick+DELAY_TICKS)) && 
+							(traystate==ETS_OPEN_OR_OPENING)) {
+						BootStartBiosDoIcon(&icon[nIcon], OPAQUENESS-((OPAQUENESS-TRANPARENTNESS)
+									*(BIOS_TICK_COUNT-dwTick))/DELAY_TICKS);
+					}
+					dwTick=BIOS_TICK_COUNT;
+#endif
+#ifdef XBE
+					BootStartBiosDoIcon(&icon[nIcon], OPAQUENESS);
+					for(n=0;n<20000;n++){for(m=0;m<100000;m++){;}}
+					if(BootIdeGetTrayState()<=8) {
+						traystate=ETS_CLOSED;
+					}
+#endif
+					if(traystate!=ETS_OPEN_OR_OPENING) {
+						VIDEO_CURSOR_POSX=icon[nIcon].nTextX;
+						VIDEO_CURSOR_POSY=icon[nIcon].nTextY;
+						RecoverMbrArea();
+						BootStartBiosDoIcon(&icon[nIcon], SELECTED);
+						break;
+					}
+					BootStartBiosDoIcon(&icon[nIcon], TRANPARENTNESS);
+				}
+				BootVideoClearScreen(&jpegBackdrop, nTempCursorY, VIDEO_CURSOR_POSY+1);
 			}
 		}
-		BootVideoClearScreen(&jpegBackdrop, nTempStartMessageCursorY, nTempStartMessageCursorY+16);  // blank out 'close dvd tray' message
 
+		BootVideoClearScreen(&jpegBackdrop, nTempCursorResumeY, nTempCursorResumeY+100);
+		BootVideoClearScreen(&jpegBackdrop, nTempStartMessageCursorY, nTempCursorY+16);
+		
 		VIDEO_CURSOR_POSX=nTempCursorResumeX;
 		VIDEO_CURSOR_POSY=nTempCursorResumeY;
+		
+		
 	}
 
 #endif
 #endif
 
-	if(fSettings) {
-		printk("Settings mode not done yet :-)\nPlease reboot and try again\n");
-		while(1);
+	{  	// turn off USB
+		BootUsbTurnOff((USB_CONTROLLER_OBJECT *)&usbcontroller[0]);
+		BootUsbTurnOff((USB_CONTROLLER_OBJECT *)&usbcontroller[1]);
 	}
 
-
+/*
 	{
 		char c='1'+nActivePartition;
 		if(nDrive==1) c=' ';
 		printk("Booting from /dev/hd%c%c\n", 'a'+nDrive, c);
 	}
+*/	
 
-	if(nDrive==1) {  // CDROM
-			BYTE ba[2048], baBackground[320*32*4];
-#ifndef IS_XBE_BOOTLOADER
-			BYTE b;
-#endif
-			BYTE bCount=0, bCount1;
-			int n;
-
-			DWORD dwY=VIDEO_CURSOR_POSY;
-			DWORD dwX=VIDEO_CURSOR_POSX;
-
-			BootVideoBlit((DWORD *)&baBackground[0], 320*4, (DWORD *)(FRAMEBUFFER_START+(VIDEO_CURSOR_POSY*currentvideomodedetails.m_dwWidthInPixels*4)+VIDEO_CURSOR_POSX), currentvideomodedetails.m_dwWidthInPixels*4, 32);
-
-#ifndef IS_XBE_BOOTLOADER
-			while((b=BootIdeGetTrayState())>=8) {
-				VIDEO_CURSOR_POSX=dwX;
-				VIDEO_CURSOR_POSY=dwY;
-				bCount++;
-				bCount1=bCount; if(bCount1&0x80) { bCount1=(-bCount1)-1; }
-				if(b>=16) {
-					VIDEO_ATTR=0xff000000|(((bCount1>>1)+64)<<16)|(((bCount1>>1)+64)<<8)|0 ;
-				} else {
-					VIDEO_ATTR=0xff000000|(((bCount1>>2)+192)<<16)|(((bCount1>>2)+192)<<8)|(((bCount1>>2)+192)) ;
-				}
-				printk("\2Please insert CD\2");
-				for(n=0;n<1000000;n++) { ; }
-			}
-#endif
-
-			VIDEO_ATTR=0xffffffff;
-
-			VIDEO_CURSOR_POSX=dwX;
-			VIDEO_CURSOR_POSY=dwY;
-			BootVideoBlit(
-				(DWORD *)(FRAMEBUFFER_START+(VIDEO_CURSOR_POSY*currentvideomodedetails.m_dwWidthInPixels*4)+VIDEO_CURSOR_POSX),
-				currentvideomodedetails.m_dwWidthInPixels*4, (DWORD *)&baBackground[0], 320*4, 32
-			);
-
-				// wait until the media is readable
-
-			{
-				bool fMore=true, fOkay=true;
-				while(fMore) {
-					if(BootIdeReadSector(1, &ba[0], 0x10, 0, 2048)) { // starts at 16
-
-						if(BootIdeAtapiAdditionalSenseCode(1, &ba[0], 2048)<12) {
-							fMore=false; fOkay=false;
-						} else {
-							VIDEO_CURSOR_POSX=dwX;
-							VIDEO_CURSOR_POSY=dwY;
-							bCount++;
-							bCount1=bCount; if(bCount1&0x80) { bCount1=(-bCount1)-1; }
-
-							VIDEO_ATTR=0xff000000|(((bCount1)+64)<<16)|(((bCount1>>1)+128)<<8)|(((bCount1)+128)) ;
-
-							printk("\2Waiting for drive\2");
-							for(n=0;n<1000000;n++) { ; }
-						}
-
-// If cromwell acts as an xbeloader it falls back to try reading
-//	the config file from fatx
-						
-#ifdef ENABLE_FATX
-						if(fMore) {
-							printk("Try loading linuxboot.cfg form FATX\n");
-							fFATXConfig = true;
-							partition = OpenFATXPartition(0,
-									SECTOR_STORE,
-									STORE_SIZE);
-							if(partition != NULL) {
-								if(!LoadFATXFile(partition,"/linuxboot.cfg",&fileinfo) ) {
-									fFATXConfig = false;
-									printk("Loading of linuxboot.cfg failed\n");
-									while(1);
-								}
-							}
-							fMore=false;
-						}
-#else
-						if(!fOkay) {
-							void BootFiltrorDebugShell();
-							printk("cdrom unhappy\n");
-#if INCLUDE_FILTROR
-							BootFiltrorDebugShell();
-#endif
-							while(1);
-						}
-					} else {
-						fMore=false;
-#endif
-					}
-				}
-			}
-
-			VIDEO_CURSOR_POSX=dwX;
-			VIDEO_CURSOR_POSY=dwY;
-			BootVideoBlit(
-				(DWORD *)(FRAMEBUFFER_START+(VIDEO_CURSOR_POSY*currentvideomodedetails.m_dwWidthInPixels*4)+VIDEO_CURSOR_POSX),
-				currentvideomodedetails.m_dwWidthInPixels*4, (DWORD *)&baBackground[0], 320*4, 32
-			);
-
-//			BootVideoClearScreen();
-//			VideoDumpAddressAndData(0, &ba[0x1d0], 0x200);
-
-			{
-				ISO_PRIMARY_VOLUME_DESCRIPTOR * pipvd = (ISO_PRIMARY_VOLUME_DESCRIPTOR *)&ba[0];
-				char sz[64];
-				BootIso9660DescriptorToString(pipvd->m_szSystemIdentifier, sizeof(pipvd->m_szSystemIdentifier), sz);
-				VIDEO_ATTR=0xffeeeeee;
-				printk("Cdrom: ");
-				VIDEO_ATTR=0xffeeeeff;
-				printk("%s", sz);
-				VIDEO_ATTR=0xffeeeeee;
-				printk(" - ");
-				VIDEO_ATTR=0xffeeeeff;
-				BootIso9660DescriptorToString(pipvd->m_szVolumeIdentifier, sizeof(pipvd->m_szVolumeIdentifier), sz);
-				printk("%s\n", sz);
-			}
-
-//			while(1);
-		}
-
-				// must reset USB before we start dumping into fixed memory areas
-
-#ifndef XBE
-		{  	// turn off USB
-			BootUsbTurnOff((USB_CONTROLLER_OBJECT *)&usbcontroller[0]);
-			BootUsbTurnOff((USB_CONTROLLER_OBJECT *)&usbcontroller[1]);
-		}
-#endif
-
-
-	VIDEO_ATTR=0xffd8d8d8;
-
-	if(nDrive==0) { // grub/reiserfs on HDD
-		if(fUseConfig) {
-			printk("  Looking for optional /boot/linuxboot.cfg... \n");
-			VIDEO_ATTR=0xffa8a8a8;
-
-			strcpy(&szGrub[4], "/boot/linuxboot.cfg");
-			nRet=grub_open(szGrub);
-			dwConfigSize=filemax;
-			if(nRet!=1 || (errnum)) {
-				printk("linuxboot.cfg not found, using defaults\n");
-			} else {
-				grub_read((void *)0x90000, filemax);
-				printf("linuxboot.cfg is %d bytes long.\n", dwConfigSize);
-				fHaveConfig=true;
-			}
-			grub_close();
-		}
-	} else {  // ISO9660 traversal on CDROM
-
-#ifdef ENABLE_FATX
-		if(fFATXConfig) {
-			memcpy((BYTE *)0x90000,fileinfo.buffer,fileinfo.fileSize);
-			dwConfigSize = fileinfo.fileSize;
+	if(nIcon >= ICONCOUNT) {
+		if(nDrive == 0) {
+			printk("Defaulting to HDD boot\n");
+			I2CTransmitWord(0x10, 0x0c01); // close DVD tray
+			nIcon = ICON_NATIVE;
 		} else {
-#endif
-			printk("  Loading linuxboot.cfg from CDROM... ");
-			dwConfigSize=BootIso9660GetFile("/linuxboot.cfg", (BYTE *)0x90000, 0x800, 0x0);
-
-			if((int)dwConfigSize<0) { // not found, try mangled 8.3 version
-				dwConfigSize=BootIso9660GetFile("/LINUXBOO.CFG", (BYTE *)0x90000, 0x800, 0x0);
-				if((int)dwConfigSize<0) { // has to be there on CDROM
-					printk("Unable to find it, halting\n");
-					while(1) ;
-				}
-			}
-#ifdef ENABLE_FATX
+			printk("Defaulting to CD boot\n");
+			nIcon = ICON_CD;
 		}
-#endif
-		printk("okay\n");
-		fHaveConfig=true;
+	}
+	
+	switch(nIcon) {
+		case ICON_FATX:
+			BootLodaConfigFATX(&config);
+			break;
+		case ICON_NATIVE:
+			BootLodaConfigNative(nActivePartition, &config);
+			break;
+		case ICON_CD:
+			BootLodaConfigCD(&config);
+			break;
+		case ICON_SETUP:
+			printk("Settings mode not done yet :-)\nPlease reboot and try again\n");
+			while(1);
+			break;
+		default:
+			printk("Selection not implemented\n");
+			break;
 	}
 
-	if(fHaveConfig) ParseConfig((char *)0x90000,&config);
 
-	if(nDrive==0) { // grub/reiserfs on HDD
-		printk("  Command line: %s\n", config.szAppend);
-		printk("  Loading %s ", config.szKernel);
-		VIDEO_ATTR=0xffa8a8a8;
-		strcpy(&szGrub[4], config.szKernel);
-		nRet=grub_open(szGrub);
-
-		if(nRet!=1) {
-			printk("Unable to load kernel, Grub error %d\n", errnum);
-			while(1) ;
-		}
-		dwKernelSize=grub_read((void *)0x90000, 0x400);
-		nSizeHeader=((*((BYTE *)0x901f1))+1)*512;
-//		printk("Header size = 0x%x (0x%x)\n", nSizeHeader, *((BYTE *)0x901f1) );
-		dwKernelSize+=grub_read((void *)0x90400, nSizeHeader-0x400);
-		dwKernelSize+=grub_read((void *)0x00100000, filemax-nSizeHeader);
-		grub_close();
-		printk(" -  %d bytes...\n", dwKernelSize);
-
-		if( (_strncmp(config.szInitrd, "/no", strlen("/no")) != 0) && config.szInitrd[0]) {
-			VIDEO_ATTR=0xffd8d8d8;
-			printk("  Loading %s ", config.szInitrd);
-			VIDEO_ATTR=0xffa8a8a8;
-			strcpy(&szGrub[4], config.szInitrd);
-			nRet=grub_open(szGrub);
-			if(filemax==0) {
-				printf("Empty file\n"); while(1);
-			}
-			if( (nRet!=1 ) || (errnum)) {
-				printk("Unable to load initrd, Grub error %d\n", errnum);
-				while(1) ;
-			}
-			printk(" - %d bytes\n", filemax);
-			dwInitrdSize=grub_read((void *)0x03000000, filemax);
-			grub_close();
-		} else {
-			VIDEO_ATTR=0xffd8d8d8;
-			printk("  No initrd from config file");
-			VIDEO_ATTR=0xffa8a8a8;
-			dwInitrdSize=0;
-		}
-
-
-	} else {  // ISO9660 traversal on CDROM
-
-		printk("  Bootconfig : Kernel  %s\n", config.szKernel);
-		VIDEO_ATTR=0xffa8a8a8;
-		printk("  Bootconfig : Initrd  %s\n", config.szInitrd);
-		VIDEO_ATTR=0xffa8a8a8;
-		printk("  Bootconfig : Command %s\n", config.szAppend);
-		VIDEO_ATTR=0xffa8a8a8;
-#ifdef ENABLE_FATX
-		if(fFATXConfig) {
-			printk("  Loading %s from FATX ", config.szKernel);
-		} else {			
-#endif
-			printk("  Loading %s from CDROM ", config.szKernel);
-#ifdef ENABLE_FATX
-		}
-#endif
-		VIDEO_ATTR=0xffa8a8a8;
-
-#ifdef ENABLE_FATX
-		if(fFATXConfig) {
-			if(! LoadFATXFile(partition,config.szKernel,&infokernel)) {
-				printk("Error loading kernel %s\n",config.szKernel);
-				while(1);
-			} else {
-				dwKernelSize = infokernel.fileSize;
-				// moving the kernel to its final location
-				memcpy((BYTE *)0x90000,&infokernel.buffer[0],0x400);	
-				nSizeHeader=((*((BYTE *)0x901f1))+1)*512;
-				memcpy((BYTE *)0x90400,&infokernel.buffer[0x400],nSizeHeader-0x400);
-				memcpy((BYTE *)0x00100000,&infokernel.buffer[nSizeHeader],infokernel.fileSize);
-			printk(" -  %d %d bytes...\n", dwKernelSize, infokernel.fileRead);
-			}
-		} else {
-#endif
-			dwKernelSize=BootIso9660GetFile(config.szKernel, (BYTE *)0x90000, 0x400, 0x0);
-			if((int)dwKernelSize<0) { // not found, try 8.3
-				strcpy(config.szKernel, "/VMLINUZ.");
-				dwKernelSize=BootIso9660GetFile(config.szKernel, (BYTE *)0x90000, 0x400, 0x0);
-			}
-			nSizeHeader=((*((BYTE *)0x901f1))+1)*512;
-			dwKernelSize+=BootIso9660GetFile(config.szKernel, (void *)0x90400, nSizeHeader-0x400, 0x400);
-			dwKernelSize+=BootIso9660GetFile(config.szKernel, (void *)0x00100000, 4096*1024, nSizeHeader);
-			printk(" -  %d bytes...\n", dwKernelSize);
-#ifdef ENABLE_FATX
-		}
-#endif
-
-			if( (_strncmp(config.szInitrd, "/no", strlen("/no")) != 0) && config.szInitrd) {
-				VIDEO_ATTR=0xffd8d8d8;
-#ifdef ENABLE_FATX
-				if(fFATXConfig) {
-					printk("  Loading %s from FATX", config.szInitrd);
-					if(! LoadFATXFile(partition,config.szInitrd,&infoinitrd)) {
-						printk("Error loading initrd %s\n",config.szInitrd);
-						while(1);
-					} else {
-						dwInitrdSize = infoinitrd.fileSize;
-						memcpy((BYTE *)0x03000000,infoinitrd.buffer,infoinitrd.fileSize);	// moving the initrd to its final location
-					}
-					printk(" - %d %d bytes\n", dwInitrdSize,infoinitrd.fileRead);
-				} else {
-#endif
-					printk("  Loading %s from CDROM", config.szInitrd);
-					VIDEO_ATTR=0xffa8a8a8;
-
-					dwInitrdSize=BootIso9660GetFile(config.szInitrd, (void *)0x03000000, 4096*1024, 0);
-					if((int)dwInitrdSize<0) { // not found, try 8.3
-						strcpy(config.szInitrd, "/INITRD.");
-						dwInitrdSize=BootIso9660GetFile(config.szInitrd, (void *)0x03000000, 4096*1024, 0);
-					}
-					printk(" - %d bytes\n", dwInitrdSize);
-#ifdef ENABLE_FATX
-				}
-#endif
-			} else {
-				VIDEO_ATTR=0xffd8d8d8;
-				printk("  No initrd from config file");
-				VIDEO_ATTR=0xffa8a8a8;
-				dwInitrdSize=0;
-				printk("");
-			}
-		}
 
 	/*
         SHA1Reset(&context);

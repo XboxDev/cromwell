@@ -29,7 +29,6 @@
 
 #define INCLUDE_SERIAL 0
 
-
 // enable trace message printing for debugging - with filtror or serial only
 #define PRINT_TRACE 0
 #if PRINT_TRACE
@@ -322,7 +321,7 @@ int BootPerformXCodeActions(void);
 
 ////////// BootStartBios.c
 
-void StartBios(int nDrive, int nActivePartition);
+void StartBios(int nDrive, int nActivePartition, int nFATXPresent);
 
 ////////// BootResetActions.c
 

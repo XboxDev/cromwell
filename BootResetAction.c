@@ -88,6 +88,7 @@ extern void BootResetAction ( void ) {
 	bool fMbrPresent=false;
 	bool fSeenActive=false;
 	int nActivePartitionIndex=0;
+	int nFATXPresent=false;
 	int nTempCursorX, nTempCursorY;
 
 #if INCLUDE_FILTROR
@@ -184,8 +185,9 @@ extern void BootResetAction ( void ) {
 		I2CTransmitWord(0x10, 0x1b04); // unknown
 		BootPciInterruptGlobalPopState(dw);
 	}
+#endif
 
-		// init USB
+	// init USB
 #ifdef DO_USB
 	{
 		const int nSizeAllocation=0x10000;
@@ -197,7 +199,6 @@ extern void BootResetAction ( void ) {
 		bprintf("BOOT: done USB init\n\r");
 	}
 #endif
-#endif
 
 
 	// display solid red frontpanel LED while we start up
@@ -208,7 +209,7 @@ extern void BootResetAction ( void ) {
 		BootPciInterruptGlobalStackStateAndDisable(&dw);
 
 		I2CTransmitWord(0x10, 0x1901); // no reset on eject
-#ifdef IS_XBE_BOOTLOADER
+#ifdef IS_XBE_CDLOADER
 		I2CTransmitWord(0x10, 0x0c01); // close DVD tray
 #else
 		I2CTransmitWord(0x10, 0x0c00); // eject DVD tray
@@ -423,6 +424,7 @@ extern void BootResetAction ( void ) {
 			printk("%s\n", of.m_szFlashDescription);
 		}
 
+#endif
 #ifdef DO_USB
 		{
 			VIDEO_ATTR=0xffc8c8c8;
@@ -434,7 +436,6 @@ extern void BootResetAction ( void ) {
 			BootUsbDump((USB_CONTROLLER_OBJECT *)&usbcontroller[0]);
 //			BootUsbDump((USB_CONTROLLER_OBJECT *)&usbcontroller[1]);
 		}
-#endif
 #endif
 
 			// init the HDD and DVD
@@ -534,6 +535,8 @@ extern void BootResetAction ( void ) {
 				} else { // no mbr signature
 					;
 				}
+				BootIdeReadSector(0, &ba[0], 3, 0, 512);
+				if(ba[0] == 'B' && ba[1] == 'R' && ba[2] == 'F' && ba[3] == 'R') nFATXPresent = true;
 			}
 		}
 
@@ -546,12 +549,12 @@ extern void BootResetAction ( void ) {
 	// Used to start Bochs; now a misnomer as it runs vmlinux
 	// argument 0 for hdd and 1 for from CDROM
 #ifdef FORCE_CD_BOOT
-	StartBios(1, 0);
+	StartBios(1, 0, 0);
 #else
 		if(fMbrPresent && fSeenActive) { // if there's an MBR and active partition , try to boot from HDD
-			StartBios(0, nActivePartitionIndex);
+			StartBios(0, nActivePartitionIndex, nFATXPresent);
 		} else { // otherwise prompt for CDROM
-			StartBios(1, 0);
+			StartBios(1, 0, nFATXPresent);
 		}
 #endif
 	}

@@ -35,11 +35,11 @@ int LoadFATXFile(FATXPartition *partition,char *filename, FATXFILEINFO *fileinfo
 			if(FATXLoadFromDisk(partition, fileinfo)) {
 				return true;
 			} else {
-				printk("LoadFATXFile : error loading %s\n",fileinfo->filename);
+				printk("LoadFATXFile : error loading %s\n",filename);
 				return false;
 			}
 		} else {
-			printk("LoadFATXFile : file %s not found\n",fileinfo->filename);
+			printk("LoadFATXFile : file %s not found\n",filename);
 			return false;
 		}
 	}
