@@ -4,10 +4,8 @@
 int ParseConfig(char *szBuffer, CONFIGENTRY *entry, EEPROMDATA *eeprom, char *szPath) {
 	static char szLine[MAX_LINE];
 	static char szTmp[MAX_LINE];
-	static char szNorm[MAX_LINE];
 	char *ptr;
 
-	memset(szNorm,0,MAX_LINE);
 	memset(entry,0,sizeof(CONFIGENTRY));
 	ptr = szBuffer;
 	ptr = HelpGetToken(szBuffer,10);
@@ -52,9 +50,6 @@ int ParseConfig(char *szBuffer, CONFIGENTRY *entry, EEPROMDATA *eeprom, char *sz
 		
 	}
 
-	if(szNorm[0] != 0) {
-		sprintf(entry->szAppend,"%s%s",entry->szAppend,szNorm);
-	}
 	return entry->nValid;
 }
 
