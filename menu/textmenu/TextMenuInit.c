@@ -91,4 +91,11 @@ void TextMenuInit(void) {
 	itemPtr->szCaption="Video Settings";	
 	TextMenuAddItem(firstMenu, itemPtr);
 	VideoMenuInit(itemPtr);
+
+	//RESET MENU
+	itemPtr = (TEXTMENUITEM*)malloc(sizeof(TEXTMENUITEM));
+	memset(itemPtr,0x00,sizeof(TEXTMENUITEM));
+	itemPtr->szCaption="Reset Menu";	
+	TextMenuAddItem(firstMenu, itemPtr);
+	ResetMenuInit(itemPtr);
 }

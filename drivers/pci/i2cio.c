@@ -179,15 +179,12 @@ int I2CTransmitByteGetReturn(BYTE bPicAddressI2cFormat, BYTE bDataToWrite)
 
 int I2CTransmitWord(BYTE bPicAddressI2cFormat, WORD wDataToWrite)
 {
-
-	// int WriteToSMBus(BYTE Address,BYTE bRegister,BYTE Size,DWORD Data_to_smbus)
 	return WriteToSMBus(bPicAddressI2cFormat,(wDataToWrite>>8)&0xff,1,(wDataToWrite&0xff));
 }
 
 
 int I2CWriteBytetoRegister(BYTE bPicAddressI2cFormat, BYTE bRegister, BYTE wDataToWrite)
 {
-	// int WriteToSMBus(BYTE Address,BYTE bRegister,BYTE Size,DWORD Data_to_smbus)
 	return WriteToSMBus(bPicAddressI2cFormat,bRegister,1,(wDataToWrite&0xff));
 	
 }
@@ -223,4 +220,15 @@ bool I2CGetTemperature(int * pnLocalTemp, int * pExternalTemp)
 	return true;
 }
 
+void I2CRebootQuick(void) {
+	WriteToSMBus(0x10,0x02,1,0x01);
+}
 
+
+void I2CRebootSlow(void) {
+	WriteToSMBus(0x10,0x02,1,0x40);
+}
+
+void I2CPowerOff(void) {
+	WriteToSMBus(0x10,0x02,1,0x80);
+}
