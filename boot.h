@@ -308,6 +308,14 @@ int I2cSetFrontpanelLed(BYTE b);
 );
 
 
+typedef struct _LIST_ENTRY {
+	struct _LIST_ENTRY *m_plistentryNext;
+	struct _LIST_ENTRY *m_plistentryPrevious;
+} LIST_ENTRY;
+
+void ListEntryInsertAfterCurrent(LIST_ENTRY *plistentryCurrent, LIST_ENTRY *plistentryNew);
+void ListEntryRemove(LIST_ENTRY *plistentryCurrent);
+
 ////////// BootPerformXCodeActions.c
 
 int BootPerformXCodeActions(void);
@@ -420,10 +428,16 @@ BYTE * BootVideoGetPointerToEffectiveJpegTopLeft(JPEG * pJpeg);
 
 void * memcpy(void *dest, const void *src,  size_t size);
 void * memset(void *dest, int data,  size_t size);
+int _memcmp(const BYTE *pb, const BYTE *pb1, int n);
+int _strncmp(const char *sz1, const char *sz2, int nMax);
+char * strcpy(char *sz, const char *szc);
 
 void MemoryManagementInitialization(void * pvStartAddress, DWORD dwTotalMemoryAllocLength);
 void * malloc(size_t size);
 void free(void *);
+
+unsigned long long GetTickCount();
+void Sleep(int nMicroseconds);
 
 extern volatile int nCountI2cinterrupts, nCountUnusedInterrupts, nCountUnusedInterruptsPic2, nCountInterruptsSmc, nCountInterruptsIde;
 extern volatile bool fSeenPowerdown;

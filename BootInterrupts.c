@@ -19,15 +19,14 @@
 #include "config-rom.h"
 #endif
 
-
+#include "BootUsbOhci.h"
 
 volatile int nCountI2cinterrupts, nCountUnusedInterrupts, nCountUnusedInterruptsPic2, nCountInterruptsSmc, nCountInterruptsIde;
 volatile bool fSeenPowerdown;
 volatile TRAY_STATE traystate;
 
 DWORD dwaTitleArea[1024*64];
-extern BYTE bAvPackType;
-extern BYTE bFinalConexantA8, bFinalConexantAA, bFinalConexantAC;
+
 
 	// interrupt service stubs defined in BootStartup.S
 
@@ -195,6 +194,9 @@ void IntHandlerCSmc(void)
 	BootPciInterruptGlobalStackStateAndDisable(&dwTempInt);
 
 	nCountInterruptsSmc++;
+
+//	bprintf("&nCountInterruptsSmc=0x%x\n", &nCountInterruptsSmc);
+
 	bStatus=I2CTransmitByteGetReturn(0x10, 0x11); // Query PIC for interrupt reason
 	while(nBit<7) {
 		if(bStatus & 1) {
@@ -299,10 +301,16 @@ void IntHandlerCTimer0(void)
 	BIOS_TICK_COUNT++;
 }
 
+	// USB interrupt
+
 void IntHandler1C(void)
 {
-	bprintf("Interrupt 1\n");
+#ifndef XBE
+	BootUsbInterrupt();
+#endif
 }
+
+
 void IntHandler2C(void)
 {
 	bprintf("Interrupt 2\n");

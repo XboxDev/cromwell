@@ -433,15 +433,6 @@ void vgaout(volatile BYTE * pb, unsigned char reg, unsigned char data) {
 }
 
 
-void GetTickCount(DWORD * pdw1, DWORD * pdw2)
-{
-	DWORD dw1, dw2;
-
-	__asm__ __volatile__ (
-		"rdtsc " : "=a" (dw1), "=d" (dw2)
-	);
-	*pdw1=dw1; *pdw2=dw2;
-}
 
 
 // call with first arg video mode from enum in boot.h (eg, VIDEO_MODE_800x600)

@@ -23,6 +23,14 @@
  *   2002-08-25 andy@warmcat.com  threshed around to work with xbox
  */
 
+// uncomment below to run two sample HDD unlocks through the algorithm each boot before the actual present drive is unlocked, 
+// and get a report on success and fail
+//   'Andy's Drive' is a factory-locked Seagate
+//   Ed's drive was locked by a tool and exhibits an unusual requirement about the serial string
+//
+// #define HDD_SANITY
+
+
 #include  "boot.h"
 #include "grub/shared.h"
 #include "BootEEPROM.h"
@@ -480,6 +488,25 @@ static int BootIdeDriveInit(unsigned uIoBase, int nIndexDrive)
 	*/
 	}
 
+/* ag: my original v1.0 box details for reference
+
+HDD details: Model='ST310211A', Serial='6DB2WF1K'
+
+First 0x30 bytes of EEPROM
+
+00000000: 6D AB 59 A2 B8 82 09 AB : 21 84 B2 50 8A 7F 4F 43    m.Y.....!..P..OC
+00000010: 54 01 1E 52 D3 B6 3A 5C : 32 A6 11 28 72 07 AE 3C    T..R..:\2..(r..<
+00000020: 36 D4 83 FB E0 29 EE A8 : 1C 9D 14 EF 44 39 65 37    6....)......D9e7
+
+EEPROM key: 53 70 17 9C 73 06 94 0A : 18 F8 70 69 4C 63 5E B0
+
+Known-good HDD password for this drive:
+
+00000000: 00 00 45 79 8D F1 E9 F5 : 90 A3 3F DA AB 3C E2 5B    ..Ey......?..<.[
+00000010: 1A 41 9D 24 B6 CC
+
+*/
+
 	if((drive_info[128]&0x0004)==0x0004) { // 'security' is in force, unlock the drive (was 0x104/0x104)
 		BYTE baMagic[0x200], baKeyFromEEPROM[0x10], baEeprom[0x30];
 		bool fUnlocked=false;
@@ -494,28 +521,131 @@ static int BootIdeDriveInit(unsigned uIoBase, int nIndexDrive)
 
 		printk(" Lck[%x]", drive_info[128]);
 
+#ifdef HDD_SANITY
+
+		printk("\n");
+
+		{ // algorithm sanity check  Andy's drive
+			const BYTE baEepromAndysOriginalv10Box[] = {
+				0x6D, 0xAB, 0x59, 0xA2, 0xB8, 0x82, 0x09, 0xAB, 0x21, 0x84, 0xB2, 0x50, 0x8A, 0x7F, 0x4F, 0x43,
+				0x54, 0x01, 0x1E, 0x52, 0xD3, 0xB6, 0x3A, 0x5C, 0x32, 0xA6, 0x11, 0x28, 0x72, 0x07, 0xAE, 0x3C,
+				0x36, 0xD4, 0x83, 0xFB, 0xE0, 0x29, 0xEE, 0xA8, 0x1C, 0x9D, 0x14, 0xEF, 0x44, 0x39, 0x65, 0x37
+			};
+			const BYTE baEepKeyAndysOriginalv10Box[] = {
+				0x53, 0x70, 0x17, 0x9C, 0x73, 0x06, 0x94, 0x0A, 0x18, 0xF8, 0x70, 0x69, 0x4C, 0x63, 0x5E, 0xB0
+			};
+			const BYTE baPasswordAndysOriginalV10Box[] = {
+				0x45, 0x79, 0x8D, 0xF1, 0xE9, 0xF5, 0x90, 0xA3, 0x3F, 0xDA, 0xAB, 0x3C, 0xE2, 0x5B, 0x1a, 0x41, 0x9d, 0x24, 0xb6, 0xcc
+			};
+			const char szModelAndysOriginalv10Box[] = "ST310211A";
+			const char szSerialAndysOriginalv10Box[] = "6DB2WF1K";
+
+			if(BootHddKeyGenerateEepromKeyData( (BYTE *)&baEepromAndysOriginalv10Box[0], &baKeyFromEEPROM[0])!=10) {
+				printk("HDD p/w sanity check fail: not v1.0 sig\n");
+				while(1);
+			}
+
+			if(_memcmp(baEepKeyAndysOriginalv10Box, baKeyFromEEPROM, 16)) {
+				printk("HDD p/w sanity check fail: EEP key mismatch\n");
+				VideoDumpAddressAndData(0, &baKeyFromEEPROM[0], 0x10);
+				while(1);
+			}
+
+			HMAC_SHA1 (&baMagic[2], baKeyFromEEPROM, 0x10,
+					 (char *)szModelAndysOriginalv10Box,
+					 strlen(szModelAndysOriginalv10Box),
+					 (char *)szSerialAndysOriginalv10Box,
+					 strlen(szSerialAndysOriginalv10Box)
+			);
+
+			if(_memcmp(baPasswordAndysOriginalV10Box, &baMagic[2], 20)) {
+				printk("HDD p/w sanity check fail: Password mismatch\n");
+				VideoDumpAddressAndData(0, &baMagic[2], 20);
+				while(1);
+			}
+
+			printk("HDD p/w: Passed sanity check for Andy's drive\n");
+		}
+
+
+		{ // algorithm sanity check  ED's drive
+			const BYTE baEepromEdsOriginalv10Box[] = {
+					0x47, 0xa9, 0x03, 0x95, 0xed, 0x0c, 0xc1, 0x72, 0x15, 0x11, 0xbe, 0x91, 0x5e, 0x80, 0xd9, 0xa6,
+					0xba, 0x91, 0xaf, 0x63, 0x32, 0x6e, 0x26, 0xf6, 0x96, 0x77, 0xa3, 0xf7, 0x55, 0x4f, 0xb6, 0x5f,
+					0x58, 0xf9, 0x33, 0x48, 0x0f, 0xdb, 0x3e, 0xfc, 0xf8, 0xab, 0x33, 0x55, 0xb7, 0xcc, 0x4b, 0x81
+			};
+			const BYTE baEepKeyEdsOriginalv10Box[] = {
+				0x04, 0x24, 0xa0, 0x49, 0x5f, 0x0b, 0x98, 0x90, 0x50, 0xe1, 0x34, 0x46, 0x3f, 0x1a, 0x0e, 0x34
+			};
+			const BYTE baPasswordEdsOriginalV10Box[] = {
+//				0x0F, 0xC0, 0xEC, 0xA1, 0x30, 0xE9, 0x62, 0x78, 0xE8, 0xE2, 0x87, 0xD6, 0xF1, 0x28, 0x93, 0x15, 0xBF, 0x7D, 0xCC, 0x46
+				0xc8, 0x76, 0xd2, 0xaf, 0xf4, 0x59, 0x53, 0x59, 0xc2, 0xc9, 0x56, 0x07, 0x5b, 0xb7, 0x87, 0x18, 0xe4, 0x20, 0xcf, 0x04
+			};
+			const char szModelEdsOriginalv10Box[] = "WDC WD80EB-28CGH1";
+			const char szSerialEdsOriginalv10Box[] = "WD-WMA9N4505862\0\0\0\0\0\0\0\0\0\0";
+
+			if(BootHddKeyGenerateEepromKeyData( (BYTE *)&baEepromEdsOriginalv10Box[0], &baKeyFromEEPROM[0])!=10) {
+				printk("Ed's HDD p/w sanity check fail: not v1.0 sig\n");
+				while(1);
+			}
+
+			if(_memcmp(baEepKeyEdsOriginalv10Box, baKeyFromEEPROM, 16)) {
+				printk("Ed's HDD p/w sanity check fail: EEP key mismatch\n");
+				VideoDumpAddressAndData(0, &baKeyFromEEPROM[0], 0x10);
+				while(1);
+			}
+
+			HMAC_SHA1 (&baMagic[2], baKeyFromEEPROM, 0x10,
+					 (char *)szModelEdsOriginalv10Box,
+					 strlen(szModelEdsOriginalv10Box),
+					 (char *)szSerialEdsOriginalv10Box,
+					 20 // strlen(szSerialEdsOriginalv10Box)
+			);
+
+			if(_memcmp(baPasswordEdsOriginalV10Box, &baMagic[2], 20)) {
+				printk("Ed's HDD p/w sanity check fail: Password mismatch\n");
+				VideoDumpAddressAndData(0, &baMagic[2], 20);
+				while(1);
+			}
+
+			printk("HDD p/w: Passed sanity check for Ed's drive\n");
+		}
+#endif
+
 
 		dwMagicFromEEPROM=0;
 
 		{
-                        nVersionHashing = 0;
+ 			nVersionHashing = 0;
+
 			memcpy(&baEeprom[0], &eeprom, 0x30); // first 0x30 bytes from EEPROM image we picked up earlier
+
+			for(n=0;n<0x10;n++) baKeyFromEEPROM[n]=0;
 			nVersionHashing = BootHddKeyGenerateEepromKeyData( &baEeprom[0], &baKeyFromEEPROM[0]);
+
 			for(n=0;n<0x200;n++) baMagic[n]=0;
-			HMAC_SHA1 (&baMagic[2], baKeyFromEEPROM, 0x10, 
-					 tsaHarddiskInfo[nIndexDrive].m_szIdentityModelNumber, 
-					 tsaHarddiskInfo[nIndexDrive].m_length, 
+
+#ifdef HDD_DEBUG
+			printk("Model='%s', Serial='%s'\n", tsaHarddiskInfo[nIndexDrive].m_szIdentityModelNumber, tsaHarddiskInfo[nIndexDrive].m_szSerial);
+			VideoDumpAddressAndData(0, &baKeyFromEEPROM[0], 0x10);
+#endif
+
+			HMAC_SHA1 (&baMagic[2], baKeyFromEEPROM, 0x10,
+					 tsaHarddiskInfo[nIndexDrive].m_szIdentityModelNumber,
+					 tsaHarddiskInfo[nIndexDrive].m_length,
 					 tsaHarddiskInfo[nIndexDrive].m_szSerial,
 					 tsaHarddiskInfo[nIndexDrive].s_length);
-//     genHDPass( baKeyFromEEPROM, tsaHarddiskInfo[nIndexDrive].m_szSerial, tsaHarddiskInfo[nIndexDrive].m_szIdentityModelNumber, &baMagic[2]);
+                       
+			if (nVersionHashing == 0)
+				{
+					printk("Got a 0 return from BootHddKeyGenerateEepromKeyData\n");
+				// ERRORR -- Corrupt EEprom or Newer Version of EEprom - key
+				}
 
-                        if (nVersionHashing == 0)
-                        {
-                         	printk("Got a 0 return from BootHddKeyGenerateEepromKeyData\n");
-												 // ERRORR -- Corrupt EEprom or Newer Version of EEprom - key
-                        }
 
 			nVersionSuccessfulDecrypt=nVersionHashing;
+
+
 
 				// clear down the unlock packet, except for b8 set in first word (high security unlock)
 
@@ -581,13 +711,15 @@ static int BootIdeDriveInit(unsigned uIoBase, int nIndexDrive)
 //			nVersionHashing++;
 
 		}
-
-		if(!fUnlocked) {
+#ifndef HDD_DEBUG
+		if(!fUnlocked)
+#endif
+		{
 			printk("\n");
 			printk("FAILED to unlock drive, sec: %04x; Version=%d, EEPROM:\n", drive_info[128], nVersionSuccessfulDecrypt);
 			VideoDumpAddressAndData(0, &baEeprom[0], 0x30);
 			printk("Computed key:\n");
-			VideoDumpAddressAndData(0, &baMagic[0], 0x40);
+			VideoDumpAddressAndData(0, &baMagic[0], 20);
 			return 1;
 		}
 

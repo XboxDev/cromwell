@@ -96,12 +96,17 @@ void * memset(void *dest, int data,  size_t size) {
 	return dest;
 }
 
+int _memcmp(const BYTE *pb, const BYTE *pb1, int n) {
+	while(n--) { if(*pb++ != *pb1++) return 1; }
+	return 0;
+}
+
 	// this is the memory managemnt struct stored behind every allocation
 
 typedef struct {
-	DWORD m_dwSentinel;
 	void * m_pvNext;
 	void * m_pvPrev;
+	DWORD m_dwSentinel;
 	int m_nLength; // negative means allocated length including mgt struct
 } MEM_MGT;
 
@@ -223,12 +228,53 @@ int _strncmp(const char *sz1, const char *sz2, int nMax) {
 	return 0; // used up nMax
 }
 
+
+unsigned long GetMillisecondCount()
+{
+	DWORD dw1, dw2, * pdw;
+	unsigned long ul;
+
+	__asm__ __volatile__ (
+		"rdtsc " : "=a" (dw1), "=d" (dw2)
+	);
+	pdw=(DWORD *)&ul;
+	*pdw++=dw1;
+	return ul;
+}
+
+void Sleep(int nMicroseconds)
+{
+	unsigned long ul=GetMillisecondCount();
+
+	while(nMicroseconds--) {
+		while((GetMillisecondCount()/733)==(ul/733)) ;
+	}
+}
+
+void ListEntryInsertAfterCurrent(LIST_ENTRY *plistentryCurrent, LIST_ENTRY *plistentryNew)
+{
+	plistentryNew->m_plistentryPrevious=plistentryCurrent;
+	plistentryNew->m_plistentryNext=plistentryCurrent->m_plistentryNext;
+	plistentryCurrent->m_plistentryNext=plistentryNew;
+	if(plistentryNew->m_plistentryNext!=NULL) {
+		plistentryNew->m_plistentryNext->m_plistentryPrevious=plistentryNew;
+	}
+}
+
+void ListEntryRemove(LIST_ENTRY *plistentryCurrent)
+{
+	if(plistentryCurrent->m_plistentryPrevious) {
+		plistentryCurrent->m_plistentryPrevious->m_plistentryNext=plistentryCurrent->m_plistentryNext;
+	}
+	if(plistentryCurrent->m_plistentryNext) {
+		plistentryCurrent->m_plistentryNext->m_plistentryPrevious=plistentryCurrent->m_plistentryPrevious;
+	}
+}
+
 int copy_swap_trim(unsigned char *dst, unsigned char *src, int len)
 {
 	unsigned char tmp;
 	int i;
-
-
         for (i=0; i < len; i+=2) {
 		tmp = src[i];     //allow swap in place
 		dst[i] = src[i+1];
@@ -244,3 +290,4 @@ int copy_swap_trim(unsigned char *dst, unsigned char *src, int len)
 	}
 	return i;
 }
+

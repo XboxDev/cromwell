@@ -5,6 +5,16 @@
 # free bios project.
 #
 # $Log$
+# Revision 1.12  2003/02/01 14:36:50  warmcat
+# 800x600 video mode now default for PAL, thanks to Petteri Kangaslampi's work on nvtv.
+# Set encoder bit for Luma LPF for 800x600, which voids Chroma artifacts on composite when the Luma if too HF.
+# Confirmed working through to X (100x37 in fb text mode) with Oliver's driver.  Its a BIG improvement.
+# Updated background JPEG to 1024x(768+64).
+# Removed all fixed dependencies on 640 screen width.
+# Updated Readme with sample XF86Config-4 files that worked for me with Oliver's driver.
+# Cleaned up Vga init code.
+# Don't think I broke anything for Xromwell this time.
+#
 # Revision 1.11  2003/01/21 22:05:45  warmcat
 # v1.1 Xbox compatability; ability to boot Mandrake 9 boot CD as well as install CD, fix for 8.3 only CDs; Vsync-interrupt sprite :-) and other cosmetic stuff; temperature display; update backdrop JPG to 640x(576+64); improved CLI/STI code
 #
@@ -83,10 +93,11 @@ jpeg-6b/jdpostct.o jpeg-6b/jddctmgr.o jpeg-6b/jidctfst.o jpeg-6b/jidctflt.o jpeg
 jpeg-6b/jdsample.o jpeg-6b/jdcolor.o jpeg-6b/jquant1.o jpeg-6b/jquant2.o jpeg-6b/jdmerge.o jpeg-6b/jmemnobs.o \
 jpeg-6b/jmemmgr.o jpeg-6b/jcomapi.o jpeg-6b/jutils.o jpeg-6b/jerror.o \
 BootFlash.o BootEEPROM.o\
+BootUsbOhci.o
 # !!! killed temporarily to allow clean CVS checkin
 #BootEthernet.o \
 #nvn/nvnetlib.o
-#BootUsbOhci.o
+
 
 
 #RESOURCES = rombios.elf amended2bl.elf xcodes11.elf
@@ -148,6 +159,8 @@ install:
 	lmilk -f -p image.bin
 	lmilk -f -a c0000 -p image.bin -q
 
+1m:
+	cat image.bin image.bin image.bin image.bin > image1m.bin
 
 bios: rombios.bin
 

@@ -66,38 +66,38 @@ void HMAC_SHA1( unsigned char *result,
 	unsigned char state1[0x40];
 	unsigned char state2[0x40+0x14];
 	int i;
-	struct SHA1Context context;
+//	struct SHA1Context context;
 
 	for(i=0x40-1; i>=key_length;--i) state1[i] = 0x36;
 	for(;i>=0;--i) state1[i] = key[i] ^ 0x36;
-
+/*
 	SHA1Reset(&context);
 	SHA1Input(&context,state1,0x40);
 	SHA1Input(&context,text1,text1_length);
 	SHA1Input(&context,text2,text2_length);
 	SHA1Result(&context,&state2[0x40]);
+*/
 
-/*
 	quick_SHA1 ( &state2[0x40],
 			state1,		0x40,
 			text1,		text1_length,
 			text2,		text2_length,
 			NULL );
 
-*/
+
 	for(i=0x40-1; i>=key_length;--i) state2[i] = 0x5C;
 	for(;i>=0;--i) state2[i] = key[i] ^ 0x5C;
 
-/*
+
 	quick_SHA1 ( result,
 			state2,		0x40+0x14,
 			NULL );
-			
-*/
+
+/*
 		SHA1Reset(&context);
 	SHA1Input(&context,state2,0x40+0x14);
 	SHA1Result(&context,result);
-
+*/
 }
 
 
@@ -145,6 +145,7 @@ DWORD BootHddKeyGenerateEepromKeyData(
         
 	for (counter=10;counter<12;counter++)
 	{
+    memset(&RC4_key,0,sizeof(rc4_key));
 		memcpy(&baEepromDataLocalCopy[0], pbEeprom_data, 0x30);
                 
                 // Calculate the Key-Hash
@@ -168,7 +169,7 @@ DWORD BootHddKeyGenerateEepromKeyData(
 		if (f==0) { 
 			// Confirm Hash is correct  
 			// Copy actual Xbox Version to Return Value
-			version=counter;                           
+			version=counter;
 			// exits the loop
 			break;
 			
@@ -184,14 +185,4 @@ DWORD BootHddKeyGenerateEepromKeyData(
 	return version;
 }
 
-
-void genHDPass(
-		BYTE * pbEEPROMComputedKey,
-		BYTE * pbszHDSerial,
-		BYTE * pbHDModel,
-		BYTE * pbHDPass
-) {
-
-	HMAC_SHA1 ( pbHDPass, pbEEPROMComputedKey, 0x10, pbHDModel, strlen(pbHDModel), pbszHDSerial, strlen(pbszHDSerial) );
-}
 

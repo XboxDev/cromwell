@@ -27,6 +27,8 @@
 #include "config-xbe.h"
 #else
 #include "config-rom.h"
+#include "BootUsbOhci.h"
+extern volatile USB_CONTROLLER_OBJECT usbcontroller;
 #endif
 
 #undef strcpy
@@ -534,6 +536,15 @@ void StartBios(	int nDrive, int nActivePartition ) {
 		BootIdeSetTransferMode(0, 0x40 | nAta);
 //		BootIdeSetTransferMode(0, 0x04);
 	}
+
+
+
+#ifndef XBE
+	{  	// turn off USB
+			usbcontroller.m_pusboperationalregisters->m_dwHcControl=((usbcontroller.m_pusboperationalregisters->m_dwHcControl)&(~0xc0))|0x00;
+	}
+#endif
+
 		__asm __volatile__ (
 
 	"cli \n"

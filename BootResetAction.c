@@ -31,7 +31,7 @@
 #else
 #include "config-rom.h"
 #endif
-
+#include "BootUsbOhci.h"
 
 extern DWORD dwaTitleArea[1024*64];
 JPEG jpegBackdrop;
@@ -39,6 +39,8 @@ JPEG jpegBackdrop;
 int nTempCursorMbrX, nTempCursorMbrY;
 
 volatile CURRENT_VIDEO_MODE_DETAILS currentvideomodedetails;
+volatile USB_CONTROLLER_OBJECT usbcontroller;
+
 
 const KNOWN_FLASH_TYPE aknownflashtypesDefault[] = {
 	{ 0xbf, 0x61, "SST49LF020", 0x40000 },  // default flash types
@@ -170,6 +172,17 @@ extern void BootResetAction ( void ) {
 		I2CTransmitWord(0x10, 0x1b04); // unknown
 		BootPciInterruptGlobalPopState(dw);
 	}
+
+		// init USB
+
+	{
+		const int nSizeAllocation=0x10000;
+		void * pvHostControllerCommsArea=malloc(nSizeAllocation+0x100); // 64K+256 to ensure alignment
+		bprintf("BOOT: start USB init\n\r");
+		BootUsbInit((USB_CONTROLLER_OBJECT *)&usbcontroller, (void *)0xfed00000, (void *)(((DWORD)pvHostControllerCommsArea+0x100)&0xffffff00), nSizeAllocation);
+		bprintf("BOOT: done USB init\n\r");
+	}
+
 #endif
 
 
@@ -278,19 +291,13 @@ extern void BootResetAction ( void ) {
 		case 6:
 			printk("Composite");
 			break;
-		case 7:
-			printk("Composite");
-			break;
-		case 8:
-			printk("Composite");
-			break;
 	}
 
 //	printk("  - Time=0x%08X/0x%08X", (DWORD)(i64Timestamp>>32), (DWORD)i64Timestamp);
 	printk("\n");
 #endif
 
-	
+
 
 		I2cSetFrontpanelLed(I2C_LED_RED0 | I2C_LED_RED1 | I2C_LED_RED2 | I2C_LED_RED3 );
 
@@ -393,6 +400,15 @@ extern void BootResetAction ( void ) {
 			VIDEO_ATTR=0xffc8c800;
 			printk("%s\n", of.m_szFlashDescription);
 		}
+
+
+		{
+			VIDEO_ATTR=0xffc8c8c8;
+			printk("USB: ");
+			VIDEO_ATTR=0xffc8c800;
+			BootUsbPrintStatus(&usbcontroller);
+		}
+
 #endif
 
 			// init the HDD and DVD

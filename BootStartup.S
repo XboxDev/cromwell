@@ -523,39 +523,39 @@ patspin2:
 	mov	%eax, %ebx
 
 	shr	$0x14, %ebx  // divide ebx by 1M, 0xfd0
-	add	%ebx, %edi // add to page table base 0xffd0
+	add	%edi, %ebx // add to page table base 0xffd0
 
 		// contiguous 16M area starting 0xfd000000 - 0xfdffffff in page tbl at 0xffd0+
 
-	mov	%eax, (%edi)
-	add	$4, %edi
+	mov	%eax, (%ebx)
+	add	$4, %ebx
 	add	$0x400000, %eax
-	mov	%eax, (%edi)
-	add	$4, %edi
+	mov	%eax, (%ebx)
+	add	$4, %ebx
 	add	$0x400000, %eax
-	mov	%eax, (%edi)
-	add	$4, %edi
+	mov	%eax, (%ebx)
+	add	$4, %ebx
 	add	$0x400000, %eax
-	mov	%eax, (%edi)
+	mov	%eax, (%ebx)
 
-	mov $0xfe0000fb, %eax // not cacheable 4M area starting 0xfd000000
+	mov $0xfe0000fb, %eax // not cacheable 4M area starting 0xfe000000
 	mov	%eax, %ebx
 
-	shr	$0x14, %ebx  // divide ebx by 1M, 0xfd0
-	add	%ebx, %edi // add to page table base 0xffd0
+	shr	$0x14, %ebx  // divide ebx by 1M, 0xfe0
+	add	%edi, %ebx // add to page table base 0xffe0
 
 		// contiguous 16M area starting 0xfe000000 - 0xfeffffff in page tbl at 0xffe0+
 
-	mov	%eax, (%edi)
-	add	$4, %edi
+	mov	%eax, (%ebx)
+	add	$4, %ebx
 	add	$0x400000, %eax
-	mov	%eax, (%edi)
-	add	$4, %edi
+	mov	%eax, (%ebx)
+	add	$4, %ebx
 	add	$0x400000, %eax
-	mov	%eax, (%edi)
-	add	$4, %edi
+	mov	%eax, (%ebx)
+	add	$4, %ebx
 	add	$0x400000, %eax
-	mov	%eax, (%edi)
+	mov	%eax, (%ebx)
 
 
 	mov	%cr0, %eax
