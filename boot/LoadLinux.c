@@ -281,11 +281,10 @@ int BootLoadConfigFATX(CONFIGENTRY *config) {
 
 
 
-int BootLoadConfigCD(CONFIGENTRY *config) {
+int BootLoadConfigCD(int cdromId, CONFIGENTRY *config) {
 
 	DWORD dwConfigSize=0, dw;
 	int n;
-	int cdromId=0;
 	DWORD dwY=VIDEO_CURSOR_POSY;
 	DWORD dwX=VIDEO_CURSOR_POSX;
 	BYTE* tempBuf;

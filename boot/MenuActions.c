@@ -21,7 +21,7 @@
 
 void BootFromCD(void *data) {
 	CONFIGENTRY config;
-	BootLoadConfigCD(&config);
+	BootLoadConfigCD(*(int*)data, &config);
 	ExittoLinux(&config);
 }
 

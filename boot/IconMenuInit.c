@@ -18,17 +18,22 @@ void InitFatXIcons(void);
 void InitNativeIcons(void);
 
 void IconMenuInit(void) {
+	int i=0;
 	ICON *iconPtr=0l;
-	//CDROM Icon - if either drives are a CDROM, then we can boot from CDROM
-	if (tsaHarddiskInfo[0].m_fAtapi || tsaHarddiskInfo[1].m_fAtapi) {	
-		//CD-ROM icon
-		iconPtr = (ICON *)malloc(sizeof(ICON));
-		iconPtr->iconSlot = ICON_SOURCE_SLOT2;
-		iconPtr->szCaption = "CDROM";
-		iconPtr->functionPtr = BootFromCD;
-		AddIcon(iconPtr);
+	for (i=0; i<2; ++i) {
+		//Add the cdrom icon - if you have two cdroms, you'll get two icons!
+		if (tsaHarddiskInfo[i].m_fAtapi) {
+			char *driveName=malloc(sizeof(char)*14);
+			sprintf(driveName,"CD-ROM (hd%c)",i ? 'b':'a');
+			iconPtr = (ICON *)malloc(sizeof(ICON));
+			iconPtr->iconSlot = ICON_SOURCE_SLOT2;
+			iconPtr->szCaption = driveName;
+			iconPtr->functionPtr = BootFromCD;
+			iconPtr->functionDataPtr = malloc(sizeof(int));
+			iconPtr->functionDataPtr=(void*)i;
+			AddIcon(iconPtr);
+		}
 	}
-
 	//Load the config file from FATX and native, and add the icons for it.
 	InitFatXIcons();
 	InitNativeIcons();
