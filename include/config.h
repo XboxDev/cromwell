@@ -18,7 +18,7 @@
 #define BOOT_TIMEWAIT 15
 
 //Uncomment to make connected Xpads rumble briefly at init.
-#define XPAD_VIBRA_STARTUP
+//#define XPAD_VIBRA_STARTUP
 
 //Uncomment for ultra-quiet mode. Menu is still present, but not
 //shown unless you move the xpad. Just backdrop->boot, otherwise
