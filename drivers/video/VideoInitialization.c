@@ -86,11 +86,17 @@ void SetGPURegister(const GPU_PARAMETER* gpu, BYTE *pbRegs) {
 	BYTE b;
 	DWORD m = 0;
 	/* All input from GPU is now RGB */
-	*((DWORD *)&pbRegs[0x680630]) = 0; // switch GPU to RGB
-	/* Needed to prevent purple borders when booting as Xromwell */
-	*((DWORD *)&pbRegs[0x6808C4]) = 0x00801080;
+	*((DWORD *)&pbRegs[0x680630]) = 0; 
+	/* Needed to prevent purple borders in RGB mode */
+	*((DWORD *)&pbRegs[0x6808c4]) = 0;
 	*((DWORD *)&pbRegs[0x68084c]) =0;
 
+	/* YUV values
+	*((DWORD *)&pbRegs[0x680630]) = 2; 
+	*((DWORD *)&pbRegs[0x6808c4]) = 0x40801080;
+	*((DWORD *)&pbRegs[0x68084c]) =0x00801080;
+	*/
+	
 	// NVHDISPEND
 	*((DWORD *)&pbRegs[0x680820]) = gpu->crtchdispend - 1;
 	// NVHTOTAL
