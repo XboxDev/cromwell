@@ -236,14 +236,8 @@ unsigned long pci_bar_start(struct pci_device *dev, unsigned int index)
 		if ((lo & PCI_BASE_ADDRESS_MEM_TYPE_MASK) == PCI_BASE_ADDRESS_MEM_TYPE_64) {
 			pci_read_config_dword(dev, index + 4, &hi);
 			if (hi) {
-				if (sizeof(unsigned long) > sizeof(uint32_t)) {
-					bar = hi;
-					bar <<=32;
-				}
-				else {
-					printf("Unhandled 64bit BAR\n");
-					return -1UL;
-				}
+				printf("Unhandled 64bit BAR\n");
+				return -1UL;
 			}
 		}
 		bar |= lo & PCI_BASE_ADDRESS_MEM_MASK;
