@@ -172,6 +172,8 @@ entrypoint_end:
 	// We jump out of the rest of init, 
 	// as we expect, this is all done when we are starting from the .xbe file
 	// this Jump can be found in BootResetAction.c
+	call BootInterruptsWriteIdt
+	call BootPerformPicChallengeResponseAction
 	jmp BootResetAction
 #endif
        
