@@ -6,6 +6,11 @@
  * and work by Johan Rydberg and Daniel Kahlin.
  *
  * $Log$
+ * Revision 1.2  2003/04/17 09:04:45  mist
+ * Cramwell :-) The ROM version now copies all code into RAM.
+ * Unfortunately booting Linux does not work any more at the moment (memory
+ * allocation issue?)
+ *
  * Revision 1.1.1.1  2003/04/15 10:52:16  mist
  * SF version 14 Apr 2003
  *
@@ -53,7 +58,7 @@ MEMORY
 }
 
 //RAM_CODE = 0x3F00000;
-RAM_CODE = 0x10000; /* 64 KB */
+RAM_CODE = 0x3B00000; /* 59 MB */
 RAM_BASE = 0x300000;  /* was 0x400000 */
 
 /* this should be changed depending the actual size of the rom */
@@ -107,7 +112,7 @@ SECTIONS {
  }
 
 
-		/* ram allocations */
+	/* ram allocations */
 
 	.data (RAM_BASE) : AT( 0xc80 + SIZEOF(.rom)+ SIZEOF(.rodata) ) {
 			_start_data = .;
@@ -116,7 +121,7 @@ SECTIONS {
 		*(.sdata2);
 		*(.got);
 		_end_data = .;
-		}
+	}
 
 	RamCopy (RAM_CODE) : AT( 0xc80 + SIZEOF(.rom)+ SIZEOF(.rodata) +SIZEOF(.data)) {
 		_ram_location = .;

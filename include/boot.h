@@ -37,6 +37,7 @@
 #define TRACE
 #endif
 
+#define INITRD_POS 0x02000000
 
 /////////////////////////////////
 // some typedefs to make for easy sizing

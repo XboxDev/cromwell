@@ -140,14 +140,8 @@ extern void BootResetAction ( void ) {
 
 	// init malloc() and free() structures
 
-#ifdef XBE
 	memset((void *)0x1000000, 0x00,0x0E00000);
 	MemoryManagementInitialization((void *)0x1000000, 0x0E00000);
-	
-#else                                             
-	memset((void *)0x1000000, 0x00,0x2000000);
-	MemoryManagementInitialization((void *)0x1000000, 0x2000000);
-#endif
 
 	BootInterruptsWriteIdt();
 //	bprintf("BOOT: done interrupts\n\r");
@@ -467,6 +461,7 @@ extern void BootResetAction ( void ) {
 		BootEepromPrintInfo();
 
 		
+#if 0
 		{
 		OBJECT_FLASH of;
 		memset(&of,0x00,sizeof(of));
@@ -478,7 +473,7 @@ extern void BootResetAction ( void ) {
 		VIDEO_ATTR=0xffc8c800;
 		printk("%s\n", of.m_szFlashDescription);
 		}
-
+#endif
 	
 	// init USB
 #ifdef DO_USB

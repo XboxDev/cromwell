@@ -181,7 +181,7 @@ int BootLodaConfigNative(int nActivePartition, CONFIGENTRY *config, bool fJustTe
 			while(1) ;
 		}
 		printk(" - %d bytes\n", filemax);
-		dwInitrdSize=grub_read((void *)0x03000000, filemax);
+		dwInitrdSize=grub_read((void *)INITRD_POS, filemax);
 		grub_close();
 	} else {
 		VIDEO_ATTR=0xffd8d8d8;
@@ -242,7 +242,7 @@ int BootLodaConfigFATX(CONFIGENTRY *config, bool fJustTestingForPossible) {
 			while(1);
 		} else {
 			dwInitrdSize = infoinitrd.fileSize;
-			memcpy((BYTE *)0x03000000,infoinitrd.buffer,infoinitrd.fileSize);	// moving the initrd to its final location
+			memcpy((BYTE *)INITRD_POS,infoinitrd.buffer,infoinitrd.fileSize);	// moving the initrd to its final location
 		}
 		printk(" - %d %d bytes\n", dwInitrdSize,infoinitrd.fileRead);
 	} else {
@@ -287,6 +287,7 @@ int BootLodaConfigCD(CONFIGENTRY *config) {
 		} else {
 			VIDEO_ATTR=0xff000000|(((bCount1>>2)+192)<<16)|(((bCount1>>2)+192)<<8)|(((bCount1>>2)+192)) ;
 		}
+		printk("\2BootResetAction 0x%08X\2\n",&BootResetAction);
 		printk("\2Please insert CD\2");
 		for(n=0;n<1000000;n++) { ; }
 	}
@@ -406,13 +407,13 @@ int BootLodaConfigCD(CONFIGENTRY *config) {
 		printk("  Loading %s from CDROM", config->szInitrd);
 		VIDEO_ATTR=0xffa8a8a8;
 
-		dwInitrdSize=BootIso9660GetFile(config->szInitrd, (void *)0x03000000, 4096*1024, 0);
+		dwInitrdSize=BootIso9660GetFile(config->szInitrd, (void *)INITRD_POS, 4096*1024, 0);
 		if((int)dwInitrdSize<0) { // not found, try 8.3
 			strcpy(config->szInitrd, "/INITRD.");
-			dwInitrdSize=BootIso9660GetFile(config->szInitrd, (void *)0x03000000, 4096*1024, 0);
+			dwInitrdSize=BootIso9660GetFile(config->szInitrd, (void *)INITRD_POS, 4096*1024, 0);
 			if((int)dwInitrdSize<0) { // not found, try 8.3
 				strcpy(config->szInitrd, "/INITRD_I.");
-				dwInitrdSize=BootIso9660GetFile(config->szInitrd, (void *)0x03000000, 4096*1024, 0);
+				dwInitrdSize=BootIso9660GetFile(config->szInitrd, (void *)INITRD_POS, 4096*1024, 0);
 				if((int)dwInitrdSize<0) { printk("Not Found, error %d\nHalting\n", dwInitrdSize); while(1) ; }
 			}
 		}
@@ -807,7 +808,7 @@ nDrive=0;
 
 		// prep the Linux startup struct
 
-	setup( (void *)0x90000, (void *)0x03000000, (void *)dwInitrdSize, config.szAppend);
+	setup( (void *)0x90000, (void *)INITRD_POS, (void *)dwInitrdSize, config.szAppend);
 
 	{
 		int nAta=0;
