@@ -3,7 +3,7 @@ INCLUDE = -I$(TOPDIR)/grub -I$(TOPDIR)/include -I$(TOPDIR)/ -I./ -I$(TOPDIR)/fs/
 	-I$(TOPDIR)/fs/fatx -I$(TOPDIR)/lib/eeprom -I$(TOPDIR)/lib/crypt \
 	-I$(TOPDIR)/drivers/video -I$(TOPDIR)/drivers/flash -I$(TOPDIR)/lib/misc \
 	-I$(TOPDIR)/boot_xbe/ -I$(TOPDIR)/fs/grub -I$(TOPDIR)/lib/font -I$(TOPDIR)/lib/jpeg-6b \
-	-I$(TOPDIR)/startuploader -I$(TOPDIR)/drivers/cpu 
+	-I$(TOPDIR)/startuploader -I$(TOPDIR)/drivers/cpu
 
 CFLAGS	= -O2 -mcpu=pentium -Werror $(INCLUDE) -Wstrict-prototypes -fomit-frame-pointer -fno-zero-initialized-in-bss -pipe 
 LD      = ld
@@ -12,12 +12,16 @@ OBJCOPY = objcopy
 export CC
 
 TOPDIR  := $(shell /bin/pwd)
-SUBDIRS	= boot_rom fs drivers lib boot
+SUBDIRS	= etherboot boot_rom fs drivers lib boot
 
 LDFLAGS-ROM     = -s -S -T $(TOPDIR)/scripts/ldscript-crom.ld
 LDFLAGS-XBEBOOT = -s -S -T $(TOPDIR)/scripts/xbeboot.ld
 LDFLAGS-ROMBOOT = -s -S -T $(TOPDIR)/boot_rom/bootrom.ld
 LDFLAGS-VMLBOOT = -s -S -T $(TOPDIR)/boot_vml/vml_start.ld
+
+#### Etherboot specific stuff
+INCLUDE += 	-I$(TOPDIR)/etherboot/include -I$(TOPDIR)/etherboot/arch/i386/include
+#### End Etherboot specific stuff
 
 
 
@@ -114,6 +118,18 @@ OBJECTS-CROM += $(TOPDIR)/obj/xpad.o
 OBJECTS-CROM += $(TOPDIR)/obj/xremote.o
 OBJECTS-CROM += $(TOPDIR)/obj/usbkey.o
 OBJECTS-CROM += $(TOPDIR)/obj/risefall.o
+#ETHERBOOT
+OBJECTS-CROM += $(TOPDIR)/obj/nfs.o
+OBJECTS-CROM += $(TOPDIR)/obj/nic.o
+#OBJECTS-CROM += $(TOPDIR)/obj/osloader.o
+OBJECTS-CROM += $(TOPDIR)/obj/xbox_osloader.o
+OBJECTS-CROM += $(TOPDIR)/obj/forcedeth.o
+OBJECTS-CROM += $(TOPDIR)/obj/xbox_timer.o
+OBJECTS-CROM += $(TOPDIR)/obj/xbox_misc.o
+OBJECTS-CROM += $(TOPDIR)/obj/xbox_mem.o
+OBJECTS-CROM += $(TOPDIR)/obj/xbox_pci.o
+OBJECTS-CROM += $(TOPDIR)/obj/xbox_pci_io.o
+OBJECTS-CROM += $(TOPDIR)/obj/etherboot_config.o
 
 RESOURCES = $(TOPDIR)/obj/backdrop.elf
 RESOURCES += $(TOPDIR)/obj/pcrombios.elf

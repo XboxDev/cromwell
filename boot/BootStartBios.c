@@ -16,12 +16,10 @@
 #include "xbox.h"
 #include "BootFlash.h"
 #include "cpu.h"
- 
+
 #include "config.h"
 
 extern EEPROMDATA eeprom;
-
-
 
 extern volatile AC97_DEVICE ac97device;
 
@@ -42,6 +40,7 @@ int _strncmp(const char *sz1, const char *sz2, int nMax);
 
 void setup(void* KernelPos, void* PhysInitrdPos, void* InitrdSize, char* kernel_cmdline);
 
+extern int etherboot(void);
 
 int nRet;
 DWORD dwKernelSize, dwInitrdSize;
@@ -872,17 +871,8 @@ int BootMenu(CONFIGENTRY *config,int nDrive,int nActivePartition, int nFATXPrese
 				break;
 	
 			case ICON_FLASH:
-				#ifdef FLASH
-					icon[menu].nEnabled = 1;
-					if(nSelected == -1) nSelected = menu;
-				#endif
-				#ifndef FLASH				
-					if (cromwell_haverombios==1) 
-					{
-						icon[menu].nEnabled = 1;
-						if(nSelected == -1) nSelected = menu;
-					}
-				#endif
+				icon[menu].nEnabled = 1;
+				if(nSelected == -1) nSelected = menu;
 				break;
 		}
 	}	
@@ -974,6 +964,7 @@ int BootMenu(CONFIGENTRY *config,int nDrive,int nActivePartition, int nFATXPrese
 
 int ExittoLinux(CONFIGENTRY *config);
 int ExittoRomBios(void);
+int etherboot(void);
 
 
 void StartBios(CONFIGENTRY *config, int nActivePartition , int nFATXPresent,int bootfrom) {
@@ -1050,14 +1041,7 @@ void StartBios(CONFIGENTRY *config, int nActivePartition , int nFATXPresent,int 
 			ExittoLinux(config);
 			break;
 		case ICON_FLASH:
-#ifdef FLASH
-			BootLoadFlashCD(config);
-
-#endif                  
-#ifndef FLASH           
-			if (cromwell_haverombios==1) ExittoRomBios();
-			
-#endif
+			etherboot();
 			break;
 		default:
 			printk("Selection not implemented\n");
