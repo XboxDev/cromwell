@@ -380,14 +380,14 @@ int BootIdeDriveInit(unsigned uIoBase, int nIndexDrive)
 	 * Bit 83. Bit 86 seems to be the accepted way to detect whether
 	 * 48-bit LBA is available. */
         if( drive_info[86] & 1ul<<10 )  {
-               printk("LBA-28:\n");
+               printk("LBA-48:\n");
                 if (!(drive_info[83] & 1ul<<10))
 			printk("Warning - ATA Bit 83 is not set - attempting LBA48 anyway\n");
 	
 		tsaHarddiskInfo[nIndexDrive].m_dwCountSectorsTotal = 
 			*((unsigned int*)&(drive_info[100]));
 	}
-	else	printk("LBA-48:\n");
+	else	printk("LBA-28:\n");
 	/* End 48-bit LBA */   
 	
 	{ 
