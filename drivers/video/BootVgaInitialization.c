@@ -32,14 +32,9 @@ void DetectVideoEncoder(void) {
 void BootVgaInitializationKernelNG(CURRENT_VIDEO_MODE_DETAILS * pcurrentvideomodedetails) {
 	xbox_tv_encoding tv_encoding; 
 	xbox_av_type av_type;
-//	TV_MODE_PARAMETER parameter;
 	BYTE b;
 	RIVA_HW_INST riva;
         struct riva_regs newmode;
-//	int bpp, width, hDisplaySize, crtc_hDisplay, crtc_hStart,
-//	          crtc_hEnd, crtc_hTotal, height, crtc_vDisplay, crtc_vStart,
-//	          crtc_vEnd, crtc_vTotal, dotClock,
-//	          hStart, hTotal, vStart, vTotal;
 	int dotClock;
 	int encoder_ok = 0;
 	int i=0;
