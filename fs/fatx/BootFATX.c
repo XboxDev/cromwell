@@ -24,6 +24,37 @@ int checkForLastDirectoryEntry(unsigned char* entry) {
 	return 0;
 }
 
+int LoadFATXFilefixed(FATXPartition *partition,char *filename, FATXFILEINFO *fileinfo,BYTE* Position) {
+
+	if(partition == NULL) {
+		VIDEO_ATTR=0xffe8e8e8;
+	} else {
+		if(FATXFindFile(partition,filename,FATX_ROOT_FAT_CLUSTER,fileinfo)) {
+#ifdef FATX_DEBUG
+			printk("ClusterID : %d\n",fileinfo->clusterId);
+			printk("fileSize  : %d\n",fileinfo->fileSize);
+#endif
+			fileinfo->buffer = Position;
+			memset(fileinfo->buffer,0xff,fileinfo->fileSize+60);
+			
+			if(FATXLoadFromDisk(partition, fileinfo)) {
+				return true;
+			} else {
+#ifdef FATX_INFO
+				printk("LoadFATXFile : error loading %s\n",filename);
+#endif
+				return false;
+			}
+		} else {
+#ifdef FATX_INFO
+			printk("LoadFATXFile : file %s not found\n",filename);
+#endif
+			return false;
+		}
+	}
+	return false;
+}
+
 int LoadFATXFile(FATXPartition *partition,char *filename, FATXFILEINFO *fileinfo) {
 
 	if(partition == NULL) {

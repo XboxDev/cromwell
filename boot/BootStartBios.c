@@ -214,7 +214,40 @@ int BootLodaConfigNative(int nActivePartition, CONFIGENTRY *config, bool fJustTe
 	return true;
 }
 
-int BootLodaConfigFATX(CONFIGENTRY *config, bool fJustTestingForPossible) {
+
+int BootTryLoadConfigFATX(CONFIGENTRY *config) {
+
+	static FATXPartition *partition = NULL;
+	static FATXFILEINFO fileinfo;
+	static FATXFILEINFO infokernel;
+
+
+	partition = OpenFATXPartition(0,
+			SECTOR_STORE,
+			STORE_SIZE);
+	if(partition != NULL) {
+		if(LoadFATXFile(partition,"/linuxboot.cfg",&fileinfo) ) {
+			ParseConfig(fileinfo.buffer,config,&eeprom);
+			free(fileinfo.buffer);
+		}
+	} else {
+		 return 0;
+	}
+
+	// We use the INITRD_POS as temporary location for the Loading of the Kernel into intermediate Ram
+	
+	if(! LoadFATXFilefixed(partition,config->szKernel,&infokernel,(BYTE*)INITRD_POS)) {
+		return 0;
+	} else {
+		return 1; // worth trying, since the filesystem and kernel exists
+	}
+
+
+	
+}
+
+
+int BootLodaConfigFATX(CONFIGENTRY *config) {
 
 	static FATXPartition *partition = NULL;
 	static FATXFILEINFO fileinfo;
@@ -225,28 +258,32 @@ int BootLodaConfigFATX(CONFIGENTRY *config, bool fJustTestingForPossible) {
 	memset(&fileinfo,0x00,sizeof(fileinfo));
 	memset(&infokernel,0x00,sizeof(infokernel));
 	memset(&infoinitrd,0x00,sizeof(infoinitrd));
+	wait_ms(50);
 	
-	if(!fJustTestingForPossible) printk("Loading linuxboot.cfg form FATX\n");
+	printk("Loading linuxboot.cfg form FATX\n");
 	partition = OpenFATXPartition(0,
 			SECTOR_STORE,
 			STORE_SIZE);
+	
 	if(partition != NULL) {
 		if(!LoadFATXFile(partition,"/linuxboot.cfg",&fileinfo) ) {
-			if(!fJustTestingForPossible) printk("linuxboot.cfg not found, using defaults\n");
+			wait_ms(50);
+			printk("linuxboot.cfg not found, using defaults\n");
 		} else {
+			wait_ms(50);
 			ParseConfig(fileinfo.buffer,config,&eeprom);
+			free(fileinfo.buffer);
 		}
-	} else {
-		if(fJustTestingForPossible) return 0;
-	}
+	} 
 
-	if(!fJustTestingForPossible) BootPrintConfig(config);
-	if(! LoadFATXFile(partition,config->szKernel,&infokernel)) {
-		if(fJustTestingForPossible) return 0;
+	BootPrintConfig(config);
+	
+	// We use the INITRD_POS as temporary location for the Loading of the Kernel into intermediate Ram
+	
+	if(! LoadFATXFilefixed(partition,config->szKernel,&infokernel,(BYTE*)INITRD_POS)) {
 		printk("Error loading kernel %s\n",config->szKernel);
 		while(1);
 	} else {
-		if(fJustTestingForPossible) return 1; // worth trying, since the filesystem and kernel exists
 		dwKernelSize = infokernel.fileSize;
 		// moving the kernel to its final location
 		memcpy((BYTE *)0x90000,&infokernel.buffer[0],0x400);
@@ -258,13 +295,13 @@ int BootLodaConfigFATX(CONFIGENTRY *config, bool fJustTestingForPossible) {
 	if( (_strncmp(config->szInitrd, "/no", strlen("/no")) != 0) && config->szInitrd[0]) {
 		VIDEO_ATTR=0xffd8d8d8;
 		printk("  Loading %s from FATX", config->szInitrd);
-		if(! LoadFATXFile(partition,config->szInitrd,&infoinitrd)) {
+		wait_ms(50);
+		if(! LoadFATXFilefixed(partition,config->szInitrd,&infoinitrd,(BYTE*)INITRD_POS)) {
 			printk("Error loading initrd %s\n",config->szInitrd);
 			while(1);
-		} else {
-			dwInitrdSize = infoinitrd.fileSize;
-			memcpy((BYTE *)INITRD_POS,infoinitrd.buffer,infoinitrd.fileSize);	// moving the initrd to its final location
 		}
+		
+		dwInitrdSize = infoinitrd.fileSize;
 		printk(" - %d %d bytes\n", dwInitrdSize,infoinitrd.fileRead);
 	} else {
 		VIDEO_ATTR=0xffd8d8d8;
@@ -603,7 +640,7 @@ int BootMenue(CONFIGENTRY *config,int nDrive,int nActivePartition, int nFATXPres
 			case ICON_FATX:
 				if(nFATXPresent) {
 					strcpy(config->szKernel, "/vmlinuz"); // fatx default kernel, looked for to detect fs
-					if(!BootLodaConfigFATX(config, true)) continue;  // only bother with it if the filesystem exists
+					if(!BootTryLoadConfigFATX(config)) continue;  // only bother with it if the filesystem exists
 					printk("/linuxboot.cfg from FATX\n");
 					nShowSelect = true;
 				} else {
@@ -756,7 +793,7 @@ void StartBios(CONFIGENTRY *config, int nActivePartition , int nFATXPresent,int 
 
 	switch(bootfrom) {
 		case ICON_FATX:
-			BootLodaConfigFATX(config, false);
+			BootLodaConfigFATX(config);
 			break;
 		case ICON_NATIVE:
 			BootLodaConfigNative(nActivePartition, config, false);
