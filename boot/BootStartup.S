@@ -159,7 +159,6 @@ reload_cs:
 	xor	%edx, %edx
 	xor	%ecx, %ecx
 	
-  
   	// We flush the TLB
 	mov	%cr3, %eax
 	mov	%eax, %cr3

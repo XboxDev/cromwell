@@ -25,6 +25,7 @@
 #include "VideoInitialization.h"
 #include "BootVgaInitialization.h"
 #include "encoder.h"
+#include "xcalibur.h"
 
 /*
 void DetectVideoEncoder(void) {
