@@ -108,4 +108,12 @@ void TextMenuInit(void) {
         itemPtr->functionDataPtr = malloc(sizeof(BYTE));
 	*(BYTE*)(itemPtr->functionDataPtr) = (I2C_LED_GREEN0 | I2C_LED_GREEN1 | I2C_LED_GREEN2 | I2C_LED_GREEN3 );
 	TextMenuAddItem(menuPtr, itemPtr);
+
+	itemPtr = (TEXTMENUITEM*)malloc(sizeof(TEXTMENUITEM));
+	memset(itemPtr,0x00,sizeof(TEXTMENUITEM));
+	itemPtr->szCaption="Flashing LED";
+	itemPtr->functionPtr=SetLEDColor;
+        itemPtr->functionDataPtr = malloc(sizeof(BYTE));
+	*(BYTE*)(itemPtr->functionDataPtr) = (I2C_LED_GREEN0 | I2C_LED_GREEN1 | I2C_LED_RED1 | I2C_LED_RED2);
+	TextMenuAddItem(menuPtr, itemPtr);
 }
