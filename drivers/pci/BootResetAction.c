@@ -123,7 +123,6 @@ extern void BootResetAction ( void ) {
 	int nTempCursorX, nTempCursorY;
 
 
-        
         // We disable The Cache
         cache_disable();
 	// We Update the Microcode of the CPU

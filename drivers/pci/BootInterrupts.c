@@ -375,6 +375,7 @@ void IntHandler2C(void)
 void IntHandler3VsyncC(void)  // video VSYNC
 {
 	DWORD dwTempInt;
+	int i;
 	
 	if(!nInteruptable) return;
 	
@@ -488,9 +489,12 @@ void IntHandler3VsyncC(void)  // video VSYNC
 		);
 #endif
 	}
-
+        i=1000;
 	*((volatile DWORD *)0xfd600100)=0x1;  // clear VSYNC int
-	while ( ((*((volatile DWORD *)0xfd600100)) & 0x1));  // We wait, until the Vsync IRQ has been deleted
+	while ( ((*((volatile DWORD *)0xfd600100)) & 0x1)) {
+		i--;
+		if (i==0) break;
+		}  // We wait, until the Vsync IRQ has been deleted / or the Timeout kills us
 	
 	BootPciInterruptGlobalPopState(dwTempInt);
 }

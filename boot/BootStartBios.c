@@ -939,6 +939,7 @@ nDrive=0;
 
 	// kill the cache
 
+
 	"mov %cr0, %eax \n"
 	"orl	$0x60000000, %eax \n"
 	"andl	$0x7fffffff, %eax \n" 		// turn off paging
@@ -953,7 +954,7 @@ nDrive=0;
 	"xor	%eax, %eax \n"
 	"xor	%edx, %edx \n"
 	"wrmsr \n"
-
+  
 	// Init the MTRRs for Ram and BIOS
         
         // MTRR for Memory-mapped regs 0xf8xxxxxx .. 0xffxxxxxx - uncached
@@ -1038,14 +1039,14 @@ nDrive=0;
 	"movl	$0x806, %eax  \n"		// default to CACHEABLE Enable MTRRs
 	"wrmsr \n"
 
-	/* turn on normal cache, TURN OFF PAGING */
+	// turn on normal cache, TURN OFF PAGING 
 
 	"movl	%cr0, %eax \n"
 	"mov %eax, %ebx \n"
 	"andl	$0x1FFFFFFF,%eax \n"
 	"movl	%eax, %cr0 \n"
-
-	"movl $0x90000, %esi        \n"
+  
+	"movl $0x90000, %esi\n"
 	"xor %ebx, %ebx \n"
 	"xor %eax, %eax \n"
 	"xor %ecx, %ecx \n"
