@@ -116,7 +116,7 @@ void InitNativeIcons(void) {
 						iconPtr = (ICON *)malloc(sizeof(ICON));
 			  			iconPtr->iconSlot = ICON_SOURCE_SLOT1;
 			  			if (strlen(entry->title)==0) {
-							iconPtr->szCaption = driveId?"hdb":"hda";
+							iconPtr->szCaption = driveId?"HDD (hdb)":"HDD (hda)";
 						}
 						else iconPtr->szCaption=entry->title;
 						iconPtr->functionPtr = BootFromNative;

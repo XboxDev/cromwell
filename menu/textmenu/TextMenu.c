@@ -59,7 +59,7 @@ void TextMenuDraw(void) {
 	
 	//Draw the menu title.
 	VIDEO_ATTR=0x000000;
-	printk("\2%s",currentMenu->szCaption);
+	printk("\2          %s",currentMenu->szCaption);
 	VIDEO_CURSOR_POSY+=30;
 	
 	//Draw the menu items
@@ -74,9 +74,10 @@ void TextMenuDraw(void) {
 		if (item == selectedMenuItem) VIDEO_ATTR=0xff0000;
 		else VIDEO_ATTR=0xffffff;
 		//Font size 2=big.
-		printk("\n\2\t%s\n",item->szCaption);
+		printk("\n\2               %s\n",item->szCaption);
 		item=(TEXTMENUITEM *)item->nextMenuItem;
 	}
+	VIDEO_ATTR=0xffffff;
 }
 
 void TextMenu(void) {
@@ -128,6 +129,8 @@ void TextMenu(void) {
 			
 		else if (risefall_xpad_BUTTON(TRIGGER_XPAD_KEY_A) == 1 || risefall_xpad_BUTTON(TRIGGER_XPAD_KEY_START) == 1) {
 			BootVideoClearScreen(&jpegBackdrop, 0, 0xffff);
+			VIDEO_ATTR=0xffffff;
+			
 			//Menu item selected - invoke function pointer.
 			if (selectedMenuItem->functionPtr!=NULL) selectedMenuItem->functionPtr(selectedMenuItem->functionDataPtr);
 			//Display the childmenu, if this menu item has one.	

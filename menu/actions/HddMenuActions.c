@@ -10,30 +10,53 @@
 
 void LockHdd(void *driveId) {
 	int nIndexDrive = *(int *)driveId;
-	char password[20];
+	u8 password[20];
 	unsigned uIoBase = tsaHarddiskInfo[nIndexDrive].m_fwPortBase;
+	int i;
 	if (CalculateDrivePassword(nIndexDrive,password)) {
 		printk("Unable to calculate drive password - eeprom corrupt?");
 		return;
 	}
+	printk("Locking drive\n\n");
+	printk("Cromwell locks drives with a master password of \"\2XBOXLINUX\2\"\n\nPlease remember this,");
+	printk("as it could save your drive!\n\n");
+	printk("The normal password (user password) the drive is being locked with is as follows:\n\n");
+	printk("                              ");
+	VIDEO_ATTR=0xff0000;
+	for (i=0; i<20; i++) {
+		printk("\2%02x \2",password[i]);
+		if ((i+1)%5 == 0) {
+			printk("\n\n                              ");
+		}
+	}	
+	VIDEO_ATTR=0xffffff;
+	printk("\nLocking drive - please wait\n");
 	if (DriveSecurityChange(uIoBase, nIndexDrive, IDE_CMD_SECURITY_SET_PASSWORD, password)) {
-		printk("Failed!");
+		printk("Lock command failed!");
 	}
-	wait_ms(5000);
+	printk("Complete.\nMake a note of the password above, and\n");
+	printk("press Button A to continue");
+
+	while ((risefall_xpad_BUTTON(TRIGGER_XPAD_KEY_A) != 1)) wait_ms(100);
 	BootVideoClearScreen(&jpegBackdrop, 0, 0xffff);
 }
 
 void UnlockHdd(void *driveId) {
 	int nIndexDrive = *(int *)driveId;
-	char password[20];
+	u8 password[20];
 	unsigned uIoBase = tsaHarddiskInfo[nIndexDrive].m_fwPortBase;
 	if (CalculateDrivePassword(nIndexDrive,password)) {
-		printk("Unable to calculate drive password - eeprom corrupt?");
+		printk("Unable to calculate drive password - eeprom corrupt?  Aborting\n");
 		return;
 	}
 	if (DriveSecurityChange(uIoBase, nIndexDrive, IDE_CMD_SECURITY_DISABLE, password)) {
 		printk("Failed!");
 	}
+	printk("\2\n\2\n\2This drive is now unlocked.\n\n");
+	printk("\2Press Button A to continue");
+
+	while ((risefall_xpad_BUTTON(TRIGGER_XPAD_KEY_A) != 1)) wait_ms(100);
+
 	BootVideoClearScreen(&jpegBackdrop, 0, 0xffff);
 }
 

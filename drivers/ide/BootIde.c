@@ -380,14 +380,12 @@ int BootIdeDriveInit(unsigned uIoBase, int nIndexDrive)
 	 * Bit 83. Bit 86 seems to be the accepted way to detect whether
 	 * 48-bit LBA is available. */
         if( drive_info[86] & 1ul<<10 )  {
-               printk("LBA-48:\n");
                 if (!(drive_info[83] & 1ul<<10))
 			printk("Warning - ATA Bit 83 is not set - attempting LBA48 anyway\n");
 	
 		tsaHarddiskInfo[nIndexDrive].m_dwCountSectorsTotal = 
 			*((unsigned int*)&(drive_info[100]));
 	}
-	else	printk("LBA-28:\n");
 	/* End 48-bit LBA */   
 	
 	{ 
@@ -418,31 +416,22 @@ int BootIdeDriveInit(unsigned uIoBase, int nIndexDrive)
 
 		if (cromwell_config==CROMWELL) 
 		{
-		// IS working as Cromwell
-		
-		  // this is the only way to clear the ATAPI ''I have been reset'' error indication
+		  	// this is the only way to clear the ATAPI ''I have been reset'' error indication
 			u8 ba[128];
 			ba[2]=0x06;
-
 			while (ba[2]==0x06) 
 			{  
 				// while bitching that it 'needs attention', give it REQUEST SENSE
-				int nPacketLength=BootIdeAtapiAdditionalSenseCode(nIndexDrive, &ba[0], sizeof(ba));
+				int nPacketLength=BootIdeAtapiAdditionalSenseCode(nIndexDrive, ba, sizeof(ba));
 				if(nPacketLength<12) 
 				{
 					printk("Unable to get ASC from drive when clearing sticky DVD error, retcode=0x%x\n", nPacketLength);
-	//				return 1;
-	//				while(1);
 					ba[2]=0;
 				} else {
-//					printk("ATAPI Drive reports ASC 0x%02X\n", ba[12]);  // normally 0x29 'reset' but clears the condition by reading
+					//printk("ATAPI Drive reports ASC 0x%02X\n", ba[12]);  // normally 0x29 'reset' but clears the condition by reading
 				}
-		
           		}
-
 		}
-
-
 	} 
         
         
@@ -455,34 +444,27 @@ int BootIdeDriveInit(unsigned uIoBase, int nIndexDrive)
 		printk("%s %s %u.%uGB - HDD\n",
 			tsaHarddiskInfo[nIndexDrive].m_szIdentityModelNumber,
 			tsaHarddiskInfo[nIndexDrive].m_szFirmware,
-//			tsaHarddiskInfo[nIndexDrive].m_szSerial,
-// 			tsaHarddiskInfo[nIndexDrive].m_wCountHeads,
-//  		tsaHarddiskInfo[nIndexDrive].m_wCountCylinders,
-//   		tsaHarddiskInfo[nIndexDrive].m_wCountSectorsPerTrack,
 			ulDriveCapacity1024/1000, ulDriveCapacity1024%1000 
 		);
 
 		tsaHarddiskInfo[nIndexDrive].m_securitySettings = drive_info[128];
 		
 		if (cromwell_config==CROMWELL) {
-			// Cromwell Mode
 			if((drive_info[128]&0x0004)==0x0004) 
 			{ 
 				unsigned char password[20];
-
 				if (CalculateDrivePassword(nIndexDrive,password)) {
 					printk("Unable to calculate drive password - eeprom corrupt?");
 					return 1;
 				}
 				
-				if (DriveSecurityChange(uIoBase, nIndexDrive, IDE_CMD_SECURITY_UNLOCK, &password[0])) {
+				if (DriveSecurityChange(uIoBase, nIndexDrive, IDE_CMD_SECURITY_UNLOCK, password)) {
 					printk("Unlock failed!");
 				}
-				else printk("Unlock successful");	
+				else printk("Unlock OK");	
 			}
 		}  
 	}
-// End the C/X romwell Selection from above
 
 	if (drive_info[49] & 0x200) 
 	{ 
@@ -498,7 +480,7 @@ int BootIdeDriveInit(unsigned uIoBase, int nIndexDrive)
 		unsigned char ba[512];
 		int nError;
 
-		if((nError=BootIdeReadSector(nIndexDrive, &ba[0], 3, 0, 512))) 
+		if((nError=BootIdeReadSector(nIndexDrive, ba, 3, 0, 512))) 
 		{
 			printk("  -  Unable to read FATX sector");
 		} else {
@@ -513,7 +495,7 @@ int BootIdeDriveInit(unsigned uIoBase, int nIndexDrive)
 
 			// report on the MBR-ness of the drive contents
 
-		if((nError=BootIdeReadSector(nIndexDrive, &ba[0], 0, 0, 512))) 
+		if((nError=BootIdeReadSector(nIndexDrive, ba, 0, 0, 512))) 
 		{
 			printk("     Unable to get first sector, returned %d\n", nError);
 		} else {
@@ -554,12 +536,11 @@ int DriveSecurityChange(unsigned uIoBase, int driveId, ide_command_t ide_cmd, un
 	tsicp1.m_bDrivehead = IDE_DH_DEFAULT | IDE_DH_HEAD(0) | IDE_DH_CHS | IDE_DH_DRIVE(driveId);
 
 	if (ide_cmd == IDE_CMD_SECURITY_SET_PASSWORD) {
-		
+		//Cromwell locks drives in high security mode (NOT maximum security mode).
+		//This means that even if you lose the normal (user) password, you can
+		//unlock them again using the master password set below.
 		//Master password is XBOXLINUX (in ascii, NULL padded)
 		char *master_password="XBOXLINUX";
-		
-		printk("Locking HDD with master password of XBOXLINUX (ascii)\n");
-		printk("Remember this - it could save your drive!\n");
 		
 		//We first lock the drive with the master password
 		//Just in case we ever need to unlock it in an emergency
@@ -580,17 +561,6 @@ int DriveSecurityChange(unsigned uIoBase, int driveId, ide_command_t ide_cmd, un
 	
 	//Password is only 20 bytes long - the rest is 0-padded.
 	memcpy(&ide_cmd_data[2],password,20);
-
-	if (ide_cmd == IDE_CMD_SECURITY_SET_PASSWORD) {
-		unsigned int i=0;
-		//If we are locking, print the user password..
-		printk("Locking HDD with user password of:\n\t");
-		for (i=0; i<20; ++i) {
-			printk("%02x ",password[i]);
-			if (i==9) printk("\n\t");
-		}
-		printk("\nPlease make a note of this password\n");
-	}
 
 	if(BootIdeIssueAtaCommand(uIoBase, ide_cmd, &tsicp1)) return 1;
 		
@@ -624,10 +594,10 @@ int CalculateDrivePassword(int driveId, unsigned char *key) {
 	//Ick - forward decl. Should remove this. 
 	u32 BootHddKeyGenerateEepromKeyData(u8 *eeprom_data,u8 *HDKey);
 	
-	memcpy(&baEeprom[0], &eeprom, 0x30); // first 0x30 bytes from EEPROM image we picked up earlier
+	memcpy(baEeprom, &eeprom, 0x30); // first 0x30 bytes from EEPROM image we picked up earlier
 
 	memset(&baKeyFromEEPROM,0x00,0x10);
-	nVersionHashing = BootHddKeyGenerateEepromKeyData( &baEeprom[0], &baKeyFromEEPROM[0]);
+	nVersionHashing = BootHddKeyGenerateEepromKeyData( baEeprom, baKeyFromEEPROM);
 	memset(&baMagic,0x00,0x200);
 	// Calculate the hdd pw from EEprom and Serial / Model Number
 	HMAC_SHA1 (&baMagic[2], baKeyFromEEPROM, 0x10,
@@ -642,10 +612,6 @@ int CalculateDrivePassword(int driveId, unsigned char *key) {
 	memcpy(key,&baMagic[2],20);
 	return 0;
 }
-
-
-
-
 
 
 /////////////////////////////////////////////////
@@ -734,7 +700,7 @@ int BootIdeAtapiModeSense(int nDriveIndex, u8 bCodePage, u8 * pba, int nLengthMa
 	ba[7]=(u8)(sizeof(ba)>>8); 
 	ba[8]=(u8)sizeof(ba);
 
-	if(BootIdeIssueAtapiPacketCommandAndPacket(nDriveIndex, &ba[0])) 
+	if(BootIdeIssueAtapiPacketCommandAndPacket(nDriveIndex, ba)) 
 	{
 //			u8 bStatus=IoInputByte(IDE_REG_ALTSTATUS(uIoBase)), bError=IoInputByte(IDE_REG_ERROR(uIoBase));
 //			printk("  Drive %d: BootIdeAtapiAdditionalSenseCode FAILED, status=%02X, error=0x%02X, ASC unavailable\n", nDriveIndex, bStatus, bError);
@@ -770,10 +736,8 @@ int BootIdeAtapiAdditionalSenseCode(int nDriveIndex, u8 * pba, int nLengthMaxRet
 	ba[0]=0x03;
 	ba[4]=0xfe;
 
-	if(BootIdeIssueAtapiPacketCommandAndPacket(nDriveIndex, &ba[0])) 
+	if(BootIdeIssueAtapiPacketCommandAndPacket(nDriveIndex, ba)) 
 	{
-//			u8 bStatus=IoInputByte(IDE_REG_ALTSTATUS(uIoBase)), bError=IoInputByte(IDE_REG_ERROR(uIoBase));
-//			printk("  Drive %d: BootIdeAtapiAdditionalSenseCode 3 Atapi Wait for data ready FAILED, status=%02X, error=0x%02X, ASC unavailable\n", nDriveIndex, bStatus, bError);
 			return 1;
 	}
 
@@ -794,13 +758,13 @@ bool BootIdeAtapiReportFriendlyError(int nDriveIndex, char * szErrorReturn, int 
 	bool f=true;
 
 	memset(ba, 0, sizeof(ba));
-	nReturn=BootIdeAtapiAdditionalSenseCode(nDriveIndex, &ba[0], sizeof(ba));
+	nReturn=BootIdeAtapiAdditionalSenseCode(nDriveIndex, ba, sizeof(ba));
 	if(nReturn<12) {
 		sprintf(szError, "Unable to get Sense Code\n");
 		f=false;
 	} else {
 		sprintf(szError, "Sense key 0x%02X (%s), ASC=0x%02X, qualifier=0x%02X\n", ba[2]&0x0f, szaSenseKeys[ba[2]&0x0f], ba[12], ba[13]);
-		VideoDumpAddressAndData(0, &ba[0], nReturn);
+		VideoDumpAddressAndData(0, ba, nReturn);
 	}
 
 	strncpy(szErrorReturn, szError, nMaxLengthError);
@@ -861,7 +825,7 @@ int BootIdeReadSector(int nDriveIndex, void * pbBuffer, unsigned int block, int 
 		{ 	// sticky error
 			if(IoInputByte(IDE_REG_ERROR(uIoBase)&0x20)) 
 			{ 	// needs attention
-				if(BootIdeAtapiAdditionalSenseCode(nDriveIndex, &ba[0], 2048)<12) 
+				if(BootIdeAtapiAdditionalSenseCode(nDriveIndex, ba, 2048)<12) 
 				{ 	// needed as it clears NEED ATTENTION
 //					printk("BootIdeReadSector sees unit needs attention but failed giving it\n");
 				} else {
@@ -889,7 +853,7 @@ int BootIdeReadSector(int nDriveIndex, void * pbBuffer, unsigned int block, int 
 		ba[7]=0; 
 		ba[8]=1;
 
-		if(BootIdeIssueAtapiPacketCommandAndPacket(nDriveIndex, &ba[0])) 
+		if(BootIdeIssueAtapiPacketCommandAndPacket(nDriveIndex, ba)) 
 		{
 //			printk("BootIdeReadSector Unable to issue ATAPI command\n");
 			return 1;
