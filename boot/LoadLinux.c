@@ -30,7 +30,7 @@ int ExittoLinux(CONFIGENTRY *config);
 void startLinux(void* initrdStart, unsigned long initrdSize, const char* appendLine);
 
 
- void BootPrintConfig(CONFIGENTRY *config) {
+void BootPrintConfig(CONFIGENTRY *config) {
 	int CharsProcessed=0, CharsSinceNewline=0, Length=0;
 	char c;
 	printk("  Bootconfig : Kernel  %s \n", config->szKernel);
@@ -67,12 +67,13 @@ void memPlaceKernel(const BYTE* kernelOrg, DWORD kernelSize)
 // if fJustTestingForPossible is true, returns 0 if this kind of boot not possible, 1 if it is worth trying
 int BootLoadConfigNative(int nActivePartition, CONFIGENTRY *config, bool fJustTestingForPossible) {
 	DWORD dwConfigSize=0;
-	char szGrub[256+4];
+	char *szGrub;
 	BYTE* tempBuf;
         
+	szGrub = (char *) malloc(265+4);
         memset(szGrub,0,256+4);
         
-	memset((BYTE *)KERNEL_SETUP,0,4096);
+	memset((BYTE *)KERNEL_SETUP,0,2048);
 
 	szGrub[0]=0xff;
 	szGrub[1]=0xff;
@@ -158,6 +159,7 @@ int BootLoadConfigNative(int nActivePartition, CONFIGENTRY *config, bool fJustTe
 		VIDEO_ATTR=0xffa8a8a8;
 		dwInitrdSize=0;
 	}
+	free(szGrub);
 	return true;
 }
 
