@@ -7,12 +7,6 @@
  *                                                                         *
  ***************************************************************************/
 
- /*
-  2003-01-27  andy@warmcat.com  Fixed and verified ST29F080A programming
-                                Different block erase command from SST part
-                                Also seemed to require explicit chip reset action
-  2003-01-06  andy@warmcat.com  Created
- */
 
 #include "boot.h"
 #include "BootFlash.h"
@@ -50,7 +44,7 @@ bool BootFlashGetDescriptor( OBJECT_FLASH *pof, KNOWN_FLASH_TYPE * pkft )
 			pof->m_pbMemoryMappedStartAddress[0x2aaa]=0x55;
 			pof->m_pbMemoryMappedStartAddress[0x5555]=0xf0;
 
-			// read flash ID
+				// read flash ID
 
 			pof->m_pbMemoryMappedStartAddress[0x5555]=0xaa;
 			pof->m_pbMemoryMappedStartAddress[0x2aaa]=0x55;
@@ -108,13 +102,12 @@ bool BootFlashGetDescriptor( OBJECT_FLASH *pof, KNOWN_FLASH_TYPE * pkft )
 			) {
 				fSeen=true;
 				fMore=false;
-				nPos = 0;
-				nPos+=sprintf(&pof->m_szFlashDescription[nPos], "%s (%dK)", pkft->m_szFlashDescription, (int)pkft->m_dwLengthInBytes/1024);
+				nPos+=sprintf(&pof->m_szFlashDescription[nPos], "%s (%ldK)", pkft->m_szFlashDescription, pkft->m_dwLengthInBytes/1024);
 				pof->m_dwLengthInBytes = pkft->m_dwLengthInBytes;
 
 				if(pof->m_fDetectedUsing28xxxConventions) {
 					int n=0;
-					// detect master lock situation
+						// detect master lock situation
 
 					pof->m_pbMemoryMappedStartAddress[0x5555]=0x90;
 					if(pof->m_pbMemoryMappedStartAddress[3]!=0) { // master lock bit is set, no erases or writes are going to happen
@@ -158,12 +151,14 @@ bool BootFlashGetDescriptor( OBJECT_FLASH *pof, KNOWN_FLASH_TYPE * pkft )
  // uses the block erase function on the flash to erase the minimal footprint
  // needed to cover pof->m_dwStartOffset .. (pof->m_dwStartOffset+pof->m_dwLengthUsedArea)
 
+ #define MAX_ERASE_RETRIES_IN_4KBLOCK_BEFORE_FAILING 4
+ 
 bool BootFlashEraseMinimalRegion( OBJECT_FLASH *pof )
 {
 	DWORD dw=pof->m_dwStartOffset;
 	DWORD dwLen=pof->m_dwLengthUsedArea;
 	DWORD dwLastEraseAddress=0xffffffff;
-	int nCountEraseRetryIn4KBlock=4;
+	int nCountEraseRetryIn4KBlock=MAX_ERASE_RETRIES_IN_4KBLOCK_BEFORE_FAILING;
 
 	pof->m_szAdditionalErrorInfo[0]='\0';
 
@@ -186,11 +181,11 @@ bool BootFlashEraseMinimalRegion( OBJECT_FLASH *pof )
 						(pof->m_pcallbackFlash)(pof, EE_ERASE_ERROR, dw-pof->m_dwStartOffset, pof->m_pbMemoryMappedStartAddress[dw]);
 						(pof->m_pcallbackFlash)(pof, EE_ERASE_END, 0, 0);
 					}
-					sprintf(pof->m_szAdditionalErrorInfo, "Erase failed for block at +0x%x, reads as 0x%02X", dw, pof->m_pbMemoryMappedStartAddress[dw]);
+					sprintf(pof->m_szAdditionalErrorInfo, "Erase failed for block at +0x%lx, reads as 0x%02X", dw, pof->m_pbMemoryMappedStartAddress[dw]);
 					return false; // failure
 				}
 			} else {
-				nCountEraseRetryIn4KBlock=4;  // different block, reset retry counter
+				nCountEraseRetryIn4KBlock=MAX_ERASE_RETRIES_IN_4KBLOCK_BEFORE_FAILING;  // different block, reset retry counter
 				dwLastEraseAddress=dw;
 			}
 
@@ -226,7 +221,7 @@ bool BootFlashEraseMinimalRegion( OBJECT_FLASH *pof )
 					}
 					return false;
 				}
-			} else {
+			} else { // more common 29xxx style
 				DWORD dwCountTries=0;
 
 				pof->m_pbMemoryMappedStartAddress[0x5555]=0xaa;
@@ -242,7 +237,7 @@ bool BootFlashEraseMinimalRegion( OBJECT_FLASH *pof )
 					dwCountTries++; b^=0x40;
 				}
 
-				if((dwCountTries<3) && (!pof->m_fDetectedUsing28xxxConventions)) { // this can't be right - maybe this flash uses different block erase code
+				if(dwCountTries<3) { // <3 means never entered busy mode - block erase code 0x50 not supported, try alternate
 					pof->m_pbMemoryMappedStartAddress[0x5555]=0xaa;
 					pof->m_pbMemoryMappedStartAddress[0x2aaa]=0x55;
 					pof->m_pbMemoryMappedStartAddress[0x5555]=0xf0;
@@ -256,6 +251,37 @@ bool BootFlashEraseMinimalRegion( OBJECT_FLASH *pof )
 					pof->m_pbMemoryMappedStartAddress[dw]=0x30; // erase the block containing the non 0xff guy
 
 					b=pof->m_pbMemoryMappedStartAddress[dw];
+					dwCountTries=0;
+					while((pof->m_pbMemoryMappedStartAddress[dw]&0x40)!=(b&0x40)) {
+						dwCountTries++; b^=0x40;
+					}
+				}
+
+					// if we had a couple of unsuccessful tries at block erase already, try chip erase				
+					// safety features...
+				if(
+					(dwCountTries<3) &&  // other commands did not work at all
+					(nCountEraseRetryIn4KBlock<2) &&  // had multiple attempts at them already
+					(pof->m_dwStartOffset==0) && // reprogramming whole chip .. starting from start
+					(pof->m_dwLengthUsedArea == pof->m_dwLengthInBytes)  // and doing the whole length of the chip
+				) { // <3 means never entered busy mode - block erase code 0x30 not supported
+					#if 1
+					printk("Trying to erase whole chip\n");
+					#endif
+					pof->m_pbMemoryMappedStartAddress[0x5555]=0xaa;
+					pof->m_pbMemoryMappedStartAddress[0x2aaa]=0x55;
+					pof->m_pbMemoryMappedStartAddress[0x5555]=0xf0;
+
+					pof->m_pbMemoryMappedStartAddress[0x5555]=0xaa;
+					pof->m_pbMemoryMappedStartAddress[0x2aaa]=0x55;
+					pof->m_pbMemoryMappedStartAddress[0x5555]=0x80;
+
+					pof->m_pbMemoryMappedStartAddress[0x5555]=0xaa;
+					pof->m_pbMemoryMappedStartAddress[0x2aaa]=0x55;
+					pof->m_pbMemoryMappedStartAddress[0x5555]=0x10; // chip erase ONLY available on W49F020
+
+					b=pof->m_pbMemoryMappedStartAddress[dw];
+					dwCountTries=0;
 					while((pof->m_pbMemoryMappedStartAddress[dw]&0x40)!=(b&0x40)) {
 						dwCountTries++; b^=0x40;
 					}
@@ -270,10 +296,13 @@ bool BootFlashEraseMinimalRegion( OBJECT_FLASH *pof )
 		}
 
 			// update callback every 1K addresses
-		if((dw&0x3ff)==0) if(pof->m_pcallbackFlash!=NULL)
-			if(!(pof->m_pcallbackFlash)(pof, EE_ERASE_UPDATE, dw-pof->m_dwStartOffset, pof->m_dwLengthUsedArea)) {
-			strcpy(pof->m_szAdditionalErrorInfo, "Erase Aborted");
-			return false;
+		if((dw&0x3ff)==0) {
+			if(pof->m_pcallbackFlash!=NULL) {
+				if(!(pof->m_pcallbackFlash)(pof, EE_ERASE_UPDATE, dw-pof->m_dwStartOffset, pof->m_dwLengthUsedArea)) {
+					strcpy(pof->m_szAdditionalErrorInfo, "Erase Aborted");
+					return false;
+				}
+			}
 		}
 
 		dwLen--; dw++;
@@ -315,7 +344,7 @@ bool BootFlashProgram( OBJECT_FLASH *pof, BYTE *pba )
 						(pof->m_pcallbackFlash)(pof, EE_PROGRAM_ERROR, dw, (((DWORD)pba[dwSrc])<<8) |pof->m_pbMemoryMappedStartAddress[dw] );
 						(pof->m_pcallbackFlash)(pof, EE_PROGRAM_END, 0, 0);
 					}
-					sprintf(pof->m_szAdditionalErrorInfo, "Program failed for byte at +0x%x; wrote 0x%02X, read 0x%02X", dw, pba[dwSrc], pof->m_pbMemoryMappedStartAddress[dw]);
+					sprintf(pof->m_szAdditionalErrorInfo, "Program failed for byte at +0x%lx; wrote 0x%02X, read 0x%02X", dw, pba[dwSrc], pof->m_pbMemoryMappedStartAddress[dw]);
 					return false;
 				}
 			} else {
