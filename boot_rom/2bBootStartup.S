@@ -104,8 +104,7 @@
 	.long 0x00000dc0	
 	#endif
 	
-	
-	// Here, the Bytecode interpretor starts
+	//The bytecode interpreter begins here
 	.org 0x80
 	xcode_pciout(0x80000884, 0x00008001);
 	xcode_pciout(0x80000810, 0x00008001);	
@@ -124,7 +123,12 @@
 	xcode_pciout(0x80010004, 0x00000007);
 	xcode_pciout(0x8000f004, 0x00000007);
 
+#ifndef MCPXREVD5
 	xcode_poke(0x0f0010b0, 0x07633461);
+#else
+	xcode_poke(0x0f0010b0, 0x01000010);
+#endif
+
 	xcode_poke(0x0f0010cc, 0x66660000);
 
 	xcode_peek(0x0f101000);
@@ -133,8 +137,6 @@
 
 	xcode_ifgoto(0x00000000,6);
 	
-	
-
 	xcode_peek(0x0f101000);
 	
 	xcode_bittoggle(0xe1f3ffff,0x80000000);
@@ -631,4 +633,3 @@ reload_cs:
 	// this can be found in BootResetAction.c
 	jmp 	BootStartBiosLoader  
                          
-
