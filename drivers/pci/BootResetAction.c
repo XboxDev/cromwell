@@ -150,8 +150,8 @@ extern void BootResetAction ( void ) {
 	BootPciPeripheralInitialization();
 	bprintf("BOOT: done with PCI initialization\n\r");
 
-	BootInterruptsWriteIdt(0);	// Save Mode, not all fully Setup
-	bprintf("BOOT: done interrupts Part 1\n\r");
+	BootInterruptsWriteIdt();	// Save Mode, not all fully Setup
+	bprintf("BOOT: done interrupts\n\r");
 
 	// if we don't make the PIC happy within 200mS, the damn thing will reset us
 
@@ -194,10 +194,6 @@ extern void BootResetAction ( void ) {
 		);
 	}
 	bprintf("BOOT: backdrop unpacked\n\r");
-
-        // As VGA is now Fully Set up, we switch on the VGA things
-        BootInterruptsWriteIdt(0);	// compleate Setup
-	bprintf("BOOT: done interrupts Part 2\n\r");
 
 		// paint the backdrop
 	BootVideoClearScreen(&jpegBackdrop, 0, 0xffff);
@@ -457,7 +453,6 @@ extern void BootResetAction ( void ) {
 		for(n=5;n>=0;n--) { *pb++=	eeprom.MACAddress[n]; } // send it in backwards, its reversed by the driver
 	        }
 
-//		BootPciInterruptEnable();
 		BootEepromPrintInfo();
 
 		

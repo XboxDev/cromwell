@@ -508,7 +508,7 @@ void StartBios(	int nDrive, int nActivePartition , int nFATXPresent) {
 	int nIcon = ICONCOUNT; 
 	
 
-	BootPciInterruptEnable();
+//	BootPciInterruptEnable();
 
 	memset(szGrub,0x00,sizeof(szGrub));
 	memset(&config,0,sizeof(CONFIGENTRY));
