@@ -236,10 +236,10 @@ void BootVgaInitializationKernelNG(CURRENT_VIDEO_MODE_DETAILS * pcurrentvideomod
 	if (encoder_ok) {
 		//Set up the GPU 
 		GPU_PARAMETER gpu;
-        	gpu.xres = newmode.ext.width;
+        	gpu.xres = pcurrentvideomodedetails->m_dwWidthInPixels;
 	       	gpu.nvhstart = newmode.ext.hsyncstart;
 		gpu.nvhtotal = newmode.ext.htotal;
-		gpu.yres = newmode.ext.height;
+		gpu.yres = pcurrentvideomodedetails->m_dwHeightInLines;
 		gpu.nvvstart = newmode.ext.vsyncstart;
 		gpu.nvvtotal = newmode.ext.vtotal;
 		gpu.pixelDepth = (32 + 1) / 8;

@@ -79,7 +79,7 @@ xbox_av_type DetectAvType(void) {
 		case 2: avType = AV_VGA_SOG; break;
 		case 4: avType = AV_SVIDEO; break;
 		case 6: avType = AV_COMPOSITE; break;
-         	// Missing = NO CALBLE ATTACHED
+         	// Missing = NO CABLE ATTACHED
          	case 7: avType = AV_VGA; break;
 		default: avType = AV_COMPOSITE; break;
 	}
@@ -204,85 +204,3 @@ void SetGPURegister(const GPU_PARAMETER* gpu, BYTE *pbRegs) {
 	NvSetCrtc(pbRegs, 0x2d, b);
 }
 
-
-
-
-/*void SetTvModeParameter(const TV_MODE_PARAMETER* mode, BYTE *pbRegs) {
-	ULONG v_activeo = 0;
-	ULONG h_clko = 0;
-	double hoc = 0;
-	double voc = 0;
-	double  tto = vidstda[mode->nVideoStd].m_dSecHsyncPeriod;
-	double  ato = tto - (vidstda[mode->nVideoStd].m_dSecBlankBeginToHsync + vidstda[mode->nVideoStd].m_dSecActiveBegin);
-	BLANKING_PARAMETER blanks;
-	GPU_PARAMETER gpu;
-
-	// Let's go
-	CalcBlankings (mode, &blanks);
-	v_activeo = CalcV_ACTIVEO(mode);
-	h_clko = CalcH_CLKO(mode);
-	hoc = 1 - ((2* (double)mode->h_active / (double)h_clko) / (ato / tto));
-	voc = 1- ((double)v_activeo / vidstda[mode->nVideoStd].m_dwALO);
-#ifdef JUSTVIDEO
-	printf("Computed horizontal overscan factor=%.2f%%\n", hoc * 100);
-	printf("Computed vertical overscan factor=%.2f%%\n", voc * 100);
-	printf("H_CLKO: %ld\n", h_clko/2);
-	printf("V_ACTIVEO: %ld\n", v_activeo);
-	printf("H_BLANKI: %ld\n", blanks.h_blanki);
-	printf("H_BLANKO: %ld\n", blanks.h_blanko);
-	printf("V_BLANKI: %ld\n", blanks.v_blanki);
-	printf("V_BLANKO: %ld\n", blanks.v_blanko);
-#endif
-	gpu.xres = mode->h_active;
-	gpu.crtchdispend = mode->h_active + 8;
-	gpu.nvhstart = mode->h_clki - blanks.h_blanki - 7;
-	gpu.nvhtotal =  mode->h_clki - 1;
-	gpu.yres = mode->v_activei;
-	gpu.nvvstart = mode->v_linesi - blanks.v_blanki + 1;
-	gpu.crtcvstart = mode->v_activei + 32;
-	// CRTC_VTOTAL = v_linesi - yres + CRTC_VSYNCSTART = v_linesi + 32
-	gpu.crtcvtotal = mode->v_linesi + 32;
-	gpu.nvvtotal =  mode->v_linesi - 1;
-	gpu.pixelDepth = (mode->bpp+1) / 8;
-
-	if (VideoEncoder == VIDEO_CONEXANT) SetTVConexantRegister(mode, &blanks, pbRegs);
-	SetGPURegister(&gpu, pbRegs);
-}
-
-void SetVgaHdtvModeParameter(const VGA_MODE_PARAMETER* mode, BYTE *pbRegs) {
-	double f_h;
-	double f_v;
-	GPU_PARAMETER gpu;
-	BYTE pll_int = (BYTE)(mode->pixclock * 6.0 / dPllBaseClockFrequency + 0.5);
-	f_h = (dPllBaseClockFrequency * pll_int) / (6.0 * mode->htotal);
-	f_v = f_h / mode->vtotal;
-
-#ifdef JUSTVIDEO
-	printf("Horizontal sync frequency: %.2f kHz\n", f_h/1000);
-	printf("Vertical sync frequency: %.2f Hz\n", f_v);
-#endif
-	gpu.xres = mode->xres;
-	gpu.nvhstart = mode->hsyncstart;
-	gpu.nvhtotal = mode->htotal;
-	gpu.yres = mode->yres;
-	gpu.nvvstart = mode->vsyncstart;
-	gpu.nvvtotal = mode->vtotal;
-	gpu.pixelDepth = (mode->bpp + 1) / 8;
-	gpu.crtchdispend = mode->xres;
-	gpu.crtcvstart = mode->vsyncstart;
-	gpu.crtcvtotal = mode->vtotal;
-    if (DetectAvType() == AV_HDTV) {
-		xbox_hdtv_mode hdtv_mode = HDTV_480p;
-		if (mode->yres > 800) {
-			hdtv_mode = HDTV_1080i;
-		}
-		else if (mode->yres > 600) {
-			hdtv_mode = HDTV_720p;
-		}
-		SetHDTVConexantRegister(hdtv_mode, pll_int, pbRegs);
-	}
-	else {
-		SetVGAConexantRegister(pll_int, pbRegs);
-	}
-	SetGPURegister(&gpu, pbRegs);
-}*/
