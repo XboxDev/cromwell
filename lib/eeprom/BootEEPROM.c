@@ -53,7 +53,13 @@ void BootEepromPrintInfo() {
 	VIDEO_ATTR=0xffc8c8c8;
 }
 
-
+/* The EepromCRC algorithm was obtained from the XKUtils 0.2 source released by 
+ * TeamAssembly under the GNU GPL.  
+ * Specifically, from XKCRC.cpp 
+ *
+ * Rewritten to ANSI C by David Pye (dmp@davidmpye.dyndns.org)
+ *
+ * Thanks! */
 void EepromCRC(unsigned char *crc, unsigned char *data, long dataLen) {
 	unsigned char* CRC_Data = (unsigned char *)malloc(dataLen+4);
 	int pos=0;
