@@ -274,6 +274,30 @@ int romcopy (
 	
 	// Ok, we have loaded both images, we can continue
 	if (a==1) {	
+
+
+		// this is very nasty, but simple , we Dump a GDT to the TOP rom
+		
+        	memset(&loaderimage[0x3ffd0],0x00,32);
+		memset(&loaderimage[0x3fff0],0x90,16);
+    		
+    		loaderimage[0x3ffe0] = 0xff;
+    		loaderimage[0x3ffe1] = 0xff;
+    		loaderimage[0x3ffe5] = 0x9b;
+    		loaderimage[0x3ffe6] = 0xcf;
+    		loaderimage[0x3ffe8] = 0xff;
+    		loaderimage[0x3ffe9] = 0xff;
+    		loaderimage[0x3ffed] = 0x93;
+    		loaderimage[0x3ffee] = 0xcf;
+     	
+    		loaderimage[0x3fff4] = 0x18;
+    		loaderimage[0x3fff5] = 0x00;
+    		loaderimage[0x3fff6] = 0xd8;
+    		loaderimage[0x3fff7] = 0xff;
+		loaderimage[0x3fff8] = 0xff;    	
+    		loaderimage[0x3fff9] = 0xff;
+    		
+    		// We have dumped the GDT now, we continue	
                 
                 // Ok, we compress the ROM image now
 		
