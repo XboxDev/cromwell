@@ -735,7 +735,9 @@ void StartBios(	int nDrive, int nActivePartition , int nFATXPresent) {
 			
 		}	
 		}	
-		*/	
+		*/
+		
+		//printk("%08X",BootResetAction)	;
 		
 		}
 	}

@@ -30,9 +30,10 @@
 // Minimum physical address at which the kernel can reside temporarily
 #define MIN_KERNEL_ADDRESS		KERNEL_ADDRESS
 // Memory reserved to the kernel (1 MB at the moment)
-#define KERNEL_SIZE        0x00100000
-// Location of kernel info in RAM
-#define KERNEL_INFO_ADDRESS 0x90000
+#define KERNEL_SIZE        		0x00100000
+
+// Location of kernel in RAM
+#define KERNEL_RAM_ADDRESS		0x03B00000
 // Size of memory on a retail XBOX unit
 #define RETAIL_RAM_SIZE			0x04000000
 // Reserve pages in address space
@@ -183,7 +184,7 @@ _start:
     push ecx
     mov esi, offset kernel
     mov edi, dword ptr [kernelram]
-    mov ecx, 1024*1024/2  //KERNEL_SIZE / 2 TODO
+    mov ecx, KERNEL_SIZE /2   //KERNEL_SIZE / 2 TODO
     rep movsw
     pop ecx
 
@@ -363,15 +364,15 @@ newloc:
 // Interrupt Handler Now Dead      
         
 	// copy the Cromwell to it's new position
-	mov	edi, 0x03B00000 // 64 MB
-	mov	ecx, KERNEL_SIZE / 4
+	mov	edi, KERNEL_RAM_ADDRESS 
+	mov	ecx, KERNEL_SIZE 	// div 4 ???
 	.byte	0xF3, 0xA5  // rep movsd
 
 	//jmp newflash
 	// start kernel
 	.byte	0xea //  = ljmp
 
-	.long	0x03Bffe00
+	.long	KERNEL_RAM_ADDRESS+0xffe00
 	.word	0x0008
 
 newflash:
