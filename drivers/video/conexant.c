@@ -342,16 +342,8 @@ int conexant_calc_mode(xbox_video_mode * mode, struct riva_regs * riva_out)
 		regs[ADR(0xc6)] = 0x98; // IN_MODE = 24 bit RGB multiplexed
 		switch(mode->av_type) {
 			case AV_COMPOSITE:
-				regs[ADR(0x6c)] = 0x46; // FLD_MODE = 10, EACTIVE = 1, EN_SCART = 0, EN_REG_RD = 1
-				regs[ADR(0x5a)] = 0x00; // Y_OFF (Brightness)
-				regs[ADR(0xa4)] = 0xe5; // SYNC_AMP
-				regs[ADR(0xa6)] = 0x74; // BST_AMP
-				regs[ADR(0xba)] = 0x24; // SLAVER = 1, DACDISC = 1
-				regs[ADR(0xce)] = 0x19; // OUT_MUXA = 01, OUT_MUXB = 10, OUT_MUXC = 10, OUT_MUXD = 00
-				regs[ADR(0xd6)] = 0x00; // OUT_MODE = 00 (CVBS)
-				break;
 			case AV_SVIDEO:
-				regs[ADR(0x2e)] |= 0x40;
+				regs[ADR(0x2e)] |= 0x40; // RGB2YPRPB = 1
 				regs[ADR(0x6c)] = 0x46; // FLD_MODE = 10, EACTIVE = 1, EN_SCART = 0, EN_REG_RD = 1
 				regs[ADR(0x5a)] = 0x00; // Y_OFF (Brightness)
 				regs[ADR(0xa4)] = 0xe5; // SYNC_AMP
