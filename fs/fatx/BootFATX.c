@@ -385,7 +385,6 @@ int FATXFindFile(FATXPartition* partition,
                     int clusterId, FATXFILEINFO *fileinfo) {
 
 	int i = 0;
-	char _filename[50];
 #ifdef FATX_DEBUG
 	VIDEO_ATTR=0xffc8c8c8;
 	printk("FATXFindFile : %s\n",filename);
@@ -398,39 +397,8 @@ int FATXFindFile(FATXPartition* partition,
 	    	}
 	    	i++;
   	}
-
-	// Work with windows formatting
-	i=0;
-	int k=0;
-	int count=0;
-	while((filename[i] != 0) && (count < 2)) {
-		// This is really the only valid ASCII range for filenames.
-		// All characters outside of this range are stripped.
-		if((filename[i] > 32) && (filename[i] < 127)) {
-			_filename[k] = filename[i];
-			k++;
-		}
-		// For some reason, windows formatting seems to put a "0" right at
-		// the beginning of the array, therefore we always need to skip the
-		// first zero.
-		if(filename[i] == 0) {
-			count++;
-		}
-		i++;
-	}
-
-	// Because the original filename variable may not have been 50 characters long
-	// the remaining array elements are filled with NULL to avoid random memory
-	// affecting them.
-	while(k<50) {
-		_filename[k] = 0;
-		k++;
-	}
-
-	// Copy the clean _filename variable back.
-	strcpy(filename, _filename);
-
-  	// skip over any leading / characters
+  	
+	// skip over any leading / characters
   	i=0;
   	while((filename[i] != 0) && (filename[i] == '/')) {
 	    	i++;

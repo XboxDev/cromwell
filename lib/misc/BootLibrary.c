@@ -386,14 +386,23 @@ void ListEntryRemove(LIST_ENTRY *plistentryCurrent)
 	}
 }
 
-char *HelpGetToken(char *ptr,char token) {
+char *HelpGetLine(char *ptr) {
+	//Gets a newline terminated line from a char array.
+	//Can handle both \n and \r\n line terminators
 	static char *old;
 	char *mark;
 
 	if(ptr != 0) old = ptr;
 	mark = old;
 	for(;*old != 0;old++) {
-		if(*old == token) {
+		//The terminating characters are \r and \n
+		if(*old == 13 || *old == 10) {
+			//If this was a \r, the next char should be
+			//a \n, so we need to eat it.
+			if (*old==13) {
+				*old=0;
+				old++;
+			}
 			*old = 0;
 			old++;
 			break;
@@ -408,7 +417,7 @@ void HelpGetParm(char *szBuffer, char *szOrig) {
 	int nCopy = 0;
 
 	copy = szBuffer;
-	for(ptr = szOrig;*ptr != 0;ptr++) {
+	for(ptr = szOrig;*ptr != 0 && *ptr!='\n' && *ptr!='\r';ptr++) {
 		if(*ptr == ' ') nBeg = 1;
 		if(*ptr != ' ' && nBeg == 1) nCopy = 1;
 		if(nCopy == 1) {

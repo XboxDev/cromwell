@@ -8,11 +8,12 @@ int ParseConfig(char *szBuffer, CONFIGENTRY *entry, EEPROMDATA *eeprom, char *sz
 
 	memset(entry,0,sizeof(CONFIGENTRY));
 	ptr = szBuffer;
-	ptr = HelpGetToken(szBuffer,10);
+	ptr = HelpGetLine(szBuffer);
 	entry->nValid = 1;
 
 	while(1) {
 		memset(szLine,0x00,MAX_LINE);
+		memset(szTmp,0x00,MAX_LINE);
 		_strncpy(szLine,ptr,MAX_LINE);
 		szLine[MAX_LINE-1]=0; 	// Make sure string is terminated
                 
@@ -45,7 +46,7 @@ int ParseConfig(char *szBuffer, CONFIGENTRY *entry, EEPROMDATA *eeprom, char *sz
 		} else {
 			entry->nValid = 0;
 		}
-		ptr = HelpGetToken(0,10);
+		ptr = HelpGetLine(0);
 		if(*ptr == 0) break;
 		
 	}

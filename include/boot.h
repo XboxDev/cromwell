@@ -380,7 +380,7 @@ void HMAC_SHA1( unsigned char *result,
                 unsigned char *text1, int text1_length,
                 unsigned char *text2, int text2_length );
 
-char *HelpGetToken(char *ptr,char token);
+char *HelpGetLine(char *ptr);
 void HelpGetParm(char *szBuffer, char *szOrig);
 char *strrchr0(char *string, char ch);
 
