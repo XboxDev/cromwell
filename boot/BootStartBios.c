@@ -151,14 +151,19 @@ int BootLodaConfigNative(int nActivePartition, CONFIGENTRY *config, bool fJustTe
 	}
 	if(fJustTestingForPossible) return 1; // if there's a default kernel it must be worth trying to boot
         
-        CACHE_VSYNC_WRITEBACK=0;
-	dwKernelSize=grub_read((void *)0x90000, 0x400);
+        // We use the INITRD_POS as temporary location for the Loading of the Kernel into intermediate Ram
+	dwKernelSize=grub_read((BYTE*)INITRD_POS, filemax);
+	memcpy((BYTE *)0x90000,(BYTE*)INITRD_POS,0x400);
 	nSizeHeader=((*((BYTE *)0x901f1))+1)*512;
-	dwKernelSize+=grub_read((void *)0x90400, nSizeHeader-0x400);
-	dwKernelSize+=grub_read((void *)0x00100000, filemax-nSizeHeader);
+	memcpy((BYTE *)0x90400,(BYTE*)(INITRD_POS+0x400),nSizeHeader-0x400);
+	memcpy((BYTE *)0x00100000,(BYTE*)(INITRD_POS+nSizeHeader),dwKernelSize-nSizeHeader);
+		
+	// Fillup
+	memset((BYTE *)(0x00100000+dwKernelSize-nSizeHeader),0xff,0x10000);
 	grub_close();
 	printk(" -  %d bytes...\n", dwKernelSize);
-        CACHE_VSYNC_WRITEBACK=1;
+
+
 
 	if( (_strncmp(config->szInitrd, "/no", strlen("/no")) != 0) && config->szInitrd[0]) {
 		VIDEO_ATTR=0xffd8d8d8;
@@ -175,6 +180,9 @@ int BootLodaConfigNative(int nActivePartition, CONFIGENTRY *config, bool fJustTe
 		}
 		printk(" - %d bytes\n", filemax);
 		dwInitrdSize=grub_read((void *)INITRD_POS, filemax);
+		// Fillup
+		memset((void *)(INITRD_POS+dwInitrdSize),0xff,0x10000);
+		
 		grub_close();
 	} else {
 		VIDEO_ATTR=0xffd8d8d8;
@@ -218,6 +226,7 @@ int BootTryLoadConfigFATX(CONFIGENTRY *config) {
 	
 }
 
+/* ----------------------------------------------------------------------------------------- */
 
 int BootLodaConfigFATX(CONFIGENTRY *config) {
 
@@ -259,12 +268,17 @@ int BootLodaConfigFATX(CONFIGENTRY *config) {
 	} else {
 		dwKernelSize = infokernel.fileSize;
 		// moving the kernel to its final location
-		memcpy((BYTE *)0x90000,&infokernel.buffer[0],0x400);
+		memcpy((BYTE *)0x90000,(BYTE*)INITRD_POS,0x400);
 		nSizeHeader=((*((BYTE *)0x901f1))+1)*512;
-		memcpy((BYTE *)0x90400,&infokernel.buffer[0x400],nSizeHeader-0x400);
-		memcpy((BYTE *)0x00100000,&infokernel.buffer[nSizeHeader],infokernel.fileSize);
+		memcpy((BYTE *)0x90400,(BYTE*)(INITRD_POS+0x400),nSizeHeader-0x400);
+		memcpy((BYTE *)0x00100000,(BYTE*)(INITRD_POS+nSizeHeader),infokernel.fileSize-nSizeHeader);
+		
+		// Fillup
+		memset((BYTE *)(0x00100000+dwKernelSize-nSizeHeader),0xff,0x10000);
+		
 		printk(" -  %d %d bytes...\n", dwKernelSize, infokernel.fileRead);
 	}
+	
 	if( (_strncmp(config->szInitrd, "/no", strlen("/no")) != 0) && config->szInitrd[0]) {
 		VIDEO_ATTR=0xffd8d8d8;
 		printk("  Loading %s from FATX", config->szInitrd);
@@ -274,6 +288,9 @@ int BootLodaConfigFATX(CONFIGENTRY *config) {
 			while(1);
 		}
 		
+		// Fillup
+		memset((BYTE *)(INITRD_POS+infoinitrd.fileSize),0xff,0x10000);
+
 		dwInitrdSize = infoinitrd.fileSize;
 		printk(" - %d %d bytes\n", dwInitrdSize,infoinitrd.fileRead);
 	} else {
@@ -285,6 +302,9 @@ int BootLodaConfigFATX(CONFIGENTRY *config) {
 	}
 	return true;
 }
+
+
+/* -------------------------------------------------------------------------------- */
 
 int BootLodaConfigCD(CONFIGENTRY *config) {
 
@@ -310,21 +330,6 @@ selectinsert:
 		(DWORD *)(FRAMEBUFFER_START+(VIDEO_CURSOR_POSY*currentvideomodedetails.m_dwWidthInPixels*4)+VIDEO_CURSOR_POSX),
 		currentvideomodedetails.m_dwWidthInPixels*4, 64
 	);
-
-
-/*
-	while(DVD_TRAY_STATE != DVD_CLOSING) {
-	
-		VIDEO_CURSOR_POSX=dwX;
-		VIDEO_CURSOR_POSY=dwY;
-		bCount++;
-		bCount1=bCount; if(bCount1&0x80) { bCount1=(-bCount1)-1; }
-		VIDEO_ATTR=0xff000000|(((bCount1>>1)+64)<<16)|(((bCount1>>1)+64)<<8)|0 ;
-		printk("\2Please insert CD\n\2");
-		
-		for (n=0;n<1000000;n++) {;}
-	}
-*/
 
 	
 	while(1) {
@@ -449,32 +454,45 @@ selectinsert:
 			while(1) ;
 		}
 	}
-
+        
+        // LinuxBoot.cfg File Loaded
+        
 	ParseConfig((char *)INITRD_POS,config,&eeprom);
 	BootPrintConfig(config);
 
-	dwKernelSize=BootIso9660GetFile(config->szKernel, (BYTE *)0x90000, 0x400, 0x0);
+	// We use the INITRD_POS as temporary location for the Loading of the Kernel into intermediate Ram
+	dwKernelSize=BootIso9660GetFile(config->szKernel, (BYTE*)INITRD_POS, 4*1024*1024, 0);
 
+	// If failed, lets look for an other name ...
 	if(((int)dwKernelSize)<0) { // not found, try 8.3
 		strcpy(config->szKernel, "/VMLINUZ.");
-		dwKernelSize=BootIso9660GetFile(config->szKernel, (BYTE *)0x90000, 0x400, 0x0);
+		dwKernelSize=BootIso9660GetFile(config->szKernel, (BYTE*)INITRD_POS, 4*1024*1024, 0);
 		if(((int)dwKernelSize)<0) { 
 			strcpy(config->szKernel, "/VMLINUZ_.");
-			dwKernelSize=BootIso9660GetFile(config->szKernel, (BYTE *)0x90000, 0x400, 0x0);
+			dwKernelSize=BootIso9660GetFile(config->szKernel, (BYTE*)INITRD_POS, 4*1024*1024, 0);
 			if(((int)dwKernelSize)<0) { 
 				printk("Not Found, error %d\nHalting\n", dwKernelSize); 
 				while(1);
 			}
 		}
 	}
-	nSizeHeader=((*((BYTE *)0x901f1))+1)*512;
-	dw=BootIso9660GetFile(config->szKernel, (void *)0x90400, nSizeHeader-0x400, 0x400);
-	if(((int)dwKernelSize)<0) { printk("Load prob 2, error %d\nHalting\n", dw); while(1) ; }
-	dwKernelSize+=dw;
-	dw=BootIso9660GetFile(config->szKernel, (void *)0x00100000, 4096*1024, nSizeHeader);
-	if(((int)dwKernelSize)<0) { printk("Load prob 3, error %d\nHalting\n", dw); while(1) ; }
-	dwKernelSize+=dw;
-	printk(" -  %d bytes...\n", dwKernelSize);
+	
+	if (dwKernelSize>0) 
+	{
+		memcpy((BYTE *)0x90000,(BYTE*)INITRD_POS,0x400);
+		nSizeHeader=((*((BYTE *)0x901f1))+1)*512;
+		memcpy((BYTE *)0x90400,(BYTE*)(INITRD_POS+0x400),nSizeHeader-0x400);
+		memcpy((BYTE *)0x00100000,(BYTE*)(INITRD_POS+nSizeHeader),dwKernelSize-nSizeHeader);
+		
+		// Fillup
+		memset((BYTE *)(0x00100000+dwKernelSize-nSizeHeader),0xff,0x10000);
+		printk(" -  %d bytes...\n", dwKernelSize);
+		
+				
+	} else {
+		printk("Not Found, error %d\nHalting\n", dwKernelSize); 
+		while(1);
+	}	
 
 	if( (_strncmp(config->szInitrd, "/no", strlen("/no")) != 0) && config->szInitrd) {
 		VIDEO_ATTR=0xffd8d8d8;
@@ -491,6 +509,9 @@ selectinsert:
 				if((int)dwInitrdSize<0) { printk("Not Found, error %d\nHalting\n", dwInitrdSize); while(1) ; }
 			}
 		}
+		// Fillup
+		memset((BYTE *)(INITRD_POS+dwInitrdSize),0xff,0x10000);
+		
 		printk(" - %d bytes\n", dwInitrdSize);
 	} else {
 		VIDEO_ATTR=0xffd8d8d8;
