@@ -107,7 +107,6 @@
 	
 	// Here, the Bytecode interpretor starts
 	.org 0x80
-
 	xcode_pciout(0x80000884, 0x00008001);
 	xcode_pciout(0x80000810, 0x00008001);	
 	xcode_pciout(0x80000804, 0x00000003);
@@ -155,7 +154,6 @@
         xcode_goto(5);
 	xcode_peek(0x0f101000);
 	
-
 	xcode_bittoggle(0xe1f3ffff,0x820c0000);
 	xcode_poke_a(0x0f101000);
 	xcode_poke(0x0f0010b8, 0x11110000);
@@ -181,87 +179,86 @@
 	xcode_outb(0x0000c200, 0x00000070);
 	
 	
-/* ---------- focus Starts here ------------------------- */
+	//VIDEO INIT CODE
+	/* It is necessary to write to the video encoder, as the PIC
+	snoops the I2C traffic and will reset us if it doesn't see what 
+	it judges as 'appropriate' traffic.  Conexant is the most urgent,
+	as on 1.0 Xboxes, the PIC was very strict and reset us earlier
+	than later models 
+	*/
+
+	//CONEXANT START
+	//Set conexant address
+	xcode_outb(0x0000c004, 0x0000008a);
+	xcode_outb(SMBUS+8, 0x000000ba);
+	xcode_outb(SMBUS+6, 0x0000003f);
+	xcode_outb(SMBUS+2, 0x0000000a);
+				
+	xcode_inb(SMBUS);
+	xcode_ifgoto(0x00000010,2); //Write failed, forward 2
+	xcode_goto(4); //Success, skip to next conexant write.
+	xcode_bittoggle(0x00000008, 0x00000000); //Check fail status
+	xcode_ifgoto(0x00000000,-4); //No result yet, read again.
+	xcode_goto(39);	//Write failed, on to Focus
+	xcode_outb(SMBUS, 0x00000010); //Next conexant write.
+	//I2CTransmitWord(0x45,0x6c46);
+	SMB_xcode_Write(0x6c,0x46);		// +6
+
+	//Are these REALLY needed to keep the PIC happy?
+	//I2CTransmitWord(0x45,0xb800);
+	SMB_xcode_Write(0xb8,0x00);		// +6
+	//I2CTransmitWord(0x45,0xce19);
+	SMB_xcode_Write(0xce,0x19);		// +6
+	//I2CTransmitWord(0x45,0xc69c);
+	SMB_xcode_Write(0xc6,0x9c);		// +6
+	//I2CTransmitWord(0x45,0x3208);
+	SMB_xcode_Write(0x32,0x08);		// +6
+	//I2CTransmitWord(0x45,0xc401);
+	SMB_xcode_Write(0xc4,0x01);		// +6
+
+	xcode_goto(36); //Video complete -> VIDEND 
+
+
+	//FOCUS START
+	//Clear the error from the previous attempts
+	xcode_outb(SMBUS, 0x000000ff);
+	xcode_outb(SMBUS, 0x00000010);
 	
+	//Set focus address
 	xcode_outb(0x0000c004, 0x000000d4);
-	
 	//I2CTransmitWord(0x6a,0x0c00);
 	xcode_outb(SMBUS+8, 0x0000000c);
 	xcode_outb(SMBUS+6, 0x00000000);
 	xcode_outb(SMBUS+2, 0x0000000a);
         xcode_inb(SMBUS);
-        xcode_ifgoto(0x00000010,2)
-	xcode_goto(5);				// I2C write Succeed, we make the Next Focus write
-	xcode_bittoggle(0x00000008,0x00000000);
-	xcode_ifgoto(0x00000000,-4)	
-	xcode_outb(SMBUS, 0x000000ff);
-	xcode_goto(9);    			// I2C Write Failed, we go to conexant
-	xcode_outb(SMBUS, 0x00000010);
-	
+	xcode_ifgoto(0x00000010,2); //Write failed, forward 2
+	xcode_goto(4); //Success, skip to next focus write.
+	xcode_bittoggle(0x00000008, 0x00000000); //Check fail status
+	xcode_ifgoto(0x00000000,-4); //No result yet, read again.
+	xcode_goto(9);	//Write failed, on to Xcalibur
+	xcode_outb(SMBUS, 0x00000010); //Next focus write.
 	//I2CTransmitWord(0x6a,0x0d20);
-	SMB_xcode_Write(0x0d,0x20);		// +6
-	
-	// Focus Code finished, we jump over the conexant / crystal code
-	xcode_goto(64);	// Jump to end of Connexant inits
-       
-/* ---------- focus Over ------------------------- */       
+	SMB_xcode_Write(0x0d,0x20);	 
+	xcode_goto(16); //video complete -> VIDEND
 
+	//XCALIBUR START	
+	/* We don't check to see if these writes fail, as
+	we've already tried Conexant and Focus - Oh dear,
+	not another encoder...  :(    
+	*/
 
-
-/* ---------- Conexant Starts here ------------------------- */              
-	
-	// Last Cycle ok
+	//Clear the error from the previous attempts
+	xcode_outb(SMBUS, 0x000000ff);
 	xcode_outb(SMBUS, 0x00000010);
 	
-	// Connexant Slave Address
-	xcode_outb(0x0000c004, 0x0000008a);
-	
-	//I2CTransmitWord(0x45,0xba3f);
-
-	xcode_outb(SMBUS+8, 0x000000ba);
-	xcode_outb(SMBUS+6, 0x0000003f);
-	xcode_outb(SMBUS+2, 0x0000000a);
-        xcode_inb(SMBUS);
- 	xcode_ifgoto(0x00000010,2)
-	xcode_goto(19);				// I2C write Succeed, we continue with conexant
-	xcode_bittoggle(0x00000008,0x00000000);
-	xcode_ifgoto(0x00000000,-4)	
-	xcode_outb(SMBUS, 0x000000ff);
-	xcode_outb(SMBUS, 0x00000010);		// I2C Write Failed, I think we have a Xcalibur box
-
-	// Xcalibur Slave Address
 	xcode_outb(0x0000c004, 0x000000E0);
 	//I2CTransmitWord(0x70,0x00);
 	SMB_xcode_Write(0x0,0x0);		// +6
-
 	//I2CTransmitWord(0x70,0x00);
 	SMB_xcode_Write(0xb8,0x00);		// +6	
-	
-	xcode_goto(38);				// jump to conexant end
-	// Xcalibur over, now Conexant again	
-	
-	xcode_outb(SMBUS, 0x00000010);
 
 	
-	//I2CTransmitWord(0x45,0x6c46);
-	SMB_xcode_Write(0x6c,0x46);		// +6
-
-	//I2CTransmitWord(0x45,0xb800);
-	SMB_xcode_Write(0xb8,0x00);		// +6
-
-	//I2CTransmitWord(0x45,0xce19);
-	SMB_xcode_Write(0xce,0x19);		// +6
-
-	//I2CTransmitWord(0x45,0xc69c);
-	SMB_xcode_Write(0xc6,0x9c);		// +6
-
-	//I2CTransmitWord(0x45,0x3208);
-	SMB_xcode_Write(0x32,0x08);		// +6
-	
-	//I2CTransmitWord(0x45,0xc401);
-	SMB_xcode_Write(0xc4,0x01);		// +6
-	
-/* ---------- Conexant Over ------------------------- */        
+	//VIDEND - Encoder 'init' complete.
 
         // PIC SLAVE Address (Write)
 	xcode_outb(SMBUS+4, 0x00000020);
@@ -303,7 +300,6 @@
 	xcode_poke(0x0f00122c, 0xaaaaaaaa);
 	xcode_goto(3);
      
-
 	xcode_poke(0x0f001214, 0x09090909);
 	xcode_poke(0x0f00122c, 0xaaaaaaaa);
 	xcode_poke(0x0f001230, 0xffffffff);
@@ -328,15 +324,16 @@
 	xcode_poke(0x0f00124c, 0xaa8baa8b);
 	xcode_poke(0x0f001250, 0x0000aa8b);
 	xcode_poke(0x0f100228, 0x081205ff);
-        // The following poke has been disabled as it stopped Cromwell
-        // from booting on v1.6 Xboxes with Hynix RAM
-        // (These Xboxes have been labelled "v1.6b" boxes)
+
+	// The following poke has been disabled as it stopped Cromwell
+	// from booting on v1.6 Xboxes with Hynix RAM
+	// (These Xboxes have been labelled "v1.6b" boxes)
 	//xcode_poke(0x0f001218, 0x00010000);
-	
+
+
 	xcode_pciin_a(0x80000860);
 	xcode_bittoggle(0xffffffff,0x00000400);   
 	xcode_pciout_a(0x80000860);
-	
 
 	xcode_pciout(0x8000084c, 0x0000fdde);
 	xcode_pciout(0x8000089c, 0x871cc707);
@@ -353,7 +350,6 @@
 	xcode_poke(0x0f100200, 0x03070103);
 	xcode_poke(0x0f100204, 0x11448000);
 	xcode_pciout(0x8000103c, 0x00000000);
-
 
 
 	xcode_outb(SMBUS, 0x00000010);
