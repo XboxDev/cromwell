@@ -168,14 +168,15 @@ extern void BootResetAction ( void ) {
 	I2CTransmitWord( 0x10, 0x0c00, false );  // push out tray
 
 	// bring up Video (2BL portion)
+#ifdef ROM
 	BootVgaInitialization();
 	WATCHDOG;
+#endif
 	bAvPackType=BootVgaInitializationKernel(VIDEO_PREFERRED_LINES);
 	WATCHDOG;
 	// initialize the PCI devices
 	BootPciPeripheralInitialization();
 	WATCHDOG;
-
 
 	{ // instability tracking, looking for duration changes
 		int a2, a3;
@@ -183,9 +184,9 @@ extern void BootResetAction ( void ) {
 		i64Timestamp=((__int64)a3)|(((__int64)a2)<<32);
 	}
 
-
 	// prep our BIOS console print state
 
+	
 	VIDEO_ATTR=0xffffffff;
 	VIDEO_LUMASCALING=0;
 	VIDEO_RSCALING=0;
@@ -193,13 +194,13 @@ extern void BootResetAction ( void ) {
 
 	BootVideoClearScreen();
 
-		// get icon background into storage array
+	// get icon background into storage array
 	BootVideoBlit((DWORD *)&baBackdrop[0], 60*4, (DWORD *)(FRAMEBUFFER_START+640*4*VIDEO_MARGINY+VIDEO_MARGINX*4), 640*4, 72);
 
-		// bring up video - initially blank raster until time code brings up luma and chroma
+	// bring up video - initially blank raster until time code brings up luma and chroma
 
 	BootVideoEnableOutput(bAvPackType);
-
+	
 								// display solid red frontpanel LED while we start up
 	I2cSetFrontpanelLed(I2C_LED_RED0 | I2C_LED_RED1 | I2C_LED_RED2 | I2C_LED_RED3 );
 
@@ -209,7 +210,7 @@ extern void BootResetAction ( void ) {
 	I2CTransmitWord(0x45, 0x0c00, false); // eject DVD tray
 
 
-				// then setup the interrupt table
+	// then setup the interrupt table
 
 	{  // init all of the interrupts to default to default handler (which spins complaining down Filtror)
 		ts_pm_interrupt * ptspmi=(ts_pm_interrupt *)(0);  // ie, right down at start of RAM
@@ -255,6 +256,7 @@ extern void BootResetAction ( void ) {
 
 
 	WATCHDOG;
+
 
 	VIDEO_CURSOR_POSY=VIDEO_MARGINY;
 	VIDEO_CURSOR_POSX=(VIDEO_MARGINX+64)*4;

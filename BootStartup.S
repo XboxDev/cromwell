@@ -93,6 +93,9 @@ tableIdtDescriptor:
 	.globl start_linux
 start_linux:
 
+#ifndef ROM
+	jmp bootloader2
+#endif
 	cli
 		xorl	%edx, %edx
 		movl	$0x2ff, %ecx

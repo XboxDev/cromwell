@@ -13,6 +13,9 @@
  *                                                                         *
  ***************************************************************************/
 
+// make an undef if you want to build an xbe
+#define ROM
+
 #define VERSION "1.6"
 
 #define PCI_CFG_ADDR 0x0CF8

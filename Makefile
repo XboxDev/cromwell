@@ -5,6 +5,9 @@
 # free bios project.
 #
 # $Log$
+# Revision 1.5  2002/12/18 10:38:25  warmcat
+# ISO9660 support added allowing CD boot; linuxboot.cfg support; some extra compiletime options and CD tray management stuff
+#
 # Revision 1.4  2002/12/15 21:40:52  warmcat
 #
 # First major release.  Working video; Native Reiserfs boot into Mdk9; boot instability?
@@ -32,6 +35,7 @@ CC	= gcc
 CFLAGS	= -g -Wall -Werror -DFSYS_REISERFS -Igrub -DSTAGE1_5 -DNO_DECOMPRESSION -Ijpeg-6b -DNO_GETENV
 LD	= ld
 LDFLAGS	= -s -S -T ldscript.ld
+LDFLAGS-XBE	= -s -S -T ldscript-xbe.ld
 OBJCOPY	= objcopy
 # The BIOS make process requires the gcc 2.95 preprocessor, not 2.96 and ot 3.x
 # if you have gcc 2.95, you can use the following line:
@@ -60,15 +64,27 @@ jpeg-6b/jmemmgr.o jpeg-6b/jcomapi.o jpeg-6b/jutils.o jpeg-6b/jerror.o
 RESOURCES = xcodes11.elf backdrop.elf
 
 # target:
-all	: image.bin
+all	: image.bin image-xbe.bin default.xbe
 
+default.xbe :
+	cpp xbeboot.S -o xbeboot.s
+	as -o xbeboot.o xbeboot.s
+	ld -Ttext 0x10000 -Tdata 0x10000 -e _start -s --oformat binary -o default.xbe xbeboot.o
+	cat image-xbe.bin image-xbe.bin image-xbe.bin image-xbe.bin>> default.xbe
+	dd if=/dev/zero bs=1024 count=200 >> default.xbe
+	mkisofs -udf -o image-xbe.iso default.xbe
+	
 clean	:
 	rm -rf *.o *~ core *.core ${OBJECTS} ${RESOURCES} image.elf image.bin
 	rm -f  *.a _rombios_.c _rombios_.s rombios.s rombios.bin rombios.txt
-	rm -f  backdrop.elf
+	rm -f  backdrop.elf default.xbe default.elf image-xbe.bin image-xbe.elf
+	rm -f default.xbe image-xbe.iso
 
 image.elf : ${OBJECTS} ${RESOURCES}
 	${LD} -o $@ ${OBJECTS} ${RESOURCES} ${LDFLAGS}
+
+image-xbe.elf : ${OBJECTS} ${RESOURCES}
+	${LD} -o $@ ${OBJECTS} ${RESOURCES} ${LDFLAGS-XBE}
 
 rombios.elf : rombios.bin
 	${LD} -r --oformat elf32-i386 -o $@ -T rombios.ld -b binary rombios.bin
@@ -84,6 +100,7 @@ backdrop.elf : backdrop.jpg
 
 
 ### rules:
+
 %.o	: %.c boot.h consts.h BootFilesystemIso9660.h
 	${CC} ${CFLAGS} -o $@ -c $<
 
@@ -91,6 +108,10 @@ backdrop.elf : backdrop.jpg
 	${CC} -DASSEMBLER ${CFLAGS} -o $@ -c $<
 
 image.bin : image.elf
+	${OBJCOPY} --output-target=binary --strip-all $< $@
+	@ls -l $@
+
+image-xbe.bin : image-xbe.elf
 	${OBJCOPY} --output-target=binary --strip-all $< $@
 	@ls -l $@
 
