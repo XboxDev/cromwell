@@ -107,7 +107,6 @@ volatile DWORD VIDEO_RSCALING;
 volatile DWORD VIDEO_BSCALING;
 volatile DWORD VIDEO_VSYNC_COUNT;
 volatile DWORD BIOS_TICK_COUNT;
-volatile DWORD BIOS_WAIT_COUNT;
 volatile DWORD VIDEO_VSYNC_POSITION;
 volatile DWORD VIDEO_VSYNC_DIR;
 volatile DWORD DVD_TRAY_STATE;
@@ -507,8 +506,6 @@ typedef struct {
 	AUDIO_ELEMENT * m_paudioelementFirst;
 } AC97_DEVICE  __attribute__ ((aligned (8))) ;
 
-void wait_tick(DWORD ticks);
-void wait_ms_trigger(void);
 void wait_ms(DWORD ticks);
 void wait_smalldelay(void);
 void BootAudioInit(volatile AC97_DEVICE * pac97device);

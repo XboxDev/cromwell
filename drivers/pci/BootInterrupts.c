@@ -122,12 +122,6 @@ const ISR_PREP isrprep[] = {
 
 
 
-void wait_tick(DWORD ticks) {
-	// 1 sec = 18.2 Ticks
-	BIOS_WAIT_COUNT = 0;
-	while(BIOS_WAIT_COUNT<ticks); 
-}
-
 void wait_smalldelay(void) {
 	int u=0; 
 	while(u<3000) { 
@@ -181,7 +175,6 @@ void BootInterruptsWriteIdt() {
 	VIDEO_VSYNC_COUNT=0;
 	VIDEO_VSYNC_POSITION=0;
 	BIOS_TICK_COUNT=0;
-	BIOS_WAIT_COUNT = 0;
 	VIDEO_VSYNC_DIR=0;
 	nCountI2cinterrupts=0;
 	nCountUnusedInterrupts=0;
@@ -388,7 +381,6 @@ void IntHandlerCTimer0(void)
 #endif
 	
 	BIOS_TICK_COUNT++;
-        BIOS_WAIT_COUNT++;
         
 #ifdef DEBUG_MODE
         if(!nInteruptable) return;

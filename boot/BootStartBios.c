@@ -408,7 +408,7 @@ selectinsert:
 				
 				goto selectinsert;
 			}
-			wait_tick(3);
+			wait_ms(50);
 			
 			if(BootIdeReadSector(1, &ba[0], 0x10, 0, 2048)) { // starts at 16
 				VIDEO_CURSOR_POSX=dwX;

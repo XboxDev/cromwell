@@ -104,16 +104,10 @@ extern void BootResetAction ( void ) {
         memcpy(&cromwell_Biostype,(void*)(0x03A00000+32),4);
   
 	      
-        // We disable The CPU Cache
-        cache_disable();
-	// We Update the Microcode of the CPU
-	display_cpuid_update_microcode();
-        // We Enable The CPU Cache
-        cache_enable();
-        setup_ioapic();
         CACHE_VSYNC_WRITEBACK = 0;
 	nInteruptable = 0;	
-	
+
+		
 #if INCLUDE_FILTROR
 	// clear down channel quality stats
 	bfcqs.m_dwBlocksFromPc=0;
@@ -148,6 +142,14 @@ extern void BootResetAction ( void ) {
 	BootPciPeripheralInitialization();
 	bprintf("BOOT: done with PCI initialization\n\r");
 
+	// We disable The CPU Cache
+       	cache_disable();
+	// We Update the Microcode of the CPU
+	display_cpuid_update_microcode();
+       	// We Enable The CPU Cache
+       	cache_enable();
+       	//setup_ioapic();
+       
 	
 	BootEepromReadEntireEEPROM();
 	bprintf("BOOT: Read EEPROM\n\r");
@@ -212,9 +214,9 @@ extern void BootResetAction ( void ) {
 	
 
 	I2CTransmitWord(0x10, 0x1901); // no reset on eject
-        I2CTransmitWord(0x10, 0x0c01); // close DVD tray
-        //I2CTransmitWord(0x10, 0x0c00); // eject DVD tray
-
+        //I2CTransmitWord(0x10, 0x0c01); // close DVD tray
+     //   I2CTransmitWord(0x10, 0x0c00); // eject DVD tray
+       // while(1);
          
 	VIDEO_CURSOR_POSY=currentvideomodedetails.m_dwMarginYInLinesRecommended;
 	VIDEO_CURSOR_POSX=(currentvideomodedetails.m_dwMarginXInPixelsRecommended/*+64*/)*4;
@@ -348,10 +350,7 @@ extern void BootResetAction ( void ) {
 	
 		printk("BOOT: start USB init\n");
 		BootStartUSB();
-	
- 
- 
- 
+
 			// init the HDD and DVD
 		VIDEO_ATTR=0xffc8c8c8;
 		printk("Initializing IDE Controller\n");
@@ -360,7 +359,7 @@ extern void BootResetAction ( void ) {
 		
 
 		BootIdeWaitNotBusy(0x1f0);
-                wait_tick(20);
+                wait_ms(200);
 		
 		printk("Ready\n");
 
