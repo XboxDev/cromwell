@@ -38,8 +38,6 @@ static struct ebinfo		loaderinfo = {
 	0
 };
 
-#define LOAD_DEBUG 0
-
 static int prep_segment(unsigned long start, unsigned long mid, unsigned long end,
 	unsigned long istart, unsigned long iend);
 static void done(void);
@@ -177,6 +175,7 @@ static int prep_segment(unsigned long start, unsigned long mid, unsigned long en
 		printf("filesz > memsz\n");
 		return 0;
 	}
+	/*
 	if ((end > virt_to_phys(_text)) && 
 		(start < virt_to_phys(_end))) {
 		printf("segment [%lX, %lX) overlaps etherboot [%lX, %lX)\n",
@@ -192,6 +191,7 @@ static int prep_segment(unsigned long start, unsigned long mid, unsigned long en
 			);
 		return 0;
 	}
+	*/
 #ifdef PCBIOS
 	if ((end > get_free_base_memory()) && (start < 0xa0000)) {
 		printf("segment [%lX, %lX) overlaps used basemem [%lX, %lX)\n",
