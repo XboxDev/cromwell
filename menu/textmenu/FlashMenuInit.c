@@ -24,7 +24,7 @@ void FlashMenuInit(TEXTMENUITEM *parentItem) {
 	parentItem->childMenu = (struct TEXTMENU*)menuPtr;
 
 	for (i=0; i<2; ++i) {
-		if (tsaHarddiskInfo[i].m_fAtapi) {
+		if (tsaHarddiskInfo[i].m_fDriveExists && tsaHarddiskInfo[i].m_fAtapi) {
 			itemPtr = (TEXTMENUITEM*)malloc(sizeof(TEXTMENUITEM));
 			memset(itemPtr,0x00,sizeof(TEXTMENUITEM));
    			char *driveName=malloc(sizeof(char)*32);
