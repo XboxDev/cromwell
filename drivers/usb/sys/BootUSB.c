@@ -72,20 +72,20 @@ void BootStopUSB(void)
 {
 	/*
 	hub_thread_handler=NULL;
-	XPADRemove();
+	
 	usb_hcd_pci_remove(&xx_ohci_dev);
 	*/
 	//ohci_stop (&xx_ohci_dev);
-
+        
+        XPADRemove();
 	driver_unregister(&usb_generic_driver);
-	usb_major_cleanup();
+//	usb_major_cleanup();
 	//usbfs_cleanup();
-	usb_hub_cleanup();
+//	usb_hub_cleanup();
 	bus_unregister(&usb_bus_type);
-	
 
 	//memset((void*)0x0,0x0,10);
-	//memset((void*)0xfed00006,0x0,40);
-	//memset((void*)0xfed08006,0x0,40);
+	memset((void*)0xfed00006,0x0,40);
+	memset((void*)0xfed08006,0x0,40);
 }	
 /*------------------------------------------------------------------------*/ 	

@@ -54,7 +54,7 @@ void *malloc(size_t size)
 */
 	free_mem_ptr = (free_mem_ptr + 0x100) & ~0x100;	
 	p = (void *) free_mem_ptr;
-	free_mem_ptr += size+30;
+	free_mem_ptr += size+0x200;
 	return p;
 
 

@@ -11,8 +11,7 @@
  ***************************************************************************/
 
 
-#include <stdarg.h>
-#include <stdio.h>
+
 #include "2bconsts.h"
 
 
@@ -38,9 +37,8 @@ typedef unsigned long ULONG;
 typedef unsigned int DWORD;
 typedef unsigned short WORD;
 typedef unsigned char BYTE;
-#ifndef bool_already_defined_
-	typedef int bool;
-#endif
+typedef int bool;
+typedef unsigned int size_t;
 
 typedef unsigned long RGBA; // LSB=R -> MSB = A
 typedef long long __int64;
@@ -55,7 +53,7 @@ typedef long long __int64;
 #define NULL ((void *)0)
 #endif
 
-#define ASSERT(exp) { if(!(exp)) { bprintf("Assert failed file " __FILE__ " line %d\n", __LINE__); } }
+
 
 
 /////////////////////////////////
@@ -164,9 +162,9 @@ unsigned int free_mem_ptr;
 void *malloc(size_t size);
 void free(void *where);
 
-
-
-
-
-
-
+unsigned char *BufferIN;
+int BufferINlen;
+unsigned char *BufferOUT;
+int BufferOUTPos;
+void compressinit(void);
+void Decode(void);

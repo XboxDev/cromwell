@@ -3,9 +3,9 @@ INCLUDE = -I$(TOPDIR)/grub -I$(TOPDIR)/include -I$(TOPDIR)/ -I./ -I$(TOPDIR)/fs/
 	-I$(TOPDIR)/fs/fatx -I$(TOPDIR)/lib/eeprom -I$(TOPDIR)/lib/crypt \
 	-I$(TOPDIR)/drivers/video -I$(TOPDIR)/drivers/flash -I$(TOPDIR)/lib/misc \
 	-I$(TOPDIR)/boot_xbe/ -I$(TOPDIR)/fs/grub -I$(TOPDIR)/lib/font -I$(TOPDIR)/lib/jpeg-6b \
-	-I$(TOPDIR)/startuploader -I$(TOPDIR)/drivers/cpu  -I$(TOPDIR)/lib/lzo 
+	-I$(TOPDIR)/startuploader -I$(TOPDIR)/drivers/cpu 
 
-CFLAGS	= -O2 -mcpu=pentium -Werror $(INCLUDE) -Wstrict-prototypes -fomit-frame-pointer -pipe -mpreferred-stack-boundary=2
+CFLAGS	= -O2 -mcpu=pentium -Werror $(INCLUDE) -Wstrict-prototypes -fomit-frame-pointer -pipe 
 LD      = ld
 OBJCOPY = objcopy
 
@@ -16,14 +16,14 @@ SUBDIRS	= boot_rom fs drivers lib boot
 
 LDFLAGS-ROM     = -s -S -T $(TOPDIR)/scripts/ldscript-crom.ld
 LDFLAGS-XBEBOOT = -s -S -T $(TOPDIR)/scripts/xbeboot.ld
-LDFLAGS-ROMBOOT = -M -s -S -T $(TOPDIR)/boot_rom/bootrom.ld
+LDFLAGS-ROMBOOT = -s -S -T $(TOPDIR)/boot_rom/bootrom.ld
 LDFLAGS-VMLBOOT = -s -S -T $(TOPDIR)/boot_vml/vml_start.ld
 
 
 
 OBJECTS-IMAGEBLD = $(TOPDIR)/bin/imagebld.o
 OBJECTS-IMAGEBLD += $(TOPDIR)/bin/sha1.o
-OBJECTS-IMAGEBLD += $(TOPDIR)/obj/minilzo.o
+OBJECTS-IMAGEBLD += $(TOPDIR)/obj/lzari.o
 
 OBJECTS-XBE = $(TOPDIR)/boot_xbe/xbeboot.o
 
@@ -34,7 +34,7 @@ OBJECTS-ROMBOOT += $(TOPDIR)/obj/2bPicResponseAction.o
 OBJECTS-ROMBOOT += $(TOPDIR)/obj/2bBootStartBios.o
 OBJECTS-ROMBOOT += $(TOPDIR)/obj/sha1.o
 OBJECTS-ROMBOOT += $(TOPDIR)/obj/2bBootLibrary.o
-OBJECTS-ROMBOOT += $(TOPDIR)/obj/minilzo.o
+OBJECTS-ROMBOOT += $(TOPDIR)/obj/2bdecompress.o
                                              
 OBJECTS-CROM = $(TOPDIR)/obj/BootStartup.o
 OBJECTS-CROM += $(TOPDIR)/obj/BootResetAction.o

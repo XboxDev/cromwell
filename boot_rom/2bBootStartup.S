@@ -644,7 +644,7 @@ reload_cs:
 	mov %eax, %fs
 	mov %eax, %gs
 	
-	movl	$ 0x1ffffe,%esp
+	movl	$ 0x1ffff0,%esp
 
 	mov	$0x8, %al
 	mov	$0x61, %dx

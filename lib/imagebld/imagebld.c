@@ -14,31 +14,17 @@
 #include <stdlib.h>
 #include "sha1.h"
 #include "xbe-header.h"
-
-// compression Lib
-#include "minilzo.h"
+#include "lzari.h"
 
 #define debug
 
 
-// For the compression Lib
-
-
-
-#define HEAP_ALLOC(var,size) \
-	lzo_align_t __LZO_MMODEL var [ ((size) + (sizeof(lzo_align_t) - 1)) / sizeof(lzo_align_t) ]
-
-static HEAP_ALLOC(wrkmem,LZO1X_1_MEM_COMPRESS);
-
-
-
-
 struct Checksumstruct {
 	unsigned char Checksum[20];	
-	unsigned int Size_ramcopy;
-	unsigned int compressed_image_start;
-	unsigned int compressed_image_size;
-	unsigned int Biossize_type;
+	unsigned int Size_ramcopy;  // 20
+	unsigned int compressed_image_start; // 24
+	unsigned int compressed_image_size;  // 28
+	unsigned int Biossize_type;          //32
 }Checksumstruct;
 
 void shax(unsigned char *result, unsigned char *data, unsigned int len)
@@ -232,7 +218,7 @@ int romcopy (
 	static unsigned char flash256[256*1024];
 	static unsigned char flash1024[1024*1024];
 	static unsigned char crom[1024*1024];
-	static unsigned char compressedcrom[1524*1024];
+	static unsigned char compressedcrom[1024*1024];
 	
 	unsigned int freeflashspace = 256*1024;
 	
@@ -290,15 +276,35 @@ int romcopy (
 	if (a==1) {	
                 
                 // Ok, we compress the ROM image now
-               
-                lzo_init();
-                lzo1x_1_compress(crom,romsize,compressedcrom,&compressedromsize,wrkmem);
-                
-                /*
-                memcpy(compressedcrom,crom,romsize);
-                compressedromsize=romsize;
-                */
-                
+		
+		SHA1Reset(&context);
+		SHA1Input(&context,&crom[0x20],(romsize-0x20));
+		SHA1Result(&context,SHA1_result);
+		memcpy(&crom[0x0c],SHA1_result,20);
+		               
+		// This is the compression               
+              
+		compressinit();
+		memcpy(BufferIN,crom,romsize);
+		BufferINlen = romsize;
+		Encode();     
+                memcpy(compressedcrom,BufferOUT,BufferOUTPos);
+                compressedromsize = BufferOUTPos;
+		
+		// compression DOne
+		// Compression Verify
+		compressinit();
+		memcpy(BufferIN,compressedcrom,compressedromsize);
+		BufferINlen = compressedromsize;
+		Decode();                       
+		if ((memcmp(BufferOUT,crom,romsize)==0)&(romsize==BufferOUTPos)) {
+			printf("De-CompressTest          : OK\n");
+		} else {
+			printf("De-CompressTest          : FAIL\n");
+		}
+		
+		// Verify Done		
+		
 		// Ok, we start with the real programm                
                 
 		memcpy(&bootloderpos,&loaderimage[0x40],4);   	// This can be foun in the 2bBootStartup.S

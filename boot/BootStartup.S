@@ -22,6 +22,8 @@
          
 .global	Cromwellconfig
 Cromwellconfig:      	
+	.org 0x0c
+		// Space for the SHA1 checksum
         .org 0x20   
 
         // The Value positions are fixed, do never change them, used everywhere

@@ -17,16 +17,8 @@
 #include "sha1.h"
 
 
-// Compression
-#include "minilzo.h"
 
-/*
-Hints:
 
-1) We are in a funny environment, executing out of ROM.  That means it is not possible to
- define filescope non-const variables with an initializer.  If you do so, the linker will oblige and you will end up with
- a 4MByte image instead of a 1MByte one, the linker has added the RAM init at 400000.
-*/
 
 DWORD PciWriteDword(unsigned int bus, unsigned int dev, unsigned int func, unsigned int reg_off, unsigned int dw) 
 {
@@ -72,11 +64,10 @@ void BootAGPBUSInitialization(void)
 }
 
 
-extern void *MemoryChecksum;
-
-//////////////////////////////////////////////////////////////////////
-//
-//  BootResetAction()
+ 
+ 
+ 
+/* -------------------------  Main Entry for after the ASM sequences ------------------------ */
 
 extern void BootStartBiosLoader ( void ) {
 
@@ -100,6 +91,7 @@ extern void BootStartBiosLoader ( void ) {
 	unsigned int compressed_image_size;
 	unsigned int Biossize_type;
 	int temp;
+	unsigned int de_compressed_image_size=0;
 	
         int validimage;
         free_mem_ptr = 0x02500000;		// Main Dynamic Memory starts here
@@ -129,10 +121,16 @@ extern void BootStartBiosLoader ( void ) {
 		while(1);
 	}
 	#endif
+       
         // Sets the Graphics Card to 60 MB start address
         (*(unsigned int*)0xFD600800) = (0xf0000000 | ((64*0x100000) - 0x00400000));
-
+        
 	BootAGPBUSInitialization();
+
+	(*(unsigned int*)(0xFD000000 + 0x100200)) = 0x03070103 ;
+	(*(unsigned int*)(0xFD000000 + 0x100204)) = 0x11448000 ;
+        
+        PciWriteDword(BUS_0, DEV_0, FUNC_0, 0x84, 0x7FFFFFF);  // 128 MB
 	
 	
 	
@@ -192,52 +190,32 @@ extern void BootStartBiosLoader ( void ) {
 		if (_memcmp(&bootloaderChecksum[0],SHA1_result,20)==0) {
 			// The Checksum is good                          
 			// We start the Cromwell immediatly
-			/*
-			
-	
-			I2CTransmitWord(0x10, 0x1901);
-			I2CTransmitWord(0x10, 0x0c00);
-                        */
-                        
-                        
-                        unsigned int de_compressed_image_size;
                         
                         I2cSetFrontpanelLed(I2C_LED_RED0 | I2C_LED_RED1 | I2C_LED_RED2 | I2C_LED_RED3 );
-                        
-                        
-                        
-                        //lzo_init();                        
-                        
-                        //tryagain:
-                        temp = lzo1x_decompress_safe(
-                        		(void*)(CROMWELL_compress_temploc),
-                        		compressed_image_size,
-                        		(void*)CROMWELL_Memory_pos,
-                        		&de_compressed_image_size,
-                        		NULL);
-			//if (compressed_image_size==de_compressed_image_size) goto tryagain;
-			//if (temp != LZO_E_OK ) goto tryagain;
+		
+      		       	compressinit();
+
+      			BufferIN = (unsigned char*)(CROMWELL_compress_temploc);
+      			BufferINlen=compressed_image_size;
+      			BufferOUT = (unsigned char*)CROMWELL_Memory_pos;
+      			Decode();
+      			de_compressed_image_size = BufferOUTPos;
+      			
+      			SHA1Reset(&context);
+			SHA1Input(&context,(void*)(CROMWELL_Memory_pos+0x20),(de_compressed_image_size-0x20));
+			SHA1Result(&context,SHA1_result);
+			
+			if (_memcmp(SHA1_result,(void*)(CROMWELL_Memory_pos+0x0c),20)!=0) 
+			{       	
+				I2CTransmitWord(0x10, 0x0201); 
+				while(1); 
+			};
+			
 			
 			memset((void*)(CROMWELL_Memory_pos+de_compressed_image_size),0x0,1024);
-			memset((void*)(0x0),0x0,20*1024);
+
 			
 			//I2cSetFrontpanelLed(I2C_LED_RED0 | I2C_LED_RED1 | I2C_LED_RED2 | I2C_LED_RED3 );
-			
-					
-		//	memcpy((void*)CROMWELL_Memory_pos,(void*)(CROMWELL_compress_temploc),compressed_image_size);
-		        
-			
-		//	
-			
-			
-/*                	
-	                // As we have no Decompression, we set
-        	        de_compressed_image_size = compressed_image_size;
-			// We copy The Decompressed Image from Temp location to its final Location, basicall
-			// The decompression Algorithm should decompress us there, but we have none to this time now
-        		memcpy((void*)CROMWELL_Memory_pos,(void*)CROMWELL_compress_temploc,de_compressed_image_size);
-*/			
-			// Decompression Ends here
 					
 			// This is a config bit in Cromwell, telling the Cromwell, that it is a Cromwell and not a Xromwell
 			flashbank++; // As counting starts with 0, we increase +1

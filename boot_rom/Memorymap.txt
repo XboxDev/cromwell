@@ -5,8 +5,10 @@ Memory Mapping 2BLoader for Cromwell Loading
 
 	0x0040 0000 IDT for the CPU
 
-	0x0010 0000 2BL programm for runnin in Memory = 15MB 
- 	0x00FF FFFF 2BL programm for runnin in Memory
+	0x0010 0000 2BL programm for runnin in Memory 
+ 	0x001F FFFF 2BL programm for runnin in Memory (ESP is there too)
+	0x0030 0000 Decompressor RAM
+	 	
  	0x0100 0000 for 2bLoader Memory(0x1000000 size = 16 MB)
  	0x01FF FFFF End Memory
  	
