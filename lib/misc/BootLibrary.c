@@ -133,6 +133,16 @@ char *strrchr0(char *string, char ch)
 	return NULL;
 }
 
+void chrreplace(char *string, char search, char ch) {
+	char *ptr = string;
+	while(*ptr != 0) {
+		if(*ptr == search) {
+			*ptr = ch;
+		} else {
+			ptr++;
+		}
+	}
+}
 
 
 /* -------------------------------------------------------------------- */

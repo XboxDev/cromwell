@@ -49,6 +49,8 @@ int ParseConfig(char *szBuffer, CONFIGENTRY *entry, EEPROMDATA *eeprom, char *sz
 		if(*ptr == 0) break;
 		
 	}
+	chrreplace(entry->szInitrd, '\\', '/');
+	chrreplace(entry->szKernel, '\\', '/');
 
 	return entry->nValid;
 }
