@@ -1,8 +1,5 @@
 /*
  * loader script
- *
- *
- *
  */
 
 OUTPUT_FORMAT ("elf32-i386");
@@ -12,8 +9,6 @@ MEMORY
 	ram (rwx) : ORIGIN = 0, LENGTH = 64M
 	rom (rx)  : ORIGIN = 0x03A00000, LENGTH = 2M
 }
-
-RAM_BASE = 0x700000;  
 
 /* this should be changed depending the actual size of the rom */
 ROM_SIZE = 256K;
@@ -64,6 +59,5 @@ SECTIONS {
 		_ebss = . ;
 		_heap = . ;
 	}
-
 
 }
