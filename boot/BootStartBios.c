@@ -130,26 +130,31 @@ int BootLoadConfigNative(int nActivePartition, CONFIGENTRY *config, bool fJustTe
 
 	VIDEO_ATTR=0xffa8a8a8;
 
+	//Try for /boot/linuxboot.cfg first
 	strcpy(&szGrub[4], "/boot/linuxboot.cfg");
 	nRet=grub_open(szGrub);
 
-	dwConfigSize=filemax;
 	if(nRet!=1 || (errnum)) {
+		//Not found - try /linuxboot.cfg
+		errnum=0;
+		strcpy(&szGrub[4], "/linuxboot.cfg");
+		nRet=grub_open(szGrub);
+	}
+	
+	dwConfigSize=filemax;
+	if (nRet!=1 || (errnum)) {
 		if(!fJustTestingForPossible) printk("linuxboot.cfg not found, using defaults\n");
 	} else {
 		if(fJustTestingForPossible) return 1; // if there's a linuxboot.cfg it must be worth trying to boot
-		{
-			int nLen;
-			nLen=grub_read((void *)0x90000, filemax);
-			if(nLen>0) { ((char *)0x90000)[nLen]='\0'; }  // needed to terminate incoming string, reboot in ParseConfig without it
-		}
+		int nLen;
+		nLen=grub_read((void *)0x90000, filemax);
+		if(nLen>0) { ((char *)0x90000)[nLen]='\0'; }  // needed to terminate incoming string, reboot in ParseConfig without it
 		ParseConfig((char *)0x90000,config,&eeprom, NULL);
 		BootPrintConfig(config);
 		printf("linuxboot.cfg is %d bytes long.\n", dwConfigSize);
 	}
 	grub_close();
 	
-	//strcpy(&szGrub[4], config->szKernel);
         _strncpy(&szGrub[4], config->szKernel,sizeof(config->szKernel));
 
 	nRet=grub_open(szGrub);
