@@ -458,7 +458,7 @@ extern void BootResetAction ( void ) {
 #ifndef XBE
 		{
 			OBJECT_FLASH of;
-			memset(of,0x00,sizeof(of));
+			memset(&of,0x00,sizeof(of));
 			of.m_pbMemoryMappedStartAddress=(BYTE *)0xff000000;
 			BootFlashCopyCodeToRam();
 			BootFlashGetDescriptor(&of, (KNOWN_FLASH_TYPE *)&aknownflashtypesDefault[0]);

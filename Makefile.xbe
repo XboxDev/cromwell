@@ -3,7 +3,8 @@ INCLUDE = -I$(TOPDIR)/grub -I$(TOPDIR)/include -I$(TOPDIR)/ -I./ -I$(TOPDIR)/fs/
 	-I$(TOPDIR)/fs/fatx -I$(TOPDIR)/lib/eeprom -I$(TOPDIR)/lib/crypt -I$(TOPDIR)/drivers/usb \
 	-I$(TOPDIR)/drivers/video -I$(TOPDIR)/drivers/flash -I$(TOPDIR)/lib/misc \
 	-I$(TOPDIR)/boot_xbe/ -I$(TOPDIR)/fs/grub -I$(TOPDIR)/lib/font -I$(TOPDIR)/lib/jpeg-6b
-CFLAGS	= -g -O2 -Wall -Werror $(INCLUDE) -DXBE
+#CFLAGS	= -g -O2 -Wall -Werror $(INCLUDE) -DXBE
+CFLAGS  = -g -O2 -Wall -fomit-frame-pointer -mcpu=i686 $(INCLUDE)
 LD      = ld
 OBJCOPY = objcopy
 
@@ -17,6 +18,7 @@ LDFLAGS-BOOT    = -s -S -T $(TOPDIR)/scripts/xbeboot.ld
 
 OBJECTS-XBE = $(TOPDIR)/boot_xbe/xbeboot.o
 OBJECTS = $(TOPDIR)/obj/BootStartup.o
+OBJECTS += $(TOPDIR)/obj/MachineInit.o
 OBJECTS += $(TOPDIR)/obj/BootResetAction.o
 OBJECTS += $(TOPDIR)/obj/BootPerformPicChallengeResponseAction.o
 OBJECTS += $(TOPDIR)/obj/BootPciPeripheralInitialization.o
