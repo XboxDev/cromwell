@@ -423,18 +423,25 @@ spin3:
 #endif
 
 #ifndef XBE
+
 // copy everything into RAM
-            mov $_ram_location, %edi
-            mov $_start_ramcopy, %esi
-	    //add $0xfffc0000, %esi
-            mov $_size_ramcopy, %ecx
-	    rep movsb
+	mov $_ram_location, %edi
+	mov $_start_ramcopy, %esi
+	mov $_size_ramcopy, %ecx
+loop_read:	
+	lodsb
+retry_read:
+	dec   %esi
+	xchg  %ebx,%eax
+	lodsb
+	cmp   %al,%bl
+	jne   retry_read
+	stosb
+	dec   %ecx
+	jnz   loop_read
+
 #endif
         jmp BootResetAction  // this can be found in BootResetAction.c
-
-
-
-
 
 // Main Hardware init routines
 
@@ -466,20 +473,16 @@ entrypoint_start:
 
 	// MTRR for RAM
 	// from address 0, Writeback Caching, 64MB range
-        
-        
         movl	$0x200, %ecx 		// IA32_MTRR_PHYS Base 0
 	movl	$0x00000000, %edx 	// 0x00
 	movl	$0x00000006, %eax 	// == WB_CACHE == 6
 	wrmsr
 
 	// MASK0 set to 0xffc000[000] == 64M    
-	                      		
         movl	$0x201, %ecx  		// IA32_MTRR_PHYS_MASK 0
 	movl	$0x0f, %edx 		// 0x0f
 	movl	$0xfc000800, %eax  	// 0xfc000800 b11= enable MTRR
 	wrmsr
-	
 	
 	// MTRR for BIOS
 	movl	$0x202, %ecx		// IA32_MTRR_PHYS Base 1 
@@ -496,7 +499,6 @@ entrypoint_start:
         
         // MTRR for Video Memory (last 4MByte of shared Ram)
 	// Writethrough type trumps Writeback for overlapping region
-        
         movl	$0x204, %ecx           	// IA32_MTRR_PHYS Base 2
 	movl	$0x00000000, %edx 	// 0x00
 	movl	$0x03C00004, %eax 	// == Writethrough == 4
@@ -507,7 +509,6 @@ entrypoint_start:
 	movl	$0x0000000f, %edx // 0x0f
 	movl	$0xFFC00800, %eax  // 0xffC00800
 	wrmsr
-
 
         xor	%eax, %eax
 	xor	%edx, %edx
@@ -701,54 +702,7 @@ selfPipeKill:
 	mov $0x00040000, %esp
 
 #endif
-/*
-  cld             // clear direction flag
-
-	movl $0, %edi
-	xor	%eax, %eax
- 	movl	$0x100000, %ecx
-	rep
-  stosb
-
-//	mov $0x00040000, %esp
-
-        // copy initiliazed data to ram
-
-        leal    _start_load_data, %esi
-        leal    _start_data, %edi
-        movl    $_end_load_data, %ecx
-        subl    %esi, %ecx
-        jz      .nodata
-        rep
-        movsb
-.nodata:
-
-    // clear bss
-        leal    _bss, %edi
-        movl    $_ebss, %ecx
-        subl    %edi, %ecx
-        jz      .nobss
-        xorl    %eax, %eax
-        rep
-        stosb
-.nobss:
-*/
-
 	jmp entrypoint_end
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 .section .text, "ax"
 
