@@ -20,91 +20,123 @@
 #include "BootIde.h"
 #include "MenuActions.h"
 #include "config.h"
-enum {
-	ICON_FATX = 0,
-	ICON_NATIVE,
-	ICON_CD,
-#ifdef ETHERBOOT
-	ICON_ETHERBOOT,
-#endif
-	ICONCOUNT // always last
-};
 
-#define ICON_SLOT0 0
-#define ICON_SLOT1 ICON_WIDTH
-#define ICON_SLOT2 ICON_WIDTH*2
-#define ICON_SLOT3 ICON_WIDTH*3
-#define ICON_SLOT4 ICON_WIDTH*4
-#define ICON_SLOT5 ICON_WIDTH*5
-#define ICON_SLOT6 ICON_WIDTH*6
-#define ICON_SLOT7 ICON_WIDTH*7
-#define ICON_SLOT8 ICON_WIDTH*8
+#define ICON_SOURCE_SLOT0 0
+#define ICON_SOURCE_SLOT1 ICON_WIDTH
+#define ICON_SOURCE_SLOT2 ICON_WIDTH*2
+#define ICON_SOURCE_SLOT3 ICON_WIDTH*3
+#define ICON_SOURCE_SLOT4 ICON_WIDTH*4
+#define ICON_SOURCE_SLOT5 ICON_WIDTH*5
+#define ICON_SOURCE_SLOT6 ICON_WIDTH*6
+#define ICON_SOURCE_SLOT7 ICON_WIDTH*7
+#define ICON_SOURCE_SLOT8 ICON_WIDTH*8
+
+#define TRANSPARENTNESS 0x30
+#define SELECTED 0xff
 
 struct ICON;
 
 typedef struct {
-	int nDestX;
-	int nDestY;
 	int iconSlot;
 	int nTextX;
 	int nTextY;
-	int nEnabled;
-	int nSelected;
 	char *szCaption;
 	void (*functionPtr) (void);
-	struct ICON* nextIcon;
+	struct ICON *previousIcon;
+	struct ICON *nextIcon;
 } ICON;
 
-ICON icon[ICONCOUNT];
+ICON *firstIcon;
+ICON *selectedIcon;
+ICON *firstVisibleIcon;
 
-void BootIcons(int nXOffset, int nYOffset, int nTextOffsetX, int nTextOffsetY) {
-	memset(icon,0,sizeof(ICON) * ICONCOUNT);
-	icon[ICON_FATX].nDestX = nXOffset + 120;
-	icon[ICON_FATX].nDestY = nYOffset - 74;
-	icon[ICON_FATX].iconSlot = ICON_SLOT4;
-	icon[ICON_FATX].nTextX = (nTextOffsetX+118)<<2;;
-	icon[ICON_FATX].nTextY = nTextOffsetY;
-	icon[ICON_FATX].szCaption = "FatX (E:)";
-	icon[ICON_FATX].functionPtr = BootFromFATX;
+void BootIcons(int nTextOffsetX, int nTextOffsetY) {
+	//Root node
+	firstIcon = (ICON*)malloc(sizeof(ICON));
+
+	ICON* iconPtr = firstIcon;
+	iconPtr->previousIcon=0l;
+
+	//FATX icon
+	iconPtr->iconSlot = ICON_SOURCE_SLOT4;
+	iconPtr->nTextX = (nTextOffsetX+118)<<2;;
+	iconPtr->nTextY = nTextOffsetY;
+	iconPtr->szCaption = "FatX (E:)";
+	iconPtr->functionPtr = BootFromFATX;
 	
-	icon[ICON_NATIVE].nDestX = nXOffset + 232;
-	icon[ICON_NATIVE].nDestY = nYOffset - 74;
-	icon[ICON_NATIVE].iconSlot = ICON_SLOT1;
-	icon[ICON_NATIVE].nTextX = (nTextOffsetX+230)<<2;;
-	icon[ICON_NATIVE].nTextY = nTextOffsetY;
-	icon[ICON_NATIVE].szCaption = "HDD";
-	icon[ICON_NATIVE].functionPtr = BootFromNative;
+	//Native icon
+	iconPtr->nextIcon = malloc(sizeof(ICON));
+	iconPtr=(ICON *)iconPtr->nextIcon;
+	iconPtr->iconSlot = ICON_SOURCE_SLOT1;
+	iconPtr->nTextX = (nTextOffsetX+230)<<2;;
+	iconPtr->nTextY = nTextOffsetY;
+	iconPtr->szCaption = "HDD";
+	iconPtr->functionPtr = BootFromNative;
 	
-	icon[ICON_CD].nDestX = nXOffset + 344;
-	icon[ICON_CD].nDestY = nYOffset - 74;
-	icon[ICON_CD].iconSlot = ICON_SLOT2;
-	icon[ICON_CD].nTextX = (nTextOffsetX+340)<<2;
-	icon[ICON_CD].nTextY = nTextOffsetY;
-	icon[ICON_CD].szCaption = "CD-ROM";
-	icon[ICON_CD].functionPtr = BootFromCD;
+	//CD icon
+	iconPtr->nextIcon = malloc(sizeof(ICON));
+	iconPtr=(ICON *)iconPtr->nextIcon;
+	iconPtr->iconSlot = ICON_SOURCE_SLOT2;
+	iconPtr->nTextX = (nTextOffsetX+340)<<2;
+	iconPtr->nTextY = nTextOffsetY;
+	iconPtr->szCaption = "CD-ROM";
+	iconPtr->functionPtr = BootFromCD;
+	iconPtr->nextIcon=0l;
 
 #ifdef ETHERBOOT
-	icon[ICON_ETHERBOOT].nDestX = nXOffset + 456;
-	icon[ICON_ETHERBOOT].nDestY = nYOffset - 74;
-	icon[ICON_ETHERBOOT].iconSlot = ICON_SLOT3;
-	icon[ICON_ETHERBOOT].nTextX = (nTextOffsetX+451)<<2;
-	icon[ICON_ETHERBOOT].nTextY = nTextOffsetY;
-	icon[ICON_ETHERBOOT].szCaption = "Etherboot";
-	icon[ICON_ETHERBOOT].functionPtr = BootFromEtherboot;
+	//Etherboot icon
+	iconPtr->nextIcon = malloc(sizeof(ICON));
+	iconPtr=(ICON *)iconPtr->nextIcon;
+	iconPtr->iconSlot = ICON_SOURCE_SLOT3;
+	iconPtr->nTextX = (nTextOffsetX+451)<<2;
+	iconPtr->nTextY = nTextOffsetY;
+	iconPtr->szCaption = "Etherboot";
+	iconPtr->functionPtr = BootFromEtherboot;
+	iconPtr->nextIcon=0l;
 #endif	
+	//Work through the list to set up the 'previous icon' pointers.
+	{
+		ICON *previousIcon, *nextIcon;
+		previousIcon = firstIcon;
+		
+		while (nextIcon = (ICON *)previousIcon->nextIcon) {
+			nextIcon->previousIcon = (struct ICON*)previousIcon;
+			previousIcon = nextIcon;
+		}
+	}
 }
 
-void IconMenuDrawIcon(ICON *icon, BYTE bOpaqueness)
-{
-	BootVideoJpegBlitBlend(
-		(BYTE *)(FB_START+((vmode.width * icon->nDestY)+icon->nDestX) * 4),
-		vmode.width, // dest bytes per line
-		&jpegBackdrop, // source jpeg object
-		(BYTE *)(jpegBackdrop.pData+(icon->iconSlot * jpegBackdrop.bpp)),
-		0xff00ff|(((DWORD)bOpaqueness)<<24),
-		(BYTE *)(jpegBackdrop.pBackdrop + ((jpegBackdrop.width * icon->nDestY) + icon->nDestX) * jpegBackdrop.bpp),
-		ICON_WIDTH, ICON_HEIGHT
-	);
+void IconMenuDraw(int nXOffset, int nYOffset, int nTextOffsetX, int nTextOffsetY) {
+	ICON *iconPtr = firstVisibleIcon;
+	int iconcount;
+	//There are four 'bays' for displaying icons in - we only draw the four.
+	for (iconcount=0; iconcount<4; iconcount++) {
+		if (iconPtr==0l) {
+			//No more icons to draw
+			return;
+		}
+		BYTE opaqueness;
+		if (iconPtr==selectedIcon) {
+			//Selected icon has less transparency
+			//and has a caption drawn underneath it
+			opaqueness = SELECTED;
+			VIDEO_CURSOR_POSX=iconPtr->nTextX;
+			VIDEO_CURSOR_POSY=iconPtr->nTextY;
+			printk("%s\n",iconPtr->szCaption);
+		}
+		else opaqueness = TRANSPARENTNESS;
+		
+		BootVideoJpegBlitBlend(
+			(BYTE *)(FB_START+((vmode.width * (nYOffset-74))+nXOffset+(112*(iconcount+1))) * 4),
+			vmode.width, // dest bytes per line
+			&jpegBackdrop, // source jpeg object
+			(BYTE *)(jpegBackdrop.pData+(iconPtr->iconSlot * jpegBackdrop.bpp)),
+			0xff00ff|(((DWORD)opaqueness)<<24),
+			(BYTE *)(jpegBackdrop.pBackdrop + ((jpegBackdrop.width * (nYOffset-74)) + nXOffset+(112*(iconcount+1))) * jpegBackdrop.bpp),
+			ICON_WIDTH, ICON_HEIGHT
+		);
+		iconPtr = (ICON *)iconPtr->nextIcon;
+	}
 }
 
 int BootMenu(CONFIGENTRY *config,int nDrive,int nActivePartition, int nFATXPresent){
@@ -125,9 +157,6 @@ int BootMenu(CONFIGENTRY *config,int nDrive,int nActivePartition, int nFATXPrese
         DWORD HH;
         DWORD temp=1;
         
-	#define TRANPARENTNESS 0x30
-	#define SELECTED 0xff
-
 	nTempCursorResumeX=nTempCursorMbrX;
 	nTempCursorResumeY=nTempCursorMbrY;
 
@@ -145,101 +174,61 @@ int BootMenu(CONFIGENTRY *config,int nDrive,int nActivePartition, int nFATXPrese
 	printk("Select from Menu\n");
 	VIDEO_ATTR=0xffffffff;
 	
-	BootIcons(nModeDependentOffset, nTempCursorY, nModeDependentOffset, nTempCursorY);
-	
-	// Display The Icons
-	for(menu = 0; menu < ICONCOUNT;menu ++) {
-		IconMenuDrawIcon(&icon[menu], TRANPARENTNESS);
-	}
-	
-	// Look which Icons are enabled or disabled	
-        for(menu = 0; menu < ICONCOUNT;menu ++) {
-        
-		icon[menu].nEnabled = 0;		
-        	switch(menu){
-	
-			case ICON_FATX:
-				if(nFATXPresent) {
-					if(BootTryLoadConfigFATX(config)){
-						icon[menu].nEnabled = 1;
-						if(nSelected == -1) nSelected = menu;
-					}
-				}
-				break;
-	
-			case ICON_NATIVE:
-				if(nDrive != 1) {
-					if(BootLoadConfigNative(nActivePartition, config, true)) {
-						icon[menu].nEnabled = 1;
-						if(nSelected == -1) nSelected = menu;
-					}
-				}
-				break;
-	
-			case ICON_CD:
-				//Check we have a cdrom attached
-				if(tsaHarddiskInfo[0].m_fAtapi || tsaHarddiskInfo[1].m_fAtapi) {
-					icon[menu].nEnabled = 1;
-					if(nSelected == -1) nSelected = menu;
-				}
-				break;
-#ifdef ETHERBOOT	
-			case ICON_ETHERBOOT:
-				icon[menu].nEnabled = 1;
-				if(nSelected == -1) nSelected = menu;
-				break;
-#endif
-		}
-	}	
-        
-        // Initial Selected Icon
-        menu = nSelected;
-        old_nIcon = nSelected;
-	icon[menu].nSelected = 1;
-	change = 1;
+	BootIcons(nModeDependentOffset, nTempCursorY);
+	//For now, mark the first icon as selected.
+	selectedIcon = firstIcon;
+	firstVisibleIcon = firstIcon;
+	IconMenuDraw(nModeDependentOffset, nTempCursorY, nModeDependentOffset, nTempCursorY);
 	COUNT_start = IoInputDword(0x8008);
 
 	//Main menu event loop.
 	while(1)
 	{
-		int n;
+		int changed=0;
 		USBGetEvents();
 		
-		if (risefall_xpad_BUTTON(TRIGGER_XPAD_PAD_LEFT) == 1)
+		if (risefall_xpad_BUTTON(TRIGGER_XPAD_PAD_RIGHT) == 1)
 		{
-			icon[menu].nSelected = 0;
-			if (menu>0) menu--;
-			while (menu>0 && !icon[menu].nEnabled) 
-				menu--;
-			/* If there are no more enabled icons this way,
-			 * leave the currently enabled icon enabled.
-			 * Hence, no change */
-			if (!icon[menu].nEnabled) menu = old_nIcon;
-			else change = 1;
-			icon[menu].nSelected = 1;
+			if (selectedIcon->nextIcon!=0l) {
+				//A bit ugly, but need to find the last visible icon, and see if 
+				//we are moving further right from it.
+				ICON *lastVisibleIcon=firstVisibleIcon;
+				int i=0;
+				for (i=0; i<3; i++) {
+					if (lastVisibleIcon->nextIcon==0l) break;
+					lastVisibleIcon = (ICON *)lastVisibleIcon->nextIcon;
+				}
+				if (selectedIcon == lastVisibleIcon) { 
+					//We are moving further right, so slide all the icons along. 
+					firstVisibleIcon = (ICON *)firstVisibleIcon->nextIcon;	
+					//As all the icons have moved, we need to refresh the entire page.
+					memcpy((void*)FB_START,videosavepage,FB_SIZE);
+				}
+				selectedIcon = (ICON *)selectedIcon->nextIcon;
+				changed=1;
+			}
 			temp=0;
 		}
-		else if (risefall_xpad_BUTTON(TRIGGER_XPAD_PAD_RIGHT) == 1)
+		else if (risefall_xpad_BUTTON(TRIGGER_XPAD_PAD_LEFT) == 1)
 		{
-			icon[menu].nSelected = 0;
-			if (menu<ICONCOUNT-1) menu++;		
-			while ((menu<ICONCOUNT-1) && !icon[menu].nEnabled) 
-				menu++;
-			/* If there are no more enabled icons this way,
-			 * leave the currently enabled icon enabled.
-			 * Hence, no change */
-			if (!icon[menu].nEnabled) menu = old_nIcon;
-			else change = 1;
-			icon[menu].nSelected = 1;
+			if (selectedIcon->previousIcon!=0l) {
+				if (selectedIcon == firstVisibleIcon) {
+					//We are moving further left, so slide all the icons along. 
+					firstVisibleIcon = (ICON*)selectedIcon->previousIcon;
+					//As all the icons have moved, we need to refresh the entire page.
+					memcpy((void*)FB_START,videosavepage,FB_SIZE);
+				}
+				selectedIcon = (ICON *)selectedIcon->previousIcon;
+				changed=1;
+			}
 			temp=0;
 		}
-                
 		//If anybody has toggled the xpad left/right, disable the timeout.
 		if (temp!=0) {
 			HH = IoInputDword(0x8008);
 			temp = HH-COUNT_start;
 		}
-
+		
 		if ((risefall_xpad_BUTTON(TRIGGER_XPAD_KEY_A) == 1) || (DWORD)(temp>(0x369E99*BOOT_TIMEWAIT))) {
 			memcpy((void*)FB_START,videosavepage,FB_SIZE);
 			free(videosavepage);
@@ -247,26 +236,15 @@ int BootMenu(CONFIGENTRY *config,int nDrive,int nActivePartition, int nFATXPrese
 			VIDEO_CURSOR_POSX=nTempCursorResumeX;
 			VIDEO_CURSOR_POSY=nTempCursorResumeY;
 			//Icon selected - invoke function pointer.
-			if (icon[menu].functionPtr) icon[menu].functionPtr();
+			selectedIcon->functionPtr();
 			//Should never come back but at least if we do, the menu can
 			//continue to work.
 		}
-		
-		if (change) 
-		{
-		        BootVideoClearScreen(&jpegBackdrop, nTempCursorY, VIDEO_CURSOR_POSY+1);
-			IconMenuDrawIcon(&icon[old_nIcon], TRANPARENTNESS);
-			old_nIcon = menu;
-			IconMenuDrawIcon(&icon[menu], SELECTED);
-
-                        VIDEO_CURSOR_POSX=icon[menu].nTextX;
-			VIDEO_CURSOR_POSY=icon[menu].nTextY;
-			
-			printk("%s\n",icon[menu].szCaption);
+		if (changed) {
+			BootVideoClearScreen(&jpegBackdrop, nTempCursorY, VIDEO_CURSOR_POSY+1);
+			IconMenuDraw(nModeDependentOffset, nTempCursorY, nModeDependentOffset, nTempCursorY);
+			changed=0;
 		}
-
-		change=0;	    
 	}
-
 }
 
