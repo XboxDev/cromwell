@@ -45,6 +45,7 @@ SECTIONS {
        	.rodata ( RAM_CODE + SIZEOF(.text) + SIZEOF(.data) ) : AT ( SIZEOF(.low_rom) + SIZEOF(.text) + SIZEOF(.data)) {
 		*(.rodata);
 		*(.rodata.str1.1);
+		*(.rodata.str1.4);
 		*(.rodata.str1.32);
 		*(.rodata.cst4);
 		*(.rodata.cst8);
@@ -63,7 +64,6 @@ SECTIONS {
 
         _size_ramcopy = SIZEOF(.text) + SIZEOF(.data) + SIZEOF(.rodata) + SIZEOF(.bss);
 	_size_sha1hash = SIZEOF(.text) + SIZEOF(.data) + SIZEOF(.rodata);                
-                
 /*
 	.high_rom TOP_ROM : AT (TOP_ROM_LOAD) {
 		_start_top_rom = . ;
