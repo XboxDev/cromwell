@@ -142,7 +142,7 @@ unsigned long read_file(int driveId, struct iso_directory_record *dir_read, char
 	offset = *((unsigned long *)(dir_read->extent));
 	tmpbuff = (char *) malloc(ISO_BLOCKSIZE);
 
-	if (max_bytes_to_read > *dir_read->size) {
+	if (max_bytes_to_read > *((unsigned int *)(dir_read->size)) ) {
 		read_size = *(unsigned long *)dir_read->size;
 	}
 	else read_size = *(unsigned long *)max_bytes_to_read;
