@@ -33,7 +33,7 @@ void HMAC_SHA1_calculation(int, unsigned char *HMAC_result, ... );
 
 extern size_t strlen(const char * s);
 
-
+/*
 void quick_SHA1( int nVersion, unsigned char *SHA1_result, ... )
 {
 	va_list args;
@@ -57,31 +57,47 @@ void quick_SHA1( int nVersion, unsigned char *SHA1_result, ... )
 
 	va_end(args);
 }
-
-void HMAC_SHA1(
-	int nVersion,
-	BYTE * baResult,
-	BYTE *key,
-	int key_length,
-	BYTE *baText1,
-	int nLengthText1,
-	BYTE *baText2,
-	int nLengthText2
-) {
-	BYTE baState1[0x40];
-	BYTE baState2[0x40+0x14];
-	int n;
-
-	for(n=0x40-1; n>=key_length;--n) baState1[n] = 0x36;
-	for(;n>=0;--n) baState1[n] = key[n] ^ 0x36;
-
-	quick_SHA1 ( nVersion, &baState2[0x40], baState1, 0x40, baText1, nLengthText1, baText2, nLengthText2, NULL );
-
-	for(n=0x40-1; n>=key_length;--n) baState2[n] = 0x5C;
-	for(;n>=0;--n) baState2[n] = key[n] ^ 0x5C;
-
-	quick_SHA1 ( nVersion, baResult, baState2, 0x40+0x14, NULL );
-}
+  */
+void HMAC_SHA1( unsigned char *result,
+		unsigned char *key, int key_length, 
+		unsigned char *text1, int text1_length,
+		unsigned char *text2, int text2_length )
+{
+	unsigned char state1[0x40];
+	unsigned char state2[0x40+0x14];
+	int i;
+	struct SHA1Context context;			
+		
+	for(i=0x40-1; i>=key_length;--i) state1[i] = 0x36;
+	for(;i>=0;--i) state1[i] = key[i] ^ 0x36;
+	
+	SHA1Reset(&context);
+	SHA1Input(&context,state1,0x40);
+	SHA1Input(&context,text1,text1_length);
+	SHA1Input(&context,text2,text2_length);
+	SHA1Result(&context,&state2[0x40]);
+	
+/*	
+	quick_SHA1 ( &state2[0x40],
+			state1,		0x40,
+			text1,		text1_length,
+			text2,		text2_length,
+			NULL );
+*/	
+	 
+	for(i=0x40-1; i>=key_length;--i) state2[i] = 0x5C;
+	for(;i>=0;--i) state2[i] = key[i] ^ 0x5C;
+	
+	/*
+	quick_SHA1 ( result,
+			state2,		0x40+0x14,
+			NULL );
+	*/
+	SHA1Reset(&context);
+	SHA1Input(&context,state2,0x40+0x14);
+	SHA1Result(&context,result);
+	
+}   
 
 
 void HMAC_SHA1_calculation(int version,unsigned char *HMAC_result, ... )
@@ -109,53 +125,72 @@ void HMAC_SHA1_calculation(int version,unsigned char *HMAC_result, ... )
 	SHA1Result(&context,HMAC_result);
 }
 
+
 DWORD BootHddKeyGenerateEepromKeyData(
 		BYTE *pbEeprom_data,
-		BYTE *pbResult,
-		int nVersion
+		BYTE *pbResult
+		
 ) {
 
 	BYTE baKeyHash[20];
 	BYTE baDataHashConfirm[20];
 	BYTE baEepromDataLocalCopy[0x30];
 	struct rc4_key RC4_key;
-
-	memcpy(&baEepromDataLocalCopy[0], pbEeprom_data, 0x30);
-
-	HMAC_SHA1_calculation(nVersion, baKeyHash, &baEepromDataLocalCopy[0], 20, NULL);
+       	int version = 0; 
+       	int counter;
+	int n,f;        
+        
+        // Static Version change not included yet
+        
+	for (counter=10;counter<12;counter++)
+	{
+		memcpy(&baEepromDataLocalCopy[0], pbEeprom_data, 0x30);
+                
+                // Calculate the Key-Hash
+		HMAC_SHA1_calculation(counter, baKeyHash, &baEepromDataLocalCopy[0], 20, NULL);
 
 		//initialize RC4 key
-	rc4_prepare_key(baKeyHash, 20, &RC4_key);
+		rc4_prepare_key(baKeyHash, 20, &RC4_key);
 
-		//decrypt data (from eeprom) with generated key
-	rc4_crypt(&baEepromDataLocalCopy[20],8,&RC4_key);		//confounder of some kind?
-	rc4_crypt(&baEepromDataLocalCopy[28],20,&RC4_key);		//"real" data
+        	//decrypt data (from eeprom) with generated key
+		rc4_crypt(&baEepromDataLocalCopy[20],8,&RC4_key);		//confounder of some kind?
+		rc4_crypt(&baEepromDataLocalCopy[28],20,&RC4_key);		//"real" data
+                
+                // Calculate the Confirm-Hash
+		HMAC_SHA1_calculation(counter, baDataHashConfirm, &baEepromDataLocalCopy[20], 8, &baEepromDataLocalCopy[28], 20, NULL);
 
-	HMAC_SHA1_calculation(nVersion, baDataHashConfirm, &baEepromDataLocalCopy[20], 8, &baEepromDataLocalCopy[28], 20, NULL);
-
-	{  // assess correctness
-		bool f=true;
-		int n;
+		f=0;
 		for(n=0;n<0x14;n++) {
-			if(baEepromDataLocalCopy[n]!=baDataHashConfirm[n]) f=false;
+				if(baEepromDataLocalCopy[n]!=baDataHashConfirm[n]) f=1;
 		}
-		if(!f) return 0; // failure
+		
+		if (f==0) { 
+			// Confirm Hash is correct  
+			// Copy actual Xbox Version to Return Value
+			version=counter;                           
+			// exits the loop
+			break;
+			
+		}
+		
+		       	
+	
 	}
-
-		//copy out HDKey
+	
+	//copy out HDKey
 	memcpy(pbResult,&baEepromDataLocalCopy[28],16);
-	return 1;
+	
+	return version;
 }
 
 
 void genHDPass(
-		int nVersion,
 		BYTE * pbEEPROMComputedKey,
 		BYTE * pbszHDSerial,
 		BYTE * pbHDModel,
 		BYTE * pbHDPass
 ) {
 
-	HMAC_SHA1 ( nVersion, pbHDPass, pbEEPROMComputedKey, 0x10, pbHDModel, strlen(pbHDModel), pbszHDSerial, strlen(pbszHDSerial) );
+	HMAC_SHA1 ( pbHDPass, pbEEPROMComputedKey, 0x10, pbHDModel, strlen(pbHDModel), pbszHDSerial, strlen(pbszHDSerial) );
 }
 

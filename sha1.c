@@ -60,7 +60,7 @@
  */ 
 int HMAC1Reset(int version,SHA1Context *context)
 {
-  SHA1Reset(version, context);
+  SHA1Reset(context);
   if (version==10) {
 		context->Intermediate_Hash[0] = 0x72127625;
 		context->Intermediate_Hash[1] = 0x336472B9;
@@ -83,7 +83,7 @@ int HMAC1Reset(int version,SHA1Context *context)
 
 int HMAC2Reset(int version,SHA1Context *context)
 {
-	SHA1Reset(version, context);
+	SHA1Reset(context);
 	if (version==10) {
 		context->Intermediate_Hash[0] = 0x76441D41;
 		context->Intermediate_Hash[1] = 0x4DE82659;
@@ -103,7 +103,7 @@ int HMAC2Reset(int version,SHA1Context *context)
 
 }
 
-int SHA1Reset(int nVersion, SHA1Context *context)
+int SHA1Reset(SHA1Context *context)
 {
     if (!context)
     {

@@ -471,11 +471,10 @@ static int BootIdeDriveInit(unsigned uIoBase, int nIndexDrive)
 	if((drive_info[128]&0x0004)==0x0004) { // 'security' is in force, unlock the drive (was 0x104/0x104)
 		BYTE baMagic[0x200], baKeyFromEEPROM[0x10], baEeprom[0x30];
 		bool fUnlocked=false;
-		int n, nVersionHashing=10;
+		int n,nVersionHashing;
 		tsIdeCommandParams tsicp1 = IDE_DEFAULT_COMMAND;
 		DWORD dwMagicFromEEPROM;
 		void genHDPass(
-			int nVersion,
 			BYTE * beepkey,
 			unsigned char *HDSerial,
 			unsigned char *HDModel,
@@ -483,8 +482,7 @@ static int BootIdeDriveInit(unsigned uIoBase, int nIndexDrive)
 		);
 		DWORD BootHddKeyGenerateEepromKeyData(
 			BYTE *eeprom_data,
-			BYTE *HDKey,
-			int nVersion
+			BYTE *HDKey
 		);
 		int nVersionSuccessfulDecrypt=0;
 
@@ -493,15 +491,16 @@ static int BootIdeDriveInit(unsigned uIoBase, int nIndexDrive)
 
 		dwMagicFromEEPROM=0;
 
-		while((nVersionHashing<=11) && (!fUnlocked)) {
-
+		while( (!fUnlocked)) {
+                        nVersionHashing = 0; 
 			memcpy(&baEeprom[0], &eeprom, 0x30); // first 0x30 bytes from EEPROM image we picked up earlier
-			dwMagicFromEEPROM = BootHddKeyGenerateEepromKeyData( &baEeprom[0], &baKeyFromEEPROM[0], nVersionHashing);
-
-			if(!dwMagicFromEEPROM) {
-				nVersionHashing++;
-				continue;
-			}
+			nVersionHashing = BootHddKeyGenerateEepromKeyData( &baEeprom[0], &baKeyFromEEPROM[0]);
+      			genHDPass( baKeyFromEEPROM, tsaHarddiskInfo[nIndexDrive].m_szSerial, tsaHarddiskInfo[nIndexDrive].m_szIdentityModelNumber, &baMagic[2]);
+                        if (nVersionHashing == 0)
+                        {
+                         // ERRORR -- Corrupt EEprom or Newer Version of EEprom - key
+                        }                                                            
+                        
 			nVersionSuccessfulDecrypt=nVersionHashing;
 
 				// clear down the unlock packet, except for b8 set in first word (high security unlock)
@@ -512,7 +511,7 @@ static int BootIdeDriveInit(unsigned uIoBase, int nIndexDrive)
 				*pword=0;  // try user
 			}
 
-			genHDPass( nVersionHashing, baKeyFromEEPROM, tsaHarddiskInfo[nIndexDrive].m_szSerial, tsaHarddiskInfo[nIndexDrive].m_szIdentityModelNumber, &baMagic[2]);
+
 
 			if(BootIdeWaitNotBusy(uIoBase)) {
 					printk("  %d:  Not Ready\n", nIndexDrive);
