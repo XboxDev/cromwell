@@ -399,9 +399,9 @@ int romcopy (
 	printf("Size2blRamcopy           : %08x\n",bootloaderstruct.Size_ramcopy);		
 	printf("ROM Image Start          : %08x\n",bootloaderstruct.compressed_image_start);
 	printf("ROM Image Size           : %08x (%d Byte)\n",romsize,romsize); 
-	printf("ROM compressed Image Size: %08x (%d Byte)\n",bootloaderstruct.compressed_image_size,bootloaderstruct.compressed_image_size); 
-	printf("Avaliable Size in ROM    : %08x (%d Byte)\n",freeflashspace,freeflashspace);
-	printf("Percent of ROM USED:     : %2.2f \n",(float)bootloaderstruct.compressed_image_size/freeflashspace*100);
+	printf("ROM compressed image size: %08x (%d Byte)\n",bootloaderstruct.compressed_image_size,bootloaderstruct.compressed_image_size); 
+	printf("Available space in ROM   : %08x (%d Byte)\n",freeflashspace,freeflashspace);
+	printf("Percentage of ROM used   : %2.2f \n",(float)bootloaderstruct.compressed_image_size/freeflashspace*100);
 #endif
 	
 	// We have calculated the size of the kompressed image and where it can start (where the 2bl ends)
@@ -421,8 +421,6 @@ int romcopy (
 	}
       	printf("\n");
 #endif
-
-
 	// This is for 1MB Image kbyte image
 	// We start with offset 20, as the first 20 bytes are the checksum
 	SHA1Reset(&context);
