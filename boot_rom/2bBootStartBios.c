@@ -68,7 +68,13 @@ extern void BootStartBiosLoader ( void ) {
 	memcpy(&compressed_image_start,(void*)(PROGRAMM_Memory_2bl+24),4);
 	memcpy(&compressed_image_size,(void*)(PROGRAMM_Memory_2bl+28),4);
 	memcpy(&Biossize_type,(void*)(PROGRAMM_Memory_2bl+32),4);
-	
+	        
+        #if 0
+        // This is for testing, no Validation will be made
+        BootPerformPicChallengeResponseAction();
+        
+        #else
+      	
       	SHA1Reset(&context);
 	SHA1Input(&context,(void*)(PROGRAMM_Memory_2bl+20),bootloadersize-20);
 	SHA1Result(&context,SHA1_result);
@@ -81,16 +87,14 @@ extern void BootStartBiosLoader ( void ) {
 		// Bad, the checksum does not match, but we can nothing do now, we wait until PIC kills us
 		while(1);
 	}
+	#endif
 	
-        // We clear the Dynamic Memory manager (hiihi)
         
 
 	
 	// Lets go, we have finished, the Most important Startup, we have now a valid Micro-loder im Ram
 	// we are quite happy now
 	
-//	BootPciPeripheralInitialization();
-      
         validimage=0;
         cromloadtry=0;
         flashbank=3;

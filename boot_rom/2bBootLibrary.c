@@ -8,10 +8,8 @@
  *                                                                         *
  ***************************************************************************
 
-	2003-01-12 andy@warmcat.com  Created from other files, enhanced malloc
-	                             greatly so it is more like a stdc one
-
 */
+
 #include "2bload.h"
 
 
@@ -28,24 +26,13 @@ int strlen(const char * sz) {
 	return n; 
 	}
 
-
-void * memset(void *dest, int data,  size_t size) {
-//    bprintf("memset(0x%x,0x%x,0x%x);\n", dest, data, size);
-    __asm__ __volatile__ (
-              "    push %%eax    \n"
-              "    push %%edi    \n"
-              "    push %%ecx    \n"
-              "    mov %0, %%edi \n"
-              "    mov %1, %%eax \n"
-              "    mov %2, %%ecx \n"
-              "    shr $2, %%ecx \n"
-              "    rep stosl     \n"
-              "    pop %%ecx     \n"
-              "    pop %%edi     \n"
-              "    pop %%eax     \n"
-              : : "S" (dest), "%eax" (data), "c" (size)
-		);
-	return dest;
+void * memset(void *dest, int data,  size_t size)
+{
+  	char *p = dest;
+	while (size -- > 0)
+	{
+		*p ++ = data;
+	}
 }
 
 int _memcmp(const BYTE *pb, const BYTE *pb1, int n) {

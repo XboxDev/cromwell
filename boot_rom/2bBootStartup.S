@@ -592,7 +592,7 @@ MemoryChecksum:
 	// The SHA-1 Hashsum is dumped here after with ImageBLD
       	.byte 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,0x00, 0x00
 	.byte 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,0x00, 0x00
-	.long _size_ramcopy
+	.long _size_sha1hash
 	.long 0x00  // Will be dumped in by imagebld ->compressed_image_start;
 	.long 0x00  // Will be dumped in by imagebld ->compressed_image_size;
 	.long 0x00  // Will be dumped in by imagebld ->0 .. 256kb image, 1 .. 1MB image

@@ -217,9 +217,11 @@ int vmlbuild (	unsigned char * vmlimage,
 
 
 int romcopy (
-		unsigned char * binname256,
+		unsigned char * blbinname,
 		unsigned char * cromimage,
+		unsigned char * binname256,
 		unsigned char * binname1024
+		
 		)
 {
 	
@@ -252,9 +254,10 @@ int romcopy (
 	memset(flash1024,0x00,sizeof(flash1024));
        	memset(crom,0x00,sizeof(crom));
        	memset(compressedcrom,0x00,sizeof(compressedcrom));
+       	memset(loaderimage,0x00,sizeof(loaderimage));
        	
        	a=1;
-	f = fopen(binname256, "rb");
+	f = fopen(blbinname, "rb");
     	if (f!=NULL) 
     	{    
 		fread(loaderimage, 1, 256*1024, f);
@@ -309,10 +312,15 @@ int romcopy (
 		temp = bootloderpos + bootloaderstruct.Size_ramcopy;
 		temp = temp & 0xfffffff0;
 		temp = temp + 0x10;
+		
+		// We add additional 0x100 byts for some space
+		temp = temp + 0x100;
+		
 		bootloaderstruct.compressed_image_start = temp;
 		bootloaderstruct.compressed_image_size =  compressedromsize;
 
-		freeflashspace = freeflashspace - 512; // We decrement the TOP ROM
+		//freeflashspace = freeflashspace - 512; // We decrement the TOP ROM
+		// We have no TOP ROM anymore
 		freeflashspace = freeflashspace - bootloaderstruct.compressed_image_start;
 
 
@@ -436,7 +444,7 @@ int main (int argc, const char * argv[])
 	
 	if (strcmp(argv[1],"-rom")==0) { 
 		if( argc < 4 ) return -1;
-		romcopy((unsigned char*)argv[2],(unsigned char*)argv[3],(unsigned char*)argv[4]);
+		romcopy((unsigned char*)argv[2],(unsigned char*)argv[3],(unsigned char*)argv[4],(unsigned char*)argv[5]);
 	}
 
 	return 0;	
