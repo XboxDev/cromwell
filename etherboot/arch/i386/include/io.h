@@ -3,7 +3,7 @@
 
 
 /* Amount of relocation etherboot is experiencing */
-static unsigned long virt_offset;
+extern unsigned long virt_offset;
 
 /* Don't require identity mapped physical memory,
  * osloader.c is the only valid user at the moment.

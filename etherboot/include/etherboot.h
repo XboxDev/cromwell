@@ -313,7 +313,7 @@ struct meminfo {
 	uint32_t map_count;
 	struct e820entry map[E820MAX];
 } PACKED;
-static struct meminfo meminfo;
+extern struct meminfo meminfo;
 extern void get_memsizes(void);
 extern unsigned long get_boot_order(unsigned long order, unsigned *index);
 #ifdef RELOCATE

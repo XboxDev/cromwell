@@ -12,7 +12,7 @@ extern uint32_t PciWriteDword(unsigned int bus, unsigned int dev, unsigned int f
 extern void BootResetAction(void);
 extern void BootStopUSB(void);
 
-static struct meminfo meminfo = 
+struct meminfo meminfo = 
 {
 	640,
 	0,
@@ -26,16 +26,10 @@ static struct meminfo meminfo =
 	}
 };
 
-static unsigned long virt_offset = 0;
+unsigned long virt_offset = 0;
 
 struct pci_driver* pci_drivers = &forcedeth_driver;
 struct pci_driver* pci_drivers_end = &forcedeth_driver + 1;
-
-int loadkernel (const char *fname)
-{
-	/* For test purpose only */
-	while(1);
-}
 
 int etherboot(void)
 {
@@ -128,7 +122,23 @@ void udelay(unsigned int usecs)
 void restart_etherboot(int status)
 {
 	eth_disable();
+	nic.dev.state.pci.dev.driver = 0;
 	BootStopUSB();
+	wait_us(5 * 1000*1000);
 	BootResetAction();
 }
 
+void xstart16 (unsigned long a, unsigned long b, char * c)
+{
+	while (1);
+}
+
+int xstart32(unsigned long entry_point, ...)
+{
+	while (1);
+}
+
+int load_block(unsigned char *data, unsigned int block, unsigned int len, int eof)
+{
+	return 0;
+}
