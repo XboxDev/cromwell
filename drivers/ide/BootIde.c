@@ -625,7 +625,7 @@ int BootIdeDriveInit(unsigned uIoBase, int nIndexDrive)
 
 /* -------------------------------------------------------------------------------- */
 int DriveSecurityChange(unsigned uIoBase, int driveId, ide_command_t ide_cmd, char *password) {
-	//Should check it's ACTUALLY locked first, but lets assume the caller did, for now.	
+	//Todo: Check drive is in correct state for command desired.
 	char ide_cmd_data[2+512];	
 	char baBuffer[512];
 	unsigned short*	drive_info = (unsigned short*)baBuffer;
@@ -636,9 +636,6 @@ int DriveSecurityChange(unsigned uIoBase, int driveId, ide_command_t ide_cmd, ch
 	
 	//Password is only 20 bytes long - the rest is 0-padded.
 	memcpy(&ide_cmd_data[2],password,20);
-
-	//If we're locking, use high security mode, as this is what the MS bios expects
-	if (ide_cmd == IDE_CMD_SECURITY_SET_PASSWORD) ide_cmd_data[1]|=0x01;
 
 	if(BootIdeWaitNotBusy(uIoBase)) 
 	{
@@ -668,6 +665,7 @@ int DriveSecurityChange(unsigned uIoBase, int driveId, ide_command_t ide_cmd, ch
 		return 1;
 	}
 
+	/*
 	if(drive_info[128]&0x0004) 
 		{
 		//Drive is still locked
@@ -675,7 +673,9 @@ int DriveSecurityChange(unsigned uIoBase, int driveId, ide_command_t ide_cmd, ch
 	} else {
 		//Unlock was successful
 		return 0;
-	}
+	}*/
+	//Todo: Check dest. state is the desired one based on command.
+	return 0;
 }
 
 
