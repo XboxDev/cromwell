@@ -1,4 +1,4 @@
-CC	= gcc-3.2
+CC	= gcc
 # prepare check for gcc 3.3, $(GCC_3.3) will either be 0 or 1
 GCC_3.3 := $(shell expr `$(CC) -dumpversion` \>= 3.3)
 
