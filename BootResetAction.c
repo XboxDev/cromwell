@@ -258,7 +258,11 @@ extern void BootResetAction ( void ) {
 
 	VIDEO_CURSOR_POSY=VIDEO_MARGINY;
 	VIDEO_CURSOR_POSX=(VIDEO_MARGINX+64)*4;
+#ifdef XBE
+	printk("\2Xbox Linux XROMWELL  " VERSION "\2\n" );
+#else	
 	printk("\2Xbox Linux Clean BIOS  " VERSION "\2\n" );
+#endif
 	VIDEO_CURSOR_POSY=VIDEO_MARGINY+32;
 	VIDEO_CURSOR_POSX=(VIDEO_MARGINX+64)*4;
 	printk( __DATE__ " -  http://xbox-linux.sf.net\n");
