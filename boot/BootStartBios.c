@@ -26,7 +26,6 @@
 #include "BootParser.h"
 #include "BootFATX.h"
 #include "xbox.h"
-#include "BootFlash.h"
 
 #ifdef XBE
 #include "config-xbe.h"
@@ -369,12 +368,7 @@ int BootLodaConfigCD(CONFIGENTRY *config) {
 		BootIso9660DescriptorToString(pipvd->m_szVolumeIdentifier, sizeof(pipvd->m_szVolumeIdentifier), sz);
 		printk("%s\n", sz);
 	}
-// Uncomment the following to test flashing
-#if 0
-	dwConfigSize=BootIso9660GetFile("/IMAGE.BIN", (BYTE *)0x100000, 0x100000, 0x0);
-	printk("Image size: %i\n", dwConfigSize);
-	printk("Error code: $i\n", BootReflashAndReset((BYTE*) 0x100000, (DWORD) 0, (DWORD) dwConfigSize));
-#endif
+
 	printk("  Loading linuxboot.cfg from CDROM... \n");
 	dwConfigSize=BootIso9660GetFile("/linuxboot.cfg", (BYTE *)0x90000, 0x800, 0x0);
 
@@ -746,6 +740,23 @@ nDrive=0;
 		//printk("%08X",BootResetAction)	;    
 		/*
 		{
+		int a;
+		unsigned char SHA1_result[SHA1HashSize];
+		struct SHA1Context context;
+	        int i;
+	        VIDEO_CURSOR_POSY=150;
+	        for (a=0;a<20;a++) {
+	        	VIDEO_CURSOR_POSX=0;
+       			SHA1Reset(&context);   
+			SHA1Input(&context,(void*)0xFFF00000,0x80000);
+			SHA1Result(&context,SHA1_result);	
+			for (i=0;i<20;i++) printk("%02x",SHA1_result[i]);
+			printk("\n");
+			}
+		}
+	        */
+		/*
+		{
 		unsigned char SHA1_result[SHA1HashSize];
 		struct SHA1Context context;
 	        int i;
@@ -779,7 +790,42 @@ nDrive=0;
 			
 		}
 		 */
+		/* 
+		{
+		int i;			
+		
+		
+		
+			for (i=0;i<0x60;i++) {
+			 
+				if ((i%8)==0) printk("\n");
+				printk("(%02x)->%02x  ",i,IoInputByte(0x8000+i));	
+				}
+			
+			}	
+			
+		*/	
+		/*
+		{
+			extern void IntHandler1(void);
+			extern void IntHandler2(void);
+			extern void IntHandler3(void);
+			extern void IntHandler4(void);
+			extern void IntHandlerException0(void);
+			void IntHandler4C(void);
+			printk("%08X\n",IntHandler1);
+			printk("%08X\n",IntHandlerException0);
+			printk("%08X\n",BootResetAction);
+			printk("%08X\n",IntHandler4C);
 		}
+		
+		*/
+		//while(1);
+		
+		
+		} 
+		
+		
 	}
 
 
