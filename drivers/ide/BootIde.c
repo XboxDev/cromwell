@@ -100,6 +100,7 @@ typedef enum {
 		IDE_CMD_SECURITY_UNLOCK = 0xf2
 } ide_command_t;
 
+
 #define printk_debug bprintf
 
 
@@ -458,14 +459,12 @@ static int BootIdeDriveInit(unsigned uIoBase, int nIndexDrive)
 	{ 
 		WORD * pw=(WORD *)&(drive_info[10]);
 		tsaHarddiskInfo[nIndexDrive].s_length =
-			copy_swap_trim(tsaHarddiskInfo[nIndexDrive].m_szSerial,(BYTE*)pw,0x14);
+			copy_swap_trim(tsaHarddiskInfo[nIndexDrive].m_szSerial,(BYTE*)pw,20);
 		pw=(WORD *)&(drive_info[27]);
 		tsaHarddiskInfo[nIndexDrive].m_length =
-			copy_swap_trim(tsaHarddiskInfo[nIndexDrive].m_szIdentityModelNumber,(BYTE *)pw,0x28);
-		copy_swap_trim(tsaHarddiskInfo[nIndexDrive].m_szFirmware,(BYTE *)&(drive_info[23]),0x8);
+			copy_swap_trim(tsaHarddiskInfo[nIndexDrive].m_szIdentityModelNumber,(BYTE *)pw,40);
+		copy_swap_trim(tsaHarddiskInfo[nIndexDrive].m_szFirmware,(BYTE *)&(drive_info[23]),8);
 
-//	tsaHarddiskInfo[nIndexDrive].m_szSerial[sizeof(tsaHarddiskInfo[0].m_szSerial)-1]='\0';
-//	tsaHarddiskInfo[nIndexDrive].m_szIdentityModelNumber[sizeof(tsaHarddiskInfo[0].m_szIdentityModelNumber)-1]='\0';
 
 /*
 		for(n=0; n<20;n+=2) { tsaHarddiskInfo[nIndexDrive].m_szSerial[n]=(*pw)>>8; tsaHarddiskInfo[nIndexDrive].m_szSerial[n+1]=(char)(*pw); pw++; }

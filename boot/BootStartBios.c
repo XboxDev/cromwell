@@ -504,6 +504,7 @@ void StartBios(	int nDrive, int nActivePartition , int nFATXPresent) {
 	int nTempCursorResumeX, nTempCursorResumeY, nTempStartMessageCursorX, nTempStartMessageCursorY;
 #endif
 	int nIcon = ICONCOUNT; 
+	
 
 	BootPciInterruptEnable();
 
@@ -602,14 +603,15 @@ void StartBios(	int nDrive, int nActivePartition , int nFATXPresent) {
 				if(nShowSelect) {
 
 					DWORD dwTick=BIOS_TICK_COUNT;
-
+					
 					{
 						DestructAUDIO_ELEMENT_SINE(&ac97device, &aesIconSound); // harmless if not yet constructed or attached
 						ConstructAUDIO_ELEMENT_SINE(&aesIconSound, naChimeFrequencies[nIcon]);  // constructed silent
 						aesIconSound.m_saVolumePerHarmonicZeroIsNone7FFFIsFull[0]=0x1000;
 						aesIconSound.m_paudioelement.m_dwVolumeSustainRate=0x2800;
 						BootAudioAttachAudioElement(&ac97device, (AUDIO_ELEMENT *)&aesIconSound);
-					}
+					}       
+
 
 					while(
 						(BIOS_TICK_COUNT<(dwTick+DELAY_TICKS)) &&
@@ -659,14 +661,21 @@ void StartBios(	int nDrive, int nActivePartition , int nFATXPresent) {
 	{
 	  	// turn off USB
 
+		#ifdef DO_USB
 		BootUsbTurnOff((USB_CONTROLLER_OBJECT *)&usbcontroller[0]);
 		BootUsbTurnOff((USB_CONTROLLER_OBJECT *)&usbcontroller[1]);
-
+		#endif
 			// silence the audio
-
-		BootAudioSilence(&ac97device);
+        	
+        	BootAudioSilence(&ac97device);
+                
+		
+	
 	}
 
+#ifdef DEFAULT_FATX
+nDrive=0;
+#endif
 
 	if(nIcon >= ICONCOUNT) {
 		if(nDrive == 0) {
@@ -704,11 +713,27 @@ void StartBios(	int nDrive, int nActivePartition , int nFATXPresent) {
 			}
 		*/	
 			
+		/*
+		{
+		unsigned int temp=0;
+		while (1) {
+		VIDEO_CURSOR_POSX=50;
+		VIDEO_CURSOR_POSY=BIOS_TICK_COUNT%400;
+		VIDEO_ATTR=0xff9f9fbf;                     
+		//printk(" %08X \n",BIOS_TICK_COUNT);
+		printk(" %08X \n",VIDEO_VSYNC_DIR);
+		if (temp !=BIOS_TICK_COUNT) {
 			
+		printk(" %08X \n",VIDEO_VSYNC_DIR);
+		//	printk(" %08X \n",BIOS_TICK_COUNT);
+			VIDEO_ATTR=0xff8888a8;
+			temp = BIOS_TICK_COUNT; 
+			}		
+		
 			
-			
-			
-			
+		}	
+		}	
+		*/	
 			
 			
 			

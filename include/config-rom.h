@@ -24,3 +24,6 @@
 //#define DO_ETHERNET 1
 
 //#define FLASH
+
+#undef DO_USB
+//#define DO_USB

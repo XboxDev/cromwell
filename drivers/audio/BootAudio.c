@@ -303,8 +303,8 @@ void BootAudioInit(volatile AC97_DEVICE * pac97device)
 
 	BootAudioSilence(pac97device);
 
-		// prepare several buffers full of audio to start
-		// we will get an interrupt after the first one is empty and can prepare the fourth while the second plays
+	// prepare several buffers full of audio to start
+	// we will get an interrupt after the first one is empty and can prepare the fourth while the second plays
 
 	BootAudioFillNextBuffer(pac97device);
 	BootAudioFillNextBuffer(pac97device);

@@ -39,8 +39,11 @@ void PciWriteByte (unsigned int bus, unsigned int dev, unsigned int func,
 	base_addr |= ((dev & 0x1F) << 11);	// device #
 	base_addr |= ((func & 0x07) << 8);	// func #
 
-		IoOutputDword(0xcf8, (base_addr + (reg_off & 0xfc)));
-		IoOutputByte(0xcfc + (reg_off & 3), byteval);
+	IoOutputDword(0xcf8, (base_addr + (reg_off & 0xfc)));
+	IoOutputByte(0xcfc + (reg_off & 3), byteval);
+
+//	IoOutputDword(0xcf8, (base_addr + (reg_off & 0xfc)));
+//	IoOutputByte(0xcfc + (reg_off & 3), byteval);
 }
 
 
@@ -80,10 +83,22 @@ DWORD PciReadDword(unsigned int bus, unsigned int dev, unsigned int func, unsign
 }
 
 
-#define PciWriteDword(bus, dev, func, reg_off, dw) {\
-		IoOutputDword(0xcf8, ((0x80000000|(((bus) & 0xFF) << 16)|(((dev) & 0x1F) << 11)|(((func) & 0x07) << 8)) + ((reg_off) & 0xfc))); \
-		IoOutputDword(0xcfc + ((reg_off) & 3), (dw)); }
+DWORD PciWriteDword(unsigned int bus, unsigned int dev, unsigned int func, unsigned int reg_off, unsigned int dw) 
+{
+		
+	DWORD base_addr = 0x80000000;
+	base_addr |= ((bus & 0xFF) << 16);	// bus #
+	base_addr |= ((dev & 0x1F) << 11);	// device #
+	base_addr |= ((func & 0x07) << 8);	// func #
 
+	IoOutputDword(0xcf8, (base_addr + (reg_off & 0xfc)));	
+	IoOutputDword(0xcfc + ((reg_off) & 3), dw);
+
+//	IoOutputDword(0xcf8, (base_addr + (reg_off & 0xfc)));	
+//	IoOutputDword(0xcfc + ((reg_off) & 3), dw);
+	return 0; 
+}
+  
 
 void BootPciPeripheralInitialization()
 {
@@ -101,9 +116,21 @@ void BootPciPeripheralInitialization()
 		PciWriteDword(BUS_0, DEV_1, 0, 0xc8, 0x8f00);  // v1.1 2BL <-- death
 	}
 
-	PciWriteDword(BUS_0, DEV_0, 3, 0x58, 0x00008000);
-	PciWriteDword(BUS_0, DEV_0, 3, 0x40, 0x0017cc00);
 
+	
+        
+        //
+// Bus 0, Device 0, Function 0 = PCI Bridge Device - Host Bridge
+//   
+
+   
+	PciWriteDword(BUS_0, DEV_0, FUNC_0, 0x48, 0x00000114);
+	PciWriteDword(BUS_0, DEV_0, FUNC_0, 0x44, 0x80000000); // new 2003-01-23 ag  trying to get single write actions on TSOP
+
+	PciWriteDword(BUS_0, DEV_0, 3, 0x40, 0x0017cc00);
+	PciWriteDword(BUS_0, DEV_0, 3, 0x58, 0x00008000);
+
+//	PciWriteByte(BUS_0, DEV_0, FUNC_0, 0x4b,0x00); --> BAD !!! -- Xbox Dies sometimes
 
 	IoOutputByte(0x2e, 0x55);
 	IoOutputByte(0x2e, 0x26);
@@ -113,81 +140,32 @@ void BootPciPeripheralInitialization()
 
 	IoOutputByte(0xcf9, 0x08);
 
-		// gah, failure to do this caused long delays and timeouts on boot and shutdown of Linux
-		// RTC CMOS was disabled, rtc driver was polling "safe to read" bit which was never okay
+	// gah, failure to do this caused long delays and timeouts on boot and shutdown of Linux
+	// RTC CMOS was disabled, rtc driver was polling "safe to read" bit which was never okay
+	
+	IoOutputByte(0x70, 0x30);	
+	IoOutputByte(0x71, 0x03);  // activate RTC bank1, bank0 and RTC
+	IoOutputByte(0x72, 0xf0);	
+	IoOutputByte(0x73, 0x00);  // nothing locked
 
-	IoOutputByte(0x70, 0x30);	IoOutputByte(0x71, 0x03);  // activate RTC bank1, bank0 and RTC
-	IoOutputByte(0x72, 0xf0);	IoOutputByte(0x73, 0x00);  // nothing locked
 
-
-	IoOutputByte(0x70, 0x0a);	IoOutputByte(0x71, 0x2d);
-	IoOutputByte(0x70, 0x0b); IoOutputByte(0x71, (IoInputByte(0x71)&1)|2);
+	IoOutputByte(0x70, 0x0a);	
+	IoOutputByte(0x71, 0x2d);
+	
+	IoOutputByte(0x70, 0x0b); 
+	IoOutputByte(0x71, (IoInputByte(0x71)&1)|2);
 
 	IoOutputByte(0x70, 0x0c);
 	IoInputByte(0x71);
 	IoOutputByte(0x70, 0x0d);
 	IoInputByte(0x71);
-
-
-#if 0
-		__asm__ __volatile__(
-
-//		" wbinvd \n"
-
-		" push %%edx \n"
-		" push %%eax \n"
-
-		" mov $0x80000854, %%eax \n"
-		" movw $0xcf8, %%dx \n"
-		" outl	%%eax, %%dx \n"
-		" movw $0xcfc, %%dx \n"
-		" inl %%dx, %%eax \n"
-		" orl $0x88000000, %%eax \n"
-		" outl	%%eax, %%dx \n"
-
-		" mov $0x80000064, %%eax \n"
-		" movw $0xcf8, %%dx \n"
-		" outl	%%eax, %%dx \n"
-		" movw $0xcfc, %%dx \n"
-		" inl %%dx, %%eax \n"
-		" orl $0x88000000, %%eax \n"
-		" outl	%%eax, %%dx \n"
-
-		" mov $0x8000006c, %%eax \n"
-		" movw $0xcf8, %%dx \n"
-		" outl	%%eax, %%dx \n"
-		" movw $0xcfc, %%dx \n"
-		" inl %%dx, %%eax \n"
-		" push %%eax \n"
-		" andl $0xfffffffe, %%eax \n"
-		" outl	%%eax, %%dx \n"
-		" pop %%eax\n"
-		" outl	%%eax, %%dx \n"
-
-		" mov $0x80000080, %%eax \n"
-		" movw $0xcf8, %%dx \n"
-		" outl	%%eax, %%dx \n"
-		" movw $0xcfc, %%dx \n"
-		" movl $0x100, %%eax \n"
-		" outl	%%eax, %%dx \n"
-
-		" mov $0x8000088C, %%eax \n"
-		" movw $0xcf8, %%dx \n"
-		" outl	%%eax, %%dx \n"
-		" movw $0xcfc, %%dx \n"
-		" movl $0x40000000, %%eax \n"
-		" outl	%%eax, %%dx \n"
-
-		" pop %%eax\n"
-		" pop %%edx \n"
-		"	movl $0x0, 0x0f680600\n"
-//		" sti\n"
-			: : : "%eax", "%edx"
-		);
-#endif
-
-
-			// configure ACPI hardware to generate interrupt on PIC-chip pin6 action (via EXTSMI#)
+        
+	IoOutputByte(0x43, 0x36);
+	IoOutputByte(0x40, 0xff);
+	IoOutputByte(0x40, 0xff);
+                
+        
+	// configure ACPI hardware to generate interrupt on PIC-chip pin6 action (via EXTSMI#)
 
 	IoOutputByte(0x80ce, 0x08);  // from 2bl RI#
 	IoOutputByte(0x80c0, 0x08);  // from 2bl SMBUSC
@@ -325,8 +303,8 @@ void BootPciPeripheralInitialization()
 //	bprintf("Test Smb status3g =%x\n",IoInputWord(I2C_IO_BASE+0));
 	PciWriteDword(BUS_0, DEV_1e, FUNC_0, 0x3c, 7);  // trying to get video irq
 
-		// frankenregister xbe load correction to match cromwell load
-		// controls requests for memory regions
+	// frankenregister xbe load correction to match cromwell load
+	// controls requests for memory regions
 
 	PciWriteDword(BUS_0, DEV_1e, FUNC_0, 0x0c, 0xff019ee7);
 	PciWriteDword(BUS_0, DEV_1e, FUNC_0, 0x10, 0xbcfaf7e7);
@@ -338,20 +316,6 @@ void BootPciPeripheralInitialization()
 	PciWriteDword(BUS_0, DEV_1e, FUNC_0, 0x2c, 0xf8bfef87);
 	PciWriteDword(BUS_0, DEV_1e, FUNC_0, 0x30, 0xdf758fa3);
 	PciWriteDword(BUS_0, DEV_1e, FUNC_0, 0x38, 0xb785fccc);
-
-//
-// Bus 0, Device 0, Function 0 = PCI Bridge Device - Host Bridge
-//   
-
-#ifndef XBE
-	PciWriteDword(BUS_0, DEV_0, FUNC_0, 0x48, 0x00000114);
-	PciWriteDword(BUS_0, DEV_0, FUNC_0, 0x44, 0x80000000); // new 2003-01-23 ag  trying to get single write actions on TSOP
-	PciWriteByte(BUS_0, DEV_0, FUNC_0, 0x4b,0x00);
-	
-	PciWriteByte(BUS_0, DEV_0, 3, 0x42, 0x17);
-
-#endif
-
 
 //
 // Bus 1, Device 0, Function 0 = NV2A GeForce3 Integrated GPU

@@ -35,7 +35,7 @@
 #endif
 #include "BootUsbOhci.h"
 
-//#define DO_USB
+
 
 extern DWORD dwaTitleArea[1024*64];
 JPEG jpegBackdrop;
@@ -120,7 +120,8 @@ extern void BootResetAction ( void ) {
 	int nActivePartitionIndex=0;
 	int nFATXPresent=false;
 	int nTempCursorX, nTempCursorY;
-
+       
+        
 #if INCLUDE_FILTROR
 	// clear down channel quality stats
 	bfcqs.m_dwBlocksFromPc=0;
@@ -137,31 +138,37 @@ extern void BootResetAction ( void ) {
 	BootFiltrorSendArrayToPc("\nBOOT: starting BootResetAction()\n\r", 34);
 #endif
 
-		// init malloc() and free() structures
+	// init malloc() and free() structures
+
 #ifdef XBE
+	memset((void *)0x1000000, 0x00,0x0E00000);
 	MemoryManagementInitialization((void *)0x1000000, 0x0E00000);
-#else
+	
+#else                                             
+	memset((void *)0x1000000, 0x00,0x2000000);
 	MemoryManagementInitialization((void *)0x1000000, 0x2000000);
 #endif
 
 	BootInterruptsWriteIdt();
 //	bprintf("BOOT: done interrupts\n\r");
 
-		// if we don't make the PIC happy within 200mS, the damn thing will reset us
+	// if we don't make the PIC happy within 200mS, the damn thing will reset us
 
 	BootPerformPicChallengeResponseAction();
 	bprintf("BOOT: done with PIC challenge\n\r");
 
 
-	BootEepromReadEntireEEPROM();
-	bprintf("BOOT: Read EEPROM\n\r");
-//	DumpAddressAndData(0, (BYTE *)&eeprom, 256);
-
-		// initialize the PCI devices
+	// initialize the PCI devices
 
 	bprintf("BOOT: starting PCI init\n\r");
 	BootPciPeripheralInitialization();
 	bprintf("BOOT: done with PCI initialization\n\r");
+	
+	BootEepromReadEntireEEPROM();
+	bprintf("BOOT: Read EEPROM\n\r");
+//	DumpAddressAndData(0, (BYTE *)&eeprom, 256);
+
+
 
 
 
@@ -181,6 +188,9 @@ extern void BootResetAction ( void ) {
 	currentvideomodedetails.m_fForceEncoderLumaAndChromaToZeroInitially=1;
 //#endif
 
+        
+        // Load and Init the Background image
+
 	BootVgaInitializationKernel((CURRENT_VIDEO_MODE_DETAILS *)&currentvideomodedetails);
 
 	bprintf("BOOT: kern VGA init done\n\r");
@@ -199,69 +209,68 @@ extern void BootResetAction ( void ) {
 	BootVideoClearScreen(&jpegBackdrop, 0, 0xffff);
 	bprintf("BOOT: done backdrop\n\r");
 
+	
 
 //#ifndef XBE
-	// configure ACPI hardware to generate interrupt on PIC-chip pin6 action (via EXTSMI#)
+		
 	{
-		DWORD dw;
-		BootPciInterruptGlobalStackStateAndDisable(&dw);
-//		IoOutputByte(0x80c0, 0x08);  // from 2bl
-		IoOutputByte(0x8004, IoInputByte(0x8004)|1);  // KERN: SCI enable == SCI interrupt generated
-		IoOutputByte(0x8022, IoInputByte(0x8022)|2);  // KERN: Interrupt enable register, b1 RESERVED in AMD docs
-		IoOutputByte(0x8002, IoInputByte(0x8002)|1);  // KERN: Enable SCI interrupt when timer status goes high
-		IoOutputByte(0x8028, IoInputByte(0x8028)|1);  // KERN: setting readonly trap event???
+	DWORD dw=0;
+	BootPciInterruptGlobalStackStateAndDisable(&dw);
+//	IoOutputByte(0x80c0, 0x08);  // from 2bl
+	IoOutputByte(0x8004, IoInputByte(0x8004)|1);  // KERN: SCI enable == SCI interrupt generated
+	IoOutputByte(0x8022, IoInputByte(0x8022)|2);  // KERN: Interrupt enable register, b1 RESERVED in AMD docs
+	IoOutputByte(0x8002, IoInputByte(0x8002)|1);  // KERN: Enable SCI interrupt when timer status goes high
+	IoOutputByte(0x8028, IoInputByte(0x8028)|1);  // KERN: setting readonly trap event???
 
-		I2CTransmitWord(0x10, 0x0b00); // Allow audio
-//		I2CTransmitWord(0x10, 0x0b01); // GAH!!!  Audio Mute!
-		I2CTransmitWord(0x10, 0x1a01); // unknown, done immediately after reading out eeprom data
-		I2CTransmitWord(0x10, 0x1b04); // unknown
-		BootPciInterruptGlobalPopState(dw);
+	I2CTransmitWord(0x10, 0x0b00); // Allow audio
+//	I2CTransmitWord(0x10, 0x0b01); // GAH!!!  Audio Mute!
+	I2CTransmitWord(0x10, 0x1a01); // unknown, done immediately after reading out eeprom data
+	I2CTransmitWord(0x10, 0x1b04); // unknown
+	BootPciInterruptGlobalPopState(dw);
 	}
 //#endif
 
 
-#if 1
-			// do audio
-	{
-		BootAudioInit(&ac97device);
 
-		ConstructAUDIO_ELEMENT_SINE(&aesTux, 1000);  // constructed silent, manipulated in video IRQ that moves tux
-		BootAudioAttachAudioElement(&ac97device, (AUDIO_ELEMENT *)&aesTux);
-		ConstructAUDIO_ELEMENT_SINE(&aesSong, 1000);  // constructed silent, manipulated in video IRQ that moves tux
-		aesSong.m_paudioelement.m_pvPayload=(SONG_NOTE *)&songnoteaIntro[0];
-		aesSong.m_saVolumePerHarmonicZeroIsNone7FFFIsFull[0]=0x1fff;
-		aesSong.m_paudioelement.m_bStageZeroIsAttack=3; // silenced initially until first note
-		aesSong.m_paudioelement.m_bStageZeroIsAttack=3; // silenced initially until first note
-		BootAudioAttachAudioElement(&ac97device, (AUDIO_ELEMENT *)&aesSong);
-		ConstructAUDIO_ELEMENT_NOISE(&aenTux);  // constructed silent, manipulated in video IRQ that moves tux
-		BootAudioAttachAudioElement(&ac97device, (AUDIO_ELEMENT *)&aenTux);
-		BootAudioPlayDescriptors(&ac97device);
 
-	}
-#endif
 
+	// Audio Section
+	
+	BootAudioInit(&ac97device);
+	ConstructAUDIO_ELEMENT_SINE(&aesTux, 1000);  // constructed silent, manipulated in video IRQ that moves tux
+	BootAudioAttachAudioElement(&ac97device, (AUDIO_ELEMENT *)&aesTux);
+	ConstructAUDIO_ELEMENT_SINE(&aesSong, 1000);  // constructed silent, manipulated in video IRQ that moves tux
+	aesSong.m_paudioelement.m_pvPayload=(SONG_NOTE *)&songnoteaIntro[0];
+	aesSong.m_saVolumePerHarmonicZeroIsNone7FFFIsFull[0]=0x1fff;
+	aesSong.m_paudioelement.m_bStageZeroIsAttack=3; // silenced initially until first note
+	aesSong.m_paudioelement.m_bStageZeroIsAttack=3; // silenced initially until first note
+	BootAudioAttachAudioElement(&ac97device, (AUDIO_ELEMENT *)&aesSong);
+	ConstructAUDIO_ELEMENT_NOISE(&aenTux);  // constructed silent, manipulated in video IRQ that moves tux
+	BootAudioAttachAudioElement(&ac97device, (AUDIO_ELEMENT *)&aenTux);
+	BootAudioPlayDescriptors(&ac97device);
+
+
+	
 
 	// display solid red frontpanel LED while we start up
 	I2cSetFrontpanelLed(I2C_LED_RED0 | I2C_LED_RED1 | I2C_LED_RED2 | I2C_LED_RED3 );
 
-	{
-		DWORD dw;
-		BootPciInterruptGlobalStackStateAndDisable(&dw);
+	
+        {
+	DWORD dw=0;
+	BootPciInterruptGlobalStackStateAndDisable(&dw);
 
-		I2CTransmitWord(0x10, 0x1901); // no reset on eject
+	I2CTransmitWord(0x10, 0x1901); // no reset on eject
+
 #ifdef IS_XBE_CDLOADER
-		I2CTransmitWord(0x10, 0x0c01); // close DVD tray
+	I2CTransmitWord(0x10, 0x0c01); // close DVD tray
 #else
-		I2CTransmitWord(0x10, 0x0c00); // eject DVD tray
+	I2CTransmitWord(0x10, 0x0c00); // eject DVD tray
 #endif
-		BootPciInterruptGlobalPopState(dw);
+	BootPciInterruptGlobalPopState(dw);
 	}
-	// start up Timer 0 so we get the 18.2Hz tick interrupts
-
-	IoOutputByte(0x43, 0x36);
-	IoOutputByte(0x40, 0xff);
-	IoOutputByte(0x40, 0xff);
-
+     
+         
 	VIDEO_CURSOR_POSY=currentvideomodedetails.m_dwMarginYInLinesRecommended;
 	VIDEO_CURSOR_POSX=(currentvideomodedetails.m_dwMarginXInPixelsRecommended/*+64*/)*4;
 #ifdef XBE
@@ -414,6 +423,7 @@ extern void BootResetAction ( void ) {
 		{  			// standard BIOS settings
 			int n;
 			for(n=0x0e;n<0x40;n++) BiosCmosWrite(n, 0);
+
 //			BiosCmosWrite(0x0e, 0); // say that CMOS, HDD and RTC are all valid
 //			BiosCmosWrite(0x0f, 0); // say that we are coming up from a normal reset
 //			BiosCmosWrite(0x10, 0); // no floppies on this thing
@@ -445,34 +455,34 @@ extern void BootResetAction ( void ) {
 		}
 #endif
 
-			// set Ethernet MAC address from EEPROM
-		{
-			volatile BYTE * pb=(BYTE *)0xfef000a8;  // Ethernet MMIO base + MAC register offset (<--thanks to Anders Gustafsson)
-			int n;
-			for(n=5;n>=0;n--) { *pb++=	eeprom.MACAddress[n]; } // send it in backwards, its reversed by the driver
-		}
+		// set Ethernet MAC address from EEPROM
+	        
+	        {
+		volatile BYTE * pb=(BYTE *)0xfef000a8;  // Ethernet MMIO base + MAC register offset (<--thanks to Anders Gustafsson)
+		int n;
+		for(n=5;n>=0;n--) { *pb++=	eeprom.MACAddress[n]; } // send it in backwards, its reversed by the driver
+	        }
 
 //		BootPciInterruptEnable();
 		BootEepromPrintInfo();
 
-#ifndef XBE
+		
 		{
-			OBJECT_FLASH of;
-			memset(&of,0x00,sizeof(of));
-			of.m_pbMemoryMappedStartAddress=(BYTE *)0xff000000;
-			BootFlashCopyCodeToRam();
-			BootFlashGetDescriptor(&of, (KNOWN_FLASH_TYPE *)&aknownflashtypesDefault[0]);
-			VIDEO_ATTR=0xffc8c8c8;
-			printk("Flash type: ");
-			VIDEO_ATTR=0xffc8c800;
-			printk("%s\n", of.m_szFlashDescription);
+		OBJECT_FLASH of;
+		memset(&of,0x00,sizeof(of));
+		of.m_pbMemoryMappedStartAddress=(BYTE *)0xff000000;
+		BootFlashCopyCodeToRam();
+		BootFlashGetDescriptor(&of, (KNOWN_FLASH_TYPE *)&aknownflashtypesDefault[0]);
+		VIDEO_ATTR=0xffc8c8c8;
+		printk("Flash type: ");
+		VIDEO_ATTR=0xffc8c800;
+		printk("%s\n", of.m_szFlashDescription);
 		}
 
-#endif
 	
 	// init USB
 #ifdef DO_USB
-	{
+	
 		const int nSizeAllocation=0x10000;
 		void * pvHostControllerCommsArea=malloc(nSizeAllocation+0x100); // 64K+256 to ensure alignment
 		void * pvHostControllerCommsArea1=malloc(nSizeAllocation+0x100); // 64K+256 to ensure alignment
@@ -480,20 +490,18 @@ extern void BootResetAction ( void ) {
 		BootUsbInit((USB_CONTROLLER_OBJECT *)&usbcontroller[0], "USB1", (void *)0xfed00000, (void *)(((DWORD)pvHostControllerCommsArea+0x100)&0xffffff00), nSizeAllocation);
 		BootUsbInit((USB_CONTROLLER_OBJECT *)&usbcontroller[1], "USB2", (void *)0xfed08000, (void *)(((DWORD)pvHostControllerCommsArea1+0x100)&0xffffff00), nSizeAllocation);
 		bprintf("BOOT: done USB init\n\r");
-	}
-#endif
+	
 
-#ifdef DO_USB
-		{
-			VIDEO_ATTR=0xffc8c8c8;
-			printk("USB: ");
-			VIDEO_ATTR=0xffc8c800;
+		
+		VIDEO_ATTR=0xffc8c8c8;
+		printk("USB: ");
+		VIDEO_ATTR=0xffc8c800;
 
-//			BootUsbPrintStatus((USB_CONTROLLER_OBJECT *)&usbcontroller[0]);
-//			BootUsbPrintStatus((USB_CONTROLLER_OBJECT *)&usbcontroller[1]);
-//			BootUsbDump((USB_CONTROLLER_OBJECT *)&usbcontroller[0]);
-//			BootUsbDump((USB_CONTROLLER_OBJECT *)&usbcontroller[1]);
-		}
+//		BootUsbPrintStatus((USB_CONTROLLER_OBJECT *)&usbcontroller[0]);
+//		BootUsbPrintStatus((USB_CONTROLLER_OBJECT *)&usbcontroller[1]);
+//		BootUsbDump((USB_CONTROLLER_OBJECT *)&usbcontroller[0]);
+//		BootUsbDump((USB_CONTROLLER_OBJECT *)&usbcontroller[1]);
+		
 #endif
 
 			// init the HDD and DVD
@@ -502,10 +510,11 @@ extern void BootResetAction ( void ) {
 
 			// wait around for HDD to become ready
 
+		
 		{
-			DWORD dw=BIOS_TICK_COUNT;
-			BootIdeWaitNotBusy(0x1f0);
-			while((BIOS_TICK_COUNT-dw)<30) ;  // wait minimum ~1.8 second
+		DWORD dw=BIOS_TICK_COUNT;
+		BootIdeWaitNotBusy(0x1f0);
+		while((BIOS_TICK_COUNT-dw)<30) ;  // wait minimum ~1.8 second
 		}
 		printk("Ready\n");
 

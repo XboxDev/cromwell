@@ -114,6 +114,7 @@ MEM_MGT * pmemmgtStartAddressMemoryMangement;
 #define SENTINEL_CONST 0xaa556b2
 #define MERGE_IF_LESS_THAN_THIS_LEFT_OVER 0x100
 
+
 void MemoryManagementInitialization(void * pvStartAddress, DWORD dwTotalMemoryAllocLength)
 {
 	pmemmgtStartAddressMemoryMangement=pvStartAddress;
