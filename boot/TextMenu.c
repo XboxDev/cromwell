@@ -22,18 +22,25 @@ struct TEXTMENUITEM;
 struct TEXTMENU;
 
 typedef struct {
+	//Menu item text
 	char *szCaption;
+	//Pointer to function to run when menu item selected.
 	void (*functionPtr) (void);
-	//Child menu, if any
+	//Child menu, if any, attached to this menu item
 	struct TEXTMENU *childMenu;
-	//Next / previous menu items, if linked list
+	//Next / previous menu items within this menu
 	struct TEXTMENUITEM *previousMenuItem;
 	struct TEXTMENUITEM *nextMenuItem;
 } TEXTMENUITEM;
 
 typedef struct {
+	//Menu title e.g. "Main Menu"
 	char *szCaption;
+	//A pointer to the first item of the linked list of menuitems that
+	//make up this menu.
 	TEXTMENUITEM* firstMenuItem;
+	//If 0l, we're a top level menu, otherwise a "BACK" menu item will be created,
+	//which takes us back to the parent menu..
 	struct TEXTMENU* parentMenu;
 } TEXTMENU;
 
@@ -52,35 +59,128 @@ void TextMenuDraw(void) {
 	VIDEO_ATTR=0x0000ff;
 	printk("\2%s\n",currentMenu->szCaption);
 	VIDEO_CURSOR_POSY+=30;
-	
-	TEXTMENUITEM *item;
-	for (item = currentMenu->firstMenuItem; item!=0l; item=(TEXTMENUITEM *)item->nextMenuItem) {
+
+	int menucount;
+	TEXTMENUITEM *item=firstVisibleMenuItem;
+	for (menucount=0; menucount<7; menucount++) {
+		if (item==0l) {
+			//No more menu items to draw
+			return;
+		}
+		//Selected item in red
 		if (item == selectedMenuItem) VIDEO_ATTR=0xff0000;
 		else VIDEO_ATTR=0xffffff;
+		//Font size 2=big.
 		printk("\2%s\n",item->szCaption);
 		VIDEO_CURSOR_POSY+=15;
+		item=(TEXTMENUITEM *)item->nextMenuItem;
 	}
 }
 
 int BootTextMenu(void) {
-	TEXTMENUITEM *menuItemPtr;
+	
+	unsigned char *textmenusavepage;
+	TEXTMENUITEM *previousItemPtr, *newItemPtr;
 
 	firstMenu = malloc(sizeof(TEXTMENU));
 	firstMenu->szCaption="Main Menu";
 	currentMenu = firstMenu;	
+
+	newItemPtr = (TEXTMENUITEM*)malloc(sizeof(TEXTMENUITEM));
+	memset(newItemPtr,0x00,sizeof(TEXTMENUITEM));
+	newItemPtr->szCaption="Test 1";	
+	firstMenu->firstMenuItem = newItemPtr;
+	newItemPtr->previousMenuItem=0l;
+	newItemPtr->nextMenuItem=0l;
+	selectedMenuItem = newItemPtr;
+	firstVisibleMenuItem = newItemPtr;
+	previousItemPtr = newItemPtr;
 	
-	menuItemPtr = malloc(sizeof(TEXTMENUITEM));
-	menuItemPtr->szCaption="Test 2";	
-	firstMenu->firstMenuItem = menuItemPtr;
-	menuItemPtr->previousMenuItem=0l;
-	selectedMenuItem = menuItemPtr;
+	newItemPtr = (TEXTMENUITEM*)malloc(sizeof(TEXTMENUITEM));
 	
-	TEXTMENUITEM *menuitem2 = malloc(sizeof(TEXTMENUITEM));
-	menuItemPtr->nextMenuItem=(struct TEXTMENUITEM *)menuitem2;
-	menuitem2->szCaption="Test 1";
-	menuitem2->previousMenuItem=(struct TEXTMENUITEM*)menuItemPtr;
-	menuitem2->nextMenuItem=0l;
+	memset(newItemPtr,0x00,sizeof(TEXTMENUITEM));
+	previousItemPtr->nextMenuItem = (struct TEXTMENUITEM*)newItemPtr;
+	newItemPtr->szCaption="Test 2";	
+	newItemPtr->previousMenuItem=(struct TEXTMENUITEM*)previousItemPtr;
+	newItemPtr->nextMenuItem=0l;
+	previousItemPtr = newItemPtr;
+
+	newItemPtr = (TEXTMENUITEM*)malloc(sizeof(TEXTMENUITEM));
+	previousItemPtr->nextMenuItem = (struct TEXTMENUITEM*)newItemPtr;
+	memset(newItemPtr,0x00,sizeof(TEXTMENUITEM));
+	newItemPtr->szCaption="Test 3";	
+	newItemPtr->previousMenuItem=(struct TEXTMENUITEM*)previousItemPtr;
+	newItemPtr->nextMenuItem=0l;
+	previousItemPtr = newItemPtr;
+
+
+	newItemPtr = (TEXTMENUITEM*)malloc(sizeof(TEXTMENUITEM));
+	previousItemPtr->nextMenuItem = (struct TEXTMENUITEM*)newItemPtr;
+	memset(newItemPtr,0x00,sizeof(TEXTMENUITEM));
+	newItemPtr->szCaption="Test 4";	
+	newItemPtr->previousMenuItem=(struct TEXTMENUITEM*)previousItemPtr;
+	newItemPtr->nextMenuItem=0l;
+	previousItemPtr = newItemPtr;
+
+	newItemPtr = (TEXTMENUITEM*)malloc(sizeof(TEXTMENUITEM));
+	previousItemPtr->nextMenuItem = (struct TEXTMENUITEM*)newItemPtr;
+	memset(newItemPtr,0x00,sizeof(TEXTMENUITEM));
+	newItemPtr->szCaption="Test 5";	
+	newItemPtr->previousMenuItem=(struct TEXTMENUITEM*)previousItemPtr;
+	newItemPtr->nextMenuItem=0l;
+	previousItemPtr = newItemPtr;
+
+	newItemPtr = (TEXTMENUITEM*)malloc(sizeof(TEXTMENUITEM));
+	previousItemPtr->nextMenuItem = (struct TEXTMENUITEM*)newItemPtr;
+	memset(newItemPtr,0x00,sizeof(TEXTMENUITEM));
+	newItemPtr->szCaption="Test 6";	
+	newItemPtr->previousMenuItem=(struct TEXTMENUITEM*)previousItemPtr;
+	newItemPtr->nextMenuItem=0l;
+	previousItemPtr = newItemPtr;
+
+	newItemPtr = (TEXTMENUITEM*)malloc(sizeof(TEXTMENUITEM));
+	previousItemPtr->nextMenuItem = (struct TEXTMENUITEM*)newItemPtr;
+	memset(newItemPtr,0x00,sizeof(TEXTMENUITEM));
+	newItemPtr->szCaption="Test 7";	
+	newItemPtr->previousMenuItem=(struct TEXTMENUITEM*)previousItemPtr;
+	newItemPtr->nextMenuItem=0l;
+	previousItemPtr = newItemPtr;
+
+
+
+	TEXTMENU *testchildmenu = (TEXTMENU*)malloc(sizeof(TEXTMENU));
+	testchildmenu->szCaption="Test child menu";
 	
+	newItemPtr = (TEXTMENUITEM*)malloc(sizeof(TEXTMENUITEM));
+	previousItemPtr->nextMenuItem = (struct TEXTMENUITEM*)newItemPtr;
+	memset(newItemPtr,0x00,sizeof(TEXTMENUITEM));
+	newItemPtr->szCaption="Test 8";	
+	newItemPtr->previousMenuItem=(struct TEXTMENUITEM*)previousItemPtr;
+	newItemPtr->nextMenuItem=0l;
+	previousItemPtr = newItemPtr;
+	newItemPtr->childMenu = (struct TEXTMENU*)testchildmenu;
+	
+	//TEST CHILD MENU
+	newItemPtr = (TEXTMENUITEM*)malloc(sizeof(TEXTMENUITEM));
+	memset(newItemPtr,0x00,sizeof(TEXTMENUITEM));
+	newItemPtr->szCaption="Test Child1";	
+	newItemPtr->previousMenuItem=0l;
+	newItemPtr->nextMenuItem=0l;
+	previousItemPtr = newItemPtr;
+	
+	testchildmenu->firstMenuItem = newItemPtr;
+	
+	
+	newItemPtr = (TEXTMENUITEM*)malloc(sizeof(TEXTMENUITEM));
+	previousItemPtr->nextMenuItem = (struct TEXTMENUITEM*)newItemPtr;
+	memset(newItemPtr,0x00,sizeof(TEXTMENUITEM));
+	newItemPtr->szCaption="Test child2";
+	newItemPtr->previousMenuItem=(struct TEXTMENUITEM*)previousItemPtr;
+	newItemPtr->nextMenuItem=0l;
+	previousItemPtr = newItemPtr;
+
+	//TEST CHILD MENU
+
 	TextMenuDraw();
 	
 	//Main menu event loop.
@@ -92,38 +192,50 @@ int BootTextMenu(void) {
 		if (risefall_xpad_BUTTON(TRIGGER_XPAD_PAD_UP) == 1)
 		{
 			if (selectedMenuItem->previousMenuItem!=0l) {
+				if (selectedMenuItem == firstVisibleMenuItem) {
+					firstVisibleMenuItem = (TEXTMENUITEM *)selectedMenuItem->previousMenuItem;
+					memcpy((void*)FB_START,textmenusavepage,FB_SIZE);
+				}
+				
 				selectedMenuItem=(TEXTMENUITEM*)selectedMenuItem->previousMenuItem;
 				changed=1;
 			}
-			
 		} 
 		else if (risefall_xpad_BUTTON(TRIGGER_XPAD_PAD_DOWN) == 1) {
 			if (selectedMenuItem->nextMenuItem!=0l) {
+				TEXTMENUITEM *lastVisibleMenuItem = firstVisibleMenuItem;
+				int i=0;
+				//6 menu items per page
+				for (i=0; i<6; i++) {
+					if (lastVisibleMenuItem->nextMenuItem==0l) break;
+					lastVisibleMenuItem = (TEXTMENUITEM *)lastVisibleMenuItem->nextMenuItem;
+				}
+				if (selectedMenuItem == lastVisibleMenuItem) {
+					firstVisibleMenuItem = (TEXTMENUITEM *)firstVisibleMenuItem->nextMenuItem;
+					memcpy((void*)FB_START,textmenusavepage,FB_SIZE);
+				}
 				selectedMenuItem=(TEXTMENUITEM*)selectedMenuItem->nextMenuItem;
 				changed=1;
 			}
 		}
 			
-		if ((risefall_xpad_BUTTON(TRIGGER_XPAD_KEY_A) == 1)) {
-			/*		memcpy((void*)FB_START,videosavepage,FB_SIZE);
-			free(videosavepage);
-			
-			VIDEO_CURSOR_POSX=nTempCursorResumeX;
-			VIDEO_CURSOR_POSY=nTempCursorResumeY;
-			*/
+		else if ((risefall_xpad_BUTTON(TRIGGER_XPAD_KEY_A) == 1)) {
+			memcpy((void*)FB_START,textmenusavepage,FB_SIZE);
+			free(textmenusavepage);
 			//Menu item selected - invoke function pointer.
 			if (selectedMenuItem->functionPtr!=0l) selectedMenuItem->functionPtr();
+			//Re-malloc these if the function pointer did return us to the menu.	
+			textmenusavepage = malloc(FB_SIZE);
+			memcpy(textmenusavepage,(void*)FB_START,FB_SIZE);
+			//Display the childmenu, if this menu item has one.	
 			if (selectedMenuItem->childMenu!=0l) {
 				currentMenu = (TEXTMENU*)selectedMenuItem->childMenu;
 				selectedMenuItem = currentMenu->firstMenuItem;
+				firstVisibleMenuItem = currentMenu->firstMenuItem;
 			}
-			//Should never come back but at least if we do, the menu can
-			//continue to work.
-			//Setting changed means the icon menu will redraw itself.
 			changed=1;
 		}
 		if (changed) {
-		//	BootVideoClearScreen(&jpegBackdrop, nTempCursorY, VIDEO_CURSOR_POSY+1);
 			TextMenuDraw();
 			changed=0;
 		}

@@ -173,7 +173,8 @@ int BootIconMenu(CONFIGENTRY *config,int nDrive,int nActivePartition, int nFATXP
 	
 	//Uncomment this one to test the new text menu system.
 	//It's NOT production ready.
-	/*ICON *icon5 = (ICON *)malloc(sizeof(ICON));
+	/*
+	ICON *icon5 = (ICON *)malloc(sizeof(ICON));
 	icon5->iconSlot = ICON_SOURCE_SLOT0;
 	icon5->szCaption = "Advanced";
 	extern void BootTextMenu(void);
