@@ -82,7 +82,7 @@ static double fabs(double d) {
 int conexant_calc_vga_mode(
 	xbox_av_type av_type,
 	unsigned char pll_int,
-	unsigned char **reg_ptr
+	void **reg_ptr
 ){
 	unsigned char *regs;
 	*reg_ptr = malloc(sizeof(char) * NUM_CONEXANT_REGS);
@@ -122,7 +122,7 @@ int conexant_calc_vga_mode(
 int conexant_calc_hdtv_mode(
 	xbox_hdtv_mode hdtv_mode,
 	unsigned char pll_int,
-	unsigned char **reg_ptr
+	void **reg_ptr
 ){
 	unsigned char *regs;
 	*reg_ptr = malloc(sizeof(char) * NUM_CONEXANT_REGS);
@@ -177,7 +177,11 @@ int conexant_calc_mode(xbox_video_mode * mode, struct riva_regs * riva_out)
 	unsigned int m = 0;
 	double dPllOutputFrequency;
 	xbox_tv_mode_parameter param;
-	char* regs = riva_out->encoder_regs;
+	char *regs;
+
+	riva_out->encoder_regs = malloc((sizeof(char) * NUM_CONEXANT_REGS));
+
+	regs=(unsigned char *)riva_out->encoder_regs;
 
 	if (conexant_calc_mode_params(mode, &param))
 	{
