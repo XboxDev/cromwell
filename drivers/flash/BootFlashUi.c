@@ -19,7 +19,8 @@ void DisplayFlashProgressBar(int, int, unsigned long);
 // Please keep in order by ID.
 const KNOWN_FLASH_TYPE aknownflashtypesDefault[] = {
 	{ 0x01, 0xa4, "AMD - Am29F040B",0x80000 },
-	{ 0x01, 0xad, "AMD - Am29LV800B", 0x200000 },
+	{ 0x01, 0xad, "AMD - Am29F016", 0x200000 },
+	{ 0x01, 0xda, "AMD - Am29LV800B", 0x100000 },
 	{ 0x01, 0xd5, "AMD - Am29F080B",0x100000 },
 	{ 0x04, 0xd5, "Fujitsu - MBM29F080A",0x100000 },
 	{ 0x20, 0xb0, "ST - M29F002BT",0x40000 },
