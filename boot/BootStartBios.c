@@ -232,14 +232,14 @@ int BootTryLoadConfigFATX(CONFIGENTRY *config) {
 			free(fileinfo.buffer);
 		}
 	} else {
-	//	 CloseFATXPartition(partition);
-		 return 0;
+		CloseFATXPartition(partition);
+		return 0;
 	}
 
 	// We use the INITRD_POS as temporary location for the Loading of the Kernel into intermediate Ram
 	
 	if(! LoadFATXFilefixed(partition,config->szKernel,&infokernel,(BYTE*)INITRD_POS)) {
-		//CloseFATXPartition(partition);
+		CloseFATXPartition(partition);
 		return 0;
 	} else {
 		CloseFATXPartition(partition);

@@ -663,6 +663,9 @@ int FATXRawRead(int drive, int sector, unsigned long long byte_offset, int byte_
 }
 
 void CloseFATXPartition(FATXPartition* partition) {
-	free(partition->clusterChainMap.words);
-	free(partition);
+	if(partition != NULL) {
+		free(partition->clusterChainMap.words);
+		free(partition);
+		partition = NULL;
+	}
 }
