@@ -175,9 +175,8 @@ u32 BootHddKeyGenerateEepromKeyData(
 	struct rc4_key RC4_key;
        	int version = 0; 
        	int counter;
-	int n,f;        
         
-        // Static Version change not included yet
+	// Static Version change not included yet
         
 	for (counter=9;counter<13;counter++)
 	{
@@ -196,23 +195,14 @@ u32 BootHddKeyGenerateEepromKeyData(
                 
                 // Calculate the Confirm-Hash
 		HMAC_hdd_calculation(counter, baDataHashConfirm, &baEepromDataLocalCopy[20], 8, &baEepromDataLocalCopy[28], 20, NULL);
-
-		f=0;
-		for(n=0;n<0x14;n++) {
-				if(baEepromDataLocalCopy[n]!=baDataHashConfirm[n]) f=1;
-		}
 		
-		if (f==0) { 
+		if (!memcmp(baEepromDataLocalCopy,baDataHashConfirm,0x14)) {
 			// Confirm Hash is correct  
 			// Copy actual Xbox Version to Return Value
 			version=counter;
 			// exits the loop
 			break;
-			
 		}
-		
-		       	
-	
 	}
 	
 	//copy out HDKey
