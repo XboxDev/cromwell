@@ -129,7 +129,8 @@ extern void BootResetAction ( void ) {
 	display_cpuid_update_microcode();
         // We Enable The Cache
         cache_enable();
-
+        
+        setup_ioapic();
 
         memcpy(&cromwell_config,(void*)(0x03A00000+20),4);
         memcpy(&cromwell_retryload,(void*)(0x03A00000+24),4);

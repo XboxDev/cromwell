@@ -50,6 +50,7 @@ OBJECTS-CROM += $(TOPDIR)/obj/BootFilesystemIso9660.o
 OBJECTS-CROM += $(TOPDIR)/obj/BootLibrary.o
 OBJECTS-CROM += $(TOPDIR)/obj/cputools.o
 OBJECTS-CROM += $(TOPDIR)/obj/microcode.o
+OBJECTS-CROM += $(TOPDIR)/obj/ioapic.o
 OBJECTS-CROM += $(TOPDIR)/obj/BootInterrupts.o
 OBJECTS-CROM += $(TOPDIR)/obj/fsys_reiserfs.o
 OBJECTS-CROM += $(TOPDIR)/obj/char_io.o
