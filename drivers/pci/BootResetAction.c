@@ -476,9 +476,9 @@ extern void BootResetAction ( void ) {
 #ifdef MENU
 
 	if(fMbrPresent && fSeenActive) {
-		temp = BootMenue(&kernel_config, 0,nActivePartitionIndex, nFATXPresent);
+		temp = BootMenu(&kernel_config, 0,nActivePartitionIndex, nFATXPresent);
 	} else {
-		temp = BootMenue(&kernel_config, 1,0, nFATXPresent); 
+		temp = BootMenu(&kernel_config, 1,0, nFATXPresent); 
 	}
 #endif  
  

@@ -370,7 +370,7 @@ selectinsert:
 		bCount++;
 		bCount1=bCount; if(bCount1&0x80) { bCount1=(-bCount1)-1; }
 		VIDEO_ATTR=0xff000000|(((bCount1>>1)+64)<<16)|(((bCount1>>1)+64)<<8)|0 ;
-		printk("\2Please insert CD and press A Button\n\2");
+		printk("\2Please insert CD and press Button A\n\2");
 	}						
 
 	VIDEO_ATTR=0xffffffff;
@@ -443,7 +443,6 @@ selectinsert:
 	);
  
         
-//	printk("STILL HAPPY\n");
 
 	{
 		ISO_PRIMARY_VOLUME_DESCRIPTOR * pipvd = (ISO_PRIMARY_VOLUME_DESCRIPTOR *)&ba[0];
@@ -779,7 +778,7 @@ void BootStartBiosDoIcon(ICON *icon, BYTE bOpaqueness)
 
 
 
-int BootMenue(CONFIGENTRY *config,int nDrive,int nActivePartition, int nFATXPresent){
+int BootMenu(CONFIGENTRY *config,int nDrive,int nActivePartition, int nFATXPresent){
 	
 	int old_nIcon = 0;
 	int nSelected = -1;
@@ -816,7 +815,7 @@ int BootMenue(CONFIGENTRY *config,int nDrive,int nActivePartition, int nFATXPres
 	VIDEO_CURSOR_POSY=nTempCursorY-100;
 	
 	VIDEO_ATTR=0xffc8c8c8;
-	printk("Select from Menue\n");
+	printk("Select from Menu\n");
 	VIDEO_ATTR=0xffffffff;
 	
 	BootIcons(nModeDependentOffset, nTempCursorY, nModeDependentOffset, nTempCursorY);
@@ -928,7 +927,7 @@ int BootMenue(CONFIGENTRY *config,int nDrive,int nActivePartition, int nFATXPres
 			VIDEO_CURSOR_POSX=nTempCursorResumeX;
 			VIDEO_CURSOR_POSY=nTempCursorResumeY;
 			
-        		// We return the selected Menue 
+        		// We return the selected Menu
 			return menu;			
 			
 		}
