@@ -4,8 +4,8 @@
 /////////////////////////////////
 // some typedefs to make for easy sizing
 
-typedef unsigned long ULONG;
-typedef unsigned int DWORD;
+//typedef unsigned long ULONG;
+typedef unsigned int u32;
 typedef unsigned short WORD;
 typedef unsigned char u8;
 #ifndef bool_already_defined_

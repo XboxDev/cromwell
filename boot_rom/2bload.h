@@ -55,7 +55,7 @@ static __inline void IoOutputWord(WORD wAds, WORD wValue) {
     __asm__ __volatile__ ("outw %0,%w1": :"a" (wValue), "Nd" (wAds));
 	}
 
-static __inline void IoOutputDword(WORD wAds, DWORD dwValue) {
+static __inline void IoOutputDword(WORD wAds, u32 dwValue) {
     __asm__ __volatile__ ("outl %0,%w1": :"a" (dwValue), "Nd" (wAds));
 }
 
@@ -71,8 +71,8 @@ static __inline WORD IoInputWord(WORD wAds) {
   return _v;
 }
 
-static __inline DWORD IoInputDword(WORD wAds) {
-  DWORD _v;
+static __inline u32 IoInputDword(WORD wAds) {
+  u32 _v;
   __asm__ __volatile__ ("inl %w1,%0":"=a" (_v):"Nd" (wAds));
   return _v;
 }

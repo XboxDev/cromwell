@@ -18,9 +18,10 @@
 /*------------------------------------------------------------------------*/
 /* Typedefs */
 /*------------------------------------------------------------------------*/ 
+#include "cromwell_types.h"
 
 typedef unsigned int __u32;
-typedef __u32 u32;
+//typedef __u32 u32;
 typedef unsigned short __u16;
 typedef __u16 u16;
 typedef unsigned char __u8;

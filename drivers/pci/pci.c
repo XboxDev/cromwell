@@ -12,7 +12,7 @@
 
 u8 PciReadByte(unsigned int bus, unsigned int dev, unsigned int func, unsigned int reg_off)
 {
-	DWORD base_addr = 0x80000000;
+	u32 base_addr = 0x80000000;
 	base_addr |= ((bus & 0xFF) << 16);	// bus #
 	base_addr |= ((dev & 0x1F) << 11);	// device #
 	base_addr |= ((func & 0x07) << 8);	// func #
@@ -24,7 +24,7 @@ u8 PciReadByte(unsigned int bus, unsigned int dev, unsigned int func, unsigned i
 void PciWriteByte (unsigned int bus, unsigned int dev, unsigned int func,
 		unsigned int reg_off, unsigned char byteval)
 {
-	DWORD base_addr = 0x80000000;
+	u32 base_addr = 0x80000000;
 	base_addr |= ((bus & 0xFF) << 16);	// bus #
 	base_addr |= ((dev & 0x1F) << 11);	// device #
 	base_addr |= ((func & 0x07) << 8);	// func #
@@ -36,7 +36,7 @@ void PciWriteByte (unsigned int bus, unsigned int dev, unsigned int func,
 
 WORD PciReadWord(unsigned int bus, unsigned int dev, unsigned int func, unsigned int reg_off)
 {
-	DWORD base_addr = 0x80000000;
+	u32 base_addr = 0x80000000;
 	base_addr |= ((bus & 0xFF) << 16);	// bus #
 	base_addr |= ((dev & 0x1F) << 11);	// device #
 	base_addr |= ((func & 0x07) << 8);	// func #
@@ -48,7 +48,7 @@ WORD PciReadWord(unsigned int bus, unsigned int dev, unsigned int func, unsigned
 
 void PciWriteWord(unsigned int bus, unsigned int dev, unsigned int func, unsigned int reg_off, WORD w)
 {
-	DWORD base_addr = 0x80000000;
+	u32 base_addr = 0x80000000;
 	base_addr |= ((bus & 0xFF) << 16);	// bus #
 	base_addr |= ((dev & 0x1F) << 11);	// device #
 	base_addr |= ((func & 0x07) << 8);	// func #
@@ -58,9 +58,9 @@ void PciWriteWord(unsigned int bus, unsigned int dev, unsigned int func, unsigne
 }
 
 
-DWORD PciReadDword(unsigned int bus, unsigned int dev, unsigned int func, unsigned int reg_off)
+u32 PciReadDword(unsigned int bus, unsigned int dev, unsigned int func, unsigned int reg_off)
 {
-	DWORD base_addr = 0x80000000;
+	u32 base_addr = 0x80000000;
 	base_addr |= ((bus & 0xFF) << 16);	// bus #
 	base_addr |= ((dev & 0x1F) << 11);	// device #
 	base_addr |= ((func & 0x07) << 8);	// func #
@@ -72,10 +72,10 @@ DWORD PciReadDword(unsigned int bus, unsigned int dev, unsigned int func, unsign
 }
 
 
-DWORD PciWriteDword(unsigned int bus, unsigned int dev, unsigned int func, unsigned int reg_off, unsigned int dw) 
+u32 PciWriteDword(unsigned int bus, unsigned int dev, unsigned int func, unsigned int reg_off, unsigned int dw) 
 {
 		
-	DWORD base_addr = 0x80000000;
+	u32 base_addr = 0x80000000;
 	base_addr |= ((bus & 0xFF) << 16);	// bus #
 	base_addr |= ((dev & 0x1F) << 11);	// device #
 	base_addr |= ((func & 0x07) << 8);	// func #
@@ -159,7 +159,7 @@ void rtc_set_checksum(int range_start, int range_end, int cks_loc)
 
 void BootAGPBUSInitialization(void)
 {
-	DWORD temp;
+	u32 temp;
 	PciWriteDword(BUS_0, DEV_1, FUNC_0, 0x54,   PciReadDword(BUS_0, DEV_1, FUNC_0, 0x54) | 0x88000000 );
 	
 	PciWriteDword(BUS_0, DEV_0, FUNC_0, 0x64,   (PciReadDword(BUS_0, DEV_0, FUNC_0, 0x64))| 0x88000000 );

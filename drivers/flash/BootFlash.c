@@ -149,9 +149,9 @@ bool BootFlashGetDescriptor( OBJECT_FLASH *pof, KNOWN_FLASH_TYPE * pkft )
  
 bool BootFlashEraseMinimalRegion( OBJECT_FLASH *pof )
 {
-	DWORD dw=pof->m_dwStartOffset;
-	DWORD dwLen=pof->m_dwLengthUsedArea;
-	DWORD dwLastEraseAddress=0xffffffff;
+	u32 dw=pof->m_dwStartOffset;
+	u32 dwLen=pof->m_dwLengthUsedArea;
+	u32 dwLastEraseAddress=0xffffffff;
 	int nCountEraseRetryIn4KBlock=MAX_ERASE_RETRIES_IN_4KBLOCK_BEFORE_FAILING;
 
 	pof->m_szAdditionalErrorInfo[0]='\0';
@@ -210,7 +210,7 @@ bool BootFlashEraseMinimalRegion( OBJECT_FLASH *pof )
 					return false;
 				}
 			} else { // more common 29xxx style
-				DWORD dwCountTries=0;
+				u32 dwCountTries=0;
 
 				pof->m_pbMemoryMappedStartAddress[0x5555]=0xaa;
 				pof->m_pbMemoryMappedStartAddress[0x2aaa]=0x55;
@@ -304,10 +304,10 @@ bool BootFlashEraseMinimalRegion( OBJECT_FLASH *pof )
 
 bool BootFlashProgram( OBJECT_FLASH *pof, u8 *pba )
 {
-	DWORD dw=pof->m_dwStartOffset;
-	DWORD dwLen=pof->m_dwLengthUsedArea;
-	DWORD dwSrc=0;
-	DWORD dwLastProgramAddress=0xffffffff;
+	u32 dw=pof->m_dwStartOffset;
+	u32 dwLen=pof->m_dwLengthUsedArea;
+	u32 dwSrc=0;
+	u32 dwLastProgramAddress=0xffffffff;
 	int nCountProgramRetries=4;
 
 	pof->m_szAdditionalErrorInfo[0]='\0';
@@ -327,7 +327,7 @@ bool BootFlashProgram( OBJECT_FLASH *pof, u8 *pba )
 				nCountProgramRetries--;
 				if(nCountProgramRetries==0) {
 					if(pof->m_pcallbackFlash!=NULL) {
-						(pof->m_pcallbackFlash)(pof, EE_PROGRAM_ERROR, dw, (((DWORD)pba[dwSrc])<<8) |pof->m_pbMemoryMappedStartAddress[dw] );
+						(pof->m_pcallbackFlash)(pof, EE_PROGRAM_ERROR, dw, (((u32)pba[dwSrc])<<8) |pof->m_pbMemoryMappedStartAddress[dw] );
 						(pof->m_pcallbackFlash)(pof, EE_PROGRAM_END, 0, 0);
 					}
 					sprintf(pof->m_szAdditionalErrorInfo, "Program failed for byte at +0x%x; wrote 0x%02X, read 0x%02X", dw, pba[dwSrc], pof->m_pbMemoryMappedStartAddress[dw]);
@@ -341,7 +341,7 @@ bool BootFlashProgram( OBJECT_FLASH *pof, u8 *pba )
 
 			if(pof->m_fDetectedUsing28xxxConventions) {
 				u8 b=0x0;
-				DWORD dwTimeToLive=0xfffff;  // 1M times around, a few mS
+				u32 dwTimeToLive=0xfffff;  // 1M times around, a few mS
 				int nCountMinSpin=2; // force wait for this long, suspect busy is not coming up immediately
 				pof->m_pbMemoryMappedStartAddress[dw]=0x40;
 				pof->m_pbMemoryMappedStartAddress[dw]=pba[dwSrc]; // perform programming action
@@ -353,7 +353,7 @@ bool BootFlashProgram( OBJECT_FLASH *pof, u8 *pba )
 				pof->m_pbMemoryMappedStartAddress[dw]=0xff;
 				if((b&0x7e)||(!dwTimeToLive)) { // uh-oh something wrong
 					if(pof->m_pcallbackFlash!=NULL) {
-						(pof->m_pcallbackFlash)(pof, EE_PROGRAM_ERROR, dw-pof->m_dwStartOffset, (((DWORD)pba[dwSrc])<<8) | pof->m_pbMemoryMappedStartAddress[dw]);
+						(pof->m_pcallbackFlash)(pof, EE_PROGRAM_ERROR, dw-pof->m_dwStartOffset, (((u32)pba[dwSrc])<<8) | pof->m_pbMemoryMappedStartAddress[dw]);
 						(pof->m_pcallbackFlash)(pof, EE_PROGRAM_END, 0, 0);
 					}
 					if(dwTimeToLive) {
@@ -403,7 +403,7 @@ bool BootFlashProgram( OBJECT_FLASH *pof, u8 *pba )
 	while(dwLen) {
 
 		if(pof->m_pbMemoryMappedStartAddress[dw]!=pba[dwSrc]) { // verify error
-			if(pof->m_pcallbackFlash!=NULL) if(!(pof->m_pcallbackFlash)(pof, EE_VERIFY_ERROR, dw, (((DWORD)pba[dwSrc])<<8) |pof->m_pbMemoryMappedStartAddress[dw])) return false;
+			if(pof->m_pcallbackFlash!=NULL) if(!(pof->m_pcallbackFlash)(pof, EE_VERIFY_ERROR, dw, (((u32)pba[dwSrc])<<8) |pof->m_pbMemoryMappedStartAddress[dw])) return false;
 			if(pof->m_pcallbackFlash!=NULL) if(!(pof->m_pcallbackFlash)(pof, EE_VERIFY_END, 0, 0)) return false;
 			return false;
 		}

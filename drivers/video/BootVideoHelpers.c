@@ -67,7 +67,7 @@ unsigned int BootVideoFontWidthToBitmapBytecount(unsigned int uiWidth)
 
 void BootVideoJpegBlitBlend(
 	u8 *pDst,
-	DWORD dst_width,
+	u32 dst_width,
 	JPEG * pJpeg,
 	u8 *pFront,
 	RGBA m_rgbaTransparent,
@@ -79,7 +79,7 @@ void BootVideoJpegBlitBlend(
 
 	int nTransAsByte=m_rgbaTransparent>>24;
 	int nBackTransAsByte=255-nTransAsByte;
-	DWORD dw;
+	u32 dw;
 
 	m_rgbaTransparent|=0xff000000;
 	m_rgbaTransparent&=0xffc0c0c0;
@@ -88,7 +88,7 @@ void BootVideoJpegBlitBlend(
 
 		for(n=0;n<x;n++) {
 			
-			dw = ((*((DWORD *)pFront))|0xff000000)&0xffc0c0c0;
+			dw = ((*((u32 *)pFront))|0xff000000)&0xffc0c0c0;
 
 			if(dw!=m_rgbaTransparent) {
 				pDst[2]=((pFront[0]*nTransAsByte)+(pBack[0]*nBackTransAsByte))>>8;
@@ -110,8 +110,8 @@ void BootVideoJpegBlitBlend(
 // RGBA .. full-on RED is opaque --> 0xFF0000FF <-- red
 
 int BootVideoOverlayCharacter(
-	DWORD * pdwaTopLeftDestination,
-	DWORD m_dwCountBytesPerLineDestination,
+	u32 * pdwaTopLeftDestination,
+	u32 m_dwCountBytesPerLineDestination,
 	RGBA rgbaColourAndOpaqueness,
 	u8 bCharacter,
 	bool fDouble
@@ -127,8 +127,8 @@ int BootVideoOverlayCharacter(
 		// we only have glyphs for 0x21 through 0x7e inclusive
 
 	if(bCharacter=='\t') {
-		DWORD dw=((DWORD)pdwaTopLeftDestination) % m_dwCountBytesPerLineDestination;
-		DWORD dw1=((dw+1)%(32<<2));  // distance from previous boundary
+		u32 dw=((u32)pdwaTopLeftDestination) % m_dwCountBytesPerLineDestination;
+		u32 dw1=((dw+1)%(32<<2));  // distance from previous boundary
 		return ((32<<2)-dw1)>>2;
 	}
 	nSpace=WIDTH_SPACE_PIXELS;
@@ -187,7 +187,7 @@ int BootVideoOverlayCharacter(
 // usable for direct write or for prebuffered write
 // returns width of string in pixels
 
-int BootVideoOverlayString(DWORD * pdwaTopLeftDestination, DWORD m_dwCountBytesPerLineDestination, RGBA rgbaOpaqueness, const char * szString)
+int BootVideoOverlayString(u32 * pdwaTopLeftDestination, u32 m_dwCountBytesPerLineDestination, RGBA rgbaOpaqueness, const char * szString)
 {
 	unsigned int uiWidth=0;
 	bool fDouble=0;
@@ -261,7 +261,7 @@ void BootVideoClearScreen(JPEG *pJpeg, int nStartLine, int nEndLine)
 
 	{
 		if(pJpeg->pData!=NULL) {
-			volatile DWORD *pdw=((DWORD *)FB_START)+vmode.width*nStartLine;
+			volatile u32 *pdw=((u32 *)FB_START)+vmode.width*nStartLine;
 			int n1=pJpeg->bpp * pJpeg->width * nStartLine;
 			u8 *pbJpegBitmapAdjustedDatum=pJpeg->pBackdrop;
 
@@ -276,17 +276,17 @@ void BootVideoClearScreen(JPEG *pJpeg, int nStartLine, int nEndLine)
 					n1+=pJpeg->bpp;
 				}
 				n1+=pJpeg->bpp * (pJpeg->width - vmode.width);
-				pdw+=vmode.width; // adding DWORD footprints
+				pdw+=vmode.width; // adding u32 footprints
 			}
 		}
 	}
 }
 
-int VideoDumpAddressAndData(DWORD dwAds, const u8 * baData, DWORD dwCountBytesUsable) { // returns bytes used
+int VideoDumpAddressAndData(u32 dwAds, const u8 * baData, u32 dwCountBytesUsable) { // returns bytes used
 	int nCountUsed=0;
 	while(dwCountBytesUsable) {
 
-		DWORD dw=(dwAds & 0xfffffff0);
+		u32 dw=(dwAds & 0xfffffff0);
 		char szAscii[17];
 		char sz[256];
 		int n=sprintf(sz, "%08X: ", dw);
@@ -327,7 +327,7 @@ void BootVideoChunkedPrint(const char * szBuffer) {
 	{
 		if(szBuffer[n]=='\n') {
 			BootVideoOverlayString(
-				(DWORD *)((FB_START) + VIDEO_CURSOR_POSY * (vmode.width*4) + VIDEO_CURSOR_POSX),
+				(u32 *)((FB_START) + VIDEO_CURSOR_POSY * (vmode.width*4) + VIDEO_CURSOR_POSX),
 				vmode.width*4, VIDEO_ATTR, &szBuffer[nDone]
 			);
 			nDone=n+1;
@@ -339,7 +339,7 @@ void BootVideoChunkedPrint(const char * szBuffer) {
 	if (n != nDone)
 	{
 		VIDEO_CURSOR_POSX+=BootVideoOverlayString(
-			(DWORD *)((FB_START) + VIDEO_CURSOR_POSY * (vmode.width*4) + VIDEO_CURSOR_POSX),
+			(u32 *)((FB_START) + VIDEO_CURSOR_POSY * (vmode.width*4) + VIDEO_CURSOR_POSX),
 			vmode.width*4, VIDEO_ATTR, &szBuffer[nDone]
 		)<<2;
 		if (VIDEO_CURSOR_POSX > (vmode.width - 

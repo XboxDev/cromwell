@@ -52,7 +52,7 @@
 #define HEAD 0x2000
 
 #define CARD8 u8
-#define CARD32 DWORD
+#define CARD32 u32
 
 #define MMIO_IN8(base, offset) \
         *(volatile CARD8 *)(((CARD8*)(base)) + (offset))
@@ -143,6 +143,6 @@ static inline void unlockCrtNv (RIVA_HW_INST *riva, int head);
 static inline void lockCrtNv (RIVA_HW_INST *riva, int head);
 static void writeCrtNv (RIVA_HW_INST *riva, int head, int reg, u8 val);
 static void NVVertIntrEnabled (RIVA_HW_INST *riva, int head);
-static void NVSetFBStart (RIVA_HW_INST *riva, int head, DWORD dwFBStart);
+static void NVSetFBStart (RIVA_HW_INST *riva, int head, u32 dwFBStart);
 
 #endif

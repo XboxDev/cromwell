@@ -54,16 +54,16 @@ static inline double max (double a, double b)
 extern volatile CURRENT_VIDEO_MODE_DETAILS vmode;
 unsigned int video_encoder;
 
-volatile DWORD VIDEO_CURSOR_POSX;
-volatile DWORD VIDEO_CURSOR_POSY;
-volatile DWORD VIDEO_ATTR;
-volatile DWORD VIDEO_LUMASCALING;
-volatile DWORD VIDEO_RSCALING;
-volatile DWORD VIDEO_BSCALING;
-volatile DWORD BIOS_TICK_COUNT;
-volatile DWORD VIDEO_VSYNC_POSITION;
-volatile DWORD VIDEO_VSYNC_DIR;
-volatile DWORD DVD_TRAY_STATE;
+volatile u32 VIDEO_CURSOR_POSX;
+volatile u32 VIDEO_CURSOR_POSY;
+volatile u32 VIDEO_ATTR;
+volatile u32 VIDEO_LUMASCALING;
+volatile u32 VIDEO_RSCALING;
+volatile u32 VIDEO_BSCALING;
+volatile u32 BIOS_TICK_COUNT;
+volatile u32 VIDEO_VSYNC_POSITION;
+volatile u32 VIDEO_VSYNC_DIR;
+volatile u32 DVD_TRAY_STATE;
 
 u8 VIDEO_AV_MODE ;
 
@@ -162,7 +162,7 @@ static __inline void IoOutputWord(WORD wAds, WORD wValue) {
     __asm__ __volatile__ ("outw %0,%w1": :"a" (wValue), "Nd" (wAds));
 	}
 
-static __inline void IoOutputDword(WORD wAds, DWORD dwValue) {
+static __inline void IoOutputDword(WORD wAds, u32 dwValue) {
 //	__asm__  ("	 out	%%eax,%%dx	" : : "edx" (dwAds), "ax" (wValue)  );
     __asm__ __volatile__ ("outl %0,%w1": :"a" (dwValue), "Nd" (wAds));
 }
@@ -182,8 +182,8 @@ static __inline WORD IoInputWord(WORD wAds) {
   return _v;
 }
 
-static __inline DWORD IoInputDword(WORD wAds) {
-  DWORD _v;
+static __inline u32 IoInputDword(WORD wAds) {
+  u32 _v;
 
   __asm__ __volatile__ ("inl %w1,%0":"=a" (_v):"Nd" (wAds));
   return _v;
@@ -292,8 +292,8 @@ extern void	WritePCIBlock(unsigned int bus, unsigned int dev, unsigned int func,
 void PciWriteByte (unsigned int bus, unsigned int dev, unsigned int func,
 		unsigned int reg_off, unsigned char byteval);
 u8 PciReadByte(unsigned int bus, unsigned int dev, unsigned int func, unsigned int reg_off);
-DWORD PciWriteDword(unsigned int bus, unsigned int dev, unsigned int func, unsigned int reg_off, DWORD dw);
-DWORD PciReadDword(unsigned int bus, unsigned int dev, unsigned int func, unsigned int reg_off);
+u32 PciWriteDword(unsigned int bus, unsigned int dev, unsigned int func, unsigned int reg_off, u32 dw);
+u32 PciReadDword(unsigned int bus, unsigned int dev, unsigned int func, unsigned int reg_off);
 
 ///////// BootPerformPicChallengeResponseAction.c
 
@@ -325,8 +325,8 @@ void USBGetEvents(void);
 extern struct xpad_data XPAD_current[4];
 extern struct xpad_data XPAD_last[4];
 
-extern void wait_ms(DWORD ticks);
-extern void wait_us(DWORD ticks);
+extern void wait_ms(u32 ticks);
+extern void wait_us(u32 ticks);
 extern void wait_smalldelay(void);
 
 
@@ -343,7 +343,7 @@ void chrreplace(char *string, char search, char ch);
 int tolower(int ch);
 int isspace (int c);
 
-void MemoryManagementInitialization(void * pvStartAddress, DWORD dwTotalMemoryAllocLength);
+void MemoryManagementInitialization(void * pvStartAddress, u32 dwTotalMemoryAllocLength);
 void * malloc(size_t size);
 void free(void *);
 

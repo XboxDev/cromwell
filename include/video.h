@@ -12,15 +12,15 @@ typedef struct {
 	int bpp;
 } JPEG;
 
-int BootVideoOverlayString(DWORD * pdwaTopLeftDestination, DWORD m_dwCountBytesPerLineDestination, RGBA rgbaOpaqueness, const char * szString);
+int BootVideoOverlayString(u32 * pdwaTopLeftDestination, u32 m_dwCountBytesPerLineDestination, RGBA rgbaOpaqueness, const char * szString);
 void BootVideoChunkedPrint(const char * szBuffer);
-int VideoDumpAddressAndData(DWORD dwAds, const u8 * baData, DWORD dwCountBytesUsable);
+int VideoDumpAddressAndData(u32 dwAds, const u8 * baData, u32 dwCountBytesUsable);
 unsigned int BootVideoGetStringTotalWidth(const char * szc);
 void BootVideoClearScreen(JPEG * pJpeg, int nStartLine, int nEndLine);
 
 void BootVideoJpegBlitBlend(
 	u8 *pDst,
-	DWORD dst_width,
+	u32 dst_width,
 	JPEG * pJpeg,
 	u8 *pFront,
 	RGBA m_rgbaTransparent,

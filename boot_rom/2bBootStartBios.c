@@ -18,10 +18,10 @@
 
 extern int decompress_kernel(char*out, char *data, int len);
 
-DWORD PciWriteDword(unsigned int bus, unsigned int dev, unsigned int func, unsigned int reg_off, unsigned int dw) 
+u32 PciWriteDword(unsigned int bus, unsigned int dev, unsigned int func, unsigned int reg_off, unsigned int dw) 
 {
 		
-	DWORD base_addr = 0x80000000;
+	u32 base_addr = 0x80000000;
 	base_addr |= ((bus & 0xFF) << 16);	// bus #
 	base_addr |= ((dev & 0x1F) << 11);	// device #
 	base_addr |= ((func & 0x07) << 8);	// func #
@@ -33,9 +33,9 @@ DWORD PciWriteDword(unsigned int bus, unsigned int dev, unsigned int func, unsig
 	return 0;    
 }
 
-DWORD PciReadDword(unsigned int bus, unsigned int dev, unsigned int func, unsigned int reg_off)
+u32 PciReadDword(unsigned int bus, unsigned int dev, unsigned int func, unsigned int reg_off)
 {
-	DWORD base_addr = 0x80000000;
+	u32 base_addr = 0x80000000;
 	base_addr |= ((bus & 0xFF) << 16);	// bus #
 	base_addr |= ((dev & 0x1F) << 11);	// device #
 	base_addr |= ((func & 0x07) << 8);	// func #
@@ -48,7 +48,7 @@ DWORD PciReadDword(unsigned int bus, unsigned int dev, unsigned int func, unsign
 
 void BootAGPBUSInitialization(void)
 {
-	DWORD temp;
+	u32 temp;
 	PciWriteDword(BUS_0, DEV_1, FUNC_0, 0x54,   PciReadDword(BUS_0, DEV_1, FUNC_0, 0x54) | 0x88000000 );
 	
 	PciWriteDword(BUS_0, DEV_0, FUNC_0, 0x64,   (PciReadDword(BUS_0, DEV_0, FUNC_0, 0x64))| 0x88000000 );

@@ -85,7 +85,7 @@ static void IconMenuDraw(int nXOffset, int nYOffset) {
 			vmode.width, // dest bytes per line
 			&jpegBackdrop, // source jpeg object
 			(u8 *)(jpegBackdrop.pData+(iconPtr->iconSlot * jpegBackdrop.bpp)),
-			0xff00ff|(((DWORD)opaqueness)<<24),
+			0xff00ff|(((u32)opaqueness)<<24),
 			(u8 *)(jpegBackdrop.pBackdrop + ((jpegBackdrop.width * (nYOffset-74)) + nXOffset+(112*(iconcount+1))) * jpegBackdrop.bpp),
 			ICON_WIDTH, ICON_HEIGHT
 		);
@@ -96,8 +96,8 @@ static void IconMenuDraw(int nXOffset, int nYOffset) {
 void IconMenu(void) {
         unsigned char *videosavepage;
         
-        DWORD COUNT_start;
-        DWORD temp=1;
+        u32 COUNT_start;
+        u32 temp=1;
 	ICON *iconPtr=0l;
 
 	extern int nTempCursorMbrX, nTempCursorMbrY; 
@@ -172,7 +172,7 @@ void IconMenu(void) {
 		}
 		
 		if ((risefall_xpad_BUTTON(TRIGGER_XPAD_KEY_A) == 1) || risefall_xpad_BUTTON(TRIGGER_XPAD_KEY_START) == 1 || 
-				(DWORD)(temp>(0x369E99*BOOT_TIMEWAIT))) {
+				(u32)(temp>(0x369E99*BOOT_TIMEWAIT))) {
 			memcpy((void*)FB_START,videosavepage,FB_SIZE);
 			free(videosavepage);
 			

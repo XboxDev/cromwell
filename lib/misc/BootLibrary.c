@@ -224,7 +224,7 @@ int MemoryManagerGetFree(void) {
 		
 }
 
-void MemoryManagementInitialization(void * pvStartAddress, DWORD dwTotalMemoryAllocLength)
+void MemoryManagementInitialization(void * pvStartAddress, u32 dwTotalMemoryAllocLength)
 {
 	unsigned char *mem = pvStartAddress;
 	//if (dwTotalMemoryAllocLength!=0x1000000) return 1;

@@ -15,15 +15,15 @@ typedef struct {
 		// fill on entry
 	int m_nVideoModeIndex; // fill on entry to BootVgaInitializationKernel(), eg, VIDEO_MODE_800x600
 	u8 m_fForceEncoderLumaAndChromaToZeroInitially; // fill on entry to BootVgaInitializationKernel(), 0=mode change visible immediately, !0=initially forced to black raster
-	DWORD m_dwFrameBufferStart; // frame buffer start address, set to zero to use default
+	u32 m_dwFrameBufferStart; // frame buffer start address, set to zero to use default
 	u8 * volatile m_pbBaseAddressVideo; // base address of video, usually 0xfd000000
 		// filled on exit
-	DWORD width; // everything else filled by BootVgaInitializationKernel() on return
-	DWORD height;
-	DWORD xmargin;
-	DWORD ymargin;
+	u32 width; // everything else filled by BootVgaInitializationKernel() on return
+	u32 height;
+	u32 xmargin;
+	u32 ymargin;
 	u8 m_bAvPack;
-	DWORD m_dwVideoFadeupTimer;
+	u32 m_dwVideoFadeupTimer;
 	double hoc;
 	double voc;
 	u8 m_bBPP;

@@ -23,7 +23,7 @@
 
 
 static int nRet;
-static DWORD dwKernelSize= 0, dwInitrdSize = 0;
+static u32 dwKernelSize= 0, dwInitrdSize = 0;
 
 
 int ExittoLinux(CONFIGENTRY *config);
@@ -55,7 +55,7 @@ void BootPrintConfig(CONFIGENTRY *config) {
 }
 
 
-void memPlaceKernel(const u8* kernelOrg, DWORD kernelSize)
+void memPlaceKernel(const u8* kernelOrg, u32 kernelSize)
 {
 	unsigned int nSizeHeader=((*(kernelOrg + 0x01f1))+1)*512;
 	memcpy((u8 *)KERNEL_SETUP, kernelOrg, nSizeHeader);
@@ -66,7 +66,7 @@ void memPlaceKernel(const u8* kernelOrg, DWORD kernelSize)
 
 // if fJustTestingForPossible is true, returns 0 if this kind of boot not possible, 1 if it is worth trying
 int BootLoadConfigNative(int nActivePartition, CONFIGENTRY *config, bool fJustTestingForPossible) {
-	DWORD dwConfigSize=0;
+	u32 dwConfigSize=0;
 	char *szGrub;
 	u8* tempBuf;
         
@@ -283,11 +283,11 @@ int BootLoadConfigFATX(CONFIGENTRY *config) {
 
 int BootLoadConfigCD(int cdromId, CONFIGENTRY *config) {
 
-	DWORD dwConfigSize=0, dw;
+	u32 dwConfigSize=0, dw;
 	int n;
 	int cdPresent=0;
-	DWORD dwY=VIDEO_CURSOR_POSY;
-	DWORD dwX=VIDEO_CURSOR_POSX;
+	u32 dwY=VIDEO_CURSOR_POSY;
+	u32 dwX=VIDEO_CURSOR_POSX;
 	u8* tempBuf;
 
 	memset((u8 *)KERNEL_SETUP,0,4096);
@@ -385,7 +385,7 @@ int BootLoadConfigCD(int cdromId, CONFIGENTRY *config) {
 #ifdef FLASH 
 int BootLoadFlashCD(int cdromId) {
 	
-	DWORD dwConfigSize=0, dw;
+	u32 dwConfigSize=0, dw;
 	int n;
 	int cdPresent=0;
 	u8* tempBuf;
@@ -454,7 +454,7 @@ int BootLoadFlashCD(int cdromId) {
 	SHA1Input(&context,(u8 *)KERNEL_PM_CODE,dwConfigSize);
 	SHA1Result(&context,SHA1_result);
 	memcpy(checksum,SHA1_result,20);
-	printk("Result code: %d\n", BootReflashAndReset((u8*) KERNEL_PM_CODE, (DWORD) 0, (DWORD) dwConfigSize));
+	printk("Result code: %d\n", BootReflashAndReset((u8*) KERNEL_PM_CODE, (u32) 0, (u32) dwConfigSize));
 	SHA1Reset(&context);
 	SHA1Input(&context,(void *)LPCFlashadress,dwConfigSize);
 	SHA1Result(&context,SHA1_result);
@@ -464,7 +464,7 @@ int BootLoadFlashCD(int cdromId) {
 		I2CRebootSlow();	
 	} else {
 		printk("Checksum in Flash not matching - MISTAKE - Reflashing!\n");
-		printk("Result code: %d\n", BootReflashAndReset((u8*) KERNEL_PM_CODE, (DWORD) 0, (DWORD) dwConfigSize));
+		printk("Result code: %d\n", BootReflashAndReset((u8*) KERNEL_PM_CODE, (u32) 0, (u32) dwConfigSize));
 	}
 }
 #endif //Flash

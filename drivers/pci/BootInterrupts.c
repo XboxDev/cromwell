@@ -63,49 +63,49 @@ extern void IntHandlerException10(void);
 
 typedef struct {
 	u8 m_bInterruptCpu;
-	DWORD m_dwpVector;
+	u32 m_dwpVector;
 } ISR_PREP;
 
 const ISR_PREP isrprep[] = {
-	{ 0x00, (DWORD)IntHandlerException0 },
-	{ 0x01, (DWORD)IntHandlerException1 },
-	{ 0x02, (DWORD)IntHandlerException2 },
-	{ 0x03, (DWORD)IntHandlerException3 },
-	{ 0x04, (DWORD)IntHandlerException4 },
-	{ 0x05, (DWORD)IntHandlerException5 },
-	{ 0x06, (DWORD)IntHandlerException6 },
-	{ 0x07, (DWORD)IntHandlerException7 },
-	{ 0x08, (DWORD)IntHandlerException8 },
-	{ 0x09, (DWORD)IntHandlerException9 },
-	{ 0x0a, (DWORD)IntHandlerExceptionA },
-	{ 0x0b, (DWORD)IntHandlerExceptionB },
-	{ 0x0c, (DWORD)IntHandlerExceptionC },
-	{ 0x0d, (DWORD)IntHandlerExceptionD },
-	{ 0x0e, (DWORD)IntHandlerExceptionE },
-	{ 0x0f, (DWORD)IntHandlerExceptionF },
-	{ 0x10, (DWORD)IntHandlerException10 },
+	{ 0x00, (u32)IntHandlerException0 },
+	{ 0x01, (u32)IntHandlerException1 },
+	{ 0x02, (u32)IntHandlerException2 },
+	{ 0x03, (u32)IntHandlerException3 },
+	{ 0x04, (u32)IntHandlerException4 },
+	{ 0x05, (u32)IntHandlerException5 },
+	{ 0x06, (u32)IntHandlerException6 },
+	{ 0x07, (u32)IntHandlerException7 },
+	{ 0x08, (u32)IntHandlerException8 },
+	{ 0x09, (u32)IntHandlerException9 },
+	{ 0x0a, (u32)IntHandlerExceptionA },
+	{ 0x0b, (u32)IntHandlerExceptionB },
+	{ 0x0c, (u32)IntHandlerExceptionC },
+	{ 0x0d, (u32)IntHandlerExceptionD },
+	{ 0x0e, (u32)IntHandlerExceptionE },
+	{ 0x0f, (u32)IntHandlerExceptionF },
+	{ 0x10, (u32)IntHandlerException10 },
 
 			// interrupts from PIC1
 
-	{ 0x20, (DWORD)IntHandlerTimer0 },
-	{ 0x21, (DWORD)IntHandler1 },
-	{ 0x22, (DWORD)IntHandler2 },
-	{ 0x23, (DWORD)IntHandler3 },
-	{ 0x24, (DWORD)IntHandler4 },
-	{ 0x25, (DWORD)IntHandler5 },
-	{ 0x26, (DWORD)IntHandler6 },
-	{ 0x27, (DWORD)IntHandler7 },
+	{ 0x20, (u32)IntHandlerTimer0 },
+	{ 0x21, (u32)IntHandler1 },
+	{ 0x22, (u32)IntHandler2 },
+	{ 0x23, (u32)IntHandler3 },
+	{ 0x24, (u32)IntHandler4 },
+	{ 0x25, (u32)IntHandler5 },
+	{ 0x26, (u32)IntHandler6 },
+	{ 0x27, (u32)IntHandler7 },
 
 			// interrupts from PIC 2
 
-	{ 0x70, (DWORD)IntHandler8 },
-	{ 0x71, (DWORD)IntHandler9 },
-	{ 0x72, (DWORD)IntHandler10 },
-	{ 0x73, (DWORD)IntHandlerI2C },
-	{ 0x74, (DWORD)IntHandlerSmc },
-	{ 0x75, (DWORD)IntHandler13 },
-	{ 0x76, (DWORD)IntHandlerIde },
-	{ 0x77, (DWORD)IntHandler15 },
+	{ 0x70, (u32)IntHandler8 },
+	{ 0x71, (u32)IntHandler9 },
+	{ 0x72, (u32)IntHandler10 },
+	{ 0x73, (u32)IntHandlerI2C },
+	{ 0x74, (u32)IntHandlerSmc },
+	{ 0x75, (u32)IntHandler13 },
+	{ 0x76, (u32)IntHandlerIde },
+	{ 0x77, (u32)IntHandler15 },
 
 	{ 0, 0 }
 };
@@ -116,7 +116,7 @@ void wait_smalldelay(void) {
 	wait_us(80);
 }
 
-void wait_us(DWORD ticks) {
+void wait_us(u32 ticks) {
         
 	/*
 	  	32 Bit range = 1200 sec ! => 20 min
@@ -125,15 +125,15 @@ void wait_us(DWORD ticks) {
 					
 	*/
 	
-	DWORD COUNT_start;
-	DWORD temp;
-	DWORD COUNT_TO;
-	DWORD HH;
+	u32 COUNT_start;
+	u32 temp;
+	u32 COUNT_TO;
+	u32 HH;
 	
 	// Maximum Input range
 	if (ticks>(1200*1000)) ticks = 1200*1000;
 	
-	COUNT_TO = (DWORD) ((float)(ticks*3.579545));
+	COUNT_TO = (u32) ((float)(ticks*3.579545));
 	COUNT_start = IoInputDword(0x8008);	
 
 	while(1) {
@@ -149,7 +149,7 @@ void wait_us(DWORD ticks) {
 
 }
 
-void wait_ms(DWORD ticks) {
+void wait_ms(u32 ticks) {
         
 	/*
 	  	32 Bit range = 1200 sec ! => 20 min
@@ -158,15 +158,15 @@ void wait_ms(DWORD ticks) {
 					
 	*/
 	
-	DWORD COUNT_start;
-	DWORD temp;
-	DWORD COUNT_TO;
-	DWORD HH;
+	u32 COUNT_start;
+	u32 temp;
+	u32 COUNT_TO;
+	u32 HH;
 	
 	// Maximum Input range
 	if (ticks>(1200*1000)) ticks = 1200*1000;
 	
-	COUNT_TO = (DWORD) ((float)(ticks*3579.545));
+	COUNT_TO = (u32) ((float)(ticks*3579.545));
 	COUNT_start = IoInputDword(0x8008);	
 
 	while(1) {
@@ -208,11 +208,11 @@ void BootInterruptsWriteIdt() {
 		ptspmi[n].m_wType=0x8e00;  // interrupt gate, 32-bit
 		if(n==isrprep[n1].m_bInterruptCpu) {  // is it next on our prep list?  If so, stick it in
 			ptspmi[n].m_wHandlerHighAddressLow16=(WORD)isrprep[n1].m_dwpVector;
-			ptspmi[n].m_wHandlerLinearAddressHigh16=(WORD)(((DWORD)isrprep[n1].m_dwpVector)>>16);
+			ptspmi[n].m_wHandlerLinearAddressHigh16=(WORD)(((u32)isrprep[n1].m_dwpVector)>>16);
 			n1++;
 		} else { // otherwise default handler (pretty useless, but will catch it)
 			ptspmi[n].m_wHandlerHighAddressLow16=(WORD)IntHandlerUnused;
-			ptspmi[n].m_wHandlerLinearAddressHigh16=(WORD)(((DWORD)IntHandlerUnused)>>16);
+			ptspmi[n].m_wHandlerLinearAddressHigh16=(WORD)(((u32)IntHandlerUnused)>>16);
 		}
 	}
 
@@ -416,7 +416,7 @@ void IntHandler2C(void)
 
 void IntHandler3VsyncC(void)  // video VSYNC
 {
-	*((volatile DWORD *)0xfd600100)=0x1;  // clear VSYNC int
+	*((volatile u32 *)0xfd600100)=0x1;  // clear VSYNC int
 } 
 
 
@@ -473,10 +473,10 @@ void IntHandlerException3C(void) {	bprintf("CPU Exc: Breakpoint\n");	while(1) ; 
 void IntHandlerException4C(void) {	bprintf("CPU Exc: Overflow Trap\n");	while(1) ; }
 void IntHandlerException5C(void) {	bprintf("CPU Exc: BOUND exceeded\n");	while(1) ; }
 void IntHandlerException6C(void) {
-	DWORD dwEbp=0;
+	u32 dwEbp=0;
 	bprintf("CPU Exc: Invalid Opcode\n");
 		__asm__ __volatile__ ( " mov %%esp, %%eax\n " : "=a" (dwEbp) );
-	bprintf("   %08lX:%08lX\n", *((volatile DWORD *)(dwEbp+0x48)), *((volatile DWORD *)(dwEbp+0x44)));
+	bprintf("   %08lX:%08lX\n", *((volatile u32 *)(dwEbp+0x48)), *((volatile u32 *)(dwEbp+0x44)));
 	while(1) ;
 }
 //void IntHandlerException7C(void) {	bprintf("CPU Exc: Coprocessor Absent\n");	while(1) ; }

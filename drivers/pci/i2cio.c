@@ -14,7 +14,7 @@
 	ReadfromSMBus() by Lehner Franz (franz@caos.at)
 */
 
-int WriteToSMBus(u8 Address,u8 bRegister,u8 Size,DWORD Data_to_smbus)
+int WriteToSMBus(u8 Address,u8 bRegister,u8 Size,u32 Data_to_smbus)
 {
 	int nRetriesToLive=50;
 
@@ -50,7 +50,7 @@ int WriteToSMBus(u8 Address,u8 bRegister,u8 Size,DWORD Data_to_smbus)
 	
 		switch (Size) {
 			case 4:
-				IoOutputByte(I2C_IO_BASE+2, 0x1d);	// DWORD modus
+				IoOutputByte(I2C_IO_BASE+2, 0x1d);	// u32 modus
 				break;
 			case 2:
 				IoOutputByte(I2C_IO_BASE+2, 0x1b);	// WORD modus
@@ -78,7 +78,7 @@ int WriteToSMBus(u8 Address,u8 bRegister,u8 Size,DWORD Data_to_smbus)
 
 
 
-int ReadfromSMBus(u8 Address,u8 bRegister,u8 Size,DWORD *Data_to_smbus)
+int ReadfromSMBus(u8 Address,u8 bRegister,u8 Size,u32 *Data_to_smbus)
 {
 	int nRetriesToLive=50;
 	
@@ -96,7 +96,7 @@ int ReadfromSMBus(u8 Address,u8 bRegister,u8 Size,DWORD *Data_to_smbus)
 				
 		switch (Size) {
 			case 4:	
-				IoOutputByte(I2C_IO_BASE+2, 0x0d);	// DWORD modus ?
+				IoOutputByte(I2C_IO_BASE+2, 0x0d);	// u32 modus ?
 				break;
 			case 2:
 				IoOutputByte(I2C_IO_BASE+2, 0x0b);	// WORD modus
@@ -150,7 +150,7 @@ int ReadfromSMBus(u8 Address,u8 bRegister,u8 Size,DWORD *Data_to_smbus)
 
 int I2CWriteWordtoRegister(u8 bPicAddressI2cFormat,u8 bRegister ,WORD wDataToWrite)
 {
-	// int WriteToSMBus(u8 Address,u8 bRegister,u8 Size,DWORD Data_to_smbus)
+	// int WriteToSMBus(u8 Address,u8 bRegister,u8 Size,u32 Data_to_smbus)
 	return WriteToSMBus(bPicAddressI2cFormat,bRegister,2,wDataToWrite);	
 }
 

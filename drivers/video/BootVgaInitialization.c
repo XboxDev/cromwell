@@ -439,7 +439,7 @@ void BootVgaInitializationKernelNG(CURRENT_VIDEO_MODE_DETAILS * pvmode) {
 }
 
 
-static void NVSetFBStart (RIVA_HW_INST *riva, int head, DWORD dwFBStart) {
+static void NVSetFBStart (RIVA_HW_INST *riva, int head, u32 dwFBStart) {
        MMIO_H_OUT32 (riva->PCRTC, head, 0x8000, dwFBStart);
        MMIO_H_OUT32 (riva->PMC, head, 0x8000, dwFBStart);
 }

@@ -84,21 +84,21 @@ xbox_av_type DetectAvType(void) {
 
 void SetGPURegister(const GPU_PARAMETER* gpu, u8 *pbRegs) {
 	u8 b;
-	DWORD m = 0;
+	u32 m = 0;
 	// NVHDISPEND
-	*((DWORD *)&pbRegs[0x680820]) = gpu->crtchdispend - 1;
+	*((u32 *)&pbRegs[0x680820]) = gpu->crtchdispend - 1;
 	// NVHTOTAL
-	*((DWORD *)&pbRegs[0x680824]) = gpu->nvhtotal;
+	*((u32 *)&pbRegs[0x680824]) = gpu->nvhtotal;
 	// NVHCRTC
-	*((DWORD *)&pbRegs[0x680828]) = gpu->xres - 1;
+	*((u32 *)&pbRegs[0x680828]) = gpu->xres - 1;
 	// NVHVALIDSTART
-	*((DWORD *)&pbRegs[0x680834]) = 0;
+	*((u32 *)&pbRegs[0x680834]) = 0;
 	// NVHSYNCSTART
-	*((DWORD *)&pbRegs[0x68082c]) = gpu->nvhstart;
+	*((u32 *)&pbRegs[0x68082c]) = gpu->nvhstart;
 	// NVHSYNCEND = NVHSYNCSTART + 32
-	*((DWORD *)&pbRegs[0x680830]) = gpu->nvhstart+32;
+	*((u32 *)&pbRegs[0x680830]) = gpu->nvhstart+32;
 	// NVHVALIDEND
-	*((DWORD *)&pbRegs[0x680838]) = gpu->xres - 1;
+	*((u32 *)&pbRegs[0x680838]) = gpu->xres - 1;
 	// CRTC_HSYNCSTART = h_total - 32 (heuristic)
 	m = gpu->nvhtotal - 32;
 	NvSetCrtc(pbRegs, 4, m/8);
@@ -121,19 +121,19 @@ void SetGPURegister(const GPU_PARAMETER* gpu, u8 *pbRegs) {
 	NvSetCrtc(pbRegs, 0x19, (NvGetCrtc(pbRegs, 0x19)&0x1f) | ((m >> 3) & 0xe0));
 	NvSetCrtc(pbRegs, 0x13, (m & 0xff));
 	// NVVDISPEND
-	*((DWORD *)&pbRegs[0x680800]) = gpu->yres - 1;
+	*((u32 *)&pbRegs[0x680800]) = gpu->yres - 1;
 	// NVVTOTAL
-	*((DWORD *)&pbRegs[0x680804]) = gpu->nvvtotal;
+	*((u32 *)&pbRegs[0x680804]) = gpu->nvvtotal;
 	// NVVCRTC
-	*((DWORD *)&pbRegs[0x680808]) = gpu->yres - 1;
+	*((u32 *)&pbRegs[0x680808]) = gpu->yres - 1;
 	// NVVVALIDSTART
-	*((DWORD *)&pbRegs[0x680814]) = 0;
+	*((u32 *)&pbRegs[0x680814]) = 0;
 	// NVVSYNCSTART
-	*((DWORD *)&pbRegs[0x68080c])=gpu->nvvstart;
+	*((u32 *)&pbRegs[0x68080c])=gpu->nvvstart;
 	// NVVSYNCEND = NVVSYNCSTART + 3
-	*((DWORD *)&pbRegs[0x680810])=(gpu->nvvstart+3);
+	*((u32 *)&pbRegs[0x680810])=(gpu->nvvstart+3);
 	// NVVVALIDEND
-	*((DWORD *)&pbRegs[0x680818]) = gpu->yres - 1;
+	*((u32 *)&pbRegs[0x680818]) = gpu->yres - 1;
 	// CRTC_VSYNCSTART
 	b = NvGetCrtc(pbRegs, 7) & 0x7b;
 	NvSetCrtc(pbRegs, 7, b | ((gpu->crtcvstart >> 2) & 0x80) | ((gpu->crtcvstart >> 6) & 0x04));

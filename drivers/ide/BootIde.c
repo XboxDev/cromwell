@@ -622,7 +622,7 @@ int CalculateDrivePassword(int driveId, unsigned char *key) {
 	u8 baMagic[0x200], baKeyFromEEPROM[0x10], baEeprom[0x30];
 	int nVersionHashing=0;
 	//Ick - forward decl. Should remove this. 
-	DWORD BootHddKeyGenerateEepromKeyData(u8 *eeprom_data,u8 *HDKey);
+	u32 BootHddKeyGenerateEepromKeyData(u8 *eeprom_data,u8 *HDKey);
 	
 	memcpy(&baEeprom[0], &eeprom, 0x30); // first 0x30 bytes from EEPROM image we picked up earlier
 
@@ -1114,7 +1114,7 @@ int BootIdeBootSectorHddOrElTorito(int nDriveIndex, u8 * pbaResult)
 			0x43,0x41,0x54,0x49,0x4F,0x4E
 	};
 	int n;
-	DWORD * pdw;
+	u32 * pdw;
 
 	if(!tsaHarddiskInfo[nDriveIndex].m_fDriveExists) return 4;
 
@@ -1123,7 +1123,7 @@ int BootIdeBootSectorHddOrElTorito(int nDriveIndex, u8 * pbaResult)
 /******   Numbnut's guide to El Torito CD Booting   ********
 
   Sector 11h of a bootable CDROM looks like this (11h is a magic number)
-  The DWORD starting at +47h is the sector index of the 'boot catalog'
+  The u32 starting at +47h is the sector index of the 'boot catalog'
 
 00000000: 00 43 44 30 30 31 01 45 : 4C 20 54 4F 52 49 54 4F    .CD001.EL TORITO
 00000010: 20 53 50 45 43 49 46 49 : 43 41 54 49 4F 4E 00 00     SPECIFICATION..
@@ -1144,7 +1144,7 @@ int BootIdeBootSectorHddOrElTorito(int nDriveIndex, u8 * pbaResult)
 			}
 		}
 
-		pdw=(DWORD *)&pbaResult[0x47];
+		pdw=(u32 *)&pbaResult[0x47];
 
 /*
 At sector 13h (in this example only), the boot catalog:
@@ -1172,7 +1172,7 @@ At sector 13h (in this example only), the boot catalog:
 			return 4;
 		}
 
-		pdw=(DWORD *)&pbaResult[0x28];
+		pdw=(u32 *)&pbaResult[0x28];
 /*
 And so at sector 0x125 (in this example only), we finally see the boot code
 

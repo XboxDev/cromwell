@@ -36,7 +36,7 @@ const KNOWN_FLASH_TYPE aknownflashtypesDefault[] = {
 };
 
  // callback to show progress
-bool BootFlashUserInterface(void * pvoidObjectFlash, ENUM_EVENTS ee, DWORD dwPos, DWORD dwExtent) {
+bool BootFlashUserInterface(void * pvoidObjectFlash, ENUM_EVENTS ee, u32 dwPos, u32 dwExtent) {
 	if(ee==EE_ERASE_UPDATE){
 		DisplayFlashProgressBar(dwPos,dwExtent,0xffffff00);
 	}
@@ -48,7 +48,7 @@ bool BootFlashUserInterface(void * pvoidObjectFlash, ENUM_EVENTS ee, DWORD dwPos
 
 void DisplayFlashProgressBar(int currentVal, int maxVal, unsigned long color) {
         int x,y,l,w,h,m;
-        DWORD *fb=(DWORD*)FB_START;
+        u32 *fb=(u32*)FB_START;
 
         if(maxVal<2){
                 return;
@@ -85,7 +85,7 @@ void DisplayFlashProgressBar(int currentVal, int maxVal, unsigned long color) {
 	// note this is copied to RAM, and the flash will be changed during its operation
 	// therefore no library code nor interrupts can be had
 
-int BootReflashAndReset(u8 *pbNewData, DWORD dwStartOffset, DWORD dwLength)
+int BootReflashAndReset(u8 *pbNewData, u32 dwStartOffset, u32 dwLength)
 {
 	OBJECT_FLASH of;
 	bool fMore=true;

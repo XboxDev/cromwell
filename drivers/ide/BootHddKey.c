@@ -163,7 +163,7 @@ void HMAC_hdd_calculation(int version,unsigned char *HMAC_result, ... )
 }
 
 
-DWORD BootHddKeyGenerateEepromKeyData(
+u32 BootHddKeyGenerateEepromKeyData(
 		u8 *pbEeprom_data,
 		u8 *pbResult
 		
