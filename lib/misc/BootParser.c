@@ -99,7 +99,7 @@ int ParseConfig(char *szBuffer, CONFIGENTRY *entry, EEPROMDATA *eeprom, char *sz
 	if(entry->nVesaFB == 1) {
 		switch(*((VIDEO_STANDARD *)&eeprom->VideoStandard)) {
 			case NTSC_M:
-				strcpy(szNorm," video=vesa:640x480tv=NTSC ");
+				strcpy(szNorm," video=vesa:640x480,tv=NTSC ");
 				break;
 			case PAL_I:
 				strcpy(szNorm," video=vesa:640x480,tv=PAL ");
