@@ -13,6 +13,8 @@
 #include "boot.h"
 #include "BootFlash.h"
 
+extern KNOWN_FLASH_TYPE aknownflashtypesDefault[];
+
 // this is a ROM-resident wrapper for the function below
 
  // callback to show progress
@@ -51,7 +53,7 @@ int BootReflashAndReset(BYTE *pbNewData, DWORD dwStartOffset, DWORD dwLength)
 
 	while(fMore) {
 		if(BootFlashEraseMinimalRegion(&of)) {
-			if(BootFlashProgram(&of) {
+			if(BootFlashProgram(&of, pbNewData)) {
 				fMore=false;  // good situation
 			} else { // failed program
 				;
@@ -82,7 +84,7 @@ int BootReflashAndReset(BYTE *pbNewData, DWORD dwStartOffset, DWORD dwLength)
 
 		"ledspin: in %dx, %al ; cmp $0x10, %al ; jnz ledspin \n"
 		"jmp ledspin \n"  // loop forever
-	};
+	);
 
 	return 0; // keep compiler happy
 }
