@@ -151,14 +151,10 @@ extern void BootStartBiosLoader ( void ) {
 			I2CTransmitWord(0x10, 0x0c00);
                         */
                 
-			/*
-			i wantet to to the lzo_init() too, but if i do it, decompression fails.
-			no idea why
-			lzo_init();
-			*/
-
                         unsigned int de_compressed_image_size;
-                        
+
+                        lzo_init();                        
+
                         lzo1x_decompress(
                         		(void*)(CROMWELL_compress_temploc),
                         		compressed_image_size,

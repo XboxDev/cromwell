@@ -5,8 +5,6 @@ INCLUDE = -I$(TOPDIR)/grub -I$(TOPDIR)/include -I$(TOPDIR)/ -I./ -I$(TOPDIR)/fs/
 	-I$(TOPDIR)/boot_xbe/ -I$(TOPDIR)/fs/grub -I$(TOPDIR)/lib/font -I$(TOPDIR)/lib/jpeg-6b \
 	-I$(TOPDIR)/startuploader -I$(TOPDIR)/drivers/cpu  -I$(TOPDIR)/lib/lzo 
 
-
-
 CFLAGS	= -O2 -mcpu=pentium -Werror $(INCLUDE) -Wstrict-prototypes -fomit-frame-pointer -pipe -mpreferred-stack-boundary=2
 LD      = ld
 OBJCOPY = objcopy
@@ -116,7 +114,7 @@ RESOURCES = $(TOPDIR)/obj/backdrop.elf
 export INCLUDE
 export TOPDIR
 
-all: clean xcodes11.elf cromsubdirs image.elf imagebld backdrop.elf image-crom.elf image-crom.bin default.xbe vmlboot image.bin imagecompress
+all: clean resources cromsubdirs image-crom.bin default.xbe vmlboot image.bin imagecompress
 
 cromsubdirs: $(patsubst %, _dir_%, $(SUBDIRS))
 $(patsubst %, _dir_%, $(SUBDIRS)) : dummy
@@ -124,17 +122,12 @@ $(patsubst %, _dir_%, $(SUBDIRS)) : dummy
 
 dummy:
 
-xcodes11.elf:
-	${LD} -r --oformat elf32-i386 -o $(TOPDIR)/obj/$@ -T $(TOPDIR)/boot_rom/xcodes11.ld -b binary $(TOPDIR)/boot_rom/xcodes11.bin
+resources:
+	# X-Codes	
+	${LD} -r --oformat elf32-i386 -o $(TOPDIR)/obj/xcodes11.elf -T $(TOPDIR)/boot_rom/xcodes11.ld -b binary $(TOPDIR)/boot_rom/xcodes11.bin
+	# Background
+	${LD} -r --oformat elf32-i386 -o $(TOPDIR)/obj/backdrop.elf -T $(TOPDIR)/scripts/backdrop.ld -b binary $(TOPDIR)/pics/backdrop.jpg	
 
-image.elf:
-	${LD} -o $(TOPDIR)/obj/$@ ${OBJECTS-ROMBOOT} ${RESOURCES-ROMBOOT} ${LDFLAGS-ROMBOOT}
-
-image.bin:
-	${OBJCOPY} --output-target=binary --strip-all $(TOPDIR)/obj/image.elf $(TOPDIR)/image/$@
-
-imagebld:
-	gcc $(OBJECTS-IMAGEBLD) -o $(TOPDIR)/bin/imagebld $(INCLUDE)
 
 install:
 	lmilk -f -p $(TOPDIR)/image/image.bin
@@ -142,8 +135,11 @@ install:
 clean:
 	find . \( -name '*.[oas]' -o -name core -o -name '.*.flags' \) -type f -print \
 		| grep -v lxdialog/ | xargs rm -f
-	rm -f $(TOPDIR)/obj/*.bin rm -f $(TOPDIR)/obj/*.elf
-	rm -f $(TOPDIR)/image/*.bin rm -f $(TOPDIR)/image/*.xbe rm -f $(TOPDIR)/xbe/*.xbe $(TOPDIR)/xbe/*.bin
+	rm -f $(TOPDIR)/obj/*.bin 
+	rm -f $(TOPDIR)/obj/*.elf
+	rm -f $(TOPDIR)/image/*.bin 
+	rm -f $(TOPDIR)/image/*.xbe 
+	rm -f $(TOPDIR)/xbe/*.xbe $(TOPDIR)/xbe/*.bin
 	rm -f $(TOPDIR)/xbe/*.elf
 	rm -f $(TOPDIR)/image/*.bin
 	rm -f $(TOPDIR)/bin/imagebld*
@@ -153,29 +149,24 @@ clean:
 	mkdir $(TOPDIR)/obj -p
 	mkdir $(TOPDIR)/bin -p
 
-
-backdrop.elf:
-	${LD} -r --oformat elf32-i386 -o $(TOPDIR)/obj/$@ -T $(TOPDIR)/scripts/backdrop.ld -b binary $(TOPDIR)/pics/backdrop.jpg
-
-default.elf: ${OBJECTS-XBE}
-	${LD} -o $(TOPDIR)/obj/$@ ${OBJECTS-XBE} ${LDFLAGS-XBEBOOT}
-
-vmlboot.elf: ${OBJECTS-VML}
-	${LD} -o $(TOPDIR)/obj/$@ ${OBJECTS-VML} ${LDFLAGS-VMLBOOT}
-        
-vmlboot: vmlboot.elf
-	${OBJCOPY} --output-target=binary --strip-all $(TOPDIR)/obj/vmlboot.elf $(TOPDIR)/boot_vml/disk/$@
-		
-default.xbe: default.elf
-	${OBJCOPY} --output-target=binary --strip-all $(TOPDIR)/obj/default.elf $(TOPDIR)/xbe/$@
-
-image-crom.elf:
-	${LD} -o $(TOPDIR)/obj/$@ ${OBJECTS-CROM} ${RESOURCES} ${LDFLAGS-ROM}
-
 image-crom.bin:
+	${LD} -o $(TOPDIR)/obj/image-crom.elf ${OBJECTS-CROM} ${RESOURCES} ${LDFLAGS-ROM}
 	${OBJCOPY} --output-target=binary --strip-all $(TOPDIR)/obj/image-crom.elf $(TOPDIR)/obj/$@
 
+vmlboot: ${OBJECTS-VML}
+	${LD} -o $(TOPDIR)/obj/vmlboot.elf ${OBJECTS-VML} ${LDFLAGS-VMLBOOT}
+	${OBJCOPY} --output-target=binary --strip-all $(TOPDIR)/obj/vmlboot.elf $(TOPDIR)/boot_vml/disk/$@
+		
+default.xbe: ${OBJECTS-XBE}
+	${LD} -o $(TOPDIR)/obj/default.elf ${OBJECTS-XBE} ${LDFLAGS-XBEBOOT}
+	${OBJCOPY} --output-target=binary --strip-all $(TOPDIR)/obj/default.elf $(TOPDIR)/xbe/$@
+
+image.bin:
+	${LD} -o $(TOPDIR)/obj/2lbimage.elf ${OBJECTS-ROMBOOT} ${RESOURCES-ROMBOOT} ${LDFLAGS-ROMBOOT}
+	${OBJCOPY} --output-target=binary --strip-all $(TOPDIR)/obj/2lbimage.elf $(TOPDIR)/image/$@
+	
 imagecompress:
+	gcc $(OBJECTS-IMAGEBLD) -o $(TOPDIR)/bin/imagebld $(INCLUDE)
 	$(TOPDIR)/bin/imagebld -rom $(TOPDIR)/image/image.bin $(TOPDIR)/obj/image-crom.bin  $(TOPDIR)/image/image_1024.bin	
 	$(TOPDIR)/bin/imagebld -xbe $(TOPDIR)/xbe/default.xbe $(TOPDIR)/obj/image-crom.bin
 	$(TOPDIR)/bin/imagebld -vml $(TOPDIR)/boot_vml/disk/vmlboot $(TOPDIR)/obj/image-crom.bin 
