@@ -23,7 +23,7 @@
  *   2002-08-25 andy@warmcat.com  threshed around to work with xbox
  */
 
-// uncomment below to run two sample HDD unlocks through the algorithm each boot before the actual present drive is unlocked, 
+// uncomment below to run two sample HDD unlocks through the algorithm each boot before the actual present drive is unlocked,
 // and get a report on success and fail
 //   'Andy's Drive' is a factory-locked Seagate
 //   Ed's drive was locked by a tool and exhibits an unusual requirement about the serial string
@@ -34,6 +34,8 @@
 #include  "boot.h"
 #include "grub/shared.h"
 #include "BootEEPROM.h"
+
+#undef sprintf
 
 ////////////////////////////////////
 // IDE types and constants
@@ -106,6 +108,12 @@ typedef enum {
 
 tsHarddiskInfo tsaHarddiskInfo[2];  // static struct stores data about attached drives
 
+		const char * const szaSenseKeys[] = {
+			"No Sense", "Recovered Error", "Not Ready", "Medium Error",
+			"Hardware Error", "Illegal request", "Unit Attention", "Data Protect",
+			"Reserved 8", "Reserved 9", "Reserved 0xa", "Aborted Command",
+			"Miscompare", "Reserved 0xf"
+		};
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 //  Helper routines
@@ -160,7 +168,7 @@ int BootIdeIssueAtaCommand(
 	IoOutputByte(IDE_REG_CYLINDER_LSB(uIoBase), params->m_wCylinder & 0xFF);
 	IoOutputByte(IDE_REG_CYLINDER_MSB(uIoBase), (params->m_wCylinder >> 8) /* & 0x03 */);
 	IoOutputByte(IDE_REG_DRIVEHEAD(uIoBase), params->m_bDrivehead);
-	
+
 	IoOutputByte(IDE_REG_COMMAND(uIoBase), command);
 	Delay();
 
@@ -251,26 +259,28 @@ int BootIdeIssueAtapiPacketCommandAndPacket(int nDriveIndex, BYTE *pAtapiCommand
 //			printk("  Drive %d: BootIdeIssueAtapiPacketCommandAndPacket 1 FAILED, error=%02X\n", nDriveIndex, IoInputByte(IDE_REG_ERROR(uIoBase)));
 			return 1;
 		}
-
 		if(BootIdeWaitNotBusy(uIoBase)) {
 //			printk("  Drive %d: BootIdeIssueAtapiPacketCommandAndPacket 2 FAILED, error=%02X\n", nDriveIndex, IoInputByte(IDE_REG_ERROR(uIoBase)));
 			return 1;
 		}
 
+
 //					printk("  Drive %d:   status=0x%02X, error=0x%02X\n",
 //				nDriveIndex, IoInputByte(IDE_REG_ALTSTATUS(uIoBase)), IoInputByte(IDE_REG_ERROR(uIoBase)));
 
 		if(BootIdeWriteAtapiData(uIoBase, pAtapiCommandPacket12Bytes, 12)) {
-//			printk("  Drive %d:BootIdeIssueAtapiPacketCommandAndPacket 3 FAILED, error=%02X\n", nDriveIndex, IoInputByte(IDE_REG_ERROR(uIoBase)));
+//			printk("  Drive %d:BootIdeIssueAtapiPacketCommandAndPacket 3 FAILED, error=0x%02X\n", nDriveIndex, IoInputByte(IDE_REG_ERROR(uIoBase)));
+//			BootIdeAtapiPrintkFriendlyError(nDriveIndex);
 			return 1;
 		}
 
-		if(BootIdeWaitDataReady(uIoBase)) {
-//			printk("  Drive %d:  BootIdeIssueAtapiPacketCommandAndPacket Atapi Wait for data ready FAILED, status=0x%02X, error=0x%02X\n",
-//				nDriveIndex, IoInputByte(IDE_REG_ALTSTATUS(uIoBase)), IoInputByte(IDE_REG_ERROR(uIoBase)));
-			return 1;
+		if(pAtapiCommandPacket12Bytes[0]!=0x1e) {
+			if(BootIdeWaitDataReady(uIoBase)) {
+//				printk("  Drive %d:  BootIdeIssueAtapiPacketCommandAndPacket Atapi Wait for data ready FAILED, status=0x%02X, error=0x%02X\n",
+//					nDriveIndex, IoInputByte(IDE_REG_ALTSTATUS(uIoBase)), IoInputByte(IDE_REG_ERROR(uIoBase)));
+				return 1;
+			}
 		}
-
 		return 0;
 }
 
@@ -352,7 +362,7 @@ static int BootIdeDriveInit(unsigned uIoBase, int nIndexDrive)
 			}
 		}
 	} else { // slave... death if you send it IDE_CMD_GET_INFO, it needs an ATAPI request
-	
+
 	/*
 		if(BootIdeIssueAtaCommand(uIoBase, 0x08, &tsicp)) {  // ATAPI soft reset
 			printk("  %d: detect FAILED, error=%02X\n", nIndexDrive, IoInputByte(IDE_REG_ERROR(uIoBase)));
@@ -382,9 +392,10 @@ static int BootIdeDriveInit(unsigned uIoBase, int nIndexDrive)
 	tsaHarddiskInfo[nIndexDrive].m_dwCountSectorsTotal = *((unsigned int*)&(drive_info[60]));
 	tsaHarddiskInfo[nIndexDrive].m_wAtaRevisionSupported = drive_info[88];
 
-	{ int n;  // get rid of trailing spaces, add terminating '\0'
+	{ 
+		int n;  // get rid of trailing spaces, add terminating '\0'
 		WORD * pw=(WORD *)&(drive_info[10]);
-	        if(pw[0] == 'D' && pw[1] == 'W' && pw[2] == 'W') { // This is needed for the WD disk
+		if(pw[0] == 'D' && pw[1] == 'W' && pw[2] == 'W') { // This is needed for the WD disk
 			for(n=0;n<0x14;n++) {	// from ED. This is needed for the WD disk
 				if(pw[n] == ' ') pw[n] = 0;
 			}
@@ -394,6 +405,7 @@ static int BootIdeDriveInit(unsigned uIoBase, int nIndexDrive)
 		pw=(WORD *)&(drive_info[27]);
 		tsaHarddiskInfo[nIndexDrive].m_length =
 			copy_swap_trim(tsaHarddiskInfo[nIndexDrive].m_szIdentityModelNumber,(BYTE *)pw,0x28);
+		copy_swap_trim(tsaHarddiskInfo[nIndexDrive].m_szFirmware,(BYTE *)&(drive_info[23]),0x8);
 
 	tsaHarddiskInfo[nIndexDrive].m_szSerial[sizeof(tsaHarddiskInfo[0].m_szSerial)-1]='\0';
 	tsaHarddiskInfo[nIndexDrive].m_szIdentityModelNumber[sizeof(tsaHarddiskInfo[0].m_szIdentityModelNumber)-1]='\0';
@@ -416,33 +428,40 @@ static int BootIdeDriveInit(unsigned uIoBase, int nIndexDrive)
 		printk("hd%c: ", nIndexDrive+'a');
 		VIDEO_ATTR=0xffc8c800;
 
-		printk("%s %s\n",
+		printk("%s %s %s\n",
 			tsaHarddiskInfo[nIndexDrive].m_szIdentityModelNumber,
-			tsaHarddiskInfo[nIndexDrive].m_szSerial
+			tsaHarddiskInfo[nIndexDrive].m_szSerial,
+			tsaHarddiskInfo[nIndexDrive].m_szFirmware
 		);
 
-#if 1
+
 		{  // this is the only way to clear the ATAPI ''I have been reset'' error indication
 			BYTE ba[128];
+			ba[2]=0x06;
 
-			int nPacketLength=BootIdeAtapiAdditionalSenseCode(nIndexDrive, &ba[0], sizeof(ba));
-			if(nPacketLength<12) {
-				printk("Unable to get first ASC from drive when clearing sticky DVD error\n");
-//				return 1;
-			}
-//			printk("ATAPI Drive reports ASC 0x%02X\n", ba[12]);  // normally 0x29 'reset' but clears the condition by reading
-			nPacketLength=BootIdeAtapiAdditionalSenseCode(nIndexDrive, &ba[0], sizeof(ba));
-			if(nPacketLength<12) {
-				printk("Unable to get second ASC from drive when clearing sticky DVD error\n");
-//				return 1;
+			while(ba[2]==0x06) {  // while bitching that it 'needs attention', give it REQUEST SENSE
+				int nPacketLength=BootIdeAtapiAdditionalSenseCode(nIndexDrive, &ba[0], sizeof(ba));
+				if(nPacketLength<12) {
+					printk("Unable to get ASC from drive when clearing sticky DVD error\n");
+	//				return 1;
+					while(1);
+				}
+//				printk("ATAPI Drive reports ASC 0x%02X\n", ba[12]);  // normally 0x29 'reset' but clears the condition by reading
 			}
 /*
-//			printk("ATAPI Drive reports ASC 0x%02X\n", ba[12]);
-			if(ba[12]==0x3a) { // no media, this is normal if there is no CD in the drive
+
+	// Xbox drives can't handle ALLOW REMOVAL??
+			memset(&ba[0], 0, 12);
+			ba[0]=0x1e;
+			if(BootIdeIssueAtapiPacketCommandAndPacket(nIndexDrive, &ba[0])) {
+				printk("Unable to issue allow media removal command\n");
+				while(1) ;
+			} else {
+				BootIdeAtapiPrintkFriendlyError(nIndexDrive);
 			}
 */
 		}
-#endif
+
 
 	} else { // HDD
 		BYTE bAdsBase=0x1b;
@@ -459,8 +478,9 @@ static int BootIdeDriveInit(unsigned uIoBase, int nIndexDrive)
 		printk("hd%c: ", nIndexDrive+'a');
 		VIDEO_ATTR=0xffc8c800;
 
-		printk("%s %u.%uGB ",
+		printk("%s %s %u.%uGB ",
 			tsaHarddiskInfo[nIndexDrive].m_szIdentityModelNumber,
+			tsaHarddiskInfo[nIndexDrive].m_szFirmware,
 //			tsaHarddiskInfo[nIndexDrive].m_szSerial,
 //			nAta,
 // 			tsaHarddiskInfo[nIndexDrive].m_wCountHeads,
@@ -820,8 +840,8 @@ int BootIdeInit(void)
 {
 	tsaHarddiskInfo[0].m_bCableConductors=40;
 
-	BootIdeDriveInit(IDE_BASE1, 1);
 	BootIdeDriveInit(IDE_BASE1, 0);
+	BootIdeDriveInit(IDE_BASE1, 1);
 
 	if(tsaHarddiskInfo[0].m_fDriveExists) {
 		unsigned int uIoBase = tsaHarddiskInfo[0].m_fwPortBase;
@@ -922,7 +942,32 @@ int BootIdeAtapiAdditionalSenseCode(int nDriveIndex, BYTE * pba, int nLengthMaxR
 		return nReturn;
 }
 
+bool BootIdeAtapiReportFriendlyError(int nDriveIndex, char * szErrorReturn, int nMaxLengthError)
+{
+	BYTE ba[2048];
+	char szError[512];
+	int nReturn;
+	bool f=true;
 
+	nReturn=BootIdeAtapiAdditionalSenseCode(nDriveIndex, &ba[0], sizeof(ba));
+	if(nReturn<12) {
+		sprintf(szError, "Unable to get Sense Code\n");
+		f=false;
+	} else {
+		sprintf(szError, "Sense key 0x%02X (%s), ASC=0x%02X, qualifier=0x%02X\n", ba[2]&0x0f, szaSenseKeys[ba[2]&0x0f], ba[12], ba[13]);
+		VideoDumpAddressAndData(0, &ba[0], nReturn);
+	}
+
+	_strncpy(szErrorReturn, szError, nMaxLengthError);
+	return f;
+}
+
+void BootIdeAtapiPrintkFriendlyError(int nDriveIndex)
+{
+	char sz[512];
+	BootIdeAtapiReportFriendlyError(nDriveIndex, sz, sizeof(sz));
+	printk(sz);
+}
 
 
 /////////////////////////////////////////////////
@@ -970,7 +1015,7 @@ int BootIdeReadSector(int nDriveIndex, void * pbBuffer, unsigned int block, int 
 		ba[0]=0x28; ba[2]=block>>24; ba[3]=block>>16; ba[4]=block>>8; ba[5]=block; ba[7]=0; ba[8]=1;
 
 		if(BootIdeIssueAtapiPacketCommandAndPacket(nDriveIndex, &ba[0])) {
-			printk("Unable to issue ATAPI command\n");
+//			printk("Unable to issue ATAPI command\n");
 			return 1;
 		}
 

@@ -116,6 +116,7 @@ typedef struct {  // this is the retained knowledge about an IDE device after in
     unsigned char m_bLbaMode;	/* am i lba (0x40) or chs (0x00) */
     unsigned char m_szIdentityModelNumber[41];
     unsigned char m_szSerial[21];
+		char m_szFirmware[9];
     unsigned char m_fDriveExists;
     unsigned char m_fAtapi;  // true if a CDROM, etc
     enumDriveType m_enumDriveType;
@@ -364,6 +365,8 @@ int BootIdeAtapiAdditionalSenseCode(int nDrive, BYTE * pba, int nLengthMaxReturn
 BYTE BootIdeGetTrayState(void);
 int BootIdeSetTransferMode(int nIndexDrive, int nMode);
 int BootIdeWaitNotBusy(unsigned uIoBase);
+bool BootIdeAtapiReportFriendlyError(int nDriveIndex, char * szErrorReturn, int nMaxLengthError);
+void BootIdeAtapiPrintkFriendlyError(int nDriveIndex);
 
 ///////// BootEthernet.c
 
