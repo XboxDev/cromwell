@@ -135,42 +135,52 @@ static inline double max (double a, double b)
 	if (a > b) return a; else return b;
 }
 
+int I2CWriteBytetoRegister(BYTE bPicAddressI2cFormat, BYTE bRegister, BYTE wDataToWrite)
+{
+	return I2CTransmitWord(bPicAddressI2cFormat, (bRegister<<8) | wDataToWrite );
+	wait_us(200);
+}
+
 
 
 static void SetVGAConexantRegister(BYTE pll_int, BYTE* pbRegs)
 {
 	BYTE b;
 
-	I2CTransmitWord(0x45, (0xba<<8) | 0x80); // Conexant reset
+	
+	I2CWriteBytetoRegister(0x45,0xba,0x80); // Conexant reset
+	wait_ms(5);
 	I2CTransmitByteGetReturn(0x45, 0xb8);       // dummy read to wait for completion
-	I2CTransmitWord(0x45, (0xa0<<8) | 0x13); // Switch to Pseudo-Master mode
+	I2CWriteBytetoRegister(0x45,0xa0,0x13); // Switch to Pseudo-Master mode
+	
 	if (DetectAvType() == AV_VGA_SOG)
 	{
-		I2CTransmitWord(0x45, (0x2e<<8) | 0xad); // HDTV_EN = 1, RPR_SYNC_DIS = 1, BPB_SYNC_DIS = 1, HD_SYNC_EDGE = 1, RASTER_SEL = 01
+		I2CWriteBytetoRegister(0x45,0x2e,0xad); // HDTV_EN = 1, RPR_SYNC_DIS = 1, BPB_SYNC_DIS = 1, HD_SYNC_EDGE = 1, RASTER_SEL = 01
 	}
 	else
 	{
-		I2CTransmitWord(0x45, (0x2e<<8) | 0xbd); // HDTV_EN = 1, GY_SYNC_DIS = 1, RPR_SYNC_DIS = 1, BPB_SYNC_DIS = 1, HD_SYNC_EDGE = 1, RASTER_SEL = 01
+		I2CWriteBytetoRegister(0x45,0x2e,0xbd); // HDTV_EN = 1, GY_SYNC_DIS = 1, RPR_SYNC_DIS = 1, BPB_SYNC_DIS = 1, HD_SYNC_EDGE = 1, RASTER_SEL = 01
 	}
-	I2CTransmitWord(0x45, (0x32<<8) | 0x48); // DRVS = 2, IN_MODE[3] = 1;
-	I2CTransmitWord(0x45, (0x3c<<8) | 0x80); // MCOMPY
-	I2CTransmitWord(0x45, (0x3e<<8) | 0x80); // MCOMPU
-	I2CTransmitWord(0x45, (0x40<<8) | 0x80); // MCOMPV
-	I2CTransmitWord(0x45, (0x6c<<8) | 0x46); // FLD_MODE = 10, EACTIVE = 1, EN_SCART = 0, EN_REG_RD = 1
-	I2CTransmitWord(0x45, (0x9c<<8) | 0x00); // PLL_FRACT
-	I2CTransmitWord(0x45, (0x9e<<8) | 0x00); // PLL_FRACT
-	I2CTransmitWord(0x45, (0xa0<<8) | pll_int); // PLL_INT
-	I2CTransmitWord(0x45, (0xba<<8) | 0x28); // SLAVER = 1, DACDISD = 1
-	I2CTransmitWord(0x45, (0xc4<<8) | 0x01); // EN_OUT = 1
-	I2CTransmitWord(0x45, (0xc6<<8) | 0x98); // IN_MODE = 24 bit RGB multiplexed
-	I2CTransmitWord(0x45, (0xce<<8) | 0xe1); // OUT_MUXA = 01, OUT_MUXB = 00, OUT_MUXC = 10, OUT_MUXD = 11
-	I2CTransmitWord(0x45, (0xd6<<8) | 0x0c); // OUT_MODE = 11 (RGB / SCART / HDTV)
+	I2CWriteBytetoRegister(0x45,0x32,0x48); // DRVS = 2, IN_MODE[3] = 1;
+	I2CWriteBytetoRegister(0x45,0x3c,0x80); // MCOMPY
+	I2CWriteBytetoRegister(0x45,0x3e,0x80); // MCOMPU
+	I2CWriteBytetoRegister(0x45,0x40,0x80); // MCOMPV
+	I2CWriteBytetoRegister(0x45,0x6c,0x46); // FLD_MODE = 10, EACTIVE = 1, EN_SCART = 0, EN_REG_RD = 1
+	I2CWriteBytetoRegister(0x45,0x9c,0x00); // PLL_FRACT
+	I2CWriteBytetoRegister(0x45,0x9e,0x00); // PLL_FRACT
+	I2CWriteBytetoRegister(0x45,0xa0,pll_int); // PLL_INT
+	I2CWriteBytetoRegister(0x45,0xba,0x28); // SLAVER = 1, DACDISD = 1
+	I2CWriteBytetoRegister(0x45,0xc4,0x01); // EN_OUT = 1
+	I2CWriteBytetoRegister(0x45,0xc6,0x98); // IN_MODE = 24 bit RGB multiplexed
+	I2CWriteBytetoRegister(0x45,0xce,0xe1); // OUT_MUXA = 01, OUT_MUXB = 00, OUT_MUXC = 10, OUT_MUXD = 11
+	I2CWriteBytetoRegister(0x45,0xd6,0x0c); // OUT_MODE = 11 (RGB / SCART / HDTV)
 	*((DWORD *)&pbRegs[0x680630]) = 0; // switch GPU to RGB
 
 	// Timing Reset
 	b=I2CTransmitByteGetReturn(0x45, 0x6c)&(0x7f);
-	I2CTransmitWord(0x45, (0x6c<<8)|0x80|b);
+	I2CWriteBytetoRegister(0x45,0x6c,0x80|b);
 }
+
 
 static void SetTVConexantRegister(const TV_MODE_PARAMETER* mode, const BLANKING_PARAMETER* blanks, BYTE* pbRegs)
 {
@@ -180,25 +190,30 @@ static void SetTVConexantRegister(const TV_MODE_PARAMETER* mode, const BLANKING_
 	ULONG v_activeo = CalcV_ACTIVEO(mode);
 	double dPllOutputFrequency;
 
-	I2CTransmitWord(0x45, (0xb8<<8) | 0x07); // Set autoconfig, 800x600, PAL, YCrCb in
+	//I2CWriteBytetoRegister(0x45,0xb8,0x07); // Set autoconfig, 800x600, PAL, YCrCb in
+	I2CWriteBytetoRegister(0x45,0xb8,0x05); // Set autoconfig, 640*480 PAL, YCrCb in
+	wait_ms(5);
 	I2CTransmitByteGetReturn(0x45, 0xb8);    // dummy read to wait for completion
-	I2CTransmitWord(0x45, (0xa0<<8) | 0x13); // Switch to Pseudo-Master mode
-	I2CTransmitWord(0x45, (0x32<<8) | 0x28); // DRVS = 1, IN_MODE[3] = 1;
+	I2CWriteBytetoRegister(0x45,0xa0,0x13); // Switch to Pseudo-Master mode
+	I2CWriteBytetoRegister(0x45,0x32,0x28); // DRVS = 1, IN_MODE[3] = 1;
 
 	// H_CLKI
 	b=I2CTransmitByteGetReturn(0x45, 0x8e)&(~0x07);
-	I2CTransmitWord(0x45, (0x8e<<8)|((mode->h_clki>>8)&0x07)|b);
-	I2CTransmitWord(0x45, (0x8a<<8)|((mode->h_clki)&0xff));
+	I2CWriteBytetoRegister(0x45,0x8e,((mode->h_clki>>8)&0x07)|b);
+	I2CWriteBytetoRegister(0x45,0x8a,((mode->h_clki)&0xff));
+	
 	// H_CLKO
 	b=I2CTransmitByteGetReturn(0x45, 0x86)&(~0x0f);
-	I2CTransmitWord(0x45, (0x86<<8)|((h_clko>>8)&0x0f)|b);
-	I2CTransmitWord(0x45, (0x76<<8)|((h_clko)&0xff));
+	I2CWriteBytetoRegister(0x45,0x86,((h_clko>>8)&0x0f)|b);
+	I2CWriteBytetoRegister(0x45,0x76,((h_clko)&0xff));
+	
 	// V_LINESI
 	b=I2CTransmitByteGetReturn(0x45, 0x38)&(~0x02);
-	I2CTransmitWord(0x45, (0x38<<8)|((mode->v_linesi>>9)&0x02)|b);
+	I2CWriteBytetoRegister(0x45,0x38,((mode->v_linesi>>9)&0x02)|b);
 	b=I2CTransmitByteGetReturn(0x45, 0x96)&(~0x03);
-	I2CTransmitWord(0x45, (0x96<<8)|((mode->v_linesi>>8)&0x03)|b);
-	I2CTransmitWord(0x45, (0x90<<8)|((mode->v_linesi)&0xff));
+	I2CWriteBytetoRegister(0x45,0x96,((mode->v_linesi>>8)&0x03)|b);
+	I2CWriteBytetoRegister(0x45,0x90,((mode->v_linesi)&0xff));
+	
 	// V_ACTIVEO
 	/* TODO: Absolutely not sure about other modes than plain NTSC / PAL */
 	switch(mode->nVideoStd) {
@@ -216,38 +231,38 @@ static void SetTVConexantRegister(const TV_MODE_PARAMETER* mode, const BLANKING_
 			break;
 	}
 	b=I2CTransmitByteGetReturn(0x45, 0x86)&(~0x80);
-	I2CTransmitWord(0x45, (0x86<<8)|((m>>1)&0x80)|b);
-	I2CTransmitWord(0x45, (0x84<<8)|((m)&0xff));
+	I2CWriteBytetoRegister(0x45,0x86,((m>>1)&0x80)|b);
+	I2CWriteBytetoRegister(0x45,0x84,((m)&0xff));
 	// H_ACTIVE
 	b=I2CTransmitByteGetReturn(0x45, 0x86)&(~0x70);
-	I2CTransmitWord(0x45, (0x86<<8)|(((mode->h_active + 5)>>4)&0x70)|b);
-	I2CTransmitWord(0x45, (0x78<<8)|((mode->h_active + 5)&0xff));
+	I2CWriteBytetoRegister(0x45,0x86,(((mode->h_active + 5)>>4)&0x70)|b);
+	I2CWriteBytetoRegister(0x45,0x78,((mode->h_active + 5)&0xff));
 	// V_ACTIVEI
 	b=I2CTransmitByteGetReturn(0x45, 0x96)&(~0x0c);
-	I2CTransmitWord(0x45, (0x96<<8)|((mode->v_activei>>6)&0x0c)|b);
-	I2CTransmitWord(0x45, (0x94<<8)|((mode->v_activei)&0xff));
+	I2CWriteBytetoRegister(0x45,0x96,((mode->v_activei>>6)&0x0c)|b);
+	I2CWriteBytetoRegister(0x45,0x94,((mode->v_activei)&0xff));
 	// H_BLANKI
 	b=I2CTransmitByteGetReturn(0x45, 0x38)&(~0x01);
-	I2CTransmitWord(0x45, (0x38<<8)|((blanks->h_blanki>>9)&0x01)|b);
+	I2CWriteBytetoRegister(0x45,0x38,((blanks->h_blanki>>9)&0x01)|b);
 	b=I2CTransmitByteGetReturn(0x45, 0x8e)&(~0x08);
-	I2CTransmitWord(0x45, (0x8e<<8)|((blanks->h_blanki>>5)&0x08)|b);
-	I2CTransmitWord(0x45, (0x8c<<8)|((blanks->h_blanki)&0xff));
+	I2CWriteBytetoRegister(0x45,0x8e,((blanks->h_blanki>>5)&0x08)|b);
+	I2CWriteBytetoRegister(0x45,0x8c,((blanks->h_blanki)&0xff));
 	// H_BLANKO
 	b=I2CTransmitByteGetReturn(0x45, 0x9a)&(~0xc0);
-	I2CTransmitWord(0x45, (0x9a<<8)|((blanks->h_blanko>>2)&0xc0)|b);
-	I2CTransmitWord(0x45, (0x80<<8)|((blanks->h_blanko)&0xff));
+	I2CWriteBytetoRegister(0x45,0x9a,((blanks->h_blanko>>2)&0xc0)|b);
+	I2CWriteBytetoRegister(0x45,0x80,((blanks->h_blanko)&0xff));
 
 	// V_SCALE
 #ifdef JUSTVIDEO
 	printf("Computed vertical scaling coeff=%ld\n", blanks->vscale);
 #endif
 	b=I2CTransmitByteGetReturn(0x45, 0x9a)&(~0x3f);
-	I2CTransmitWord(0x45, (0x9a<<8)|((blanks->vscale>>8)&0x3f)|b);
-	I2CTransmitWord(0x45, (0x98<<8)|((blanks->vscale)&0xff));
+	I2CWriteBytetoRegister(0x45, 0x9a, ((blanks->vscale>>8)&0x3f)|b);
+	I2CWriteBytetoRegister(0x45, 0x98, ((blanks->vscale)&0xff));
 	// V_BLANKO
-	I2CTransmitWord(0x45, (0x82<<8)|((blanks->v_blanko)&0xff));
+	I2CWriteBytetoRegister(0x45, 0x82, ((blanks->v_blanko)&0xff));
 	// V_BLANKI
-	I2CTransmitWord(0x45, (0x92<<8)|((blanks->v_blanki)&0xff));
+	I2CWriteBytetoRegister(0x45, 0x92, ((blanks->v_blanki)&0xff));
 	{
 		DWORD dwPllRatio, dwFract, dwInt;
 		// adjust PLL
@@ -256,9 +271,9 @@ static void SetTVConexantRegister(const TV_MODE_PARAMETER* mode, const BLANKING_
 		dwInt = dwPllRatio / 0x10000;
 		dwFract = dwPllRatio - (dwInt * 0x10000);
 		b=I2CTransmitByteGetReturn(0x45, 0xa0)&(~0x3f);
-		I2CTransmitWord(0x45, (0xa0<<8)|((dwInt)&0x3f)|b);
-		I2CTransmitWord(0x45, (0x9e<<8)|((dwFract>>8)&0xff));
-		I2CTransmitWord(0x45, (0x9c<<8)|((dwFract)&0xff));
+		I2CWriteBytetoRegister(0x45,0xa0, ((dwInt)&0x3f)|b);
+		I2CWriteBytetoRegister(0x45,0x9e, ((dwFract>>8)&0xff));
+		I2CWriteBytetoRegister(0x45,0x9c, ((dwFract)&0xff));
 		// recalc value
 		dPllOutputFrequency = ((double)dwInt + ((double)dwFract)/65536.0)/(6 * dPllBasePeriod * mode->clk_ratio);
 #ifdef JUSTVIDEO
@@ -269,22 +284,22 @@ static void SetTVConexantRegister(const TV_MODE_PARAMETER* mode, const BLANKING_
 		if (mode->clk_ratio > 1.1) {
 			b |= 0x20;
 		}
-		I2CTransmitWord(0x45, (0x38<<8)|b);
+		I2CWriteBytetoRegister(0x45, 0x38, b);
 
 		// update burst start position
 		m=(vidstda[mode->nVideoStd].m_dSecBurstStart) * dPllOutputFrequency + 0.5;
 		b=I2CTransmitByteGetReturn(0x45, 0x38)&(~0x04);
-		I2CTransmitWord(0x45, (0x38<<8)|((m>>6)&0x04)|b);
-		I2CTransmitWord(0x45, (0x7c<<8)|(m&0xff));
+		I2CWriteBytetoRegister(0x45, 0x38, ((m>>6)&0x04)|b);
+		I2CWriteBytetoRegister(0x45, 0x7c, (m&0xff));
 		// update burst end position (note +128 is in hardware)
 		m=(vidstda[mode->nVideoStd].m_dSecBurstEnd) * dPllOutputFrequency + 0.5;
 		if(m<128) m=128;
 		b=I2CTransmitByteGetReturn(0x45, 0x38)&(~0x08);
-		I2CTransmitWord(0x45, (0x38<<8)|(((m-128)>>5)&0x08)|b);
-		I2CTransmitWord(0x45, (0x7e<<8)|((m-128)&0xff));
+		I2CWriteBytetoRegister(0x45, 0x38, (((m-128)>>5)&0x08)|b);
+		I2CWriteBytetoRegister(0x45, 0x7e, ((m-128)&0xff));
 		// update HSYNC width
 		m=(vidstda[mode->nVideoStd].m_dSecHsyncWidth) * dPllOutputFrequency + 0.5;
-		I2CTransmitWord(0x45, (0x7a<<8)|((m)&0xff));
+		I2CWriteBytetoRegister(0x45, 0x7a, ((m)&0xff));
 	}
 	// adjust Subcarrier generation increment
 	{
@@ -295,10 +310,10 @@ static void SetTVConexantRegister(const TV_MODE_PARAMETER* mode, const BLANKING_
 				/ (double)h_clko
 			) + 0.5
 		);
-		I2CTransmitWord(0x45, (0xae<<8)|(dwSubcarrierIncrement&0xff));
-		I2CTransmitWord(0x45, (0xb0<<8)|((dwSubcarrierIncrement>>8)&0xff));
-		I2CTransmitWord(0x45, (0xb2<<8)|((dwSubcarrierIncrement>>16)&0xff));
-		I2CTransmitWord(0x45, (0xb4<<8)|((dwSubcarrierIncrement>>24)&0xff));
+		I2CWriteBytetoRegister(0x45, 0xae,(dwSubcarrierIncrement&0xff));
+		I2CWriteBytetoRegister(0x45, 0xb0,((dwSubcarrierIncrement>>8)&0xff));
+		I2CWriteBytetoRegister(0x45, 0xb2,((dwSubcarrierIncrement>>16)&0xff));
+		I2CWriteBytetoRegister(0x45, 0xb4,((dwSubcarrierIncrement>>24)&0xff));
 	}
 	// adjust WSS increment
 	{
@@ -320,9 +335,9 @@ static void SetTVConexantRegister(const TV_MODE_PARAMETER* mode, const BLANKING_
 				break;
 			}
 
-		I2CTransmitWord(0x45, (0x66<<8)|(dwWssIncrement&0xff));
-		I2CTransmitWord(0x45, (0x68<<8)|((dwWssIncrement>>8)&0xff));
-		I2CTransmitWord(0x45, (0x6a<<8)|((dwWssIncrement>>16)&0xf));
+		I2CWriteBytetoRegister(0x45, 0x66,(dwWssIncrement&0xff));
+		I2CWriteBytetoRegister(0x45, 0x68,((dwWssIncrement>>8)&0xff));
+		I2CWriteBytetoRegister(0x45, 0x6a,((dwWssIncrement>>16)&0xf));
 	}
 	// set mode register
 	b=I2CTransmitByteGetReturn(0x45, 0xa2)&(0x41);
@@ -349,53 +364,59 @@ static void SetTVConexantRegister(const TV_MODE_PARAMETER* mode, const BLANKING_
 			default:
 				break;
 	}
-	I2CTransmitWord(0x45, (0xa2<<8)|b);
+	I2CWriteBytetoRegister(0x45, 0xa2, b);
 	switch(DetectAvType()) {
 		case AV_COMPOSITE:
 		case AV_SVIDEO:
-			I2CTransmitWord(0x45, (0x6c<<8) | 0x46); // FLD_MODE = 10, EACTIVE = 1, EN_SCART = 0, EN_REG_RD = 1
-			I2CTransmitWord(0x45, (0x5a<<8) | 0x00); // Y_OFF (Brightness)
-			I2CTransmitWord(0x45, (0xa4<<8) | 0xe5); // SYNC_AMP
-			I2CTransmitWord(0x45, (0xa6<<8) | 0x74); // BST_AMP
-			I2CTransmitWord(0x45, (0xba<<8) | 0x24); // SLAVER = 1, DACDISC = 1
-			I2CTransmitWord(0x45, (0xc6<<8) | 0x9c); // IN_MODE = 24 bit YCrCb multiplexed
-			I2CTransmitWord(0x45, (0xce<<8) | 0x19); // OUT_MUXA = 01, OUT_MUXB = 10, OUT_MUXC = 10, OUT_MUXD = 00
-			I2CTransmitWord(0x45, (0xd6<<8) | 0x00); // OUT_MODE = 00 (CVBS)
+			I2CWriteBytetoRegister(0x45, 0x6c, 0x46); // FLD_MODE = 10, EACTIVE = 1, EN_SCART = 0, EN_REG_RD = 1
+			I2CWriteBytetoRegister(0x45, 0x5a, 0x00); // Y_OFF (Brightness)
+			I2CWriteBytetoRegister(0x45, 0xa4, 0xe5); // SYNC_AMP
+			I2CWriteBytetoRegister(0x45, 0xa6, 0x74); // BST_AMP
+			I2CWriteBytetoRegister(0x45, 0xba, 0x24); // SLAVER = 1, DACDISC = 1
+			I2CWriteBytetoRegister(0x45, 0xc6, 0x9c); // IN_MODE = 24 bit YCrCb multiplexed
+			I2CWriteBytetoRegister(0x45, 0xce, 0x19); // OUT_MUXA = 01, OUT_MUXB = 10, OUT_MUXC = 10, OUT_MUXD = 00
+			I2CWriteBytetoRegister(0x45, 0xd6, 0x00); // OUT_MODE = 00 (CVBS)
 			*((DWORD *)&pbRegs[0x680630]) = 2; // switch GPU to YCrCb
 			*((DWORD *)&pbRegs[0x68084c]) =0x801080;
 			break;
 		case AV_SCART_RGB:
-			I2CTransmitWord(0x45, (0x6c<<8) | 0x4e); // FLD_MODE = 10, EACTIVE = 1, EN_SCART = 1, EN_REG_RD = 1
-			I2CTransmitWord(0x45, (0x5a<<8) | 0xff); // Y_OFF (Brightness)
-			I2CTransmitWord(0x45, (0xa4<<8) | 0xe7); // SYNC_AMP
-			I2CTransmitWord(0x45, (0xa6<<8) | 0x77); // BST_AMP
-			I2CTransmitWord(0x45, (0xba<<8) | 0x20); // SLAVER = 1, enable all DACs
-			I2CTransmitWord(0x45, (0xc6<<8) | 0x98); // IN_MODE = 24 bit RGB multiplexed
-			I2CTransmitWord(0x45, (0xce<<8) | 0xe1); // OUT_MUXA = 01, OUT_MUXB = 00, OUT_MUXC = 10, OUT_MUXD = 11
-			I2CTransmitWord(0x45, (0xd6<<8) | 0x0c); // OUT_MODE = 11 (RGB / SCART / HDTV)
+			I2CWriteBytetoRegister(0x45, 0x6c, 0x4e); // FLD_MODE = 10, EACTIVE = 1, EN_SCART = 1, EN_REG_RD = 1
+			I2CWriteBytetoRegister(0x45, 0x5a, 0xff); // Y_OFF (Brightness)
+			I2CWriteBytetoRegister(0x45, 0xa4, 0xe7); // SYNC_AMP
+			I2CWriteBytetoRegister(0x45, 0xa6, 0x77); // BST_AMP
+			I2CWriteBytetoRegister(0x45, 0xba, 0x20); // SLAVER = 1, enable all DACs
+			I2CWriteBytetoRegister(0x45, 0xc6, 0x98); // IN_MODE = 24 bit RGB multiplexed
+			I2CWriteBytetoRegister(0x45, 0xce, 0xe1); // OUT_MUXA = 01, OUT_MUXB = 00, OUT_MUXC = 10, OUT_MUXD = 11
+			I2CWriteBytetoRegister(0x45, 0xd6, 0x0c); // OUT_MODE = 11 (RGB / SCART / HDTV)
 			*((DWORD *)&pbRegs[0x680630]) = 0; // switch GPU to RGB
 			*((DWORD *)&pbRegs[0x68084c]) =0;
 			break;
 		case AV_HDTV:
-			I2CTransmitWord(0x45, (0x6c<<8) | 0x46); // FLD_MODE = 10, EACTIVE = 1, EN_SCART = 0, EN_REG_RD = 1
-			I2CTransmitWord(0x45, (0x5a<<8) | 0x00); // Y_OFF (Brightness)
-			I2CTransmitWord(0x45, (0xa4<<8) | 0xe5); // SYNC_AMP
-			I2CTransmitWord(0x45, (0xa6<<8) | 0x74); // BST_AMP
-			I2CTransmitWord(0x45, (0xba<<8) | 0x20); // SLAVER = 1, enable all DACs
-			I2CTransmitWord(0x45, (0xc6<<8) | 0x9c); // IN_MODE = 24 bit YCrCb multiplexed
-			I2CTransmitWord(0x45, (0xce<<8) | 0x21); // OUT_MUXA = 01, OUT_MUXB = 00, OUT_MUXC = 10, OUT_MUXD = 00
-			I2CTransmitWord(0x45, (0xd6<<8) | 0x08); // OUT_MODE = 10 (VYU)
+			I2CWriteBytetoRegister(0x45, 0x6c, 0x46); // FLD_MODE = 10, EACTIVE = 1, EN_SCART = 0, EN_REG_RD = 1
+			I2CWriteBytetoRegister(0x45, 0x5a, 0x00); // Y_OFF (Brightness)
+			I2CWriteBytetoRegister(0x45, 0xa4, 0xe5); // SYNC_AMP
+			I2CWriteBytetoRegister(0x45, 0xa6, 0x74); // BST_AMP
+			I2CWriteBytetoRegister(0x45, 0xba, 0x20); // SLAVER = 1, enable all DACs
+			I2CWriteBytetoRegister(0x45, 0xc6, 0x9c); // IN_MODE = 24 bit YCrCb multiplexed
+			I2CWriteBytetoRegister(0x45, 0xce, 0x21); // OUT_MUXA = 01, OUT_MUXB = 00, OUT_MUXC = 10, OUT_MUXD = 00
+			I2CWriteBytetoRegister(0x45, 0xd6, 0x08); // OUT_MODE = 10 (VYU)
 			*((DWORD *)&pbRegs[0x680630]) = 2; // switch GPU to YCrCb
 			*((DWORD *)&pbRegs[0x68084c]) =0x801080;
 			break;
 		default:
 			break;
 	}
-	I2CTransmitWord(0x45, (0xc4<<8) | 0x01); // EN_OUT = 1
+	I2CWriteBytetoRegister(0x45, 0xc4, 0x01); // EN_OUT = 1
 	// Timing Reset
 	b=I2CTransmitByteGetReturn(0x45, 0x6c)&(0x7f);
-	I2CTransmitWord(0x45, (0x6c<<8)|0x80|b);
+	I2CWriteBytetoRegister(0x45, 0x6c, 0x80|b );
+	
+	// FLicker
+	I2CWriteBytetoRegister(0x45, 0x34, 0x80);
+	I2CWriteBytetoRegister(0x45, 0x36, 0xD2);
+	
 }
+
 
 static void SetGPURegister(const GPU_PARAMETER* gpu, BYTE *pbRegs) {
 	BYTE b;

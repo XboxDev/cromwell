@@ -86,7 +86,7 @@
 	.org 0x80
 
 	xcode_pciout(0x80000884, 0x00008001);
-	xcode_pciout(0x80000810, 0x00008001);	// from evox
+	xcode_pciout(0x80000810, 0x00008001);	
 	xcode_pciout(0x80000804, 0x00000003);
 	xcode_outb(0x00008049, 0x00000008);
 	xcode_outb(0x000080d9, 0x00000000);
