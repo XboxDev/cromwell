@@ -12,7 +12,6 @@
 #include "boot.h"
 #include "config.h"
 #include "cpu.h"
-#include "audio.h"
 
 volatile int nCountI2cinterrupts, nCountUnusedInterrupts, nCountUnusedInterruptsPic2, nCountInterruptsSmc, nCountInterruptsIde;
 volatile bool fSeenPowerdown;
@@ -468,18 +467,11 @@ void IntHandler5C(void)
 	bprintf("Interrupt 5\n");
 }
 
-// Audio
+void IntHandler6C(void) {
 
-void IntHandler6C(void)
-{
-	
-	if(!nInteruptable) return;
-#ifndef DEBUG_MODE
-	/*
-	BootAudioInterrupt(&ac97device);
-	*/
-#endif
+	bprintf("Interrupt 6\n");
 }
+
 void IntHandler7C(void)
 {
 	if(!nInteruptable) return;

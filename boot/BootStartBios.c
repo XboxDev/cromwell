@@ -7,7 +7,6 @@
  *                                                                         *
  ***************************************************************************/
 #include "boot.h"
-#include "audio.h"
 #include "video.h"
 #include "memory_layout.h"
 #include <shared.h>
@@ -23,8 +22,6 @@
 #include "config.h"
 
 extern EEPROMDATA eeprom;
-
-extern volatile AC97_DEVICE ac97device;
 
 #undef strcpy
 
@@ -865,9 +862,6 @@ void StartBios(CONFIGENTRY *config, int nActivePartition , int nFATXPresent,int 
 	disk_read_func=NULL;
 
 
-	// silence the audio
-        	
-        //BootAudioSilence(&ac97device);
 	if (bootfrom==-1) {
         // Nothing in All selceted
 		#ifdef DEFAULT_FATX
