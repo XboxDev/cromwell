@@ -6,6 +6,7 @@
 #ifndef _BootEEPROM_H_
 #define _BootEEPROM_H_
 
+#include "VideoInitialization.h"
 //Defines for Data structure sizes..
 #define EEPROM_SIZE		0x100
 #define CONFOUNDER_SIZE		0x008
