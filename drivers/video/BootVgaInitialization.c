@@ -269,7 +269,7 @@ void BootVgaInitializationKernelNG(CURRENT_VIDEO_MODE_DETAILS * pcurrentvideomod
 						break;
 				}
 				n1++;
-				
+				wait_us(800);	
 			}
                 	// Timing Reset
 			b=I2CTransmitByteGetReturn(0x45,0x6c) & (0x7f);
