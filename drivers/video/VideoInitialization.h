@@ -1,34 +1,33 @@
 #ifndef VIDEOINITIALIZATION_H
 #define VIDEOINITIALIZATION_H
 
-// these are the various video standards supported
-
+//These two came from the kernel driver
 typedef enum enumVideoStandards {
-	ILLEGAL=-1,
-	NTSC=0,
-	NTSC60,
-	PALBDGHI,
-	PALN,
-	PALNC,
-	PALM,
-	PAL60
-} EVIDEOSTD;
+        TV_ENC_INVALID=-1,
+        TV_ENC_NTSC=0,
+        TV_ENC_NTSC60,
+        TV_ENC_PALBDGHI,
+        TV_ENC_PALN,
+        TV_ENC_PALNC,
+        TV_ENC_PALM,
+        TV_ENC_PAL60
+} xbox_tv_encoding;
 
 typedef enum enumAvTypes {
-	AV_ILLEGAL=-1,
-	AV_SCART_RGB,
-	AV_SVIDEO,
-	AV_VGA_SOG,
-	AV_HDTV,
-	AV_COMPOSITE,
-	AV_VGA
-} EAVTYPE;
+        AV_INVALID=-1,
+        AV_SCART_RGB,
+        AV_SVIDEO,
+        AV_VGA_SOG,
+        AV_HDTV,
+        AV_COMPOSITE,
+        AV_VGA
+} xbox_av_type;
 
 typedef enum enumHdtvModes {
 	HDTV_480p,
 	HDTV_720p,
 	HDTV_1080i
-} HDTV_MODE;
+} xbox_hdtv_mode;
 
 // this struct contains all required parameter to define a TV mode
 
@@ -39,7 +38,7 @@ typedef struct {
   long h_clki;
   long bpp;
   double clk_ratio;
-  EVIDEOSTD nVideoStd;
+  xbox_tv_encoding nVideoStd;
 } TV_MODE_PARAMETER;
 
 // this struct contains all required parameter to define a VGA mode
@@ -100,8 +99,8 @@ static const double dPllBasePeriod = (1.0/13500000.0);
 
 ///////// VideoInitialization.c
 
-EVIDEOSTD DetectVideoStd(void);
-EAVTYPE DetectAvType(void);
+xbox_tv_encoding DetectVideoStd(void);
+xbox_av_type DetectAvType(void);
 
 int FindOverscanValues(
 	long h_active,
@@ -109,7 +108,7 @@ int FindOverscanValues(
 	double hoc,
 	double voc,
 	long bpp,
-	EVIDEOSTD nVideoStd,
+	xbox_tv_encoding nVideoStd,
 	TV_MODE_PARAMETER* result
 );
 

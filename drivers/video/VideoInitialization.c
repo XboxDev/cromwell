@@ -57,21 +57,21 @@ static void NvSetCrtc(BYTE * pbRegs, int nIndex, BYTE b) {
 	pbRegs[0x6013d5]=b;
 }
 
-EVIDEOSTD DetectVideoStd(void) {
-	EVIDEOSTD videoStd;
+xbox_tv_encoding DetectVideoStd(void) {
+	xbox_tv_encoding videoStd;
 	BYTE b=I2CTransmitByteGetReturn(0x54, 0x5A); // the eeprom defines the TV standard for the box
 
 	if(b == 0x40) {
-		videoStd = NTSC;
+		videoStd = TV_ENC_NTSC;
 	} else {
-		videoStd = PALBDGHI;
+		videoStd = TV_ENC_PALBDGHI;
 	}
 
 	return videoStd;
 }
 
-EAVTYPE DetectAvType(void) {
-	EAVTYPE avType;
+xbox_av_type DetectAvType(void) {
+	xbox_av_type avType;
 
 	switch (VIDEO_AV_MODE) {
 		case 0: avType = AV_SCART_RGB; break;
@@ -152,7 +152,7 @@ static void SetVGAConexantRegister(BYTE pll_int, BYTE* pbRegs)
 }
 
 static void SetHDTVConexantRegister(
-	HDTV_MODE hdtv_mode,
+	xbox_hdtv_mode hdtv_mode,
 	BYTE pll_int,
 	BYTE* pbRegs
 ){
@@ -238,13 +238,13 @@ static void SetTVConexantRegister(const TV_MODE_PARAMETER* mode, const BLANKING_
 	// V_ACTIVEO
 	/* TODO: Absolutely not sure about other modes than plain NTSC / PAL */
 	switch(mode->nVideoStd) {
-		case NTSC:
-		case NTSC60:
-		case PALM:
-		case PAL60:
+		case TV_ENC_NTSC:
+		case TV_ENC_NTSC60:
+		case TV_ENC_PALM:
+		case TV_ENC_PAL60:
 			m=v_activeo + 1;
 			break;
-		case PALBDGHI:
+		case TV_ENC_PALBDGHI:
 			m=v_activeo + 2;
 			break;
 		default:
@@ -341,15 +341,15 @@ static void SetTVConexantRegister(const TV_MODE_PARAMETER* mode, const BLANKING_
 		DWORD dwWssIncrement = 0;
 
 		switch(mode->nVideoStd) {
-			case NTSC:
-			case NTSC60:
+			case TV_ENC_NTSC:
+			case TV_ENC_NTSC60:
 				dwWssIncrement=(DWORD) ((1048576.0 / ( 0.000002234 * dPllOutputFrequency))+0.5);
 				break;
-			case PALBDGHI:
-			case PALN:
-			case PALNC:
-			case PALM:
-			case PAL60:
+			case TV_ENC_PALBDGHI:
+			case TV_ENC_PALN:
+			case TV_ENC_PALNC:
+			case TV_ENC_PALM:
+			case TV_ENC_PAL60:
 				dwWssIncrement=(DWORD) ((1048576.0 / ( 0.0000002 * dPllOutputFrequency))+0.5);
 				break;
 			default:
@@ -363,23 +363,23 @@ static void SetTVConexantRegister(const TV_MODE_PARAMETER* mode, const BLANKING_
 	// set mode register
 	b=I2CTransmitByteGetReturn(0x45, 0xa2)&(0x41);
 	switch(mode->nVideoStd) {
-			case NTSC:
+			case TV_ENC_NTSC:
 				b |= 0x0a; // SETUP + VSYNC_DUR
 				break;
-			case NTSC60:
+			case TV_ENC_NTSC60:
 				b |= 0x08; // VSYNC_DUR
 				break;
-			case PALBDGHI:
-			case PALNC:
+			case TV_ENC_PALBDGHI:
+			case TV_ENC_PALNC:
     				b |= 0x24; // PAL_MD + 625LINE
 				break;
-			case PALN:
+			case TV_ENC_PALN:
 				b |= 0x2e; // PAL_MD + SETUP + 625LINE + VSYNC_DUR
 				break;
-			case PALM:
+			case TV_ENC_PALM:
 				b |= 0x2a; // PAL_MD + SETUP + VSYNC_DUR
 				break;
-			case PAL60:
+			case TV_ENC_PAL60:
 				b |= 0x28; // PAL_MD + VSYNC_DUR
 				break;
 			default:
@@ -589,10 +589,10 @@ static void CalcBlankings(const TV_MODE_PARAMETER* m, BLANKING_PARAMETER* blanks
 
 	// V_BLANKO
 	switch (m->nVideoStd) {
-		case NTSC:
-		case NTSC60:
-		case PAL60:
-		case PALM:
+		case TV_ENC_NTSC:
+		case TV_ENC_NTSC60:
+		case TV_ENC_PAL60:
+		case TV_ENC_PALM:
 			blanks->v_blanko = (long)( 140 - ( v_activeo / 2.0 ) + 0.5 );
 			break;
 		default:
@@ -704,7 +704,7 @@ bool FindOverscanValues(
 	double hoc,
 	double voc,
 	long bpp,
-	EVIDEOSTD nVideoStd,
+	xbox_tv_encoding nVideoStd,
 	TV_MODE_PARAMETER* result
 ){
 	const double  dMinHBT = 2.5e-6; // 2.5uSec time for horizontal syncing
@@ -870,7 +870,7 @@ void SetVgaHdtvModeParameter(const VGA_MODE_PARAMETER* mode, BYTE *pbRegs) {
 	gpu.crtcvstart = mode->vsyncstart;
 	gpu.crtcvtotal = mode->vtotal;
     if (DetectAvType() == AV_HDTV) {
-		HDTV_MODE hdtv_mode = HDTV_480p;
+		xbox_hdtv_mode hdtv_mode = HDTV_480p;
 		if (mode->yres > 800) {
 			hdtv_mode = HDTV_1080i;
 		}
