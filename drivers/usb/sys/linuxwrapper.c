@@ -213,7 +213,7 @@ int my_schedule_timeout(int x)
 /*------------------------------------------------------------------------*/ 
 void my_wait_for_completion(struct completion *x)
 {
-	int n=1000;
+	int n=100;
 //	printk("wait for completion\n");
 	while(!x->done && (n>0))
 	{
