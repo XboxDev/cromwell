@@ -108,9 +108,6 @@ void BootVgaInitializationKernelNG(CURRENT_VIDEO_MODE_DETAILS * pvmode) {
 		pvmode->m_nVideoModeIndex=VIDEO_PREFERRED_MODE;
 	}
 
-	pvmode->m_pbBaseAddressVideo=(u8 *)0xfd000000;
-	pvmode->m_fForceEncoderLumaAndChromaToZeroInitially=1;
-
         // If the client hasn't set the frame buffer start address, assume
         // it should be at 4M from the end of RAM.
 
@@ -411,8 +408,8 @@ void BootVgaInitializationKernelNG(CURRENT_VIDEO_MODE_DETAILS * pvmode) {
 	NVVertIntrEnabled (&riva,0);
 	NVSetFBStart (&riva, 0, pvmode->m_dwFrameBufferStart);
 	IoOutputByte(0x80d3, 4);  // ACPI IO video enable REQUIRED <-- particularly crucial to get composite out
-	// We dim the Video out - focus video is implicitly disabled.
 
+	//Dim Conexant video out.
 	if (video_encoder == ENCODER_CONEXANT) {
 		I2CTransmitWord(0x45, (0xa8<<8)|0);
 		I2CTransmitWord(0x45, (0xaa<<8)|0);
@@ -421,6 +418,7 @@ void BootVgaInitializationKernelNG(CURRENT_VIDEO_MODE_DETAILS * pvmode) {
 	
 	NVWriteSeq(&riva, 0x01, 0x01);  /* reenable display */
 
+	//Turn on the output
 	switch (video_encoder) {
 		case ENCODER_CONEXANT:
 			I2CWriteBytetoRegister(0x45, 0xA8, 0x81);
