@@ -149,4 +149,7 @@ void XPADInit(void)
 		return;
 	}       
 }
-
+/*------------------------------------------------------------------------*/ 
+void XPADRemove(void) {
+	usb_deregister(&xpad_driver);
+}
