@@ -137,15 +137,15 @@ extern void BootResetAction ( void ) {
 	BootFiltrorSendArrayToPc("\nBOOT: starting BootResetAction()\n\r", 34);
 #endif
 
-	BootInterruptsWriteIdt();
-//	bprintf("BOOT: done interrupts\n\r");
-
 		// init malloc() and free() structures
 #ifdef XBE
 	MemoryManagementInitialization((void *)0x1000000, 0x0E00000);
 #else
 	MemoryManagementInitialization((void *)0x1000000, 0x2000000);
 #endif
+	
+	BootInterruptsWriteIdt();
+//	bprintf("BOOT: done interrupts\n\r");
 
 		// if we don't make the PIC happy within 200mS, the damn thing will reset us
 
@@ -599,6 +599,17 @@ extern void BootResetAction ( void ) {
 
 //	printk("i2C=%d SMC=%d, IDE=%d, tick=%d una=%d unb=%d\n", nCountI2cinterrupts, nCountInterruptsSmc, nCountInterruptsIde, BIOS_TICK_COUNT, nCountUnusedInterrupts, nCountUnusedInterruptsPic2);
 
+
+	// enable below for stress testing
+	// continually restarts _romwell without hard-resetting the hardware
+
+#if 0
+		{
+			void bootloader2();
+			printk("rebooting\n");
+			bootloader2();
+		}
+#endif
 
 	// Used to start Bochs; now a misnomer as it runs vmlinux
 	// argument 0 for hdd and 1 for from CDROM

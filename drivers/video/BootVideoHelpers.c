@@ -478,7 +478,7 @@ int printk(const char *szFormat, ...) {  // printk displays to video and filtror
 	serialprint(&szBuffer[0]);
 	#endif
 	#if INCLUDE_FILTROR
-	BootFiltrorSendArrayToPcModal(&szBuffer[0], wLength);
+//	BootFiltrorSendArrayToPcModal(&szBuffer[0], wLength);
 	#endif
 
 	BootVideoChunkedPrint(szBuffer, wLength);

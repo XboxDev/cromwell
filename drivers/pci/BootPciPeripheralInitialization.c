@@ -80,16 +80,10 @@ DWORD PciReadDword(unsigned int bus, unsigned int dev, unsigned int func, unsign
 }
 
 
-void PciWriteDword(unsigned int bus, unsigned int dev, unsigned int func, unsigned int reg_off, DWORD dw)
-{
-	DWORD base_addr = 0x80000000;
-	base_addr |= ((bus & 0xFF) << 16);	// bus #
-	base_addr |= ((dev & 0x1F) << 11);	// device #
-	base_addr |= ((func & 0x07) << 8);	// func #
-
-		IoOutputDword(0xcf8, (base_addr + (reg_off & 0xfc)));
-		IoOutputDword(0xcfc + (reg_off & 3), dw);
-
+#define PciWriteDword(bus, dev, func, reg_off, dw) \
+{ \
+		IoOutputDword(0xcf8, ((0x80000000|(((bus) & 0xFF) << 16)|(((dev) & 0x1F) << 11)|(((func) & 0x07) << 8)) + ((reg_off) & 0xfc))); \
+		IoOutputDword(0xcfc + ((reg_off) & 3), dw); \
 }
 
 
@@ -97,12 +91,12 @@ void BootPciPeripheralInitialization()
 {
 
 	__asm__ __volatile__ ( "cli" );
-
+/*
 		__asm__ __volatile__(
 			" mov $0x1b, %%ecx ; rdmsr ; and $0xFFFFF7FF, %%eax ; wrmsr  \n"  // turn off APIC
 				: : : "%ecx", "%edx", "%eax"
 		);
-
+*/
 	PciWriteDword(BUS_0, DEV_1, 0, 0x80, 2);  // v1.1 2BL kill ROM area
 	if(PciReadByte(BUS_0, DEV_1, 0, 0x8)>=0xd1) { // check revision
 		PciWriteDword(BUS_0, DEV_1, 0, 0xc8, 0x8f00);  // v1.1 2BL <-- death
@@ -328,7 +322,7 @@ void BootPciPeripheralInitialization()
 #if 1
 		__asm__ __volatile__(
 
-		" wbinvd \n"
+//		" wbinvd \n"
 
 		" push %edx \n"
 		" push %eax \n"
@@ -366,14 +360,14 @@ void BootPciPeripheralInitialization()
 		" movw $0xcfc, %dx \n"
 		" movl $0x100, %eax \n"
 		" outl	%eax, %dx \n"
-/*
+
 		" mov $0x8000088C, %eax \n"
 		" movw $0xcf8, %dx \n"
 		" outl	%eax, %dx \n"
 		" movw $0xcfc, %dx \n"
 		" movl $0x40000000, %eax \n"
 		" outl	%eax, %dx \n"
-*/
+
 		" pop %eax\n"
 		" pop %edx \n"
 		"	movl $0x0, 0x0f680600\n"

@@ -13,7 +13,7 @@
  *                                                                         *
  ***************************************************************************/
 
-#define VERSION "1.21dev"
+#define VERSION "1.22dev"
 
 #define PCI_CFG_ADDR 0x0CF8
 #define PCI_CFG_DATA 0x0CFC

@@ -291,6 +291,9 @@ void BootAudioInit(volatile AC97_DEVICE * pac97device)
 	pac97device->m_pdwMMIO[0x12C>>2]|=2; // allow interrupts, reset AC97 link
 	while(!pac97device->m_pdwMMIO[0x130>>2]&0x100) ;
 
+	((BYTE *)pac97device->m_pdwMMIO)[0x116]=0xff; // clear all int sources
+	((BYTE *)pac97device->m_pdwMMIO)[0x176]=0xff; // clear all int sources
+
 	pac97device->m_pdwMMIO[0x100>>2]=0;
 	pac97device->m_pdwMMIO[0x110>>2]=(DWORD)&pac97device->m_aac97descriptorPcmOut[0];
 	pac97device->m_pdwMMIO[0x170>>2]=(DWORD)&pac97device->m_aac97descriptorPcmSpdif[0];
