@@ -734,54 +734,57 @@ int BootIdeDriveInit(unsigned uIoBase, int nIndexDrive,int drivetype)
 
 /* -------------------------------------------------------------------------------- */
 int DriveSecurityChange(unsigned uIoBase, int driveId, ide_command_t ide_cmd, char *password) {
-				//Should check it's ACTUALLY locked first, but lets assume the caller did, for now.	
-				char ide_cmd_data[2+512];	
-				char baBuffer[512];
-				unsigned short*	drive_info = (unsigned short*)baBuffer;
-				
-				memset(ide_cmd_data,0x00,512);
-				tsIdeCommandParams tsicp = IDE_DEFAULT_COMMAND;
-				tsIdeCommandParams tsicp1 = IDE_DEFAULT_COMMAND;
+	//Should check it's ACTUALLY locked first, but lets assume the caller did, for now.	
+	char ide_cmd_data[2+512];	
+	char baBuffer[512];
+	unsigned short*	drive_info = (unsigned short*)baBuffer;
 
-				//Password is only 20 bytes long - the rest is 0-padded.
-				memcpy(&ide_cmd_data[2],password,20);
-				
-				if(BootIdeWaitNotBusy(uIoBase)) 
-				{
-					printk("  %d:  Not Ready\n", driveId);
-					return 1;
-				}
-				tsicp1.m_bDrivehead = IDE_DH_DEFAULT | IDE_DH_HEAD(0) | IDE_DH_CHS | IDE_DH_DRIVE(driveId);
-	
-				if(BootIdeIssueAtaCommand(uIoBase, ide_cmd, &tsicp1)) return 1;
-				
-				BootIdeWaitDataReady(uIoBase);
-				BootIdeWriteData(uIoBase, ide_cmd_data, IDE_SECTOR_SIZE);
-        	
-				if (BootIdeWaitNotBusy(uIoBase))	
-				{
-					return 1;
-				}
-				// check that we are unlocked
-				tsicp.m_bDrivehead = IDE_DH_DEFAULT | IDE_DH_HEAD(0) | IDE_DH_CHS | IDE_DH_DRIVE(driveId);
-				if(BootIdeIssueAtaCommand(uIoBase, IDE_CMD_GET_INFO, &tsicp)) 
-				{
-					return 1;
-				}
-				BootIdeWaitDataReady(uIoBase);
-				if(BootIdeReadData(uIoBase, baBuffer, IDE_SECTOR_SIZE)) 
-				{
-					return 1;
-				}
+	memset(ide_cmd_data,0x00,512);
+	tsIdeCommandParams tsicp = IDE_DEFAULT_COMMAND;
+	tsIdeCommandParams tsicp1 = IDE_DEFAULT_COMMAND;
 
-				if(drive_info[128]&0x0004) 
-				{
-					//Drive is still locked
-					return 1;
-				} else {
-					//Unlock was successful
-					return 0;
-				}
+	//Password is only 20 bytes long - the rest is 0-padded.
+	memcpy(&ide_cmd_data[2],password,20);
+
+	//If we're locking, use high security mode, as this is what the MS bios expects
+	if (ide_cmd == IDE_CMD_SET_PASSWORD) ide_cmd_data[1]|=0x01;
+
+	if(BootIdeWaitNotBusy(uIoBase)) 
+	{
+		printk("  %d:  Not Ready\n", driveId);
+		return 1;
+	}
+	tsicp1.m_bDrivehead = IDE_DH_DEFAULT | IDE_DH_HEAD(0) | IDE_DH_CHS | IDE_DH_DRIVE(driveId);
+
+	if(BootIdeIssueAtaCommand(uIoBase, ide_cmd, &tsicp1)) return 1;
+		
+	BootIdeWaitDataReady(uIoBase);
+	BootIdeWriteData(uIoBase, ide_cmd_data, IDE_SECTOR_SIZE);
+       	
+	if (BootIdeWaitNotBusy(uIoBase))	
+	{
+		return 1;
+	}
+	// check that we are unlocked
+	tsicp.m_bDrivehead = IDE_DH_DEFAULT | IDE_DH_HEAD(0) | IDE_DH_CHS | IDE_DH_DRIVE(driveId);
+	if(BootIdeIssueAtaCommand(uIoBase, IDE_CMD_GET_INFO, &tsicp)) 
+	{
+		return 1;
+	}
+	BootIdeWaitDataReady(uIoBase);
+	if(BootIdeReadData(uIoBase, baBuffer, IDE_SECTOR_SIZE)) 
+	{
+		return 1;
+	}
+
+	if(drive_info[128]&0x0004) 
+		{
+		//Drive is still locked
+		return 1;
+	} else {
+		//Unlock was successful
+		return 0;
+	}
 }
 
 
