@@ -191,8 +191,8 @@ int focus_calc_mode(xbox_video_mode * mode, struct riva_regs * riva_out)
 	long dotclock;
 	focus_pll_settings pll_settings;
 
-	riva_out->encoder_mode = (void *)malloc(256*sizeof(char));
-	regs=(unsigned char *)riva_out->encoder_mode;
+	riva_out->encoder_regs = (void *)malloc(256*sizeof(char));
+	regs=(unsigned char *)riva_out->encoder_regs;
 	
 	memcpy(regs,focus_defaults,sizeof(focus_defaults));
 	

@@ -177,7 +177,7 @@ int conexant_calc_mode(xbox_video_mode * mode, struct riva_regs * riva_out)
 	unsigned int m = 0;
 	double dPllOutputFrequency;
 	xbox_tv_mode_parameter param;
-	char* regs = riva_out->encoder_mode;
+	char* regs = riva_out->encoder_regs;
 
 	if (conexant_calc_mode_params(mode, &param))
 	{

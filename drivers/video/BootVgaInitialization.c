@@ -219,11 +219,11 @@ void BootVgaInitializationKernelNG(CURRENT_VIDEO_MODE_DETAILS * pvmode) {
 			
 			pll_int = (unsigned char)((double)27027 * 6.0 / 13.5e3 + 0.5);
 			if (video_encoder == ENCODER_CONEXANT)
-				encoder_ok = conexant_calc_hdtv_mode(hdtv_mode, pll_int, &(newmode.encoder_mode));
+				encoder_ok = conexant_calc_hdtv_mode(hdtv_mode, pll_int, &(newmode.encoder_regs));
 			else if (video_encoder == ENCODER_FOCUS)
-				encoder_ok = focus_calc_hdtv_mode(hdtv_mode, pll_int, &(newmode.encoder_mode));
+				encoder_ok = focus_calc_hdtv_mode(hdtv_mode, pll_int, &(newmode.encoder_regs));
 			else if (video_encoder == ENCODER_XCALIBUR) 
-				encoder_ok = xcalibur_calc_hdtv_mode(hdtv_mode, pll_int, &(newmode.encoder_mode));
+				encoder_ok = xcalibur_calc_hdtv_mode(hdtv_mode, pll_int, &(newmode.encoder_regs));
 		}
 		else {
 			//VGA or VGA_SOG
@@ -246,7 +246,7 @@ void BootVgaInitializationKernelNG(CURRENT_VIDEO_MODE_DETAILS * pvmode) {
 			pll_int = (unsigned char)((double)36000 * 6.0 / 13.5e3 + 0.5);
 			
 			if (video_encoder == ENCODER_CONEXANT)
-				encoder_ok = conexant_calc_vga_mode(av_type, pll_int, &(newmode.encoder_mode));
+				encoder_ok = conexant_calc_vga_mode(av_type, pll_int, &(newmode.encoder_regs));
 			else if (video_encoder == ENCODER_FOCUS);
 				//No focus VGA functions as yet
 		}
@@ -326,7 +326,7 @@ void BootVgaInitializationKernelNG(CURRENT_VIDEO_MODE_DETAILS * pvmode) {
 			I2CWriteBytetoRegister(0x45,0xc4, 0x00); // EN_OUT = 1
 		        // Conexant init (starts at register 0x2e)
 		        n1=0;
-			regs = (unsigned char*)newmode.encoder_mode;
+			regs = (unsigned char*)newmode.encoder_regs;
 		        for(i=0x2e;i<0x100;i+=2) {
 		        	switch(i) {
 		        		case 0x6c: // reset
@@ -352,7 +352,7 @@ void BootVgaInitializationKernelNG(CURRENT_VIDEO_MODE_DETAILS * pvmode) {
 		}
 		else if (video_encoder == ENCODER_FOCUS) {
 			unsigned char *regs;
-			regs = (unsigned char*)newmode.encoder_mode;
+			regs = (unsigned char*)newmode.encoder_regs;
 	             	for (i=0; i<0xc4; ++i) {
                         	I2CWriteBytetoRegister(0x6a, i, regs[i]);
 				wait_us(500);
@@ -360,7 +360,7 @@ void BootVgaInitializationKernelNG(CURRENT_VIDEO_MODE_DETAILS * pvmode) {
 		}
 		else if (video_encoder == ENCODER_XCALIBUR) {
 			//Xlb init
-			unsigned long *XCal_Reg = (unsigned long*)newmode.encoder_mode;
+			unsigned long *XCal_Reg = (unsigned long*)newmode.encoder_regs;
 			ReadfromSMBus(0x70,4,4,&i);
 			WriteToSMBus(0x70,4,4,0x0F000000);
 			ReadfromSMBus(0x70,0,4,&i);
@@ -374,7 +374,10 @@ void BootVgaInitializationKernelNG(CURRENT_VIDEO_MODE_DETAILS * pvmode) {
 		}
 	}
 
-        NVDisablePalette (&riva, 0);
+	//Free the malloc'd registers
+	free((char *)newmode.encoder_regs);
+        
+	NVDisablePalette (&riva, 0);
 	writeCrtNv (&riva, 0, 0x44, 0x03);
 	NVInitGrSeq(&riva);
 	writeCrtNv (&riva, 0, 0x44, 0x00);
