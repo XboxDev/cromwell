@@ -447,12 +447,6 @@ selectinsert:
 		BootIso9660DescriptorToString(pipvd->m_szVolumeIdentifier, sizeof(pipvd->m_szVolumeIdentifier), sz);
 		printk("%s\n", sz);
 	}
-// Uncomment the following to test flashing   
- #if 0   
-         dwConfigSize=BootIso9660GetFile("/IMAGE.BIN", (BYTE *)0x100000, 0x100000, 0x0);   
-         printk("Image size: %i\n", dwConfigSize);   
-         printk("Error code: $i\n", BootReflashAndReset((BYTE*) 0x100000, (DWORD) 0, (DWORD) dwConfigSize));   
- #endif 
 
 	printk("  Loading linuxboot.cfg from CDROM... \n");
 	dwConfigSize=BootIso9660GetFile("/linuxboot.cfg", (BYTE *)0x90000, 0x800, 0x0);
@@ -516,8 +510,192 @@ selectinsert:
 }
 
 
-#ifdef FLASH
-void BootFlashConfirm()
+#ifdef FLASH 
+
+
+int BootLoadFlashCD(CONFIGENTRY *config) {
+
+        DWORD dwConfigSize=0;
+	BYTE ba[2048];
+	BYTE baBackground[640*64*4]; 
+	BYTE bCount=0, bCount1;
+	unsigned char checksum[20];
+	unsigned int n;
+	
+	DWORD dwY=VIDEO_CURSOR_POSY;
+	DWORD dwX=VIDEO_CURSOR_POSX;
+	struct SHA1Context context;
+      	unsigned char SHA1_result[20];
+
+
+selectinsert:
+	BootVideoBlit(
+		(DWORD *)&baBackground[0], 640*4,
+		(DWORD *)(FRAMEBUFFER_START+(VIDEO_CURSOR_POSY*currentvideomodedetails.m_dwWidthInPixels*4)+VIDEO_CURSOR_POSX),
+		currentvideomodedetails.m_dwWidthInPixels*4, 64
+	);
+
+
+	while(DVD_TRAY_STATE != DVD_CLOSING) {
+	
+		VIDEO_CURSOR_POSX=dwX;
+		VIDEO_CURSOR_POSY=dwY;
+		bCount++;
+		bCount1=bCount; if(bCount1&0x80) { bCount1=(-bCount1)-1; }
+		//if(b>=16) {
+			VIDEO_ATTR=0xff000000|(((bCount1>>1)+64)<<16)|(((bCount1>>1)+64)<<8)|0 ;
+		//} else {
+		//	VIDEO_ATTR=0xff000000|(((bCount1>>2)+192)<<16)|(((bCount1>>2)+192)<<8)|(((bCount1>>2)+192)) ;
+		//}
+//		printk("\2BootResetAction 0x%08X\2\n",&BootResetAction);
+//		printk("%08x",(*((DWORD * )0xfd600800)));
+		printk("\2Please insert CD - Flashing Mode\n\2");
+		
+		for (n=0;n<1000000;n++) {;}
+	}
+
+
+	VIDEO_ATTR=0xffffffff;
+
+	VIDEO_CURSOR_POSX=dwX;
+	VIDEO_CURSOR_POSY=dwY;
+	BootVideoBlit(
+		(DWORD *)(FRAMEBUFFER_START+(VIDEO_CURSOR_POSY*currentvideomodedetails.m_dwWidthInPixels*4)+VIDEO_CURSOR_POSX),
+		currentvideomodedetails.m_dwWidthInPixels*4, (DWORD *)&baBackground[0], 640*4, 64
+	);
+
+		// wait until the media is readable
+
+	{
+		bool fMore=true, fOkay=true;
+		int timeoutcount = 0;
+		
+		while(fMore) {
+			timeoutcount++;
+			// We waited very long now for a Good read sector, but we did not get one, so we
+			// jump back and try again
+			if (timeoutcount>200) {
+				VIDEO_ATTR=0xffffffff;
+				VIDEO_CURSOR_POSX=dwX;
+				VIDEO_CURSOR_POSY=dwY;
+				BootVideoBlit(
+				(DWORD *)(FRAMEBUFFER_START+(VIDEO_CURSOR_POSY*currentvideomodedetails.m_dwWidthInPixels*4)+VIDEO_CURSOR_POSX),
+				currentvideomodedetails.m_dwWidthInPixels*4, (DWORD *)&baBackground[0], 640*4, 64
+				);
+				I2CTransmitWord(0x10, 0x0c00); // eject DVD tray	
+				
+				goto selectinsert;
+			}
+			wait_tick(3);
+			
+			if(BootIdeReadSector(1, &ba[0], 0x10, 0, 2048)) { // starts at 16
+				VIDEO_CURSOR_POSX=dwX;
+				VIDEO_CURSOR_POSY=dwY;
+				bCount++;
+				bCount1=bCount; if(bCount1&0x80) { bCount1=(-bCount1)-1; }
+
+				VIDEO_ATTR=0xff000000|(((bCount1)+64)<<16)|(((bCount1>>1)+128)<<8)|(((bCount1)+128)) ;
+
+				printk("\2Waiting for drive - Mode Flashing\2\n");
+	
+// If cromwell acts as an xbeloader it falls back to try reading
+//	the config file from fatx
+
+			} else {  // read it successfully
+				fMore=false;
+				fOkay=true;
+//				printk("\n");
+//				printk("Saw successful read\n");
+			}
+		}
+
+		if(!fOkay) {
+			void BootFiltrorDebugShell(void);
+			printk("cdrom unhappy\n");
+			while(1);
+		} else {
+			printk("\n");
+//			printk("HAPPY\n");
+		}
+	}
+
+	VIDEO_CURSOR_POSX=dwX;
+	VIDEO_CURSOR_POSY=dwY;
+	BootVideoBlit(
+		(DWORD *)(FRAMEBUFFER_START+(VIDEO_CURSOR_POSY*currentvideomodedetails.m_dwWidthInPixels*4)+VIDEO_CURSOR_POSX),
+		currentvideomodedetails.m_dwWidthInPixels*4, (DWORD *)&baBackground[0], 640*4, 64
+	);
+ 
+        
+//	printk("STILL HAPPY\n");
+
+	{
+		ISO_PRIMARY_VOLUME_DESCRIPTOR * pipvd = (ISO_PRIMARY_VOLUME_DESCRIPTOR *)&ba[0];
+		char sz[64];
+		memset(&sz,0x00,sizeof(sz));
+		BootIso9660DescriptorToString(pipvd->m_szSystemIdentifier, sizeof(pipvd->m_szSystemIdentifier), sz);
+		VIDEO_ATTR=0xffeeeeee;
+		printk("Cdrom: ");
+		VIDEO_ATTR=0xffeeeeff;
+		printk("%s", sz);
+		VIDEO_ATTR=0xffeeeeee;
+		printk(" - ");
+		VIDEO_ATTR=0xffeeeeff;
+		BootIso9660DescriptorToString(pipvd->m_szVolumeIdentifier, sizeof(pipvd->m_szVolumeIdentifier), sz);
+		printk("%s\n", sz);
+	}
+    
+	dwConfigSize=0;
+	dwConfigSize=BootIso9660GetFile("/IMAGE.SUM", (BYTE *)0x100000, 0x100000, 0x0);   
+	memcpy(&checksum,(BYTE *)0x100000,20);
+
+        dwConfigSize=BootIso9660GetFile("/IMAGE.BIN", (BYTE *)0x100000, 0x100000, 0x0);   
+	printk("Image size: %i\n", dwConfigSize);   
+
+      	SHA1Reset(&context);
+	SHA1Input(&context,(BYTE *)0x100000,dwConfigSize);
+	SHA1Result(&context,SHA1_result);
+	
+	if (_memcmp(&checksum[0],&SHA1_result[0],20)!=0) {
+		printk("Checksum on Disk Not Matching-Bad image or Missread\n");
+		while(1);		
+	}
+
+	printk("Bios Disk Checksum Matching\n");
+    //printk("Error code: $i\n", BootReflashAndReset((BYTE*) 0x100000, (DWORD) 0, (DWORD) dwConfigSize));   
+
+	//memcpy((void *) 0x100004,(void *)LPCFlashadress,0x100000);
+      	
+      	SHA1Reset(&context);
+	SHA1Input(&context,(void *)LPCFlashadress,0x40000*4);
+	SHA1Result(&context,SHA1_result);
+        
+    //    memcpy(&n,(void *)(0x100004+0x40000*4-8),4);
+    //    printk("%08x\n",n);
+    //    memcpy(&n,(void *)(0x100004+0x40000*4-4),4);
+    //    printk("%08x\n",n);
+		
+	if (_memcmp(&checksum[0],&SHA1_result[0],20)==0) {
+		printk("Checksum in Flash Matching\n");
+	} else {
+		printk("Checksum in Flash not matching\n");
+	//	while(1);		
+	}		
+
+
+	return true;
+}
+
+
+
+
+
+
+
+
+
+
+void BootFlashConfirm(void)
 {
 	I2CTransmitWord(0x10, 0x0c00); // eject DVD tray
 
@@ -666,7 +844,11 @@ int BootMenue(CONFIGENTRY *config,int nDrive,int nActivePartition, int nFATXPres
 	
 			case ICON_SETUP:
 				printk("Flash\n");
+				#ifdef FLASH
 				nShowSelect = true;
+				#else
+				continue;
+				#endif
 				break;
 				
 		}
@@ -774,7 +956,7 @@ void StartBios(CONFIGENTRY *config, int nActivePartition , int nFATXPresent,int 
 			printk("Defaulting to CD boot\n");
 			bootfrom = ICON_CD;
 
-			#endif	
+		#endif	
 	}
 
 
@@ -802,13 +984,12 @@ void StartBios(CONFIGENTRY *config, int nActivePartition , int nFATXPresent,int 
 			BootLodaConfigCD(config);
 			break;
 		case ICON_SETUP:
-#ifndef XBE
 #ifdef FLASH
-			BootVideoClearScreen(&jpegBackdrop, nTempStartMessageCursorY, nTempCursorResumeY+100);
-			VIDEO_CURSOR_POSY=nTempStartMessageCursorY;
-			VIDEO_CURSOR_POSX=0;
+			BootLoadFlashCD(config);
+			//BootVideoClearScreen(&jpegBackdrop, nTempStartMessageCursorY, nTempCursorResumeY+100);
+			//VIDEO_CURSOR_POSY=nTempStartMessageCursorY;
+			//VIDEO_CURSOR_POSX=0;
 			BootFlashConfirm();
-#endif
 #endif
 			break;
 		default:

@@ -406,7 +406,7 @@ extern void BootResetAction ( void ) {
 		BootEepromPrintInfo();
 
 		
-#if 0
+#ifdef FLASH
 		{
 		OBJECT_FLASH of;
 		memset(&of,0x00,sizeof(of));
@@ -564,31 +564,24 @@ extern void BootResetAction ( void ) {
 	// argument 0 for hdd and 1 for from CDROM
 
 //#ifndef IS_XBE_CDLOADER
-//#ifdef MENU
 
+
+	temp = -1; // Nothing Choosed
   	memset(&kernel_config,0,sizeof(CONFIGENTRY));
-		
+  		
+#ifdef MENU
+
 	if(fMbrPresent && fSeenActive) {
 		temp = BootMenue(&kernel_config, 0,nActivePartitionIndex, nFATXPresent);
 	} else {
 		temp = BootMenue(&kernel_config, 1,0, nFATXPresent); 
 	}
-  
-  
+#endif  
+ 
         //printk("We are starting the config %d\n",temp); 
      	StartBios(&kernel_config, nActivePartitionIndex, nFATXPresent,temp);
     
     while(1);   
-/*
-#ifdef FORCE_CD_BOOT
-	StartBios(1, 0, 0);
-#else
-		if(fMbrPresent && fSeenActive) { // if there's an MBR and active partition , try to boot from HDD
-			StartBios(0, nActivePartitionIndex, nFATXPresent);
-		} else { // otherwise prompt for CDROM
-			StartBios(1, 0, nFATXPresent);
-		}
-#endif
-*/
 
-	}
+
+}
