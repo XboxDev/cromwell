@@ -119,13 +119,22 @@ int xberepair (	unsigned char * xbeimage,
 		fprintf(stderr,"Unable to open cromwell image file %s : %s \nAborting\n",cromimage,strerror(errno)); 
 		return 1;
 	}
-
 	romsize = fileinfo.st_size;
-    	if (romsize>0x100000) {
+	if (romsize>0x100000) {
     		printf("Romsize too big, increase the static variables everywhere");
     		return 1;
     	}
-   
+
+	f = fopen(cromimage, "r");
+    	if (f==NULL) {
+		fprintf(stderr,"Unable to open cromwell image file %s : %s \nAborting\n",xbeimage,strerror(errno)); 
+		return 1;
+	}
+  	
+	fseek(f, 0, SEEK_SET);
+	fread(crom, 1, romsize, f);
+	fclose(f);
+
 	if (stat(xbeimage, &fileinfo)) {
 		fprintf(stderr,"Unable to open xbe destination file %s : %s \nAborting\n",xbeimage,strerror(errno)); 
 		return 1;
