@@ -74,20 +74,12 @@ extern void IntHandlerException10(void);
 
 	// structure defining our ISRs
 
-typedef struct {  // inside an 8-byte protected mode interrupt vector
-	WORD m_wHandlerHighAddressLow16;
-	WORD m_wSelector;
-	WORD m_wType;
-	WORD m_wHandlerLinearAddressHigh16;
-} ts_pm_interrupt;
-
 typedef struct {
 	BYTE m_bInterruptCpu;
 	DWORD m_dwpVector;
 } ISR_PREP;
 
 const ISR_PREP isrprep[] = {
-	
 	{ 0x00, (DWORD)IntHandlerException0 },
 	{ 0x01, (DWORD)IntHandlerException1 },
 	{ 0x02, (DWORD)IntHandlerException2 },
@@ -106,8 +98,8 @@ const ISR_PREP isrprep[] = {
 	{ 0x0f, (DWORD)IntHandlerExceptionF },
 	{ 0x10, (DWORD)IntHandlerException10 },
 
-	
-	// interrupts from PIC1
+			// interrupts from PIC1
+
 	{ 0x20, (DWORD)IntHandlerTimer0 },
 	{ 0x21, (DWORD)IntHandler1 },
 	{ 0x22, (DWORD)IntHandler2 },
@@ -128,7 +120,7 @@ const ISR_PREP isrprep[] = {
 	{ 0x76, (DWORD)IntHandlerIde },
 	{ 0x77, (DWORD)IntHandler15 },
 
-
+	{ 0, 0 }
 };
 
 
@@ -153,27 +145,18 @@ void BootInterruptsWriteIdt(void) {
 	VIDEO_RSCALING=0;
 	VIDEO_BSCALING=0;
 
-	// set up default exception, interrupt vectors to dummy stubs
-	// Set up All Interrupts with Dummy interrupt Vector
-	for(n=0;n<0x100;n++) {  // have to do 256        
+		// set up default exception, interrupt vectors to dummy stubs
+
+	for(n=0;n<0x100;n++) {  // have to do 256
 		ptspmi[n].m_wSelector=0x10;
 		ptspmi[n].m_wType=0x8e00;  // interrupt gate, 32-bit
-		ptspmi[n].m_wHandlerHighAddressLow16=(WORD)IntHandlerUnused;
-		ptspmi[n].m_wHandlerLinearAddressHigh16=(WORD)(((DWORD)IntHandlerUnused)>>16);
-	}
-	
-	// Overwrite now with "good interrupt Handlers" we have        
-	for(n=0;n<0x100;n++) {  // have to do 256
-	
-		for(n1=0;n1<(sizeof(isrprep)/5);n1++)
-		{
-		
 		if(n==isrprep[n1].m_bInterruptCpu) {  // is it next on our prep list?  If so, stick it in
-			ptspmi[n].m_wSelector=0x10;
-			ptspmi[n].m_wType=0x8e00;  // interrupt gate, 32-bit
-                	ptspmi[n].m_wHandlerHighAddressLow16=(WORD)isrprep[n1].m_dwpVector;
+			ptspmi[n].m_wHandlerHighAddressLow16=(WORD)isrprep[n1].m_dwpVector;
 			ptspmi[n].m_wHandlerLinearAddressHigh16=(WORD)(((DWORD)isrprep[n1].m_dwpVector)>>16);
-		}
+			n1++;
+		} else { // otherwise default handler (pretty useless, but will catch it)
+			ptspmi[n].m_wHandlerHighAddressLow16=(WORD)IntHandlerUnused;
+			ptspmi[n].m_wHandlerLinearAddressHigh16=(WORD)(((DWORD)IntHandlerUnused)>>16);
 		}
 	}
 
@@ -189,16 +172,14 @@ void BootInterruptsWriteIdt(void) {
 	IoOutputByte(0xa1, 0x70);  // base interrupt vector address
 	IoOutputByte(0xa1, 0x02);  // am slave, hooked to INT2 on master
 	IoOutputByte(0xa1, 0x01);  // x86 mode normal EOI
-
 #ifdef XBE
 //	IoOutputByte(0xa1, 0xff);		// enable no ints
 	IoOutputByte(0xa1, 0xaf);		// enable int14(IDE) int12(SMI)
-
 #else
 	IoOutputByte(0xa1, 0x00);		// enable all ints
 #endif
 
-	// enable Intel Interrupts
+			// enable interrupts
 
 	__asm__ __volatile__("wbinvd; mov $0x1b, %%cx ; rdmsr ; andl $0xfffff7ff, %%eax ; wrmsr; sti" : : : "%ecx", "%eax", "%edx");
 
@@ -303,10 +284,6 @@ void IntHandlerCSmc(void)
 
 				case 7: // UNKNOWN
 					bprintf("SMC Interrupt %d: b7 Reason code\n", nCountInterruptsSmc);
-					break; 
-				
-				default: // ????
-					bprintf("SMC Interrupt default\n");
 					break;
 			}
 		}
@@ -329,15 +306,15 @@ void IntHandlerCI2C(void)
 }
 void IntHandlerUnusedC(void)
 {
-	//bprintf("Unhandled Interrupt\n");
+	bprintf("Unhandled Interrupt\n");
 	nCountUnusedInterrupts++;
-	//while(1) ;
+	while(1) ;
 }
 
 
 void IntHandlerUnusedC2(void)
 {
-	//bprintf("Unhandled Interrupt 2\n");
+	bprintf("Unhandled Interrupt 2\n");
 	nCountUnusedInterruptsPic2++;
 }
 
@@ -346,9 +323,6 @@ void IntHandlerUnusedC2(void)
 
 void IntHandlerCTimer0(void)
 {
-	if (BIOS_TICK_COUNT>=0xffffffff) {
-		BIOS_TICK_COUNT=0;
-	} else
 	BIOS_TICK_COUNT++;
 }
 
@@ -357,10 +331,8 @@ void IntHandlerCTimer0(void)
 void IntHandler1C(void)
 {
 //	bprintf("USB1 Interrupt 1\n");
-	#ifdef DO_USB
 	extern volatile USB_CONTROLLER_OBJECT usbcontroller[2];
 	BootUsbInterrupt(&usbcontroller[0]);
-	#endif
 }
 
 
@@ -373,15 +345,8 @@ void IntHandler3VsyncC(void)  // video VSYNC
 	DWORD dwTempInt;
 //	bprintf("Interrupt 3\n");
 	BootPciInterruptGlobalStackStateAndDisable(&dwTempInt);
-	
-	if (VIDEO_VSYNC_COUNT>=0xffff){
-		VIDEO_VSYNC_COUNT=0;
-	} else VIDEO_VSYNC_COUNT++;
+	VIDEO_VSYNC_COUNT++;
 
-	if (VIDEO_VSYNC_POSITION>=0xffff){
-		VIDEO_VSYNC_POSITION=0;
-	}
-        
 	if(VIDEO_VSYNC_COUNT>0) {
 
 		if(fSeenPowerdown) {
@@ -415,34 +380,29 @@ void IntHandler3VsyncC(void)  // video VSYNC
 
 	}
 
-	
-	
 	if(VIDEO_VSYNC_COUNT>20) {
-		
 		DWORD dwOld=VIDEO_VSYNC_POSITION;
-		
-
 		char c=(VIDEO_VSYNC_COUNT*4)&0xff;
 		DWORD dw=c;
-						
 		if(c<0) dw=((-(int)c)-1);
+
 		switch(VIDEO_VSYNC_DIR) {
 			case 0:
 				{
-				int nTux=(((VIDEO_VSYNC_POSITION * 0x2fff)/currentvideomodedetails.m_dwWidthInPixels));
-				dw=(((VIDEO_VSYNC_POSITION * 192)/currentvideomodedetails.m_dwWidthInPixels)+64)<<24;
-				VIDEO_VSYNC_POSITION+=2;
-				if(VIDEO_VSYNC_POSITION>=(currentvideomodedetails.m_dwWidthInPixels-64-(currentvideomodedetails.m_dwMarginXInPixelsRecommended*2))) VIDEO_VSYNC_DIR=2;
-					// manipulate the tux noise
-				aesTux.m_saVolumePerHarmonicZeroIsNone7FFFIsFull[0]=nTux/5;
-				aesTux.m_saVolumePerHarmonicZeroIsNone7FFFIsFull[1]=nTux/6;
-				aesTux.m_saVolumePerHarmonicZeroIsNone7FFFIsFull[2]=nTux/10;
-				aesTux.m_dwComputedFundamentalPhaseIncrementFor48kHzSamples=0x10000 * (((350-(nTux>>7)) <<16)/48000);
-				aesTux.m_paudioelement.m_sPanZeroIsAllLeft7FFFIsAllRight=(nTux*2);
-					// and some noise in there too
-				aenTux.m_paudioelement.m_dwVolumeElementMaster7fff0000Max=0x7f000000;
-				aenTux.m_sVolumeZeroIsNone7FFFIsFull=nTux/40;
-				aenTux.m_paudioelement.m_sPanZeroIsAllLeft7FFFIsAllRight=(nTux*2);
+					int nTux=(((VIDEO_VSYNC_POSITION * 0x2fff)/currentvideomodedetails.m_dwWidthInPixels));
+					dw=(((VIDEO_VSYNC_POSITION * 192)/currentvideomodedetails.m_dwWidthInPixels)+64)<<24;
+					VIDEO_VSYNC_POSITION+=2;
+					if(VIDEO_VSYNC_POSITION>=(currentvideomodedetails.m_dwWidthInPixels-64-(currentvideomodedetails.m_dwMarginXInPixelsRecommended*2))) VIDEO_VSYNC_DIR=2;
+						// manipulate the tux noise
+					aesTux.m_saVolumePerHarmonicZeroIsNone7FFFIsFull[0]=nTux/5;
+					aesTux.m_saVolumePerHarmonicZeroIsNone7FFFIsFull[1]=nTux/6;
+					aesTux.m_saVolumePerHarmonicZeroIsNone7FFFIsFull[2]=nTux/10;
+					aesTux.m_dwComputedFundamentalPhaseIncrementFor48kHzSamples=0x10000 * (((350-(nTux>>7)) <<16)/48000);
+					aesTux.m_paudioelement.m_sPanZeroIsAllLeft7FFFIsAllRight=(nTux*2);
+						// and some noise in there too
+					aenTux.m_paudioelement.m_dwVolumeElementMaster7fff0000Max=0x7f000000;
+					aenTux.m_sVolumeZeroIsNone7FFFIsFull=nTux/40;
+					aenTux.m_paudioelement.m_sPanZeroIsAllLeft7FFFIsAllRight=(nTux*2);
 				}
 				break;
 			case 1:
@@ -464,8 +424,7 @@ void IntHandler3VsyncC(void)  // video VSYNC
 				dw+=128; dw<<=24;
 				break;
 		}
-     
-                
+
 		BootVideoJpegBlitBlend(
 			(DWORD *)(FRAMEBUFFER_START+currentvideomodedetails.m_dwWidthInPixels*4*currentvideomodedetails.m_dwMarginYInLinesRecommended+currentvideomodedetails.m_dwMarginXInPixelsRecommended*4+(dwOld<<2)), currentvideomodedetails.m_dwWidthInPixels * 4, &jpegBackdrop,
 			&dwaTitleArea[dwOld+currentvideomodedetails.m_dwMarginXInPixelsRecommended],
@@ -475,7 +434,6 @@ void IntHandler3VsyncC(void)  // video VSYNC
 			4,
 			54, 64
 		);
-		
 		BootVideoJpegBlitBlend(
 			(DWORD *)(FRAMEBUFFER_START+currentvideomodedetails.m_dwWidthInPixels*4*currentvideomodedetails.m_dwMarginYInLinesRecommended+currentvideomodedetails.m_dwMarginXInPixelsRecommended*4+(VIDEO_VSYNC_POSITION<<2)), currentvideomodedetails.m_dwWidthInPixels * 4, &jpegBackdrop,
 			(DWORD *)(((BYTE *)jpegBackdrop.m_pBitmapData)+(jpegBackdrop.m_nWidth*(jpegBackdrop.m_nHeight-64)*jpegBackdrop.m_nBytesPerPixel)),
@@ -487,19 +445,18 @@ void IntHandler3VsyncC(void)  // video VSYNC
 		);
 
 	}
-        
-         
+
 	*((volatile DWORD *)0xfd600100)=0x1;  // clear VSYNC int
 	BootPciInterruptGlobalPopState(dwTempInt);
 }
 
 void IntHandler4C(void)
 {
-	//bprintf("Interrupt 4\n");
+	bprintf("Interrupt 4\n");
 }
 void IntHandler5C(void)
 {
-	//bprintf("Interrupt 5\n");
+	bprintf("Interrupt 5\n");
 }
 
 // Audio
@@ -507,42 +464,38 @@ void IntHandler5C(void)
 void IntHandler6C(void)
 {
 //	bprintf("Interrupt 6\n");
-
 	BootAudioInterrupt(&ac97device);
-
 }
 void IntHandler7C(void)
 {
-	//bprintf("Interrupt 7\n");
+	bprintf("Interrupt 7\n");
 }
 
 void IntHandler8C(void)
 {
-	//bprintf("Interrupt 8\n");
+	bprintf("Interrupt 8\n");
 }
 
 void IntHandler9C(void)
 {
 //	bprintf("USB2 Interrupt 9\n");
-	#ifdef DO_USB
 	extern volatile USB_CONTROLLER_OBJECT usbcontroller[2];
 	BootUsbInterrupt(&usbcontroller[1]);
-	#endif
 }
 
 void IntHandler10C(void)
 {
-	//bprintf("Interrupt 10\n");
+	bprintf("Interrupt 10\n");
 }
 
 void IntHandler13C(void)
 {
-	//bprintf("Interrupt 13\n");
+	bprintf("Interrupt 13\n");
 }
 
 void IntHandler15C(void)
 {
-	//bprintf("Unhandled Interrupt 15\n");
+	bprintf("Unhandled Interrupt 15\n");
 }
 
 void IntHandlerException0C(void) {	bprintf("CPU Exc: Divide by Zero\n");	while(1) ; }

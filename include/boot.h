@@ -95,12 +95,40 @@ typedef struct gdt_t {
         unsigned short       m_wDummy __attribute__ ((packed));
 } ts_descriptor_pointer;
 
+typedef struct {  // inside an 8-byte protected mode interrupt vector
+	WORD m_wHandlerHighAddressLow16;
+	WORD m_wSelector;
+	WORD m_wType;
+	WORD m_wHandlerLinearAddressHigh16;
+} ts_pm_interrupt;
+
 typedef enum {
 	EDT_UNKNOWN= 0,
 	EDT_XBOXFS
 } enumDriveType;
 
-
+typedef struct tsHarddiskInfo {  // this is the retained knowledge about an IDE device after init
+    unsigned short m_fwPortBase;
+    unsigned short m_wCountHeads;
+    unsigned short m_wCountCylinders;
+    unsigned short m_wCountSectorsPerTrack;
+    unsigned long m_dwCountSectorsTotal; /* total */
+    unsigned char m_bLbaMode;	/* am i lba (0x40) or chs (0x00) */
+    unsigned char m_szIdentityModelNumber[41];      
+    unsigned char term_space_1[2];
+    unsigned char m_szSerial[21]; 
+    unsigned char term_space_2[2];
+    char m_szFirmware[9];
+    unsigned char term_space_3[2];
+    unsigned char m_fDriveExists;
+    unsigned char m_fAtapi;  // true if a CDROM, etc
+    enumDriveType m_enumDriveType;
+    unsigned char m_bCableConductors;  // valid for device 0 if present
+    unsigned short m_wAtaRevisionSupported;
+    unsigned char s_length;
+    unsigned char m_length;
+    unsigned char m_fHasMbr;
+} tsHarddiskInfo;
 
 
 /* the protected mode part of the kernel has to reside at 1 MB in RAM */
@@ -321,7 +349,7 @@ extern void	WritePCIBlock(unsigned int bus, unsigned int dev, unsigned int func,
 void PciWriteByte (unsigned int bus, unsigned int dev, unsigned int func,
 		unsigned int reg_off, unsigned char byteval);
 BYTE PciReadByte(unsigned int bus, unsigned int dev, unsigned int func, unsigned int reg_off);
-DWORD PciWriteDword(unsigned int bus, unsigned int dev, unsigned int func, unsigned int reg_off, unsigned int dw);
+DWORD PciWriteDword(unsigned int bus, unsigned int dev, unsigned int func, unsigned int reg_off, DWORD dw);
 DWORD PciReadDword(unsigned int bus, unsigned int dev, unsigned int func, unsigned int reg_off);
 
 ///////// BootPerformPicChallengeResponseAction.c
@@ -332,29 +360,6 @@ bool I2CGetTemperature(int *, int *);
 
 
 ///////// BootIde.c
-
-typedef struct tsHarddiskInfo {  // this is the retained knowledge about an IDE device after init
-    unsigned short m_fwPortBase;
-    unsigned short m_wCountHeads;
-    unsigned short m_wCountCylinders;
-    unsigned short m_wCountSectorsPerTrack;
-    unsigned long m_dwCountSectorsTotal; /* total */
-    unsigned char m_bLbaMode;	/* am i lba (0x40) or chs (0x00) */
-    unsigned char m_szIdentityModelNumber[40];      
-    unsigned char term_space_1[2]; // Space for make \0 termination sure
-    unsigned char m_szSerial[20]; 
-    unsigned char term_space_2[2]; // Space for make \0 termination sure
-    unsigned char m_szFirmware[8];
-    unsigned char term_space_3[2]; // Space for make \0 termination sure
-    unsigned char m_fDriveExists;
-    unsigned char m_fAtapi;  // true if a CDROM, etc
-    enumDriveType m_enumDriveType;
-    unsigned char m_bCableConductors;  // valid for device 0 if present
-    unsigned short m_wAtaRevisionSupported;
-    unsigned char s_length;
-    unsigned char m_length;
-    unsigned char m_fHasMbr;
-} tsHarddiskInfo;
 
 extern tsHarddiskInfo tsaHarddiskInfo[];  // static struct stores data about attached drives
 int BootIdeInit(void);
@@ -372,7 +377,6 @@ void BootIdeAtapiPrintkFriendlyError(int nDriveIndex);
 int BootStartUpEthernet(void);
 
 ///////// BootAudio.c
-
 
 typedef struct {
 	WORD m_wTimeStartmS;
