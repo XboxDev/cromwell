@@ -28,8 +28,8 @@
  *      a multiple of the size of an 8-bit character.
  *
  *
- *  2002-09-13  franz@chaos.at   Mods to Reset functions to use fixed states for avoiding keys
- *  2002-09-18  franz@chaos.at   Some minor cleanup and creating a single SMAC_SHA1_calculation() routine
+ *  2002-09-13  franz@caos.at   Mods to Reset functions to use fixed states for avoiding keys
+ *  2002-09-18  franz@caos.at   Some minor cleanup and creating a single SMAC_SHA1_calculation() routine
  */
 
 
@@ -54,35 +54,54 @@
  *      context: [in/out]
  *          The context to reset.
  *
- *  Returns:
+  *  Returns:
  *      sha Error Code.
  *
  */ 
-int HMAC1Reset(SHA1Context *context)
-{ 
-    SHA1Reset(context);
-    context->Intermediate_Hash[0] = 0x72127625;
-    context->Intermediate_Hash[1] = 0x336472B9;
-    context->Intermediate_Hash[2] = 0xBE609BEA;
-    context->Intermediate_Hash[3] = 0xF55E226B;
-    context->Intermediate_Hash[4] = 0x99958DAC;
-    context->Length_Low           = 512;
-    
-    return shaSuccess;
+int HMAC1Reset(int version,SHA1Context *context)
+{
+  SHA1Reset(context);
+  if (version==10) {
+		context->Intermediate_Hash[0] = 0x72127625;
+		context->Intermediate_Hash[1] = 0x336472B9;
+		context->Intermediate_Hash[2] = 0xBE609BEA;
+		context->Intermediate_Hash[3] = 0xF55E226B;
+		context->Intermediate_Hash[4] = 0x99958DAC;
+	}
+	if (version==11) {
+		context->Intermediate_Hash[0] = 0x39B06E79;
+		context->Intermediate_Hash[1] = 0xC9BD25E8;
+		context->Intermediate_Hash[2] = 0xDBC6B498;
+		context->Intermediate_Hash[3] = 0x40B4389D;
+		context->Intermediate_Hash[4] = 0x86BBD7ED;
+	}
+
+	context->Length_Low = 512;
+
+	return shaSuccess;
 }
 
-int HMAC2Reset(SHA1Context *context)
-{    
-    SHA1Reset(context);
-    context->Intermediate_Hash[0] = 0x76441D41;
-    context->Intermediate_Hash[1] = 0x4DE82659;
-    context->Intermediate_Hash[2] = 0x2E8EF85E;
-    context->Intermediate_Hash[3] = 0xB256FACA;
-    context->Intermediate_Hash[4] = 0xC4FE2DE8; 
-    context->Length_Low           = 512;
-    return shaSuccess;
-    
-} 
+int HMAC2Reset(int version,SHA1Context *context)
+{
+	SHA1Reset(context);
+	if (version==10) {
+		context->Intermediate_Hash[0] = 0x76441D41;
+		context->Intermediate_Hash[1] = 0x4DE82659;
+		context->Intermediate_Hash[2] = 0x2E8EF85E;
+		context->Intermediate_Hash[3] = 0xB256FACA;
+		context->Intermediate_Hash[4] = 0xC4FE2DE8;
+	}
+	if (version==11) {
+		context->Intermediate_Hash[0] = 0x9B49BED3;
+		context->Intermediate_Hash[1] = 0x84B430FC;
+		context->Intermediate_Hash[2] = 0x6B8749CD;
+		context->Intermediate_Hash[3] = 0xEBFE5FE5;
+		context->Intermediate_Hash[4] = 0xD96E7393;
+	}
+	context->Length_Low  = 512;
+	return shaSuccess;
+
+}
 
 int SHA1Reset(SHA1Context *context)
 {

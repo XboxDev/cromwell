@@ -6,6 +6,10 @@
  * and work by Johan Rydberg and Daniel Kahlin.
  *
  * $Log$
+ * Revision 1.2  2002/09/19 10:39:19  warmcat
+ * Merged Michael's Bochs stuff with current cromwell
+ * note requires the cpp0-2.95 preprocessor
+ *
  * Revision 1.5  2002/08/19 13:48:55  meriac
  * need of nasm during linkage removed
  *
@@ -25,15 +29,16 @@ OUTPUT_ARCH(i386);
 MEMORY
 {
 	ram (rwx) : ORIGIN = 0, LENGTH = 64M
-	rom (rx)  : ORIGIN = 0xFF000000, LENGTH = 16M
+/*	rom (rx)  : ORIGIN = 0xFF000000, LENGTH = 16M */
+	rom (rx)  : ORIGIN = 0xFFFC0000, LENGTH = 256K
 }
 
-RAM_BASE = 0x400000;
+RAM_BASE = 0x300000;  /* was 0x400000 */
 
 /* this should be changed depending the actual size of the rom */
-ROM_SIZE = 1M;
+ROM_SIZE = 256K;/* 1M; */
+LOW_ROM = 0xfffc0000; /* 0xfff00000; */
 
-LOW_ROM = 0xfff00000;
 LOW_ROM_LOAD = 0;
 TOP_ROM = ( LOW_ROM + ROM_SIZE - 512 );
 TOP_ROM_LOAD = ( LOW_ROM_LOAD + ROM_SIZE - 512 );
@@ -52,7 +57,7 @@ SECTIONS {
 		}
 
 	/* the data (initialized globals) is moved to ram by the startup code */
-	
+
 	_start_load_data = LOADADDR(.data);
 	_end_load_data = LOADADDR(.data) + SIZEOF(.data);
 
@@ -73,19 +78,46 @@ SECTIONS {
 		_end_low_rom = . ;
 	}
 
-	.text ( LOW_ROM + SIZEOF(.low_rom) ) : AT ( LOW_ROM_LOAD + SIZEOF(.low_rom)  ) {
+
+
+	.xcodes11 (0xfffc0080) : AT (0x80) {
+		_start_xcodes11 = . ;
+		*(.xcodes11);
+		_end_xcodes11 = . ;
+	}
+
+		.text ( 0xfffc0100 ) : AT ( 0x100 )  { /* was 0xfffc0c80  0xc80 */
 		_start_text = . ;
 		*(.text);
 		_end_text = . ;
 	}
 
-	.rodata (ADDR(.text) + SIZEOF(.text)) : AT ( LOW_ROM_LOAD + SIZEOF(.low_rom) + SIZEOF(.text)) {
+	.amended2bl (0xffffd400) : AT (ROM_SIZE - 0x2c00) {
+		_start_amended2bl = . ;
+		*(.amended2bl);
+		_end_amended2bl = . ;
+	}
+
+
+	.rodata (0xfffc0100 + SIZEOF(.text)) : AT ( 0x100 + SIZEOF(.text)) {
 			*(.rodata);
-			*(.comment);
-			*(.note);
 			*(.rodata.str1.1);
 			*(.rodata.str1.32);
 			*(.rodata.cst4);
+	_start_backdrop = .;
+			*(.backdrop);
+	_end_backdrop = .;
+		_end_rodata = . ;
+	}
+
+	.rodata-rombios (0xffffe000 - 0x10004) : AT ((0x3e000) - 0x10004) {
+			*(.rodata-rombios);
+	}
+
+	.justbehind (0xfffffc80) : AT (ROM_SIZE - 0x380) {
+		_start_justbehind = . ;
+		*(.justbehind);
+		_end_justbehind = . ;
 	}
 
 	.high_rom TOP_ROM : AT (TOP_ROM_LOAD) {
@@ -94,7 +126,5 @@ SECTIONS {
 		*(.high_rom);
 		_end_top_rom = . ;
 	} = 0x90909090
-
-
 
 }

@@ -170,12 +170,13 @@ int vsprintf(char *buf, const char *fmt, va_list args)
 				   number of chars for from string */
 	int qualifier;		/* 'h', 'l', or 'L' for integer fields */
 
+
 	for (str=buf ; *fmt ; ++fmt) {
 		if (*fmt != '%') {
 			*str++ = *fmt;
 			continue;
 		}
-			
+
 		/* process flags */
 		flags = 0;
 		repeat:
@@ -187,7 +188,7 @@ int vsprintf(char *buf, const char *fmt, va_list args)
 				case '#': flags |= SPECIAL; goto repeat;
 				case '0': flags |= ZEROPAD; goto repeat;
 				}
-		
+
 		/* get field width */
 		field_width = -1;
 		if (is_digit(*fmt))
@@ -205,7 +206,7 @@ int vsprintf(char *buf, const char *fmt, va_list args)
 		/* get the precision */
 		precision = -1;
 		if (*fmt == '.') {
-			++fmt;	
+			++fmt;
 			if (is_digit(*fmt))
 				precision = skip_atoi(&fmt);
 			else if (*fmt == '*') {
@@ -224,6 +225,7 @@ int vsprintf(char *buf, const char *fmt, va_list args)
 			++fmt;
 		}
 
+
 		/* default base */
 		base = 10;
 
@@ -238,7 +240,9 @@ int vsprintf(char *buf, const char *fmt, va_list args)
 			continue;
 
 		case 's':
-			s = va_arg(args, char *);
+
+						s = va_arg(args, char *);
+
 			if (!s)
 				s = "<NULL>";
 
@@ -297,6 +301,7 @@ int vsprintf(char *buf, const char *fmt, va_list args)
 			break;
 
 		default:
+
 			*str++ = '%';
 			if (*fmt)
 				*str++ = *fmt;
@@ -304,6 +309,7 @@ int vsprintf(char *buf, const char *fmt, va_list args)
 				--fmt;
 			continue;
 		}
+  
 		if (qualifier == 'l')
 			num = va_arg(args, unsigned long);
 		else if (qualifier == 'h') {

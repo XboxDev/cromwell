@@ -13,13 +13,18 @@
 /////////////////////////////////
 // configuration
 
+
+#include <stdarg.h>
+#include <stdio.h>
 #include "consts.h"
+#include "jpeg-6b/jpeglib.h"
 
 // filtror is a debugging device designed to make code available over LPC and allow a debug shell
 // details are at http://warmcat.com/milksop
 // if you don't have one, or are building a final ROM image, keep this at zero
 
-#define INCLUDE_FILTROR 1
+#define INCLUDE_FILTROR 0
+
 
 /////////////////////////////////
 // some typedefs to make for easy sizing
@@ -29,12 +34,32 @@
   typedef unsigned char BYTE;
   typedef int bool;
 	typedef unsigned long RGBA; // LSB=R -> MSB = A
-	//typedef unsigned int size_t;
+	typedef long long __int64;
+
+#define guint int
+#define guint8 unsigned char
 
 #define true 1
 #define false 0
 
+#ifndef NULL
 #define NULL ((void *)0)
+#endif
+
+#define WATCHDOG __asm__ __volatile__ ( "push %eax; push %edx; movw $0x80cf, %dx ; mov $5, %al ; out %al, %dx ; mov $10000, %eax ; 0: dec %eax ; cmp $0, %eax ; jnz 0b ; mov $4, %al ; out %al, %dx ; pop %edx ; pop %eax " );
+
+#define FRAMEBUFFER_START ( 0xf0000000 + /*(0x04000000-(640*480*4) -(640*4*4)-(256*4))*/ (*((DWORD *)0xfd600800)) )
+
+#define VIDEO_CURSOR_POSX (*((DWORD *)0x430))
+#define VIDEO_CURSOR_POSY (*((DWORD *)0x434))
+#define VIDEO_ATTR (*((DWORD *)0x438))
+#define VIDEO_LUMASCALING (*((DWORD *)0x43c))
+#define VIDEO_RSCALING (*((DWORD *)0x440))
+#define VIDEO_BSCALING (*((DWORD *)0x444))
+#define MALLOC_BASE (*((DWORD *)0x448))
+#define VIDEO_HEIGHT (*((DWORD *)0x44c))
+#define VIDEO_MARGINX (*((DWORD *)0x450))
+#define VIDEO_MARGINY (*((DWORD *)0x454))
 
 /////////////////////////////////
 // Superfunky i386 internal structures
@@ -42,6 +67,7 @@
 typedef struct gdt_t {
         unsigned short       m_wSize __attribute__ ((packed));
         unsigned long m_dwBase32 __attribute__ ((packed));
+        unsigned short       m_wDummy __attribute__ ((packed));
 } ts_descriptor_pointer;
 
 typedef struct {  // inside an 8-byte protected mode interrupt vector
@@ -64,7 +90,7 @@ typedef struct {  // inside an 8-byte protected mode interrupt vector
 /* a retail Xbox has 64 MB of RAM */
 #define RAMSIZE (64 * 1024*1024)
 /* let's reserve 1 MB at the top for the framebuffer */
-#define RAMSIZE_USE (RAMSIZE - 1024*1024)
+#define RAMSIZE_USE (RAMSIZE - 4096*1024)
 /* the initrd resides at 1 MB from the top of RAM */
 #define INITRD_DEST (RAMSIZE_USE - 1024*1024)
 
@@ -159,8 +185,8 @@ static __inline DWORD IoInputDword(WORD wAds) {
 	// main I2C traffic functions
 int I2CTransmitByteGetReturn(BYTE bPicAddressI2cFormat, BYTE bDataToWrite);
 int I2CTransmitWord(BYTE bPicAddressI2cFormat, WORD wDataToWrite, bool fMode);
-//static int I2CTransmit2Bytes(BYTE bPicAddressI2cFormat, BYTE bCommand, BYTE bData);
-#define I2CTransmit2Bytes(bPicAddressI2cFormat, bCommand, bData) I2CTransmitWord(bPicAddressI2cFormat, (((WORD)bCommand)<<8)|(WORD)bData, false)
+//#define I2CTransmit2Bytes(bPicAddressI2cFormat, bCommand, bData) I2CTransmitWord(bPicAddressI2cFormat, (((WORD)bCommand)<<8)|(WORD)bData, false)
+
 	// boot process
 int BootPerformPicChallengeResponseAction();
 	// LED control (see associated enum above)
@@ -196,6 +222,40 @@ int I2cSetFrontpanelLed(BYTE b);
 #define bprintf(...)
 #endif
 
+#define SPAMI2C() 				__asm__ __volatile__ (\
+	"retry: ; "\
+	"movb $0x55, %al ;"\
+	"movl $0xc004, %edx ;"\
+	"shl	$1, %al ;"\
+	"out %al, %dx ;"\
+\
+	"movb $0xaa, %al ;"\
+	"add $4, %edx ;"\
+	"out %al, %dx ;"\
+\
+	"movb $0xbb, %al ;"\
+	"sub $0x2, %edx ;"\
+	"out %al, %dx ;"\
+\
+	"sub $6, %edx ;"\
+	"in %dx, %ax ;"\
+	"out %ax, %dx ;"\
+	"add $2, %edx ;"\
+	"movb $0xa, %al ;"\
+	"out %al, %dx ;"\
+	"sub $0x2, %dx ;"\
+"spin: ;"\
+	"in %dx, %al ;"\
+	"test $8, %al ;"\
+	"jnz spin ;"\
+	"test $8, %al ;"\
+	"jnz retry ;"\
+	"test $0x24, %al ;"\
+\
+	"jmp retry"\
+);
+
+
 ////////// BootPerformXCodeActions.c
 
 int BootPerformXCodeActions();
@@ -230,6 +290,7 @@ int I2CTransmitByteGetReturn(BYTE bPicAddressI2cFormat, BYTE bDataToWrite);
 ///////// BootVgaInitialization.c
 
 void BootVgaInitialization() ;
+BYTE BootVgaInitializationKernel(int nLinesPref);  // returns AV pack index, call with 480 or 576
 
 ///////// BootIde.c
 
@@ -238,3 +299,67 @@ int BootIdeReadSector(int nDriveIndex, void * pbBuffer, unsigned int block, int 
 int BootIdeBootSectorHddOrElTorito(int nDriveIndex, BYTE * pbaResult);
 int BootIdeAtapiAdditionalSenseCode(int nDrive, BYTE * pba, int nLengthMaxReturn);
 BYTE BootIdeGetTrayState();
+
+	// video helpers
+
+void BootVideoBlit(
+	DWORD * pdwTopLeftDestination,
+	DWORD dwCountBytesPerLineDestination,
+	DWORD * pdwTopLeftSource,
+	DWORD dwCountBytesPerLineSource,
+	DWORD dwCountLines
+);
+
+void BootGimpVideoBlitBlend(
+	DWORD * pdwTopLeftDestination,
+	DWORD dwCountBytesPerLineDestination,
+	void * pgimpstruct,
+	RGBA m_rgbaTransparent,
+	DWORD * pdwTopLeftBackground,
+	DWORD dwCountBytesPerLineBackground
+);
+
+void BootGimpVideoBlit(
+	DWORD * pdwTopLeftDestination,
+	DWORD dwCountBytesPerLineDestination,
+	void * pgimpstruct,
+	RGBA m_rgbaTransparent
+);
+
+void BootVideoVignette(
+	DWORD * pdwaTopLeftDestination,
+	DWORD m_dwCountBytesPerLineDestination,
+	DWORD m_dwCountLines,
+	RGBA rgbaColour1,
+	RGBA rgbaColour2
+);
+
+#define VIDEO_CURSOR_POSX (*((DWORD *)0x430))
+#define VIDEO_CURSOR_POSY (*((DWORD *)0x434))
+#define VIDEO_ATTR (*((DWORD *)0x438))
+#define VIDEO_LUMASCALING (*((DWORD *)0x43c))
+#define VIDEO_RSCALING (*((DWORD *)0x440))
+#define VIDEO_BSCALING (*((DWORD *)0x444))
+
+
+int BootVideoOverlayString(DWORD * pdwaTopLeftDestination, DWORD m_dwCountBytesPerLineDestination, RGBA rgbaOpaqueness, const char * szString);
+void BootVideoChunkedPrint(char * szBuffer, WORD wLength);
+int VideoDumpAddressAndData(DWORD dwAds, const BYTE * baData, DWORD dwCountBytesUsable);
+unsigned int BootVideoGetStringTotalWidth(const char * szc);
+
+BYTE * BootVideoJpegUnpackAsRgb(
+	BYTE *pbaJpegFileImage,
+	int nFileLength,
+	int *nWidth,
+	int *nHeight,
+	int *nBytesPerPixel
+);
+
+void BootVideoEnableOutput(BYTE bAvPack);
+
+
+void * memcpy(void *dest, const void *src,  size_t size);
+void * memset(void *dest, int data,  size_t size);
+
+void * malloc(size_t size);
+void free(void *);

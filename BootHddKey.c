@@ -5,23 +5,11 @@
 #include "sha1.h"
 #include "rc4.h"
 
-static inline size_t strlen(const char * s)
-{
-int d0;
-register int __res;
-__asm__ __volatile__(
-	"repne\n\t"
-	"scasb\n\t"
-	"notl %0\n\t"
-	"decl %0"
-	:"=c" (__res), "=&D" (d0) :"1" (s),"a" (0), "0" (0xffffffff));
-return __res;
-}
-
 
 /* This is basically originally all speedbump's work
 
- 	  2002-09-18 franz@chaos.at    Changes to use a single SMAC_SHA1_calculation() routine
+		2002-10-13 franz@caos.at     Changes to work with v1.0 and v1.1 boxes
+ 	  2002-09-18 franz@caos.at     Changes to use a single SMAC_SHA1_calculation() routine
 		2002-09-13 andy@warmcat.com  Stitched in Franz's excellent key removal work: his modest statement follows
 
 		   Updated now, with no use for MS$ RC4 key now.
@@ -36,14 +24,14 @@ return __res;
 		   I hope, it is working good, as i have no XBOX to test this.
 
 		2002-06-27 andy@warmcat.com  Stitched it into crom, simplified out code that was for test, added munged key
-
 */
 
-int HMAC1Reset(SHA1Context *context);
-int HMAC2Reset(SHA1Context *context);
+int HMAC1Reset(int, SHA1Context *context);
+int HMAC2Reset(int, SHA1Context *context);
 void SHA1ProcessMessageBlock(SHA1Context *context);
-void HMAC_SHA1_calculation(unsigned char *HMAC_result, ... );
+void HMAC_SHA1_calculation(int, unsigned char *HMAC_result, ... );
 
+extern size_t strlen(const char * s);
 
 void quick_SHA1( unsigned char *SHA1_result, ... )
 {
@@ -125,26 +113,26 @@ void HMAC_SHA1_calculation(unsigned char *HMAC_result, ... )
 }
 */
 
-void HMAC_SHA1_calculation(unsigned char *HMAC_result, ... )
+void HMAC_SHA1_calculation(int version,unsigned char *HMAC_result, ... )
 {
 	va_list args;
-	struct SHA1Context context;			
+	struct SHA1Context context;
         va_start(args,HMAC_result);
-        
-	HMAC1Reset(&context);
+
+	HMAC1Reset(version, &context);
 	while(1) {
 		unsigned char *buffer = va_arg(args,unsigned char *);
 		int length;
-		
+
 		if (buffer == NULL) break;
 		length = va_arg(args,int);
 		SHA1Input(&context,buffer,length);
-		
+
 	}
 	va_end(args);
-	
-	SHA1Result(&context,&context.Message_Block[0]);  
-	HMAC2Reset(&context);
+
+	SHA1Result(&context,&context.Message_Block[0]);
+	HMAC2Reset(version, &context);
         SHA1Input(&context,&context.Message_Block[0],0x14);
         SHA1Result(&context,HMAC_result);
 }
@@ -156,24 +144,42 @@ DWORD BootHddKeyGenerateEepromKeyData(
 
 	BYTE baKeyHash[20];
 	BYTE baDataHashConfirm[20];
+	BYTE baEepromDataLocalCopy[0x30];
 	struct rc4_key RC4_key;
 
-	HMAC_SHA1_calculation(baKeyHash,pbEeprom_data, 20, NULL);
+	int nVersion=10;
 
-		//initialize RC4 key
-	rc4_prepare_key(baKeyHash, 20, &RC4_key);
+	while(nVersion<=11) {  // try twice, once for v1.0 and if that fails, again for v1.1
 
-		//decrypt data (from eeprom) with generated key
-	rc4_crypt(&pbEeprom_data[20],8,&RC4_key);		//confounder of some kind?
-	rc4_crypt(&pbEeprom_data[28],20,&RC4_key);		//"real" data
+		memcpy(&baEepromDataLocalCopy[0], pbEeprom_data, 0x30);
 
-	HMAC_SHA1_calculation(baDataHashConfirm, &pbEeprom_data[20], 8, &pbEeprom_data[28], 20, NULL);
+		HMAC_SHA1_calculation(nVersion, baKeyHash, &baEepromDataLocalCopy[0], 20, NULL);
 
-	{ int n; for(n=0;n<0x14;n++) if(pbEeprom_data[n]!=baDataHashConfirm[n]) return 0; }
+			//initialize RC4 key
+		rc4_prepare_key(baKeyHash, 20, &RC4_key);
 
-		//copy out HDKey
-	memcpy(pbResult,&pbEeprom_data[28],16);
-	return 1;
+			//decrypt data (from eeprom) with generated key
+		rc4_crypt(&baEepromDataLocalCopy[20],8,&RC4_key);		//confounder of some kind?
+		rc4_crypt(&baEepromDataLocalCopy[28],20,&RC4_key);		//"real" data
+
+		HMAC_SHA1_calculation(nVersion, baDataHashConfirm, &baEepromDataLocalCopy[20], 8, &baEepromDataLocalCopy[28], 20, NULL);
+
+		{  // assess correctness
+			bool f=true;
+			int n;
+			for(n=0;n<0x14;n++) {
+				if(baEepromDataLocalCopy[n]!=baDataHashConfirm[n]) f=false;
+			}
+			if(!f) { nVersion++; continue; }  // se if we can try again on fail
+		}
+
+			//copy out HDKey
+		memcpy(pbResult,&baEepromDataLocalCopy[28],16);
+		return 1;
+	}
+
+	return 0; // failure
+
 }
 
 

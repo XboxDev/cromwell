@@ -24,6 +24,8 @@ int I2CTransmitByteGetReturn(BYTE bPicAddressI2cFormat, BYTE bDataToWrite)
 {
 	DWORD dwRetriesToLive=4;
 
+	__asm __volatile__ ( "pushf ; cli" );
+
 	while(dwRetriesToLive--) {
 		DWORD dwSpinsToLive=0x800000;
 
@@ -34,15 +36,17 @@ int I2CTransmitByteGetReturn(BYTE bPicAddressI2cFormat, BYTE bDataToWrite)
 
 		{
 			BYTE b=0;
-			while( (b !=0x10) && ((b&0x26)==0) && (dwSpinsToLive--) ) { 
-				b=IoInputByte(I2C_IO_BASE+0); 	
+			while( (b !=0x10) && ((b&0x26)==0) && (dwSpinsToLive--) ) {
+				b=IoInputByte(I2C_IO_BASE+0);
 //				if(dwSpinsToLive<0x7ffffd) bprintf("%02X\n", b);
 			}
-			if(dwSpinsToLive==0) return ERR_I2C_ERROR_TIMEOUT;
+			if(dwSpinsToLive==0) { __asm __volatile__ ( "popf" ); return ERR_I2C_ERROR_TIMEOUT; }
 			if(b&0x2) {
 
 				continue; // retry
 			}
+			__asm __volatile__ ( "popf" );
+
 			if(b&0x24) return ERR_I2C_ERROR_BUS;
 			if(!(b&0x10)) return ERR_I2C_ERROR_BUS;
 
@@ -51,6 +55,8 @@ int I2CTransmitByteGetReturn(BYTE bPicAddressI2cFormat, BYTE bDataToWrite)
 
 		}
 	}
+		__asm __volatile__ ( "popf" );
+
 	return ERR_I2C_ERROR_BUS;
 }
 
@@ -59,11 +65,12 @@ int I2CTransmitByteGetReturn(BYTE bPicAddressI2cFormat, BYTE bDataToWrite)
 int I2CTransmitWord(BYTE bPicAddressI2cFormat, WORD wDataToWrite, bool fMode)
 {
 	DWORD dwRetriesToLive=4;
-
+__asm __volatile__ ( "pushf; cli" );
 	while(dwRetriesToLive--) {
 		DWORD dwSpinsToLive=0x8000000;
 
 		IoOutputByte(I2C_IO_BASE+4, (bPicAddressI2cFormat<<1)|0);
+
 		IoOutputByte(I2C_IO_BASE+8, (BYTE)(wDataToWrite>>8));
 		IoOutputByte(I2C_IO_BASE+6, (BYTE)wDataToWrite);
 		IoOutputWord(I2C_IO_BASE+0, 0x10 /*IoInputWord(I2C_IO_BASE+0)*/);
@@ -76,8 +83,12 @@ int I2CTransmitWord(BYTE bPicAddressI2cFormat, WORD wDataToWrite, bool fMode)
 		{
 			BYTE b=0x0;
 			while( (b!= 0x10) && ((b&0x26)==0) && (dwSpinsToLive--) ) { b=IoInputByte(I2C_IO_BASE+0); }
-			if(dwSpinsToLive==0) return ERR_I2C_ERROR_TIMEOUT;
+
+			if(dwSpinsToLive==0) { 		__asm __volatile__ ( "popf" ); return ERR_I2C_ERROR_TIMEOUT; }
 			if(b&0x2) continue; // retry
+
+					__asm __volatile__ ( "popf" );
+
 			if(b&0x24) return ERR_I2C_ERROR_BUS;
 			if(!(b&0x10)) return ERR_I2C_ERROR_BUS;
 
@@ -85,9 +96,9 @@ int I2CTransmitWord(BYTE bPicAddressI2cFormat, WORD wDataToWrite, bool fMode)
 			return ERR_SUCCESS;
 		}
 	}
+		__asm __volatile__ ( "popf" );
 	return ERR_I2C_ERROR_BUS;
 }
-
 
 // ----------------------------  PIC challenge/response -----------------------------------------------------------
 //
@@ -126,9 +137,9 @@ int BootPerformPicChallengeResponseAction()
 	BYTE bC, bD, bE, bF;
 	int n;
 
-		I2CTransmitWord( 0x10, 0x0100, false );
-		I2CTransmitWord( 0x10, 0x130f, false );
-		I2CTransmitWord( 0x10, 0x12f0, false );
+//		I2CTransmitWord( 0x10, 0x0100, false );
+//		I2CTransmitWord( 0x10, 0x130f, false );
+//		I2CTransmitWord( 0x10, 0x12f0, false );
 
 //	if(BootPicManipulation(0x35, 0x62, 0xcd, 0x4a) != 0x9e71) {
 //		return ERR_BOOT_PIC_ALG_BROKEN;
@@ -137,8 +148,6 @@ int BootPerformPicChallengeResponseAction()
 	n=I2CTransmitByteGetReturn( 0x10, 0x1c);
 	if(n<0) return n;
 	bC=n;
-
-
 	n=I2CTransmitByteGetReturn( 0x10, 0x1d);
 	if(n<0) return n;
 	bD=n;
@@ -149,17 +158,37 @@ int BootPerformPicChallengeResponseAction()
 	if(n<0) return n;
 	bF=n;
 
+/*
+			__asm__ __volatile__ (
+		" push %edx \n"
+		" push %eax \n"
+		" mov $0x8000036c, %eax \n"
+		" movw $0xcf8, %dx \n"
+		" outl	%eax, %dx \n"
+		" movw $0xcfc, %dx \n"
+		" movl	$01000000, %eax \n"
+		" outl	%eax, %dx \n"
+//		" hlt \n"
+		" pop %eax \n"
+		" pop %edx \n"
+		);
+*/
+
 	{
 		WORD w=BootPicManipulation(bC, bD, bE, bF);
 
 		n=I2CTransmitWord( 0x10, 0x2000 | (w&0xff), false);
-		if(n<0) return n;
+//		if(n<0) return n;
+
 		n=I2CTransmitWord( 0x10, 0x2100 | (w>>8), false );
-		if(n<0) return n;
-		n=I2CTransmitWord( 0x10, 0x0100, false );
-		if(n<0) return n;
+//		if(n<0) return n;
+
 	}
 
+		n=I2CTransmitWord( 0x10, 0x0100, false );
+		if(n<0) return n;
+
+/*
 		// the following traffic was observed during a normal boot
 		// all seemed happy without it, but it is included here for completeness
 
@@ -175,8 +204,19 @@ int BootPerformPicChallengeResponseAction()
 	I2CTransmitWord( 0x10, 0x0c00, true);
 	n=I2CTransmitByteGetReturn( 0x10, 0x11);
 	if(n<0) return n;
-
+*/
 		// continues as part of video setup....
+
+
+		__asm__ __volatile__ (
+		" mov $0x8000088c, %eax \n"
+		" movw $0xcf8, %dx \n"
+		" outl	%eax, %dx \n"
+		" movw $0xcfc, %dx \n"
+		" movl	$0x40000000, %eax \n"
+		" outl	%eax, %dx \n"
+		);
+
 
 	return ERR_SUCCESS;
 }
@@ -184,8 +224,11 @@ int BootPerformPicChallengeResponseAction()
 extern int I2cSetFrontpanelLed(BYTE b)
 {
 	int n;
-	n=I2CTransmitWord( 0x10, 0x800 | b, true); if(n<0) return n;  // sequencing thanks to Jarin the Penguin!
-	n=I2CTransmitWord( 0x10, 0x701, true);  if(n<0) return n;
+	__asm __volatile__ ( "pushf ; cli" );
+	n=I2CTransmitWord( 0x10, 0x800 | b, true);  // sequencing thanks to Jarin the Penguin!
+	n=I2CTransmitWord( 0x10, 0x701, true);
+	__asm __volatile__ ( "popf" );
+
 	return ERR_SUCCESS;
 }
 

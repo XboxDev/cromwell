@@ -13,7 +13,7 @@
  *                                                                         *
  ***************************************************************************/
 
-#define VERSION "1.3"
+#define VERSION "1.6"
 
 #define PCI_CFG_ADDR 0x0CF8
 #define PCI_CFG_DATA 0x0CFC
@@ -26,9 +26,9 @@
 #define BASE0_H 0
 #define BASE0_L WB_CACHE
 #define MASK0_H 0x0F
-#define MASK0_L 0x0FC000800
+#define MASK0_L 0xFC000800
 #define BASE1_H 0
-#define BASE1_L 0xFFF80000 // 0x0FFF80005
+#define BASE1_L 0xFFF80005 // 0x0FFF80005
 #define MASK1_H 0x0F
 #define MASK1_L 0x0FFF80800
 
@@ -74,7 +74,7 @@
 /*
 #define boot_post_macro(value)                     \
 		movb    $(value), %al                           ;\
-		outb    %al, $0x80
+		outb    %al, $0x80 
 */
 /* Filtror debug stuff  4K block used for communications */
 #define FILT_DEBUG_BASE 0xff0fe000

@@ -1,77 +1,88 @@
-CROMWELL 1.3   2002-09-19
+CROMWELL 1.6   2002-12-15
 Xbox Linux Team
+
+Contact: andy@warmcat.com, mist@c64.org. xboxlinux@meriac.de
 
 -----------
 IMPORTANT... Don't run this code without backing up your EEPROM
-contents somehow first.  Corruption has been observed during
-development after crashes.  Don't ignore this warning!!!
+contents somehow first.  Its been quite stable, but it if it
+blows a fuse and craps over your eeprom, don't blame us.
 -----------
 
-This version is not yet usable by general users, it is the first
-development version we are putting in CVS.  It has the filtror IO
-enabled and so will not even do anything in a non-filtror
-environment without the filtror stuff being disabled in boot.h.
+Improvements!
+
+ - now capable of booting a Mandrake 9 Linux install by itself
+ - VIDEO IS FULLY UP (Composite cable only, PAL) at boottime and
+   inside Linux; works with Oliver's accellerated X driver (reserves
+	 4MByte of RAM for video)
+ - the ROM image is now 256KByte, works with all flashable modchips
+ - ** No Microsoft code **  - a legal[1] alternative BIOS
+ - auto-unlocks the HDD according to your EEPROM information
+ - boots using MBR -> active partition -> reiserfs native loader,
+   so it does not use LILO or GRUB, or keep any private HDD space.
+
+LEGAL NOTE 1:
+
+[1]Consult a lawyer if you want legal advice.  But we believe this BIOS
+is immune to legal attack by MS as it contains none of their code and
+won't even run native games
+
+LEGAL NOTE 2:
+
+This replacement BIOS will be used by most people in a flashable
+modchip.  Up to now, MS might have argued that modchips are used
+solely to hold hacked native BIOSes and are therefore somehow
+illegal (still beats me why that would be, as each Xbox owner is
+legitimately licensed to have a BIOS, if they choose to modify it,
+just using the original or the modified version at any one time,
+surely invalidating their warrenty should be the limit of MS's
+comeback).  We would encorage manufacturers of flashable modchips
+to ship their mods with this Linux Cromwell BIOS on them,
+although probably they'll want to wait another couple of versions
+for the next set of features.
 
 
-Please note that video is not working yet, although we have managed
-to get the video chip to issue syncs to the video encoder.
+Limitations
 
-This development release is based on crom 1.0 and has the following
-additions:
+ - COMPOSITE cable only right now if you want the right colours
+ - choice between 640x480 overscan-corrected, or 640x576 with default
+    overscan at the moment (see BootResetAction.c line 34)
+ - Boot instability has been reported on different machines.  Cause
+    not understood, effect is sometimes it may not boot.  Being looked
+		at, but its perfectly stable on my machine :-(
 
- - interrupts, including the 18.2Hz coming to a C function, which
- increments a DWORD in the standard BIOS location
-
- - Master and Slave device detection and reporting
-
- - Automatic unlock is the drive reports security active, yet the
-    code does not include the RC4 key from the original bootrom,
-	  thanks to some cryptoanalysis by Franz (see BootHddKey.c)
-
- - ATA and ATAPI functionality for reading arbitrary sectors
-
- - ATAPI code to find out if there is a CD in the tray
-
- - El Torito Bootable CD functionality and MBR HDD booting ( <--
- only as far as reading the correct sector into a buffer)
-
- - Untested, but reasonably goodlooking code for displaying a
- proportional 4bpp antialised font (the font is also included
- as a 6K const struct), with colour and transparency support.
- Also code for 2D blitting.  All of this is compatible with
- offscreen compositing and is not hardcoded to any resolution
- (but assumes 32bpp).
-
- - The Linux boot stuff is removed in Cromwell
-
- In a later release, the size will be reduced to 256KBytes
- instead of 1MB; note that at this time the 256KBytes will
- have to be loaded at the start and end of any 1MByte
- flash or filtror.
-
- At the moment the code in BootResetAction.c initializes
- everything including the IDE, and then waits for a
- bootable CDROM to be loaded in the DVD drive.  When
- this happens, after a 5 - 10 seconds pause the
- contents of the executable boot sector for the CD will
- be dumped via filtror.
-
- An example:
+ALSO NOTE: this version is for v1.0 boxes only.  The preferred method
+of running the BIOS on v1.1 needs the original Xcodes.  We will be
+addressing this in the next version, which should not be far off.
 
 
-Xbox Linux Clean BIOS 1.3    Licensed under the GPL     http://xbox-linux.sf.net
-(C)2002 The Xbox Linux Team - Hardware subsidy by Microsoft, everything else GPL
+How to set up for booting Linux from BIOS on your Xbox
+------------------------------------------------------
 
-Initializing IDE Controller
-  0: ST310211A 6DB2WF1K (16/16383/63)=8.56GB, Sec=0107
-      FATX Formatted Drive
-      No MBR at start of drive
-  1: THOMSON-DVD
+NOTE 1 - if you go back to a hacked or original BIOS, you will still
+be able to boot Linux via CD as before, and play native games.
 
-Insert bootable CD...
-00000000: FA 33 C0 8E D0 BC 00 7C : FB 8C C8 8E D8 52 E8 00    .3.....|.....R..
-00000010: 00 5E 81 EE 11 00 74 12 : 81 FE 00 7C 75 75 8C C8    .^....t....|uu..
-....
-000007D0: 00 00 00 00 00 00 00 00 : 00 00 00 00 00 00 00 00    ................
-000007E0: 00 00 00 00 00 00 00 00 : 00 00 00 00 00 00 00 00    ................
-000007F0: 00 00 00 00 00 00 00 00 : 00 00 00 00 00 00 55 AA    ..............U.
+NOTE 2- do NOT blow this into a BIOS that you have no way of externally
+reprogramming.  Reprogramming the BIOS is not yet supported from
+within Linux or the bootrom itself.
+
+1) Install the Mandrake 9 distro from http://xbox-linux.sf.net (it
+will not currently work with Ed's Debian distro from
+http://xbox-debian.linux.pt/ as we currently assume reiserfs)
+
+2) Copy vmlinuz and initrd from the boot CD to /boot on the HDD.
+
+3) shutdown your linux install
+
+4) flash your modchip with the 256Kbyte file image.bin (this is
+also supplied precooked as image.bin.ready-to-use, or you can run
+make to generate image.bin)
+
+5) reboot and enjoy the disc whirring while Linux starts
+
+
+Todo
+
+1) El Torito CD boot so Linux can be installed from BIOS
+2) Get USB stack up in BIOS
+3) Once we have a UI, allow BIOS flashing

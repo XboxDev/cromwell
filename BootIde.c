@@ -25,6 +25,7 @@
 
 #include  "boot.h"
 #include "string.h"
+#include "grub/shared.h"
 
 ////////////////////////////////////
 // IDE types and constants
@@ -125,7 +126,13 @@ int BootIdeWaitNotBusy(unsigned uIoBase)
 {
 	BYTE b = 0x80;
 	Delay();
-	while (b & 0x80) b=IoInputByte(IDE_REG_ALTSTATUS(uIoBase));
+//	I2cSetFrontpanelLed(0x66);
+	while (b & 0x80) {
+		b=IoInputByte(IDE_REG_ALTSTATUS(uIoBase));
+		WATCHDOG;
+	}
+//		I2cSetFrontpanelLed(0x14);
+
 	return b&1;
 }
 
@@ -138,6 +145,7 @@ int BootIdeWaitDataReady(unsigned uIoBase)
 	    if(IoInputByte(IDE_REG_ALTSTATUS(uIoBase)) & 0x01) return 2;
 			return 0;
 		}
+		WATCHDOG;
 		i--;
 	} while (i != 0);
 
@@ -160,9 +168,11 @@ int BootIdeIssueAtaCommand(
 	Delay();
 
 	if (BootIdeWaitNotBusy(uIoBase))	{
+
 		printk_debug("error on BootIdeIssueAtaCommand wait 3: error %02X\n", IoInputByte(IDE_REG_ERROR(uIoBase)));
 		return 1;
 	}
+
 	return 0;
 }
 
@@ -310,10 +320,18 @@ static int BootIdeDriveInit(unsigned uIoBase, int nIndexDrive)
 	tsicp.m_bDrivehead = IDE_DH_DEFAULT | IDE_DH_HEAD(0) | IDE_DH_CHS | IDE_DH_DRIVE(nIndexDrive);
 	IoOutputByte(IDE_REG_DRIVEHEAD(uIoBase), tsicp.m_bDrivehead);
 
+//	printk_debug("  Drive %d: Waiting\n", nIndexDrive);
+
+			I2cSetFrontpanelLed(0xf1);
+
 	if(BootIdeWaitNotBusy(uIoBase)) {
 			printk_debug("  Drive %d: Not Ready\n", nIndexDrive);
 			return 1;
 	}
+
+
+//		printk_debug("  Drive %d: happy\n", nIndexDrive);
+
 
 	if(!nIndexDrive) // this should be done by ATAPI sig detection, but I couldn't get it to work
 	{ // master... you have to send it IDE_CMD_GET_INFO
@@ -321,7 +339,7 @@ static int BootIdeDriveInit(unsigned uIoBase, int nIndexDrive)
 		if(BootIdeIssueAtaCommand(uIoBase, IDE_CMD_GET_INFO, &tsicp)) {
 			nReturn=IoInputByte(IDE_REG_CYLINDER_MSB(uIoBase))<<8;
 			nReturn |=IoInputByte(IDE_REG_CYLINDER_LSB(uIoBase));
-//			printk("nReturn = %x\n", nReturn);
+			printk("nReturn = %x\n", nReturn);
 
 			if(nReturn!=0xeb14) {
 				printk("  Drive %d: detect FAILED, error=%02X\n", nIndexDrive, IoInputByte(IDE_REG_ERROR(uIoBase)));
@@ -339,6 +357,8 @@ static int BootIdeDriveInit(unsigned uIoBase, int nIndexDrive)
 	}
 
 	BootIdeWaitDataReady(uIoBase);
+
+
 	if(BootIdeReadData(uIoBase, baBuffer, IDE_SECTOR_SIZE)) {
 		printk("  %d: Drive not detected\n", nIndexDrive);
 		return 1;
@@ -360,9 +380,7 @@ static int BootIdeDriveInit(unsigned uIoBase, int nIndexDrive)
 	}
 	tsaHarddiskInfo[nIndexDrive].m_fDriveExists = 1;
 
-
 	if(tsaHarddiskInfo[nIndexDrive].m_wCountHeads==0) { // CDROM/DVD
-
 
 		tsaHarddiskInfo[nIndexDrive].m_fAtapi=true;
 
@@ -394,16 +412,17 @@ static int BootIdeDriveInit(unsigned uIoBase, int nIndexDrive)
 
 	} else { // HDD
 		BYTE bAdsBase=0x1b;
-		unsigned long ulDriveCapacity1024=(tsaHarddiskInfo[nIndexDrive].m_wCountHeads * ((tsaHarddiskInfo[nIndexDrive].m_wCountCylinders * tsaHarddiskInfo[nIndexDrive].m_wCountSectorsPerTrack)/1024))/2;
-		printk("  %d: %s %s (%u/%u/%u)=%u.%uGB, Sec=%04X\n",
+		unsigned long ulDriveCapacity1024=((tsaHarddiskInfo[nIndexDrive].m_dwCountSectorsTotal /1000)*512)/1000;
+
+		printk("  %d: %s %s  %u.%uGB  ",
 			nIndexDrive,
 			tsaHarddiskInfo[nIndexDrive].m_szIdentityModelNumber,
 			tsaHarddiskInfo[nIndexDrive].m_szSerial,
- 			tsaHarddiskInfo[nIndexDrive].m_wCountHeads,
-   		tsaHarddiskInfo[nIndexDrive].m_wCountCylinders,
-   		tsaHarddiskInfo[nIndexDrive].m_wCountSectorsPerTrack,
-			ulDriveCapacity1024/1000, ulDriveCapacity1024%1000,
-			drive_info[128]
+// 			tsaHarddiskInfo[nIndexDrive].m_wCountHeads,
+//  		tsaHarddiskInfo[nIndexDrive].m_wCountCylinders,
+//   		tsaHarddiskInfo[nIndexDrive].m_wCountSectorsPerTrack,
+			ulDriveCapacity1024/1000, ulDriveCapacity1024%1000 //,
+//			drive_info[128]
 		);
 
 		if(!nIndexDrive) { //HDD0
@@ -460,7 +479,7 @@ static int BootIdeDriveInit(unsigned uIoBase, int nIndexDrive)
 		);
 		int nEepromAttempts=3;  // three goes at getting uncorrupted EEPROM only
 
-
+		printk("  Locked");
 
 //		BootCpuCache(true);  // operate at good speed
 
@@ -486,7 +505,11 @@ static int BootIdeDriveInit(unsigned uIoBase, int nIndexDrive)
 
 		if(nEepromAttempts<1) {
 			printk("Corrupted EEPROM!\n");
+#if INCLUDE_FILTROR
 			DumpAddressAndData(0, &baEeprom[0], 0x30);
+#endif
+	I2cSetFrontpanelLed(0x10);
+
 			while(1) ;
 		}
 
@@ -528,7 +551,10 @@ static int BootIdeDriveInit(unsigned uIoBase, int nIndexDrive)
 				printk("  %d:  FAILED to unlock drive, security: %04x\n", nIndexDrive, drive_info[128]);
 			} else {
 //				printk("  %d:  Drive unlocked, new sec=%04X\n", nIndexDrive, drive_info[128]);
+//				printf("    Unlocked");
 			}
+	} else {
+		if(nIndexDrive==0) printf("  Unlocked");
 	}
 
 	if (drive_info[49] & 0x200) { /* bit 9 of capability word is lba supported bit */
@@ -537,7 +563,15 @@ static int BootIdeDriveInit(unsigned uIoBase, int nIndexDrive)
 		tsaHarddiskInfo[nIndexDrive].m_bLbaMode = IDE_DH_CHS;
 	}
 
+//			tsaHarddiskInfo[nIndexDrive].m_bLbaMode = IDE_DH_CHS;
 
+/*
+	if(tsaHarddiskInfo[nIndexDrive].m_bLbaMode == IDE_DH_CHS) {
+			printk("      CHS Mode\n");
+	} else {
+			printk("      LBA Mode\n");
+	}
+*/
 	if(tsaHarddiskInfo[nIndexDrive].m_wCountHeads) { // HDD not DVD (that shows up as 0 heads)
 
 		unsigned char ba[512];
@@ -545,30 +579,32 @@ static int BootIdeDriveInit(unsigned uIoBase, int nIndexDrive)
 			// report on the FATX-ness of the drive contents
 
 		if(BootIdeReadSector(nIndexDrive, &ba[0], 3, 0, 512)) {
-			printk("     Unable to get FATX sector\n");
+			printk("  -  Unable to read FATX sector");
 		} else {
 			if( (ba[0]=='B') && (ba[1]=='R') && (ba[2]=='F') && (ba[3]=='R') ) {
 				tsaHarddiskInfo[nIndexDrive].m_enumDriveType=EDT_UNKNOWN;
-				printk("      FATX Formatted Drive\n", nIndexDrive);
+				printk("  -  FATX sig", nIndexDrive);
 			} else {
-				printk("      Non-native Drive\n", nIndexDrive);
+				printk("  -  No FATX", nIndexDrive);
 			}
 		}
 
 			// report on the MBR-ness of the drive contents
 
 		if(BootIdeReadSector(nIndexDrive, &ba[0], 0, 0, 512)) {
-			printk("     Unable to get first sector\n");
+			printk("     Unable to get first sector");
 		} else {
 			if( (ba[0x1fe]==0x55) && (ba[0x1ff]==0xaa) ) {
-				printk("      MBR Present\n", nIndexDrive);
+				printk("  -  MBR OK", nIndexDrive);
 				if(nIndexDrive==0) {
 					BiosCmosWrite(0x3d, 2);  // boot from HDD
 				}
 			} else {
-				printk("      No MBR at start of drive\n", nIndexDrive);
+				printk("  -  No MBR", nIndexDrive);
 			}
 		}
+
+		printk("\n");
 
 	} else {  // cd/dvd
 		if(BiosCmosRead(0x3d)==0) {  // no bootable HDD
@@ -588,12 +624,44 @@ static int BootIdeDriveInit(unsigned uIoBase, int nIndexDrive)
 int BootIdeInit(void)
 {
 
-	printk("Initializing IDE Controller\n");
 
 	BootIdeDriveInit(IDE_BASE1, 0);
 	BootIdeDriveInit(IDE_BASE1, 1);
 
 	return 0;
+}
+
+
+/////////////////////////////////////////////////
+//  BootIdeAtapiModeSense
+//
+//  returns the ATAPI extra error info block
+
+int BootIdeAtapiModeSense(int nDriveIndex, BYTE bCodePage, BYTE * pba, int nLengthMaxReturn) {
+	unsigned 	uIoBase = tsaHarddiskInfo[nDriveIndex].m_fwPortBase;
+
+		BYTE ba[2048];
+		int nReturn;
+
+		if(!tsaHarddiskInfo[nDriveIndex].m_fDriveExists) return 4;
+
+		memset(&ba[0], 0, 12);
+		ba[0]=0x5a;
+	 	ba[2]=bCodePage;
+	 	ba[7]=(BYTE)(sizeof(ba)>>8); ba[8]=(BYTE)sizeof(ba);
+
+		if(BootIdeIssueAtapiPacketCommandAndPacket(nDriveIndex, &ba[0])) {
+			BYTE bStatus=IoInputByte(IDE_REG_ALTSTATUS(uIoBase)), bError=IoInputByte(IDE_REG_ERROR(uIoBase));
+			printk("  Drive %d: BootIdeAtapiAdditionalSenseCode 3 Atapi Wait for data ready FAILED, status=%02X, error=0x%02X, ASC unavailable\n", nDriveIndex, bStatus, bError);
+			return 1;
+		}
+
+		nReturn=IoInputByte(IDE_REG_CYLINDER_LSB(uIoBase));
+		nReturn |=IoInputByte(IDE_REG_CYLINDER_MSB(uIoBase))<<8;
+		if(nReturn>nLengthMaxReturn) nReturn=nLengthMaxReturn;
+		BootIdeReadData(uIoBase, pba, nReturn);
+
+		return nReturn;
 }
 
 
@@ -607,7 +675,7 @@ int BootIdeAtapiAdditionalSenseCode(int nDriveIndex, BYTE * pba, int nLengthMaxR
 
 		BYTE ba[2048];
 		int nReturn;
-		
+
 		if(!tsaHarddiskInfo[nDriveIndex].m_fDriveExists) return 4;
 
 		memset(&ba[0], 0, 12);
@@ -627,6 +695,9 @@ int BootIdeAtapiAdditionalSenseCode(int nDriveIndex, BYTE * pba, int nLengthMaxR
 
 		return nReturn;
 }
+
+
+
 
 /////////////////////////////////////////////////
 //  BootIdeReadSector
@@ -716,11 +787,11 @@ int BootIdeReadSector(int nDriveIndex, void * pbBuffer, unsigned int block, int 
 		printk_debug("ide error %02X...\n", IoInputByte(IDE_REG_ERROR(uIoBase)));
 		return 1;
 	}
-	if (n_bytes != IDE_SECTOR_SIZE) {
+	if ((n_bytes != IDE_SECTOR_SIZE) || (byte_offset)) {
 		status = BootIdeReadData(uIoBase, baBufferSector, IDE_SECTOR_SIZE);
-		if (status == 0) {
+//		if (status == 0) {
 			memcpy(pbBuffer, baBufferSector+byte_offset, n_bytes);
-		}
+//		}
 	} else {
 		status = BootIdeReadData(uIoBase, pbBuffer, IDE_SECTOR_SIZE);
 	}
@@ -844,4 +915,22 @@ And so at sector 0x125 (in this example only), we finally see the boot code
 		return 0; // succes
 	}
 }
+
+	// these guys are used by grub
+
+int get_diskinfo (int drive, struct geometry *geometry)
+{
+//	printk("get_diskinfo for drive %d\n", drive);
+	if(drive>1) return 1; // fail
+	geometry->cylinders=tsaHarddiskInfo[drive].m_wCountCylinders;
+	geometry->heads=tsaHarddiskInfo[drive].m_wCountHeads;
+	geometry->sectors=tsaHarddiskInfo[drive].m_wCountSectorsPerTrack;
+	geometry->total_sectors=tsaHarddiskInfo[drive].m_dwCountSectorsTotal;
+	geometry->flags=0;
+
+//	printk("geometry->total_sectors=0x%X\n", geometry->total_sectors);
+
+	return 0; // success
+}
+
 
