@@ -128,7 +128,6 @@ OBJECTS-CROM += $(TOPDIR)/obj/elf.o
 endif
 
 RESOURCES = $(TOPDIR)/obj/backdrop.elf
-#RESOURCES += $(TOPDIR)/obj/pcrombios.elf
 
 export INCLUDE
 export TOPDIR
@@ -155,7 +154,6 @@ dummy:
 resources:
 	# Background
 	${LD} -r --oformat elf32-i386 -o $(TOPDIR)/obj/backdrop.elf -T $(TOPDIR)/scripts/backdrop.ld -b binary $(TOPDIR)/pics/backdrop.jpg	
-	${LD} -r --oformat elf32-i386 -o $(TOPDIR)/obj/pcrombios.elf -T $(TOPDIR)/scripts/pcrombios.ld -b binary $(TOPDIR)/pcbios/rombios.bin
 
 install:
 	lmilk -f -p $(TOPDIR)/image/image.bin
@@ -179,17 +177,6 @@ clean:
 	mkdir -p $(TOPDIR)/obj 
 	mkdir -p $(TOPDIR)/bin
 
-#rombios.bin:
-#	${GCC295} -E $< > _rombios_.c
-#	${BCC} -o rombios.s -c -D__i86__ -0 _rombios_.c
-#	sed -e 's/^\.text//' -e 's/^\.data//' rombios.s > _rombios_.s
-#	as86 _rombios_.s -b rombios.bin -u- -w- -g -0 -j -O -l rombios.txt
-#	ls -l rombios.bin
-#
-#rombios.elf : rombios.bin
-#	${LD} -r --oformat elf32-i386 -o $@ -T rombios.ld -b binary rombios.bin
-
- 
 obj/image-crom.bin:
 	${LD} -o obj/image-crom.elf ${OBJECTS-CROM} ${RESOURCES} ${LDFLAGS-ROM}
 	${OBJCOPY} --output-target=binary --strip-all obj/image-crom.elf $@
