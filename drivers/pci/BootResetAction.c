@@ -240,19 +240,6 @@ extern void BootResetAction ( void ) {
 	}
 #endif
 
-	// init USB
-#ifdef DO_USB
-	{
-		const int nSizeAllocation=0x10000;
-		void * pvHostControllerCommsArea=malloc(nSizeAllocation+0x100); // 64K+256 to ensure alignment
-		void * pvHostControllerCommsArea1=malloc(nSizeAllocation+0x100); // 64K+256 to ensure alignment
-		bprintf("BOOT: start USB init\n\r");
-		BootUsbInit((USB_CONTROLLER_OBJECT *)&usbcontroller[0], "USB1", (void *)0xfed00000, (void *)(((DWORD)pvHostControllerCommsArea+0x100)&0xffffff00), nSizeAllocation);
-		BootUsbInit((USB_CONTROLLER_OBJECT *)&usbcontroller[1], "USB2", (void *)0xfed08000, (void *)(((DWORD)pvHostControllerCommsArea1+0x100)&0xffffff00), nSizeAllocation);
-		bprintf("BOOT: done USB init\n\r");
-	}
-#endif
-
 
 	// display solid red frontpanel LED while we start up
 	I2cSetFrontpanelLed(I2C_LED_RED0 | I2C_LED_RED1 | I2C_LED_RED2 | I2C_LED_RED3 );
@@ -481,15 +468,29 @@ extern void BootResetAction ( void ) {
 		}
 
 #endif
+	
+	// init USB
+#ifdef DO_USB
+	{
+		const int nSizeAllocation=0x10000;
+		void * pvHostControllerCommsArea=malloc(nSizeAllocation+0x100); // 64K+256 to ensure alignment
+		void * pvHostControllerCommsArea1=malloc(nSizeAllocation+0x100); // 64K+256 to ensure alignment
+		bprintf("BOOT: start USB init\n\r");
+		BootUsbInit((USB_CONTROLLER_OBJECT *)&usbcontroller[0], "USB1", (void *)0xfed00000, (void *)(((DWORD)pvHostControllerCommsArea+0x100)&0xffffff00), nSizeAllocation);
+		BootUsbInit((USB_CONTROLLER_OBJECT *)&usbcontroller[1], "USB2", (void *)0xfed08000, (void *)(((DWORD)pvHostControllerCommsArea1+0x100)&0xffffff00), nSizeAllocation);
+		bprintf("BOOT: done USB init\n\r");
+	}
+#endif
+
 #ifdef DO_USB
 		{
 			VIDEO_ATTR=0xffc8c8c8;
 			printk("USB: ");
 			VIDEO_ATTR=0xffc8c800;
 
-			BootUsbPrintStatus((USB_CONTROLLER_OBJECT *)&usbcontroller[0]);
+//			BootUsbPrintStatus((USB_CONTROLLER_OBJECT *)&usbcontroller[0]);
 //			BootUsbPrintStatus((USB_CONTROLLER_OBJECT *)&usbcontroller[1]);
-			BootUsbDump((USB_CONTROLLER_OBJECT *)&usbcontroller[0]);
+//			BootUsbDump((USB_CONTROLLER_OBJECT *)&usbcontroller[0]);
 //			BootUsbDump((USB_CONTROLLER_OBJECT *)&usbcontroller[1]);
 		}
 #endif

@@ -14,8 +14,86 @@
 
 #include "boot.h"
 #include "BootUsbOhci.h"
+#include <linux/types.h>
+
+#define __io_virt(x) ((void *)(x))
+#define readl(addr) (*(volatile unsigned int *) __io_virt(addr))
+#define writel(b,addr) (*(volatile unsigned int *) __io_virt(addr) = (b))
 
 #define SIZEOF_HCCA 0x100
+
+/* roothub.status bits */
+#define RH_HS_LPS            0x00000001         /* local power status */
+#define RH_HS_OCI            0x00000002         /* over current indicator */
+#define RH_HS_DRWE           0x00008000         /* device remote wakeup enable */
+#define RH_HS_LPSC           0x00010000         /* local power status change */
+#define RH_HS_OCIC           0x00020000         /* over current indicator change */
+#define RH_HS_CRWE           0x80000000         /* clear remote wakeup enable */
+
+/* roothub.b masks */
+#define RH_B_DR         0x0000ffff              /* device removable flags */
+#define RH_B_PPCM       0xffff0000              /* port power control mask */
+
+/* roothub.b masks */
+#define RH_B_DR         0x0000ffff              /* device removable flags */
+#define RH_B_PPCM       0xffff0000              /* port power control mask */
+
+/* roothub.a masks */
+#define RH_A_NDP        (0xff << 0)             /* number of downstream ports */
+#define RH_A_PSM        (1 << 8)                /* power switching mode */
+#define RH_A_NPS        (1 << 9)                /* no power switching */
+#define RH_A_DT         (1 << 10)               /* device type (mbz) */
+#define RH_A_OCPM       (1 << 11)               /* over current protection mode */
+#define RH_A_NOCP       (1 << 12)               /* no over current protection */
+#define RH_A_POTPGT     (0xff << 24)            /* power on to power good time */
+
+/*
+ * HcControl (control) register masks
+ */
+#define OHCI_CTRL_CBSR  (3 << 0)        /* control/bulk service ratio */
+#define OHCI_CTRL_PLE   (1 << 2)        /* periodic list enable */
+#define OHCI_CTRL_IE    (1 << 3)        /* isochronous enable */
+#define OHCI_CTRL_CLE   (1 << 4)        /* control list enable */
+#define OHCI_CTRL_BLE   (1 << 5)        /* bulk list enable */
+#define OHCI_CTRL_HCFS  (3 << 6)        /* host controller functional state */
+#define OHCI_CTRL_IR    (1 << 8)        /* interrupt routing */
+#define OHCI_CTRL_RWC   (1 << 9)        /* remote wakeup connected */
+#define OHCI_CTRL_RWE   (1 << 10)       /* remote wakeup enable */
+
+
+/*
+ * masks used with interrupt registers:
+ * HcInterruptStatus (intrstatus)
+ * HcInterruptEnable (intrenable)
+ * HcInterruptDisable (intrdisable)
+*/
+#define OHCI_INTR_SO    (1 << 0)        /* scheduling overrun */
+#define OHCI_INTR_WDH   (1 << 1)        /* writeback of done_head */
+#define OHCI_INTR_SF    (1 << 2)        /* start frame */
+#define OHCI_INTR_RD    (1 << 3)        /* resume detect */
+#define OHCI_INTR_UE    (1 << 4)        /* unrecoverable error */
+#define OHCI_INTR_FNO   (1 << 5)        /* frame number overflow */
+#define OHCI_INTR_RHSC  (1 << 6)        /* root hub status change */
+#define OHCI_INTR_OC    (1 << 30)       /* ownership change */
+#define OHCI_INTR_MIE   (1 << 31)       /* master interrupt enable */
+
+
+/* pre-shifted values for HCFS */
+#       define OHCI_USB_RESET   (0 << 6)
+#       define OHCI_USB_RESUME  (1 << 6)
+#       define OHCI_USB_OPER    (2 << 6)
+#       define OHCI_USB_SUSPEND (3 << 6)
+
+/*
+ * HcCommandStatus (cmdstatus) register masks
+*/
+#define OHCI_HCR        (1 << 0)        /* host controller reset */
+#define OHCI_CLF        (1 << 1)        /* control list filled */
+#define OHCI_BLF        (1 << 2)        /* bulk list filled */
+#define OHCI_OCR        (1 << 3)        /* ownership change request */
+#define OHCI_SOC        (3 << 16)       /* scheduling overrun count */
+
+#define OHCI_CONTROL_INIT (OHCI_CTRL_CBSR & 0x3) | OHCI_CTRL_IE | OHCI_CTRL_PLE
 
 const LIST_ENTRY listentryEmpty = { NULL, NULL };
 
@@ -164,6 +242,17 @@ void DestructUSB_CONTROLLER_OBJECT(USB_CONTROLLER_OBJECT * pusbcontroller)  // d
 	}
 }
 
+#define     OHCI_QUIRK_AMD756       0x01            /* erratum #4 */
+#define read_roothub(pusbcontroller, register, mask) ({ \
+        DWORD temp = readl (&pusbcontroller->m_pusboperationalregisters->m_dwHcRhDescriptorA); \
+	while (temp & mask) \
+		temp = readl (&pusbcontroller->m_pusboperationalregisters->m_dwHcRhDescriptorA); \
+		temp; })
+
+
+static DWORD roothub_a (USB_CONTROLLER_OBJECT * pusbcontroller)
+	        { return read_roothub (pusbcontroller, a, 0xfc0fe000); }
+		
 
 void BootUsbInit(
 	USB_CONTROLLER_OBJECT * pusbcontroller,
@@ -172,7 +261,13 @@ void BootUsbInit(
 	void * pvHostControllerCommsArea,
 	size_t sizeAllocation
 ) {
-	DWORD dwSaved;
+//	DWORD dwSaved;
+	DWORD hc_control;
+	DWORD mask;
+
+	unsigned int fminterval;
+	
+	hc_control = OHCI_CONTROL_INIT | OHCI_USB_OPER;
 
 	_strncpy(pusbcontroller->m_szName, szName, sizeof(pusbcontroller->m_szName)-1 );
 
@@ -180,9 +275,38 @@ void BootUsbInit(
 
 	memset(pusbcontroller->m_pvHostControllerCommsArea, 0, sizeAllocation);
 
-		// init the hardware
+	// init the hardware
 
-		// what state is the hardware in at the moment?  (usually reset state)
+	// what state is the hardware in at the moment?  (usually reset state)
+
+//	writel((DWORD)pusbcontroller->m_pvHostControllerCommsArea, &pusbcontroller->m_pusboperationalregisters->m_dwHcHCCA); /* a reset clears this */
+	writel(0, &pusbcontroller->m_pusboperationalregisters->m_dwHcHCCA); /* a reset clears this */
+	
+	writel(0, &pusbcontroller->m_pusboperationalregisters->m_dwHcControlHeadED);
+	writel(0, &pusbcontroller->m_pusboperationalregisters->m_dwHcBulkHeadED);
+	
+	fminterval = 0x2edf;
+	writel ((fminterval * 9) / 10, &pusbcontroller->m_pusboperationalregisters->m_dwHcPeriodicStart);
+	fminterval |= ((((fminterval - 210) * 6) / 7) << 16);
+	writel (fminterval, &pusbcontroller->m_pusboperationalregisters->m_dwHcRmInterval);
+	writel (0x628, &pusbcontroller->m_pusboperationalregisters->m_dwLsThreshold);
+
+	writel(hc_control,&pusbcontroller->m_pusboperationalregisters->m_dwHcControl);
+
+	mask = OHCI_INTR_MIE | OHCI_INTR_UE | OHCI_INTR_WDH | OHCI_INTR_SO;
+	writel (mask, &pusbcontroller->m_pusboperationalregisters->m_dwHcInterruptEnable);
+	writel (mask, &pusbcontroller->m_pusboperationalregisters->m_dwHcInterruptStatus);
+
+	/* AMD QUIRKS */
+	writel ((roothub_a (pusbcontroller) | RH_A_NPS) & ~RH_A_PSM, &pusbcontroller->m_pusboperationalregisters->m_dwHcRhDescriptorA);
+
+	writel (RH_HS_LPSC, &pusbcontroller->m_pusboperationalregisters->m_dwHcRhStatus);
+
+	Sleep(50000);
+
+//	BootUsbDump(pusbcontroller);
+
+/*
 	switch((pusbcontroller->m_pusboperationalregisters->m_dwHcControl)&0xc0)  {
 		case 0x00: // in reset: a cold boot scenario
 				// set up some recommended params
@@ -225,8 +349,8 @@ void BootUsbInit(
 
 	pusbcontroller->m_pusboperationalregisters->m_dwHcInterruptEnable=0x80000004; // 5.1.1.5 after other setup enable SOF interrupt too
 
-
-	bprintf("   Done\n");
+*/
+	printk("   Done\n");
 }
 
 
@@ -362,11 +486,13 @@ void ServiceUSB_IRP(USB_IRP *pirp)
 
 void BootUsbRootHubStatusChange(USB_DEVICE *pusbdeviceRootHub)
 {
-//	HC_GENERAL_TRANSFER_DESCRIPTOR * phcgeneraltransferdescriptor;
-			// cook a transfer descriptor
-
-//	pgeneraltransferdescriptor=BootUsbDescriptorMalloc(pusbdeviceRootHub->m_pusbcontrollerOwner, 2);
 /*
+	HC_GENERAL_TRANSFER_DESCRIPTOR *phcgeneraltransferdescriptor;
+		//
+		// cook a transfer descriptor
+
+	phcgeneraltransferdescriptor=BootUsbDescriptorMalloc(pusbdeviceRootHub->m_pusbcontrollerOwner, 2);
+
 	ConstructHC_GENERAL_TRANSFER_DESCRIPTOR(
 		phcgeneraltransferdescriptor,
 		dwControl,
@@ -374,7 +500,6 @@ void BootUsbRootHubStatusChange(USB_DEVICE *pusbdeviceRootHub)
 		dwLengthBuffer
 	);
 */
-
 }
 
 
@@ -394,7 +519,7 @@ void BootUsbInterrupt(USB_CONTROLLER_OBJECT * pusbcontroller)
 		pusbcontroller->m_pusboperationalregisters->m_dwHcInterruptStatus=2;
 	}
 	if(pusbcontroller->m_pusboperationalregisters->m_dwHcInterruptStatus&4) {
-//		bprintf("%s Interrupt (%u): USB Start of Frame\n", pusbcontroller->m_szName, pusbcontroller->m_dwCountInterrupts);
+		bprintf("%s Interrupt (%u): USB Start of Frame\n", pusbcontroller->m_szName, pusbcontroller->m_dwCountInterrupts);
 		pusbcontroller->m_pusboperationalregisters->m_dwHcInterruptStatus=4;
 	}
 	if(pusbcontroller->m_pusboperationalregisters->m_dwHcInterruptStatus&8) {
@@ -415,7 +540,7 @@ void BootUsbInterrupt(USB_CONTROLLER_OBJECT * pusbcontroller)
 		bprintf("%s Interrupt (%u): RootHub Status Change\n", pusbcontroller->m_szName, pusbcontroller->m_dwCountInterrupts);
 		for(n=0;n<COUNT_ROOTHUBS;n++) {
 			if(pusbcontroller->m_pusboperationalregisters->m_dwHcRhPortStatus[n]&0x10000) {
-						// change in connection status detected in n-th root hub
+					// change in connection status detected in n-th root hub
 					pusbcontroller->m_pusboperationalregisters->m_dwHcRhPortStatus[n]=0x10000; // clear it
 					BootUsbRootHubStatusChange(pusbdeviceRootHub);
 			}
@@ -424,7 +549,7 @@ void BootUsbInterrupt(USB_CONTROLLER_OBJECT * pusbcontroller)
 		pusbcontroller->m_pusboperationalregisters->m_dwHcInterruptStatus=64;
 	}
 	if(pusbcontroller->m_pusboperationalregisters->m_dwHcInterruptStatus&0x40000000) {
-		bprintf("%s Interrupt (%u): USB Ownership Change\n", pusbcontroller->m_szName, pusbcontroller->m_dwCountInterrupts);
+		printk("%s Interrupt (%u): USB Ownership Change\n", pusbcontroller->m_szName, pusbcontroller->m_dwCountInterrupts);
 		pusbcontroller->m_pusboperationalregisters->m_dwHcInterruptStatus=0x40000000;
 	}
 }
@@ -459,7 +584,7 @@ void BootUsbDescriptorFree(USB_CONTROLLER_OBJECT *pusbcontroller, void *pvoid, i
 	int n=(((BYTE *)pvoid)-pb -dwSizeofFatInBytes)/16;
 	int y;
 	pusbcontroller->m_dwCountAllocatedMemoryFromDescriptorStorage-=(nCount16ByteContiguousRegion<<4);
-	bprintf("BootUsbDescriptorFree sector %u, len %u\n", n, nCount16ByteContiguousRegion);
+	printk("BootUsbDescriptorFree sector %u, len %u\n", n, nCount16ByteContiguousRegion);
 	for(y=0;y<nCount16ByteContiguousRegion;y++) { pb[n++]=0; }
 }
 

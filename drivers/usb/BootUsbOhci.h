@@ -12,7 +12,7 @@
 
 */
 
-#define COUNT_ROOTHUBS 2
+#define COUNT_ROOTHUBS 15
 
 // actual footprint of memory-mapped
 // USB_OPERATIONAL_REGISTERS
@@ -44,7 +44,7 @@ typedef struct {
 	DWORD m_dwHcRhDescriptorB;
 	DWORD m_dwHcRhStatus;
 	DWORD m_dwHcRhPortStatus[COUNT_ROOTHUBS];
-} USB_OPERATIONAL_REGISTERS;
+} USB_OPERATIONAL_REGISTERS __attribute((aligned(32)));
 
 typedef struct {
 	volatile USB_OPERATIONAL_REGISTERS * m_pusboperationalregisters;

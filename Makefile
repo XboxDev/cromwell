@@ -8,6 +8,8 @@ CFLAGS	= -g -O2 -Wall -Werror $(INCLUDE)
 LD      = ld
 OBJCOPY = objcopy
 
+export CC
+
 TOPDIR  := $(shell /bin/pwd)
 SUBDIRS	=	fs drivers lib boot boot_xbe
 OBJECTS = $(TOPDIR)/obj/BootStartup.o
