@@ -228,10 +228,6 @@ extern void BootResetAction ( void ) {
 
     
 	// capture title area
-
-	nTempCursorX=VIDEO_CURSOR_POSX;
-	nTempCursorY=VIDEO_CURSOR_POSY;
-
 	VIDEO_ATTR=0xffc8c8c8;
 	printk("Encoder: ");
 	VIDEO_ATTR=0xffc8c800;
@@ -254,43 +250,10 @@ extern void BootResetAction ( void ) {
 		printk("%doC  \n", nx);
 	}
 
-
-#ifdef REPORT_VIDEO_MODE
-
-	VIDEO_ATTR=0xffc8c8c8;
-	printk("AV: ");
-	VIDEO_ATTR=0xffc8c800;
-
-	switch(vmode.m_bAvPack) {
-		case 0:
-			printk("Scart");
-			break;
-		case 1:
-			printk("HDTV");
-			break;
-		case 2:
-			printk("VGA");
-			break;
-		case 3:
-			printk("Type 3");
-			break;
-		case 4:
-			printk("SVideo");
-			break;
-		case 5:
-			printk("Type 5");
-			break;
-		case 6:
-			printk("Composite");
-			break;
-	}
-
-	printk("\n");
-#endif
-
-
-
-		I2cSetFrontpanelLed(I2C_LED_RED0 | I2C_LED_RED1 | I2C_LED_RED2 | I2C_LED_RED3 );
+	nTempCursorX=VIDEO_CURSOR_POSX;
+	nTempCursorY=VIDEO_CURSOR_POSY;
+		
+	I2cSetFrontpanelLed(I2C_LED_RED0 | I2C_LED_RED1 | I2C_LED_RED2 | I2C_LED_RED3 );
 
 		VIDEO_ATTR=0xffffffff;
 
