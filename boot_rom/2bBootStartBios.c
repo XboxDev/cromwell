@@ -17,6 +17,9 @@
 #include "sha1.h"
 
 
+// Compression
+#include "minilzo.h"
+
 /*
 Hints:
 
@@ -26,20 +29,6 @@ Hints:
 */
 
 
-// access to RTC CMOS memory
-
-
-
-void BiosCmosWrite(BYTE bAds, BYTE bData) {
-		IoOutputByte(0x72, bAds);
-		IoOutputByte(0x73, bData);
-}
-
-BYTE BiosCmosRead(BYTE bAds)
-{
-		IoOutputByte(0x72, bAds);
-		return IoInputByte(0x73);
-}
 
 
 extern void *MemoryChecksum;
@@ -54,7 +43,7 @@ extern void BootStartBiosLoader ( void ) {
 	unsigned int PROGRAMM_Memory_2bl 	= 0x00100000;
 	unsigned int CROMWELL_Memory_pos 	= 0x03A00000;
 	unsigned int CROMWELL_compress_temploc 	= 0x02000000;
-	
+
 	unsigned int Buildinflash_Flash[4]	= { 0xfff00000,0xfff40000,0xfff80000,0xfffc0000};
         unsigned int cromwellidentify	 	=  1;
         unsigned int flashbank		 	=  3;  // Default Bank
@@ -70,10 +59,10 @@ extern void BootStartBiosLoader ( void ) {
 	unsigned int compressed_image_size;
 	unsigned int Biossize_type;
 	
-	unsigned int de_compressed_image_size;
 	
         int validimage;
-        
+        free_mem_ptr = 0x02500000;		// Main Dynamic Memory starts here
+        	
 	memcpy(&bootloaderChecksum[0],(void*)PROGRAMM_Memory_2bl,20);
 	memcpy(&bootloadersize,(void*)(PROGRAMM_Memory_2bl+20),4);
 	memcpy(&compressed_image_start,(void*)(PROGRAMM_Memory_2bl+24),4);
@@ -93,9 +82,9 @@ extern void BootStartBiosLoader ( void ) {
 		while(1);
 	}
 	
-      
-      
-      
+        // We clear the Dynamic Memory manager (hiihi)
+        
+
 	
 	// Lets go, we have finished, the Most important Startup, we have now a valid Micro-loder im Ram
 	// we are quite happy now
@@ -143,8 +132,10 @@ extern void BootStartBiosLoader ( void ) {
                 
         	// Copy From Flash To RAM
       		memcpy(&bootloaderChecksum[0],(void*)(Buildinflash_Flash[flashbank]+compressed_image_start),20);
-        	memcpy((void*)CROMWELL_compress_temploc,(void*)(Buildinflash_Flash[flashbank]+compressed_image_start+20),compressed_image_size);
-
+        	//memcpy((void*)CROMWELL_compress_temploc,(void*)(Buildinflash_Flash[flashbank]+compressed_image_start+20),compressed_image_size);
+                
+                memcpy((void*)CROMWELL_compress_temploc,(void*)(Buildinflash_Flash[flashbank]+compressed_image_start+20),compressed_image_size);
+		
 		// Lets Look, if we have got a Valid thing from Flash        	
       		SHA1Reset(&context);
 		SHA1Input(&context,(void*)(CROMWELL_compress_temploc),compressed_image_size);
@@ -153,19 +144,45 @@ extern void BootStartBiosLoader ( void ) {
 		if (_memcmp(&bootloaderChecksum[0],SHA1_result,20)==0) {
 			// The Checksum is good                          
 			// We start the Cromwell immediatly
+			/*
+			I2cSetFrontpanelLed(I2C_LED_RED0 | I2C_LED_RED1 | I2C_LED_RED2 | I2C_LED_RED3 );
+	
+			I2CTransmitWord(0x10, 0x1901);
+			I2CTransmitWord(0x10, 0x0c00);
+                        */
+                
+			/*
+			i wantet to to the lzo_init() too, but if i do it, decompression fails.
+			no idea why
+			lzo_init();
+			*/
+
+                        unsigned int de_compressed_image_size;
+                        
+                        lzo1x_decompress(
+                        		(void*)(CROMWELL_compress_temploc),
+                        		compressed_image_size,
+                        		(void*)CROMWELL_Memory_pos,
+                        		&de_compressed_image_size,
+                        		NULL);
+                        
+			
 			//I2cSetFrontpanelLed(I2C_LED_RED0 | I2C_LED_RED1 | I2C_LED_RED2 | I2C_LED_RED3 );
-		
-			validimage=1;                   
-
-
-                	// Here, the Decompression Algorithm should work
-                	
+			
+					
+		//	memcpy((void*)CROMWELL_Memory_pos,(void*)(CROMWELL_compress_temploc),compressed_image_size);
+		        
+			
+		//	
+			
+			
+/*                	
 	                // As we have no Decompression, we set
         	        de_compressed_image_size = compressed_image_size;
 			// We copy The Decompressed Image from Temp location to its final Location, basicall
 			// The decompression Algorithm should decompress us there, but we have none to this time now
         		memcpy((void*)CROMWELL_Memory_pos,(void*)CROMWELL_compress_temploc,de_compressed_image_size);
-			
+*/			
 			// Decompression Ends here
 					
 			// This is a config bit in Cromwell, telling the Cromwell, that it is a Cromwell and not a Xromwell
@@ -174,6 +191,7 @@ extern void BootStartBiosLoader ( void ) {
 			memcpy((void*)(CROMWELL_Memory_pos+24),&cromloadtry,4);
 		 	memcpy((void*)(CROMWELL_Memory_pos+28),&flashbank,4);
 		 	memcpy((void*)(CROMWELL_Memory_pos+32),&Biossize_type,4);
+		 	validimage=1;
 		 	
 		 	break;
 

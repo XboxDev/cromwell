@@ -28,7 +28,7 @@
 #include "BootFlash.h"
 #include "BootFATX.h"
 #include "xbox.h"
-//#include "cpu.h"
+#include "cpu.h"
 #include "config.h"
 #include "BootUsbOhci.h"
 
@@ -36,6 +36,8 @@
 
 extern DWORD dwaTitleArea[1024*64];
 JPEG jpegBackdrop;
+
+CONFIGENTRY kernel_config;
 
 int nTempCursorMbrX, nTempCursorMbrY;
 
@@ -97,18 +99,6 @@ Hints:
 */
 
 
-// access to RTC CMOS memory
-
-void BiosCmosWrite(BYTE bAds, BYTE bData) {
-		IoOutputByte(0x72, bAds);
-		IoOutputByte(0x73, bData);
-}
-
-BYTE BiosCmosRead(BYTE bAds)
-{
-		IoOutputByte(0x72, bAds);
-		return IoInputByte(0x73);
-}
 
 //////////////////////////////////////////////////////////////////////
 //
@@ -121,28 +111,24 @@ extern void BootResetAction ( void ) {
 	int nActivePartitionIndex=0;
 	int nFATXPresent=false;
 	int nTempCursorX, nTempCursorY;
-
-
-        // We disable The Cache
-//        cache_disable();
-	// We Update the Microcode of the CPU
-//	display_cpuid_update_microcode();
-        // We Enable The Cache
-//        cache_enable();
-
+        int temp;
 
         memcpy(&cromwell_config,(void*)(0x03A00000+20),4);
         memcpy(&cromwell_retryload,(void*)(0x03A00000+24),4);
 	memcpy(&cromwell_loadbank,(void*)(0x03A00000+28),4);
         memcpy(&cromwell_Biostype,(void*)(0x03A00000+32),4);
-
-	// Very cosmetic, but very secure
-       	memset((void*)0x00090000,0x00,0x70000);  // Linux Kernel Info Space
-      	memset((void*)0x00100000,0x00,0x200000);  // Kompressed Kernel
-
+  
+	      
+        // We disable The Cache
+        cache_disable();
+	// We Update the Microcode of the CPU
+	display_cpuid_update_microcode();
+        // We Enable The Cache
+        cache_enable();
+        setup_ioapic();
         
-        nInteruptable = 0;	
-        
+	nInteruptable = 0;	
+	
 #if INCLUDE_FILTROR
 	// clear down channel quality stats
 	bfcqs.m_dwBlocksFromPc=0;
@@ -168,13 +154,16 @@ extern void BootResetAction ( void ) {
 	
 	BootInterruptsWriteIdt();	// Save Mode, not all fully Setup
 	bprintf("BOOT: done interrupts\n\r");
-	
+
+	// Very cosmetic, but very secure
+       	memset((void*)0x00090000,0x00,0x70000);  // Linux Kernel Info Space
+      	memset((void*)0x00100000,0x00,0x200000);  // Kompressed Kernel
+
 	// initialize the PCI devices
 	bprintf("BOOT: starting PCI init\n\r");
 	BootPciPeripheralInitialization();
 	bprintf("BOOT: done with PCI initialization\n\r");
-       
-	// if we don't make the PIC happy within 200mS, the damn thing will reset us
+  	
 
 	memset((ohci_t *)&usbcontroller[0],0,sizeof(ohci_t));
 	memset((ohci_t *)&usbcontroller[1],0,sizeof(ohci_t));
@@ -185,11 +174,11 @@ extern void BootResetAction ( void ) {
 //	DumpAddressAndData(0, (BYTE *)&eeprom, 256);
         
         // Load and Init the Background image
-
+        
 	BootVgaInitializationKernelNG((CURRENT_VIDEO_MODE_DETAILS *)&currentvideomodedetails);
 
 	bprintf("BOOT: kern VGA init done\n\r");
-
+        
 	{ // decode and malloc backdrop bitmap
 		extern int _start_backdrop, _end_backdrop;
 		BootVideoJpegUnpackAsRgb(
@@ -199,11 +188,13 @@ extern void BootResetAction ( void ) {
 		);
 	}
 	bprintf("BOOT: backdrop unpacked\n\r");
-
+        
 	// display solid red frontpanel LED while we start up
 	I2cSetFrontpanelLed(I2C_LED_RED0 | I2C_LED_RED1 | I2C_LED_RED2 | I2C_LED_RED3 );
-
-		// paint the backdrop
+       
+   
+       
+	// paint the backdrop
 #ifndef DEBUG_MODE
 	BootVideoClearScreen(&jpegBackdrop, 0, 0xffff);
 #endif
@@ -215,7 +206,7 @@ extern void BootResetAction ( void ) {
 	I2CTransmitWord(0x10, 0x1b04); // unknown
 
 	// Audio Section
-	
+	/*
 	BootAudioInit(&ac97device);
 	ConstructAUDIO_ELEMENT_SINE(&aesTux, 1000);  // constructed silent, manipulated in video IRQ that moves tux
 	BootAudioAttachAudioElement(&ac97device, (AUDIO_ELEMENT *)&aesTux);
@@ -228,15 +219,17 @@ extern void BootResetAction ( void ) {
 	ConstructAUDIO_ELEMENT_NOISE(&aenTux);  // constructed silent, manipulated in video IRQ that moves tux
 	BootAudioAttachAudioElement(&ac97device, (AUDIO_ELEMENT *)&aenTux);
 	BootAudioPlayDescriptors(&ac97device);
+        */
 
-
+	/* Here, the interrupts are Switched on now */
+	BootPciInterruptEnable();
+	/* We configure the timers now , as we need to calibrate them */
+        wait_ms_trigger();
+        /* We allow interrupts */
 	nInteruptable = 1;	
 	
 
 
-        {
-	DWORD dw=0;
-	BootPciInterruptGlobalStackStateAndDisable(&dw);
 
 	I2CTransmitWord(0x10, 0x1901); // no reset on eject
 
@@ -245,8 +238,7 @@ extern void BootResetAction ( void ) {
 #else
 	I2CTransmitWord(0x10, 0x0c00); // eject DVD tray
 #endif
-	BootPciInterruptGlobalPopState(dw);
-	}
+
      
          
 	VIDEO_CURSOR_POSY=currentvideomodedetails.m_dwMarginYInLinesRecommended;
@@ -266,8 +258,9 @@ extern void BootResetAction ( void ) {
 		if (cromwell_Biostype == 0) printk("Bios: 256k)");
 		if (cromwell_Biostype == 1) printk("Bios: 1MB)");
 	}
-	printk("\n");
+        printk("\n");
 
+    
 	// capture title area
 	BootVideoBlit(&dwaTitleArea[0], currentvideomodedetails.m_dwWidthInPixels*4, ((DWORD *)FRAMEBUFFER_START)+(currentvideomodedetails.m_dwMarginYInLinesRecommended*currentvideomodedetails.m_dwWidthInPixels), currentvideomodedetails.m_dwWidthInPixels*4, 64);
 
@@ -283,9 +276,8 @@ extern void BootResetAction ( void ) {
 		printk("v1.1  ");
 	}
 
-
-	BootPciInterruptEnable();
-
+	
+        
 	{
 		int n, nx;
 		I2CGetTemperature(&n, &nx);
@@ -392,30 +384,7 @@ extern void BootResetAction ( void ) {
 #endif
 
 
-			// now do the main BIOS action
-#ifdef DO_CMOS_BIOS_DATA
-		{  			// standard BIOS settings
-			int n;
-			for(n=0x0e;n<0x40;n++) BiosCmosWrite(n, 0);
-
-//			BiosCmosWrite(0x0e, 0); // say that CMOS, HDD and RTC are all valid
-//			BiosCmosWrite(0x0f, 0); // say that we are coming up from a normal reset
-//			BiosCmosWrite(0x10, 0); // no floppies on this thing
-//			BiosCmosWrite(0x11, 0); // no standard BIOS options
-//			BiosCmosWrite(0x12, 0); // no HDD yet
-			BiosCmosWrite(0x14, 9); // misc equip list, VGA, display present, b0 fixed to 1
-//			BiosCmosWrite(0x2d, 0); // misc BIOS settings
-			BiosCmosWrite(0x30, 0x78); // 1K blocks of RAM, - first 1M
-			BiosCmosWrite(0x31, 0xe6); // high part (set to 59MB)
-			BiosCmosWrite(0x32, 20); // century
-//			BiosCmosWrite(0x3d, 0); // boot method: default=0=do not attempt boot (set in BootIde.c)
-		}
-#else
-		{
-				BiosCmosWrite(0x32, 20); // century
-		}
-#endif
-			// gggb while waiting for Ethernet & Hdd
+		// gggb while waiting for Ethernet & Hdd
 
 		I2cSetFrontpanelLed(I2C_LED_GREEN0 | I2C_LED_GREEN1 | I2C_LED_GREEN2);
 
@@ -453,13 +422,13 @@ extern void BootResetAction ( void ) {
 		printk("%s\n", of.m_szFlashDescription);
 		}
 #endif
-	
+
 	// init USB
 #ifdef DO_USB
 	
 		printk("BOOT: start USB init\n");
-
-		BootUsbInit((ohci_t *)&usbcontroller[0], "USB1", (void *)0xfed00000);
+           
+	//	BootUsbInit((ohci_t *)&usbcontroller[0], "USB1", (void *)0xfed00000);
 //		BootUsbInit((ohci_t *)&usbcontroller[1], "USB1", (void *)0xfed08000);
 		printk("BOOT: done USB init\n");
 	
@@ -481,13 +450,11 @@ extern void BootResetAction ( void ) {
 		printk("Initializing IDE Controller\n");
 
 			// wait around for HDD to become ready
-
 		
-		{
-		DWORD dw=BIOS_TICK_COUNT;
+
 		BootIdeWaitNotBusy(0x1f0);
-		while((BIOS_TICK_COUNT-dw)<30) ;  // wait minimum ~1.8 second
-		}
+                wait_tick(20);
+		
 		printk("Ready\n");
 
 					// reuse BIOS status area
@@ -595,19 +562,26 @@ extern void BootResetAction ( void ) {
 //	printk("i2C=%d SMC=%d, IDE=%d, tick=%d una=%d unb=%d\n", nCountI2cinterrupts, nCountInterruptsSmc, nCountInterruptsIde, BIOS_TICK_COUNT, nCountUnusedInterrupts, nCountUnusedInterruptsPic2);
 
 
-	// enable below for stress testing
-	// continually restarts _romwell without hard-resetting the hardware
-
-#if 0
-		{
-			void bootloader2();
-			printk("rebooting\n");
-			bootloader2();
-		}
-#endif
 
 	// Used to start Bochs; now a misnomer as it runs vmlinux
 	// argument 0 for hdd and 1 for from CDROM
+
+//#ifndef IS_XBE_CDLOADER
+//#ifdef MENU
+
+  	memset(&kernel_config,0,sizeof(CONFIGENTRY));
+		
+	if(fMbrPresent && fSeenActive) {
+		temp = BootMenue(&kernel_config, 0,nActivePartitionIndex, nFATXPresent);
+	} else {
+		temp = BootMenue(&kernel_config, 1,0, nFATXPresent); 
+	}
+  
+  
+        //printk("We are starting the config %d\n",temp); 
+       	StartBios(&kernel_config, nActivePartitionIndex, nFATXPresent,temp);
+       
+/*
 #ifdef FORCE_CD_BOOT
 	StartBios(1, 0, 0);
 #else
@@ -617,4 +591,6 @@ extern void BootResetAction ( void ) {
 			StartBios(1, 0, nFATXPresent);
 		}
 #endif
+*/
+
 	}

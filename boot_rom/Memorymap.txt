@@ -1,6 +1,8 @@
 
 Memory Mapping 2BLoader for Cromwell Loading
  	
+	0x0008 0000 Stack pointer TOP
+
 	0x0040 0000 IDT for the CPU
 
 	0x0010 0000 2BL programm for runnin in Memory = 15MB 
@@ -9,8 +11,11 @@ Memory Mapping 2BLoader for Cromwell Loading
  	0x0100 0000 for 2bLoader Memory(0x1000000 size = 16 MB)
  	0x01FF FFFF End Memory
  	
- 	0x0200 0000 2bLoader Decompression Memory (0x1B00000 size = 27MB)
- 	0x03AF FFFF 2bLoader Decompression MemoryEnd
+ 	0x0200 0000 2bLoader Decompression Memory 
+ 	0x024F FFFF 2bLoader Decompression MemoryEnd
+ 	
+ 	0x0250 0000 2bLoader Dynamic Memory Start 
+ 	0x03AF FFFF 2bLoader Dynamic Memory End
  	
  	0x03A0 0000 c/x romwell Ramcopy Start (0x200000 size = 2MB) 
  	0x03BF FFFF c/x romwell Ramcopy End

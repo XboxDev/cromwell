@@ -59,26 +59,26 @@ static double fabs(double d) {
 
 void BootVgaInitializationKernelNG(CURRENT_VIDEO_MODE_DETAILS * pcurrentvideomodedetails) {
 	EVIDEOSTD videoStd;
-	DWORD dwTempIntState;
+
 	MODE_PARAMETER parameter;
 	BYTE b;
 	RIVA_HW_INST riva;
-//	int maxcounter;
+	int maxcounter;
    
 	videoStd = xbvDetectVideoStd();
-
-	BootPciInterruptGlobalStackStateAndDisable(&dwTempIntState);
    
    	memset((void *)&currentvideomodedetails,0,sizeof(CURRENT_VIDEO_MODE_DETAILS));
 	// clear the Video Ram
 	memset((void *)FRAMEBUFFER_START,0x00,0x400000);
-
+     	currentvideomodedetails.m_nVideoModeIndex =VIDEO_MODE_800x600;
+     	
+     
 	if(((BYTE *)&eeprom)[0x96]&0x01) { // 16:9 widescreen TV
 		currentvideomodedetails.m_nVideoModeIndex=VIDEO_MODE_1024x576;
 	} else { // 4:3 TV
 		currentvideomodedetails.m_nVideoModeIndex=VIDEO_PREFERRED_MODE;
 	}
-	
+
 	currentvideomodedetails.m_pbBaseAddressVideo=(BYTE *)0xfd000000;
 	currentvideomodedetails.m_fForceEncoderLumaAndChromaToZeroInitially=1;
 		
@@ -88,14 +88,13 @@ void BootVgaInitializationKernelNG(CURRENT_VIDEO_MODE_DETAILS * pcurrentvideomod
 	pcurrentvideomodedetails->m_dwFrameBufferStart = FRAMEBUFFER_START;
        	
        	// This is sure the hard way telling the register what we want
-/*
         maxcounter=2000;
         while (*((DWORD * )0xfd600800)^ FRAMEBUFFER_START ) {
         	(*((DWORD * )0xfd600800)) = FRAMEBUFFER_START;       
         	maxcounter--;
         	if (maxcounter==0) break;
         }
-*/      
+        
 
 	pcurrentvideomodedetails->m_bAvPack=I2CTransmitByteGetReturn(0x10, 0x04);
 	pcurrentvideomodedetails->m_pbBaseAddressVideo=(BYTE *)0xfd000000;
@@ -190,11 +189,13 @@ void BootVgaInitializationKernelNG(CURRENT_VIDEO_MODE_DETAILS * pcurrentvideomod
 
 	I2CTransmitWord(0x45, (0xb8<<8) | 7); // Set autoconfig, 800x600, PAL, YCrCb in
 	{                   
-	int temp;
+
 	int nRetriesToLive=400;
 	while(nRetriesToLive--)	{
+		int temp;
+		for (temp=0;temp<1000;temp++);
 		if ((I2CTransmitByteGetReturn(0x45, 0x10) & 0x01 )==1) break;
-	        for (temp=0;temp<100;temp++) {} // Small delay
+
 		} // wait until busy cleared
 	}
 	// Switch to Pseudo-Master mode
@@ -237,8 +238,7 @@ void BootVgaInitializationKernelNG(CURRENT_VIDEO_MODE_DETAILS * pcurrentvideomod
 			break;
 	}
 	pcurrentvideomodedetails->m_bBPP = 32;
-
-
+     
 	if(FindOverscanValues(pcurrentvideomodedetails->m_dwWidthInPixels,
 		pcurrentvideomodedetails->m_dwHeightInLines,
 		pcurrentvideomodedetails->hoc, pcurrentvideomodedetails->voc,
@@ -276,6 +276,7 @@ void BootVgaInitializationKernelNG(CURRENT_VIDEO_MODE_DETAILS * pcurrentvideomod
 	pcurrentvideomodedetails->m_bFinalConexantA8 = 0x81;
 	pcurrentvideomodedetails->m_bFinalConexantAA = 0x49;
 	pcurrentvideomodedetails->m_bFinalConexantAC = 0x8c;
+	// We dimm the Video OFF
 	I2CTransmitWord(0x45, (0xa8<<8)|0);
 	I2CTransmitWord(0x45, (0xaa<<8)|0);
 	I2CTransmitWord(0x45, (0xac<<8)|0);
@@ -290,8 +291,13 @@ void BootVgaInitializationKernelNG(CURRENT_VIDEO_MODE_DETAILS * pcurrentvideomod
 
 	writeCrtNv (&riva, 0, 0x11, 0x20);
 */
+     
+        // We reenable the Video 
+        I2CTransmitWord(0x45, 0xa800 | pcurrentvideomodedetails->m_bFinalConexantA8);
+        I2CTransmitWord(0x45, 0xaa00 | pcurrentvideomodedetails->m_bFinalConexantAA); 
+        I2CTransmitWord(0x45, 0xac00 | pcurrentvideomodedetails->m_bFinalConexantAC);   
 
-	BootPciInterruptGlobalPopState(dwTempIntState);
+
 
 }
 

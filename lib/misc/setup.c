@@ -70,15 +70,12 @@ extern void* framebuffer;
 void setup(void* KernelPos, void* PhysInitrdPos, void* InitrdSize, char* kernel_cmdline) {
     
     struct kernel_setup_t *kernel_setup = (struct kernel_setup_t*)KernelPos;
-    DWORD dwInterrupt;
 
     memset(kernel_setup->__pad2,0x00,sizeof(kernel_setup->__pad2));
     memset(kernel_setup->__pad3,0x00,sizeof(kernel_setup->__pad3));
     kernel_setup->unused2=0; 
     kernel_setup->unused3=0;
     
-    BootPciInterruptGlobalStackStateAndDisable(&dwInterrupt);
-
     /* init kernel parameters */
     kernel_setup->loader = 0xff;		/* must be != 0 */
     kernel_setup->heap_end_ptr = 0xffff;	/* 64K heap */
@@ -151,6 +148,6 @@ void setup(void* KernelPos, void* PhysInitrdPos, void* InitrdSize, char* kernel_
 
 
 
-BootPciInterruptGlobalPopState(dwInterrupt);
+
 
 }

@@ -3,7 +3,7 @@ INCLUDE = -I$(TOPDIR)/grub -I$(TOPDIR)/include -I$(TOPDIR)/ -I./ -I$(TOPDIR)/fs/
 	-I$(TOPDIR)/fs/fatx -I$(TOPDIR)/lib/eeprom -I$(TOPDIR)/lib/crypt -I$(TOPDIR)/drivers/usb \
 	-I$(TOPDIR)/drivers/video -I$(TOPDIR)/drivers/flash -I$(TOPDIR)/lib/misc \
 	-I$(TOPDIR)/boot_xbe/ -I$(TOPDIR)/fs/grub -I$(TOPDIR)/lib/font -I$(TOPDIR)/lib/jpeg-6b \
-	-I$(TOPDIR)/startuploader # -I$(TOPDIR)/drivers/cpu
+	-I$(TOPDIR)/startuploader -I$(TOPDIR)/drivers/cpu  -I$(TOPDIR)/lib/lzo
 
 
 CFLAGS	= -O2 -mcpu=pentium -Wall -Werror $(INCLUDE) -Wstrict-prototypes -fomit-frame-pointer -pipe -mpreferred-stack-boundary=2
@@ -23,6 +23,7 @@ RESOURCES-ROMBOOT = $(TOPDIR)/obj/xcodes11.elf
 
 OBJECTS-IMAGEBLD = $(TOPDIR)/bin/imagebld.o
 OBJECTS-IMAGEBLD += $(TOPDIR)/bin/sha1.o
+OBJECTS-IMAGEBLD += $(TOPDIR)/obj/minilzo.o
 
 OBJECTS-XBE = $(TOPDIR)/boot_xbe/xbeboot.o
                                              
@@ -31,6 +32,7 @@ OBJECTS-ROMBOOT += $(TOPDIR)/obj/2bPicResponseAction.o
 OBJECTS-ROMBOOT += $(TOPDIR)/obj/2bBootStartBios.o
 OBJECTS-ROMBOOT += $(TOPDIR)/obj/sha1.o
 OBJECTS-ROMBOOT += $(TOPDIR)/obj/2bBootLibrary.o
+OBJECTS-ROMBOOT += $(TOPDIR)/obj/minilzo.o
                                              
 OBJECTS-CROM = $(TOPDIR)/obj/BootStartup.o
 OBJECTS-CROM += $(TOPDIR)/obj/BootResetAction.o
@@ -48,9 +50,9 @@ OBJECTS-CROM += $(TOPDIR)/obj/BootStartBios.o
 OBJECTS-CROM += $(TOPDIR)/obj/setup.o
 OBJECTS-CROM += $(TOPDIR)/obj/BootFilesystemIso9660.o
 OBJECTS-CROM += $(TOPDIR)/obj/BootLibrary.o
-#OBJECTS-CROM += $(TOPDIR)/obj/cputools.o
-#OBJECTS-CROM += $(TOPDIR)/obj/microcode.o
-#OBJECTS-CROM += $(TOPDIR)/obj/ioapic.o
+OBJECTS-CROM += $(TOPDIR)/obj/cputools.o
+OBJECTS-CROM += $(TOPDIR)/obj/microcode.o
+OBJECTS-CROM += $(TOPDIR)/obj/ioapic.o
 OBJECTS-CROM += $(TOPDIR)/obj/BootInterrupts.o
 OBJECTS-CROM += $(TOPDIR)/obj/fsys_reiserfs.o
 OBJECTS-CROM += $(TOPDIR)/obj/char_io.o
@@ -140,10 +142,7 @@ default.elf: ${OBJECTS-XBE}
 	
 default.xbe: default.elf
 	${OBJCOPY} --output-target=binary --strip-all $(TOPDIR)/obj/default.elf $(TOPDIR)/xbe/$@
-	cat $(TOPDIR)/obj/image-crom.bin >> $(TOPDIR)/xbe/default.xbe
-	$(TOPDIR)/bin/imagebld -xbe $(TOPDIR)/xbe/default.xbe 
-	#mv $(TOPDIR)/out.xbe $(TOPDIR)/xbe/default.xbe -f
-	@ls -l $(TOPDIR)/xbe/$@
+	$(TOPDIR)/bin/imagebld -xbe $(TOPDIR)/xbe/default.xbe $(TOPDIR)/obj/image-crom.bin
 				
 image-crom.elf:
 	${LD} -o $(TOPDIR)/obj/$@ ${OBJECTS-CROM} ${RESOURCES} ${LDFLAGS-ROM}

@@ -23,11 +23,10 @@
 #include <filesys.h>
 #include "rc4.h"
 #include "sha1.h"
-#include "BootParser.h"
 #include "BootFATX.h"
 #include "xbox.h"
 #include "BootFlash.h"
-//#include "cpu.h"
+#include "cpu.h"
  
 #include "config.h"
 
@@ -44,6 +43,7 @@ unsigned long saved_partition;
 grub_error_t errnum;
 unsigned long boot_drive;
 
+
 extern int nTempCursorMbrX, nTempCursorMbrY;
 
 void console_putchar(char c) { printk("%c", c); }
@@ -53,9 +53,12 @@ int _strncmp(const char *sz1, const char *sz2, int nMax);
 
 void setup(void* KernelPos, void* PhysInitrdPos, void* InitrdSize, char* kernel_cmdline);
 
+
 int nRet;
 DWORD dwKernelSize, dwInitrdSize;
 int nSizeHeader;
+
+
 const BYTE baGdt[] = {
 	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // 0x00 dummy
 	0xff, 0xff, 0x00, 0x00, 0x00, 0x9a, 0xcf, 0x00, // 0x08 code32
@@ -69,6 +72,7 @@ const BYTE baGdt[] = {
 };
 
 
+  
 enum {
 	ICON_FATX = 0,
 	ICON_NATIVE,
@@ -92,13 +96,45 @@ ICON icon[ICONCOUNT];
 const int naChimeFrequencies[] = {
 	329, 349, 392, 440
 };
+/*
+static DWORD ReadCrx(unsigned char where ) {
+	unsigned int tmp=0;
+	if (where == 0) {
+		asm volatile ("movl  %%cr0, %0\n\t"
+		      :"=r" (tmp) : : "memory");
+		      }
+	if (where == 3) {
+		asm volatile ("movl  %%cr3, %0\n\t"
+		      :"=r" (tmp) : : "memory");
+		      }
+	if (where == 4) {
+		asm volatile ("movl  %%cr4, %0\n\t"
+		      :"=r" (tmp) : : "memory");
+		      }
+  
+  return tmp;
+}
+ */
 
 void BootPrintConfig(CONFIGENTRY *config) {
-	printk("  Bootconfig : Kernel  %s\n", config->szKernel);
+	//int i;
+	
+	printk("  Bootconfig : Kernel  %s \n", config->szKernel);
 	VIDEO_ATTR=0xffa8a8a8;
-	printk("  Bootconfig : Initrd  %s\n", config->szInitrd);
+	printk("  Bootconfig : Initrd  %s \n", config->szInitrd);
 	VIDEO_ATTR=0xffa8a8a8;
-	printk("  Bootconfig : Command %s\n", config->szAppend);
+	//i = strlen(config->szAppend);
+	//if (i>40){
+		 printk("  Bootconfig :\n %s \n", config->szAppend);
+	/*
+	} else {
+		char temp[40];
+		_strncpy(temp,config->szAppend,40);
+		printk("  Bootconfig : \n %s \n", &temp);
+		_strncpy(temp,&config->szAppend[40],40);
+		printk("  %s \n", &temp);
+	} 
+	*/
 	VIDEO_ATTR=0xffa8a8a8;
 }
 
@@ -259,9 +295,7 @@ int BootLodaConfigCD(CONFIGENTRY *config) {
 	BYTE ba[2048],baBackground[640*64*4]; 
 	
 
-#ifndef IS_XBE_CDLOADER
-	BYTE b;
-#endif
+
 	BYTE bCount=0, bCount1;
 	int n;
 	
@@ -270,30 +304,32 @@ int BootLodaConfigCD(CONFIGENTRY *config) {
 
 	memset((BYTE *)0x90000,0,4096);
 	
+selectinsert:
 	BootVideoBlit(
 		(DWORD *)&baBackground[0], 640*4,
 		(DWORD *)(FRAMEBUFFER_START+(VIDEO_CURSOR_POSY*currentvideomodedetails.m_dwWidthInPixels*4)+VIDEO_CURSOR_POSX),
 		currentvideomodedetails.m_dwWidthInPixels*4, 64
 	);
 
-#ifndef IS_XBE_CDLOADER
-	while((b=BootIdeGetTrayState())>=8) {
+
+	while(DVD_TRAY_STATE != DVD_CLOSING) {
+	
 		VIDEO_CURSOR_POSX=dwX;
 		VIDEO_CURSOR_POSY=dwY;
 		bCount++;
 		bCount1=bCount; if(bCount1&0x80) { bCount1=(-bCount1)-1; }
-		if(b>=16) {
+		//if(b>=16) {
 			VIDEO_ATTR=0xff000000|(((bCount1>>1)+64)<<16)|(((bCount1>>1)+64)<<8)|0 ;
-		} else {
-			VIDEO_ATTR=0xff000000|(((bCount1>>2)+192)<<16)|(((bCount1>>2)+192)<<8)|(((bCount1>>2)+192)) ;
-		}
+		//} else {
+		//	VIDEO_ATTR=0xff000000|(((bCount1>>2)+192)<<16)|(((bCount1>>2)+192)<<8)|(((bCount1>>2)+192)) ;
+		//}
 //		printk("\2BootResetAction 0x%08X\2\n",&BootResetAction);
 //		printk("%08x",(*((DWORD * )0xfd600800)));
 		printk("\2Please insert CD\n\2");
 		
-		for(n=0;n<1000000;n++) { ; }
+		for (n=0;n<1000000;n++) {;}
 	}
-#endif
+
 
 	VIDEO_ATTR=0xffffffff;
 
@@ -308,9 +344,27 @@ int BootLodaConfigCD(CONFIGENTRY *config) {
 
 	{
 		bool fMore=true, fOkay=true;
+		int timeoutcount = 0;
+		
 		while(fMore) {
+			timeoutcount++;
+			// We waited very long now for a Good read sector, but we did not get one, so we
+			// jump back and try again
+			if (timeoutcount>200) {
+				VIDEO_ATTR=0xffffffff;
+				VIDEO_CURSOR_POSX=dwX;
+				VIDEO_CURSOR_POSY=dwY;
+				BootVideoBlit(
+				(DWORD *)(FRAMEBUFFER_START+(VIDEO_CURSOR_POSY*currentvideomodedetails.m_dwWidthInPixels*4)+VIDEO_CURSOR_POSX),
+				currentvideomodedetails.m_dwWidthInPixels*4, (DWORD *)&baBackground[0], 640*4, 64
+				);
+				I2CTransmitWord(0x10, 0x0c00); // eject DVD tray	
+				
+				goto selectinsert;
+			}
+			wait_tick(3);
+			
 			if(BootIdeReadSector(1, &ba[0], 0x10, 0, 2048)) { // starts at 16
-
 				VIDEO_CURSOR_POSX=dwX;
 				VIDEO_CURSOR_POSY=dwY;
 				bCount++;
@@ -319,8 +373,7 @@ int BootLodaConfigCD(CONFIGENTRY *config) {
 				VIDEO_ATTR=0xff000000|(((bCount1)+64)<<16)|(((bCount1>>1)+128)<<8)|(((bCount1)+128)) ;
 
 				printk("\2Waiting for drive\2\n");
-				for(n=0;n<3000000;n++) { ; }
-
+	
 // If cromwell acts as an xbeloader it falls back to try reading
 //	the config file from fatx
 
@@ -486,17 +539,17 @@ void BootIcons(int nXOffset, int nYOffset, int nTextOffsetX, int nTextOffsetY) {
 void BootStartBiosDoIcon(ICON *icon, BYTE bOpaqueness)
 {
 
-		BootVideoJpegBlitBlend(
-			(DWORD *)(FRAMEBUFFER_START+(icon->nDestX<<2)+(currentvideomodedetails.m_dwWidthInPixels*4*icon->nDestY)),
-			currentvideomodedetails.m_dwWidthInPixels * 4, // dest bytes per line
-			&jpegBackdrop, // source jpeg object
-			(DWORD *)(((BYTE *)jpegBackdrop.m_pBitmapData)+(icon->nSrcX *jpegBackdrop.m_nBytesPerPixel)),
-			0xff00ff|(((DWORD)bOpaqueness)<<24),
-			(DWORD *)(((BYTE *)BootVideoGetPointerToEffectiveJpegTopLeft(&jpegBackdrop))+(jpegBackdrop.m_nWidth * (icon->nDestY) *jpegBackdrop.m_nBytesPerPixel)+((icon->nDestX) *jpegBackdrop.m_nBytesPerPixel)),
-			jpegBackdrop.m_nWidth*jpegBackdrop.m_nBytesPerPixel,
-			jpegBackdrop.m_nBytesPerPixel,
-			icon->nSrcLength, icon->nSrcHeight
-		);
+	BootVideoJpegBlitBlend(
+		(DWORD *)(FRAMEBUFFER_START+(icon->nDestX<<2)+(currentvideomodedetails.m_dwWidthInPixels*4*icon->nDestY)),
+		currentvideomodedetails.m_dwWidthInPixels * 4, // dest bytes per line
+		&jpegBackdrop, // source jpeg object
+		(DWORD *)(((BYTE *)jpegBackdrop.m_pBitmapData)+(icon->nSrcX *jpegBackdrop.m_nBytesPerPixel)),
+		0xff00ff|(((DWORD)bOpaqueness)<<24),
+		(DWORD *)(((BYTE *)BootVideoGetPointerToEffectiveJpegTopLeft(&jpegBackdrop))+(jpegBackdrop.m_nWidth * (icon->nDestY) *jpegBackdrop.m_nBytesPerPixel)+((icon->nDestX) *jpegBackdrop.m_nBytesPerPixel)),
+		jpegBackdrop.m_nWidth*jpegBackdrop.m_nBytesPerPixel,
+		jpegBackdrop.m_nBytesPerPixel,
+		icon->nSrcLength, icon->nSrcHeight
+	);
 }
 
 void RecoverMbrArea(void)
@@ -507,362 +560,223 @@ void RecoverMbrArea(void)
 }
 
 
-void StartBios(	int nDrive, int nActivePartition , int nFATXPresent) {
-	static CONFIGENTRY config;
-	char szGrub[256+4];
-#ifdef MENU
+
+int BootMenue(CONFIGENTRY *config,int nDrive,int nActivePartition, int nFATXPresent){
+
+
+	int nIcon;
 	int nTempCursorResumeX, nTempCursorResumeY, nTempStartMessageCursorX, nTempStartMessageCursorY;
-#endif
-	int nIcon = ICONCOUNT; 
+	int nTempCursorX, nTempCursorY, nTempEntryX, nTempEntryY;
+	int nModeDependentOffset=(currentvideomodedetails.m_dwWidthInPixels-640)/2;  // icon offsets computed for 640 modes, retain centering in other modes
+	int nShowSelect = false;
+	int selected=-1;
+
 	
+	#define DELAY_TICKS 72
+	#define TRANPARENTNESS 0x30
+	#define OPAQUENESS 0xc0
+	#define SELECTED 0xff
 
-//	BootPciInterruptEnable();
 
-#ifdef DEBUG_MODE
-	memset((DWORD *)(FRAMEBUFFER_START),0,1024*1024*4);
-	while(1);
-#endif
+	
+	nTempCursorResumeX=nTempCursorMbrX;
+	nTempCursorResumeY=nTempCursorMbrY;
+	
+	nTempEntryX=VIDEO_CURSOR_POSX;
+	nTempEntryY=VIDEO_CURSOR_POSY;
+	
+	nTempCursorX=VIDEO_CURSOR_POSX;
+	nTempCursorY=currentvideomodedetails.m_dwHeightInLines-80;
+	
+	VIDEO_CURSOR_POSX=((215+nModeDependentOffset)<<2);
+	VIDEO_CURSOR_POSY=nTempCursorY-100;
+	nTempStartMessageCursorX=VIDEO_CURSOR_POSX;
+	nTempStartMessageCursorY=VIDEO_CURSOR_POSY;
+	VIDEO_ATTR=0xffc8c8c8;
+	printk("Close DVD tray to select\n");
+	VIDEO_ATTR=0xffffffff;
+	
+	BootIcons(nModeDependentOffset, nTempCursorY, nModeDependentOffset, nTempCursorY);
+	
+	
+	for(nIcon = 0; nIcon < ICONCOUNT;nIcon ++) {
+		BootStartBiosDoIcon(&icon[nIcon], TRANPARENTNESS);
+	}
+	
+	
+	
+	for(nIcon = 0; nIcon < ICONCOUNT;nIcon ++) {
+		traystate = ETS_OPEN_OR_OPENING;
+		nShowSelect = false;
+		VIDEO_CURSOR_POSX=icon[nIcon].nTextX;
+		VIDEO_CURSOR_POSY=icon[nIcon].nTextY;
+	          
+		switch(nIcon){
+	
+			case ICON_FATX:
+				if(nFATXPresent) {
+					strcpy(config->szKernel, "/vmlinuz"); // fatx default kernel, looked for to detect fs
+					if(!BootLodaConfigFATX(config, true)) continue;  // only bother with it if the filesystem exists
+					printk("/linuxboot.cfg from FATX\n");
+					nShowSelect = true;
+				} else {
+					continue;
+				}
+				break;
+	
+			case ICON_NATIVE:
+				if(nDrive != 1) {
+					strcpy(config->szKernel, "/boot/vmlinuz");  // Ext2 default kernel, looked for to detect fs
+					if(!BootLodaConfigNative(nActivePartition, config, true)) continue; // only bother with it if the filesystem exists
+					printk("/dev/hda\n");
+					nShowSelect=true;
+				} else {
+					continue;
+				}
+				break;
+	
+			case ICON_CD:
+				printk("/dev/hdb\n");
+				nShowSelect = true;  // always might want to boot from CD
+				break;
+	
+			case ICON_SETUP:
+				printk("Flash\n");
+				nShowSelect = true;
+				break;
+				
+		}
+	
+	
+	
+		if(nShowSelect) {
+	
+			DWORD dwTick=BIOS_TICK_COUNT;
+	       		
+
+			while(
+				(BIOS_TICK_COUNT<(dwTick+DELAY_TICKS)) &&
+				(traystate==ETS_OPEN_OR_OPENING)
+			) {
+				BootStartBiosDoIcon(
+					&icon[nIcon], OPAQUENESS-((OPAQUENESS-TRANPARENTNESS)
+					 *(BIOS_TICK_COUNT-dwTick))/DELAY_TICKS );
+			}
+			dwTick=BIOS_TICK_COUNT;
+	
+	
+			if(traystate!=ETS_OPEN_OR_OPENING) {  // tray went in, specific choice made
+			
+				VIDEO_CURSOR_POSX=icon[nIcon].nTextX;
+				VIDEO_CURSOR_POSY=icon[nIcon].nTextY;
+				RecoverMbrArea();
+				BootStartBiosDoIcon(&icon[nIcon], SELECTED);
+				selected = nIcon;
+				break;
+			}
+	
+				// timeout
+	
+			BootStartBiosDoIcon(&icon[nIcon], TRANPARENTNESS);
+		}
+	
+		BootVideoClearScreen(&jpegBackdrop, nTempCursorY, VIDEO_CURSOR_POSY+1);
+	}
+	
+	
+	BootVideoClearScreen(&jpegBackdrop, nTempCursorResumeY, nTempCursorResumeY+100);
+	BootVideoClearScreen(&jpegBackdrop, nTempStartMessageCursorY, nTempCursorY+16);
+	
+	VIDEO_CURSOR_POSX=nTempCursorResumeX;
+	VIDEO_CURSOR_POSY=nTempCursorResumeY;
+        
+      
+        
+        // We return the selected Menue , -1 if nothing selected
+	return selected;
+	
+}
+
+
+
+void StartBios(CONFIGENTRY *config, int nActivePartition , int nFATXPresent,int bootfrom) {
+
+	char szGrub[256+4];
+
 	memset(szGrub,0x00,sizeof(szGrub));
-	memset(&config,0,sizeof(CONFIGENTRY));
 
-	szGrub[0]=0xff; szGrub[1]=0xff; szGrub[2]=nActivePartition; szGrub[3]=0x00;
 
-	errnum=0; boot_drive=0; saved_drive=0; saved_partition=0x0001ffff; buf_drive=-1;
-	current_partition=0x0001ffff; current_drive=0xff; buf_drive=-1; fsys_type = NUM_FSYS;
+	szGrub[0]=0xff; 
+	szGrub[1]=0xff; 
+	szGrub[2]=nActivePartition; 
+	szGrub[3]=0x00;
+
+	errnum=0; 
+	boot_drive=0; 
+	saved_drive=0; 
+	saved_partition=0x0001ffff; 
+	buf_drive=-1;
+	
+	current_partition=0x0001ffff; 
+	current_drive=0xff; 
+	buf_drive=-1; 
+	fsys_type = NUM_FSYS;
+	
 	disk_read_hook=NULL;
 	disk_read_func=NULL;
 
 
-#ifndef IS_XBE_CDLOADER
-#ifdef MENU
-	{
-		int nTempCursorX, nTempCursorY, nTempEntryX, nTempEntryY;
-		int nModeDependentOffset=(currentvideomodedetails.m_dwWidthInPixels-640)/2;  // icon offsets computed for 640 modes, retain centering in other modes
-		AUDIO_ELEMENT_SINE aesIconSound;
+	// turn off USB
 
-		#define DELAY_TICKS 72
-		#define TRANPARENTNESS 0x30
-		#define OPAQUENESS 0xc0
-		#define SELECTED 0xff
-
-		nTempCursorResumeX=nTempCursorMbrX;
-		nTempCursorResumeY=nTempCursorMbrY;
-
-		nTempEntryX=VIDEO_CURSOR_POSX;
-		nTempEntryY=VIDEO_CURSOR_POSY;
-
-		nTempCursorX=VIDEO_CURSOR_POSX;
-		nTempCursorY=currentvideomodedetails.m_dwHeightInLines-80;
-
-		VIDEO_CURSOR_POSX=((215+nModeDependentOffset)<<2);
-		VIDEO_CURSOR_POSY=nTempCursorY-100;
- 		nTempStartMessageCursorX=VIDEO_CURSOR_POSX;
- 		nTempStartMessageCursorY=VIDEO_CURSOR_POSY;
-		VIDEO_ATTR=0xffc8c8c8;
-		printk("Close DVD tray to select\n");
-		VIDEO_ATTR=0xffffffff;
-
-		BootIcons(nModeDependentOffset, nTempCursorY, nModeDependentOffset, nTempCursorY);
-
-
-		for(nIcon = 0; nIcon < ICONCOUNT;nIcon ++) {
-			BootStartBiosDoIcon(&icon[nIcon], TRANPARENTNESS);
-		}
-
-		{
-			int nShowSelect = false;
-
-			for(nIcon = 0; nIcon < ICONCOUNT;nIcon ++) {
-				traystate = ETS_OPEN_OR_OPENING;
-				nShowSelect = false;
-				VIDEO_CURSOR_POSX=icon[nIcon].nTextX;
-				VIDEO_CURSOR_POSY=icon[nIcon].nTextY;
-
-				switch(nIcon){
-
-					case ICON_FATX:
-						if(nFATXPresent) {
-							strcpy(config.szKernel, "/vmlinuz"); // fatx default kernel, looked for to detect fs
-							if(!BootLodaConfigFATX(&config, true)) continue;  // only bother with it if the filesystem exists
-							printk("/linuxboot.cfg from FATX\n");
-							nShowSelect = true;
-						} else {
-							continue;
-						}
-						break;
-
-					case ICON_NATIVE:
-						if(nDrive != 1) {
-							strcpy(config.szKernel, "/boot/vmlinuz");  // Ext2 default kernel, looked for to detect fs
-							if(!BootLodaConfigNative(nActivePartition, &config, true)) continue; // only bother with it if the filesystem exists
-							printk("/dev/hda\n");
-							nShowSelect=true;
-						} else {
-							continue;
-						}
-						break;
-
-					case ICON_CD:
-						printk("/dev/hdb\n");
-						nShowSelect = true;  // always might want to boot from CD
-						break;
-
-					case ICON_SETUP:
-						printk("Flash\n");
-						nShowSelect = true;
-						break;
-				}
-				if(nShowSelect) {
-
-					DWORD dwTick=BIOS_TICK_COUNT;
-					
-					{
-						DestructAUDIO_ELEMENT_SINE(&ac97device, &aesIconSound); // harmless if not yet constructed or attached
-						ConstructAUDIO_ELEMENT_SINE(&aesIconSound, naChimeFrequencies[nIcon]);  // constructed silent
-						aesIconSound.m_saVolumePerHarmonicZeroIsNone7FFFIsFull[0]=0x1000;
-						aesIconSound.m_paudioelement.m_dwVolumeSustainRate=0x2800;
-						BootAudioAttachAudioElement(&ac97device, (AUDIO_ELEMENT *)&aesIconSound);
-					}       
-
-
-					while(
-						(BIOS_TICK_COUNT<(dwTick+DELAY_TICKS)) &&
-						(traystate==ETS_OPEN_OR_OPENING)
-					) {
-						BootStartBiosDoIcon(
-							&icon[nIcon], OPAQUENESS-((OPAQUENESS-TRANPARENTNESS)
-							 *(BIOS_TICK_COUNT-dwTick))/DELAY_TICKS
-						);
-					}
-					dwTick=BIOS_TICK_COUNT;
-
-
-					if(traystate!=ETS_OPEN_OR_OPENING) {  // tray went in, specific choice made
-						{
-							DestructAUDIO_ELEMENT_SINE(&ac97device, &aesIconSound); // harmless if not yet constructed or attached
-						}
-						VIDEO_CURSOR_POSX=icon[nIcon].nTextX;
-						VIDEO_CURSOR_POSY=icon[nIcon].nTextY;
-						RecoverMbrArea();
-						BootStartBiosDoIcon(&icon[nIcon], SELECTED);
-						break;
-					}
-
-						// timeout
-
-					BootStartBiosDoIcon(&icon[nIcon], TRANPARENTNESS);
-				}
-
-				BootVideoClearScreen(&jpegBackdrop, nTempCursorY, VIDEO_CURSOR_POSY+1);
-			}
-		}
-
-		BootVideoClearScreen(&jpegBackdrop, nTempCursorResumeY, nTempCursorResumeY+100);
-		BootVideoClearScreen(&jpegBackdrop, nTempStartMessageCursorY, nTempCursorY+16);
-
-		VIDEO_CURSOR_POSX=nTempCursorResumeX;
-		VIDEO_CURSOR_POSY=nTempCursorResumeY;
-
-
-	}
-
-#endif
-#endif
-
-
-	{
-	  	// turn off USB
-
-		#ifdef DO_USB
-		BootUsbTurnOff((ohci_t *)&usbcontroller[0]);
-		BootUsbTurnOff((ohci_t *)&usbcontroller[1]);
-		#endif
-			// silence the audio
+	#ifdef DO_USB
+	BootUsbTurnOff((ohci_t *)&usbcontroller[0]);
+	BootUsbTurnOff((ohci_t *)&usbcontroller[1]);
+	#endif
+	
+	// silence the audio
         	
-        	BootAudioSilence(&ac97device);
+        //BootAudioSilence(&ac97device);
                 
 		
-	
-	}
 
-#ifdef DEFAULT_FATX
-nDrive=0;
-#endif
-
-	if(nIcon >= ICONCOUNT) {
-		if(nDrive == 0) {
+	if (bootfrom==-1) {
+        // Nothing in All selceted
+		#ifdef DEFAULT_FATX
+			bootfrom = ICON_FATX;
 			printk("Defaulting to HDD boot\n");
 			I2CTransmitWord(0x10, 0x0c01); // close DVD tray
-#ifdef DEFAULT_FATX
-			nIcon = ICON_FATX;
-#else
-			nIcon = ICON_NATIVE;
-#endif
-		} else {
+			bootfrom = ICON_NATIVE;
+
+		#else
 			printk("Defaulting to CD boot\n");
-			nIcon = ICON_CD;
-			
-			
-			//Dumping some PCI registers
-			//DWORD PciReadDword(unsigned int bus, unsigned int dev, unsigned int func, unsigned int reg_off);
-                 /*
-			for (a=0x10;a<0xF0;a=a+16) {
-				tmp = PciReadDword(0,0,0,a);
-				printk("%02X :-> %08x  ",a,tmp);
-	
-				tmp = PciReadDword(0,0,0,a+4);				
-				printk("%02X :-> %08x  ",a+4,tmp);
+			bootfrom = ICON_CD;
 
-				tmp = PciReadDword(0,0,0,a+4+4);				
-				printk("%02X :-> %08x  ",a+4+4,tmp);
-
-				tmp = PciReadDword(0,0,0,a+4+4+4);				
-				printk("%02X :-> %08x \n",a+4+4+4,tmp);
-	
-
-
-				
-			}
-		*/	
-			
-		/*
-		{
-		unsigned int temp=0;
-		while (1) {
-		VIDEO_CURSOR_POSX=50;
-		VIDEO_CURSOR_POSY=BIOS_TICK_COUNT%400;
-		VIDEO_ATTR=0xff9f9fbf;                     
-		//printk(" %08X \n",BIOS_TICK_COUNT);
-		printk(" %08X \n",VIDEO_VSYNC_DIR);
-		if (temp !=BIOS_TICK_COUNT) {
-			
-		printk(" %08X \n",VIDEO_VSYNC_DIR);
-		//	printk(" %08X \n",BIOS_TICK_COUNT);
-			VIDEO_ATTR=0xff8888a8;
-			temp = BIOS_TICK_COUNT; 
-			}		
-		
-			
-		}	
-		}	
-		*/
-		
-		//printk("%08X",BootResetAction)	;    
-		/*
-		{
-		int a;
-		unsigned char SHA1_result[SHA1HashSize];
-		struct SHA1Context context;
-	        int i;
-	        VIDEO_CURSOR_POSY=150;
-	        for (a=0;a<20;a++) {
-	        	VIDEO_CURSOR_POSX=0;
-       			SHA1Reset(&context);   
-			SHA1Input(&context,(void*)0xFFF00000,0x80000);
-			SHA1Result(&context,SHA1_result);	
-			for (i=0;i<20;i++) printk("%02x",SHA1_result[i]);
-			printk("\n");
-			}
-		}
-	        */
-		/*
-		{
-		unsigned char SHA1_result[SHA1HashSize];
-		struct SHA1Context context;
-	        int i;
-	        VIDEO_CURSOR_POSY=200;
-	        VIDEO_CURSOR_POSX=0;
-       		SHA1Reset(&context);   
-		SHA1Input(&context,(void*)0x03B00000,0x40000);
-		SHA1Result(&context,SHA1_result);	
-		for (i=0;i<20;i++) printk("%02x",SHA1_result[i]);
-
-	        VIDEO_CURSOR_POSY=220;
-	        VIDEO_CURSOR_POSX=0;
-       		SHA1Reset(&context);   
-		SHA1Input(&context,(void*)0x03B40000,0x40000);
-		SHA1Result(&context,SHA1_result);	
-		for (i=0;i<20;i++) printk("%02x",SHA1_result[i]);
-
-	        VIDEO_CURSOR_POSY=240;
-	        VIDEO_CURSOR_POSX=0;
-       		SHA1Reset(&context);   
-		SHA1Input(&context,(void*)0x03B80000,0x40000);
-		SHA1Result(&context,SHA1_result);	
-		for (i=0;i<20;i++) printk("%02x",SHA1_result[i]);
-
-	        VIDEO_CURSOR_POSY=280;
-	        VIDEO_CURSOR_POSX=0;
-       		SHA1Reset(&context);   
-		SHA1Input(&context,(void*)0x03Bc0000,0x40000);
-		SHA1Result(&context,SHA1_result);	
-		for (i=0;i<20;i++) printk("%02x",SHA1_result[i]);
-			
-		}
-		 */
-		/* 
-		{
-		int i;			
-		
-		
-		
-			for (i=0;i<0x60;i++) {
-			 
-				if ((i%8)==0) printk("\n");
-				printk("(%02x)->%02x  ",i,IoInputByte(0x8000+i));	
-				}
-			
-			}	
-			
-		*/
-		
-		/*
-		{
-		extern int _start_backdrop, _end_backdrop;
-			extern void IntHandler1(void);
-			extern void IntHandler2(void);
-			extern void IntHandler3(void);
-			extern void IntHandler4(void);
-			extern void IntHandlerException0(void);
-			void IntHandler4C(void);
-			printk("%08X\n",IntHandler1);
-			printk("%08X\n",IntHandlerException0);
-			printk("%08X\n",BootResetAction);
-			printk("%08X\n",IntHandler4C);
-			printk("%08X\n",_start_backdrop);
-			printk("%08X\n",_end_backdrop);
-		}
-
-		while(1);
-		*/
-//		display_cpuid_update_microcode();
-//		while(1);
-		} 
-		
-		
+			#endif	
 	}
 
 
-	if(nIcon == ICON_FATX) {
-		strcpy(config.szAppend, "init=/linuxrc root=/dev/ram0 pci=biosirq kbd-reset"); // default
-		strcpy(config.szKernel, "/vmlinuz");
-		strcpy(config.szInitrd, "/initrd");
+
+
+	if(bootfrom == ICON_FATX) {
+		strcpy(config->szAppend, "init=/linuxrc root=/dev/ram0 pci=biosirq kbd-reset"); // default
+		strcpy(config->szKernel, "/vmlinuz");
+		strcpy(config->szInitrd, "/initrd");
 	} else {
-		strcpy(config.szAppend, "root=/dev/hda2 devfs=mount kbd-reset"); // default
-		strcpy(config.szKernel, "/boot/vmlinuz");
-		strcpy(config.szInitrd, "/boot/initrd");
+		strcpy(config->szAppend, "root=/dev/hda2 devfs=mount kbd-reset"); // default
+		strcpy(config->szKernel, "/boot/vmlinuz");
+		strcpy(config->szInitrd, "/boot/initrd");
 	}
 
 
-	switch(nIcon) {
+	switch(bootfrom) {
 		case ICON_FATX:
-			BootLodaConfigFATX(&config, false);
+			BootLodaConfigFATX(config, false);
 			break;
 		case ICON_NATIVE:
-			BootLodaConfigNative(nActivePartition, &config, false);
+			BootLodaConfigNative(nActivePartition, config, false);
 			break;
 		case ICON_CD:
-			BootLodaConfigCD(&config);
+			BootLodaConfigCD(config);
 			break;
 		case ICON_SETUP:
 #ifndef XBE
@@ -905,7 +819,7 @@ nDrive=0;
         memcpy((void *)0xa0000, (void *)&baGdt[0], sizeof(baGdt));
 	// prep the Linux startup struct
 
-	setup( (void *)0x90000, (void *)INITRD_POS, (void *)dwInitrdSize, config.szAppend);
+	setup( (void *)0x90000, (void *)INITRD_POS, (void *)dwInitrdSize, config->szAppend);
         
 	{
 		int nAta=0;
@@ -926,142 +840,36 @@ nDrive=0;
 	}
 
 		// orangeness, people seem to like that colour
-
+       
 	I2cSetFrontpanelLed(
 		I2C_LED_GREEN0 | I2C_LED_GREEN1 | I2C_LED_GREEN2 | I2C_LED_GREEN3 |
 		I2C_LED_RED0 | I2C_LED_RED1 | I2C_LED_RED2 | I2C_LED_RED3
 	);
+         
 
 
-		__asm __volatile__ (
+	__asm __volatile__ (
 
 	"cli \n"
+      
+	"movl 	$0x90000, %esi\n"
+	"xor 	%ebx, %ebx \n"
+	"xor 	%eax, %eax \n"
+	"xor 	%ecx, %ecx \n"
+	"xor 	%edx, %edx \n"
+	"xor 	%edi, %edi \n"
 
-	// kill the cache
-
-
-	"mov %cr0, %eax \n"
-	"orl	$0x60000000, %eax \n"
-	"andl	$0x7fffffff, %eax \n" 		// turn off paging
-	"mov	%eax, %cr0 \n"
-	"wbinvd \n"
-
-	"mov	%cr3, %eax \n"
-	"mov	%eax, %cr3 \n"
-
-	// Clear Memory Defines
-	"movl	$0x2ff, %ecx \n"
-	"xor	%eax, %eax \n"
-	"xor	%edx, %edx \n"
-	"wrmsr \n"
-  
-	// Init the MTRRs for Ram and BIOS
-        
-        // MTRR for Memory-mapped regs 0xf8xxxxxx .. 0xffxxxxxx - uncached
-	"movl	$0x200, %ecx \n"		// Base 0
-        "movl	$0x00000000, %edx \n" 		// 0x00
-	"movl	$0xF8000000, %eax  \n"		// == no cache
-	"wrmsr \n"
-	
-	"movl	$0x201, %ecx \n"		// Mask 0
-						// MASK0 set to 0xff0000[000] == 16M
-	"movl	$0x0000000f, %edx \n" 		// 0x0f
-	"movl	$0xF8000800, %eax \n"  		// 0xff000800
-	"wrmsr \n"
-	
-	
-	"movl	$0x202, %ecx \n"		// Base 1
-						// MTRR for shadow video memory
-        "movl	$0x00000000, %edx  \n"		// 0x00
-	"movl	$0xf0000005, %eax  \n"		// == Cacheable
-	"wrmsr \n"
-	
-	"movl	$0x203, %ecx \n"		// Mask 1
-						// MASK set to 0xfffC00[000] == 4M
-	"movl	$0x0000000f, %edx  \n"		// 0x0f
-	"movl	$0xff000800, %eax   \n"		// 0xffC00800
-	"wrmsr \n"
-	
-	
-	"movl	$0x204, %ecx \n"		// Base 2
-						// MTRR for shadow video memory
-	"movl	$0x00000000, %edx  \n"		// 0x00
-	"movl	$0xc0000004, %eax  \n"		// == Cacheable
-	"wrmsr \n"
-	
-	"movl	$0x205, %ecx \n"       		// Mask 2
-						// MASK set to 0xfffC00[000] == 4M
-	"movl	$0x0000000f, %edx  \n"		// 0x0f
-	"movl	$0xc0000800, %eax   \n"		// 0xffC00800
-	"wrmsr \n"                              
-	
-	"movl	$0x206, %ecx \n"		// Base 3
-						// MTRR for main RAM
-	"movl	$0x00000000, %edx  \n"		// 0x00
-	"movl	$0x00000006, %eax  \n"		// == Cacheable
-	"wrmsr \n"
-	
-	"movl	$0x207, %ecx \n"		// Mask 3
-						// MASK set to 0xfffC00[000] == 4M
-	"movl	$0x0000000f, %edx  \n"		// 0x0f
-	"movl	$0xfc000800, %eax   \n"		// 0xffC00800
-	"wrmsr \n"
-	
-	
-        "xor	%eax, %eax  \n"
-	"xor	%edx, %edx  \n"
-	
-	"movl	$0x208, %ecx  \n"		// IA32_MTRR_PHYS Base 4
-        "wrmsr  \n"                                                   
-	"movl	$0x209, %ecx  \n"		// IA32_MTRR_PHYS_MASK 4
-        "wrmsr  \n"                                                   
-
-	"movl	$0x20a, %ecx  \n"		// IA32_MTRR_PHYS Base 5
-        "wrmsr  \n"                                                   
-	"movl	$0x20b, %ecx  \n"		// IA32_MTRR_PHYS_MASK 5
-        "wrmsr  \n"                                                   
-
-	"movl	$0x20c, %ecx  \n"		// IA32_MTRR_PHYS Base 6
-        "wrmsr  \n"                                                   
-	"movl	$0x20d, %ecx  \n"		// IA32_MTRR_PHYS_MASK 6
-        "wrmsr  \n"                                                   
-
-	"movl	$0x20e, %ecx  \n"		// IA32_MTRR_PHYS Base 7
-        "wrmsr  \n"                                                   
-	"movl	$0x20f, %ecx  \n"		// IA32_MTRR_PHYS_MASK 7
-        "wrmsr  \n"                                                   
-        
-        
-// madeline
-
-	"xor %edx, %edx \n"
-	"movl	$0x2ff, %ecx \n"
-	"movl	$0x806, %eax  \n"		// default to CACHEABLE Enable MTRRs
-	"wrmsr \n"
-
-	// turn on normal cache, TURN OFF PAGING 
-
-	"movl	%cr0, %eax \n"
-	"mov %eax, %ebx \n"
-	"andl	$0x1FFFFFFF,%eax \n"
-	"movl	%eax, %cr0 \n"
-  
-	"movl $0x90000, %esi\n"
-	"xor %ebx, %ebx \n"
-	"xor %eax, %eax \n"
-	"xor %ecx, %ecx \n"
-	"xor %edx, %edx \n"
-	"xor %edi, %edi \n"
-
-	"lgdt 0xa0030\n"
-  "ljmp $0x10, $0x100000\n"
-);
+	"lgdt 	0xa0030\n"
+  	"ljmp 	$0x10, $0x100000\n"
+	);
 
 
 //		DumpAddressAndData(0x100000, (void *)0x100000, 1024);
 
 	while(1);
+}
 
+/*
 #if 0
 //		int n=0;
 //		DWORD dwCsum1=0, dwCsum2=0;
@@ -1116,7 +924,7 @@ void * memcpy(void *dest, const void *src,  size_t size);
 		"code_start:          \n"  // this is the code copied to the 16-bit stub at 0x600
 		".code16 \n"
 
-		"movl %cr0, %eax     \n" /* 16-bit */
+		"movl %cr0, %eax     \n" // 16-bi
 		"andl $0xFFFFFFFE, %eax \n"  // this was not previously ANDL, generated 16-bit AND despite EAX
 		"movl %eax, %cr0    \n"
 
@@ -1173,3 +981,4 @@ void * memcpy(void *dest, const void *src,  size_t size);
 		);
 #endif
 	}
+*/

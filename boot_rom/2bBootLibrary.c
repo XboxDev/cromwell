@@ -55,7 +55,21 @@ int _memcmp(const BYTE *pb, const BYTE *pb1, int n) {
 
 	// this is the memory managemnt struct stored behind every allocation
 
+	// This is a Pseudo-memory Manager
+void *malloc(size_t size)
+{
+	void *p;
 
+	free_mem_ptr = (free_mem_ptr + 3) & ~3;	/* Align */
+	p = (void *) free_mem_ptr;
+	free_mem_ptr += size;
+	return p;
+}
+
+void free(void *where)
+{
+	/* Don't care */
+}
 
 
 

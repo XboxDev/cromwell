@@ -142,24 +142,7 @@ int I2cSetFrontpanelLed(BYTE b);
 
 void BootStartBiosLoader(void);
 
-void BiosCmosWrite(BYTE bAds, BYTE bData);
-BYTE BiosCmosRead(BYTE bAds);
 
-////////// BootPciPeripheralInitialization.c
-
-void BootPciPeripheralInitialization(void);
-extern void	ReadPCIByte(unsigned int bus, unsigned int dev, unsigned intfunc, 	unsigned int reg_off, unsigned char *pbyteval);
-extern void	WritePCIByte(unsigned int bus, unsigned int dev, unsigned int func,	unsigned int reg_off, unsigned char byteval);
-extern void	ReadPCIDword(unsigned int bus, unsigned int dev, unsigned int func,	unsigned int reg_off, unsigned int *pdwordval);
-extern void	WritePCIDword(unsigned int bus, unsigned int dev, unsigned int func,		unsigned int reg_off, unsigned int dwordval);
-extern void	ReadPCIBlock(unsigned int bus, unsigned int dev, unsigned int func,		unsigned int reg_off, unsigned char *buf,	unsigned int nbytes);
-extern void	WritePCIBlock(unsigned int bus, unsigned int dev, unsigned int func, 	unsigned int reg_off, unsigned char *buf, unsigned int nbytes);
-
-void PciWriteByte (unsigned int bus, unsigned int dev, unsigned int func,
-		unsigned int reg_off, unsigned char byteval);
-BYTE PciReadByte(unsigned int bus, unsigned int dev, unsigned int func, unsigned int reg_off);
-DWORD PciWriteDword(unsigned int bus, unsigned int dev, unsigned int func, unsigned int reg_off, DWORD dw);
-DWORD PciReadDword(unsigned int bus, unsigned int dev, unsigned int func, unsigned int reg_off);
 
 ///////// BootPerformPicChallengeResponseAction.c
 
@@ -177,17 +160,11 @@ int _strncmp(const char *sz1, const char *sz2, int nMax);
 char * strcpy(char *sz, const char *szc);
 char * _strncpy(char *sz, const char *szc, int nLenMax);
 
+unsigned int free_mem_ptr;
+void *malloc(size_t size);
+void free(void *where);
 
 
-extern volatile int nCountI2cinterrupts, nCountUnusedInterrupts, nCountUnusedInterruptsPic2, nCountInterruptsSmc, nCountInterruptsIde;
-extern volatile bool fSeenPowerdown;
-
-typedef enum {
-	ETS_OPEN_OR_OPENING=0,
-	ETS_CLOSING,
-	ETS_CLOSED
-} TRAY_STATE;
-extern volatile TRAY_STATE traystate;
 
 
 

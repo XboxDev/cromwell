@@ -16,24 +16,11 @@
  *                                                                         *
  ***************************************************************************/
 
-#define VERSION "2.00 dev"
+#define VERSION "2.10 dev"
 
 #define PCI_CFG_ADDR 0x0CF8
 #define PCI_CFG_DATA 0x0CFC
 
-#define MTRR_DEF 0x2ff
-#define MTRR_DEF_TYPE 0x800
-#define MTRR_PHYSBASE 0x200
-#define MTRR_LAST 0x20F
-#define WB_CACHE 6
-#define BASE0_H 0
-#define BASE0_L WB_CACHE
-#define MASK0_H 0x0F
-#define MASK0_L 0xFC000800
-#define BASE1_H 0
-#define BASE1_L 0xFFF80005 // 0x0FFF80005
-#define MASK1_H 0x0F
-#define MASK1_L 0x0FFF80800
 
 #define I2C_IO_BASE 0xc000
 

@@ -1,6 +1,6 @@
 #include "boot.h"
 #include <string.h>
-#include "BootParser.h"
+
 
 
 int ParseConfig(char *szBuffer, CONFIGENTRY *entry, EEPROMDATA *eeprom) {

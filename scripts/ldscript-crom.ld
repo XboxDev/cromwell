@@ -15,7 +15,7 @@ MEMORY
 	rom (rx)  : ORIGIN = 0x03A00000, LENGTH = 2M
 }
 
-RAM_BASE = 0x500000;  
+RAM_BASE = 0x700000;  
 
 /* this should be changed depending the actual size of the rom */
 ROM_SIZE = 256K;
@@ -46,7 +46,7 @@ SECTIONS {
         _size_ramcopy =  SIZEOF(.text) + SIZEOF(.rodata);
         
 	/* ram allocations */        
-	.data (RAM_BASE) : AT( SIZEOF(.text)+ SIZEOF(.rodata) ) {
+	.data (RAM_BASE) : AT( SIZEOF(.text) + SIZEOF(.rodata) ) {
 		_start_data = .;
 		*(.data);
 		*(.sdata);

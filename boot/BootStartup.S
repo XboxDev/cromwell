@@ -13,6 +13,7 @@
  ***************************************************************************/
 #include "consts.h"
 
+
 	.code32
 
 .section .text, "ax"
@@ -75,7 +76,9 @@ start_linux:
         nop
 	nop
 	nop
-	
+	// Move the Stack Pointer to Upper Limit
+	movl    $RAM_BASE, %esp
+
 	movl	$0x1b, %ecx
 	xor	%eax, %eax
 	xor	%edx, %edx
@@ -92,13 +95,10 @@ start_linux:
 	lidt tableIdtDescriptor
 
        // FPU SETUP
-	movl %cr0,%eax          
-	andl $0x80000011,%eax   
-	orl $0x50022,%eax       
-	movl %eax,%cr0
+
 	clts
 	fninit
-	.byte 0xDB,0xE4         /* fsetpm for 287, ignored by 387 */	
+	//.byte 0xDB,0xE4         /* fsetpm for 287, ignored by 387 */	
 
 
 	nop
@@ -109,13 +109,18 @@ start_linux:
 	xor	%edx, %edx
 	xor	%ecx, %ecx
 	
-	// kill the cache
-       	mov %cr0, %eax
+	
+	// kill the cache  = Disable bit 30 + 29 = CD + NW 
+	// CD = Cache Disable (disable = 1)
+	// NW Not write through (disable = 1)
+       	mov 	%cr0, %eax
 	orl	$0x60000000, %eax
 	mov	%eax, %cr0
 	wbinvd
 
-	mov	%cr3, %eax
+  
+  	// We clear the cr3 register
+	mov	%eax, %eax
 	mov	%eax, %cr3
 
 	// Clear Mmeory Type register
@@ -124,54 +129,51 @@ start_linux:
 	xor	%edx, %edx
 	wrmsr
 
-/*
-  We are setting the Ram Init's now to set up the Regions in the Ram
 
-*/ 
 
 	// MTRR for RAM
-	// from address 0, Writeback Caching, 64MB range
-        movl	$0x200, %ecx 		// IA32_MTRR_PHYS Base 0
-	movl	$0x00000000, %edx 	// 0x00
+	// from address 0, Writeback Caching, 60MB range
+        movl	$0x200, %ecx 		// 
+	movl	$0x00000000, %edx 	// 
 	movl	$0x00000006, %eax 	// == WB_CACHE == 6
 	wrmsr
 
-	// MASK0 set to 0xffc000[000] == 64M    
-        movl	$0x201, %ecx  		// IA32_MTRR_PHYS_MASK 0
-	movl	$0x0f, %edx 		// 0x0f
-	movl	$0xfc000800, %eax  	// 0xfc000800 b11= enable MTRR
-	wrmsr
-	
-	// MTRR for BIOS
-	movl	$0x202, %ecx		// IA32_MTRR_PHYS Base 1 
-	movl	$0x00000000, %edx 	// 0x00
-	movl	$0xFFF00006, %eax 	// == WB cache  NOTE SIZING!  Only last 1M cached!
+	// MASK0 set to 0xffc400[000] == 60M    
+        movl	$0x201, %ecx  		// 
+	movl	$0x0000000f, %edx 	// 0x0f
+	movl	$0xfc400800, %eax  	// 0xfc000800 b11= enable MTRR
 	wrmsr
 
-        // MASK0 set to 0xff0000[000] == 16M
-        movl	$0x203, %ecx             // IA32_MTRR_PHYS_MASK 1
-	movl	$0x0000000f, %edx // 0x0f
-	movl	$0xFFF00800, %eax  // 0xff000800
-	wrmsr
-        
-        
-        // MTRR for Video Memory (last 4MByte of shared Ram)
+
+        // MTRR for Video Memory (last 4MByte of shared Ram, starts at 60MB)
 	// Writethrough type trumps Writeback for overlapping region
-        movl	$0x204, %ecx           	// IA32_MTRR_PHYS Base 2
+        movl	$0x202, %ecx           	// IA32_MTRR_PHYS Base 2
 	movl	$0x00000000, %edx 	// 0x00
 	movl	$0x03C00004, %eax 	// == Writethrough == 4
 	wrmsr
-	
+	       
 	// MASK0 set to 0xfffC00[000] == 4M
-	movl	$0x205, %ecx            // IA32_MTRR_PHYS_MASK 2
+	movl	$0x203, %ecx            // IA32_MTRR_PHYS_MASK 2
 	movl	$0x0000000f, %edx // 0x0f
 	movl	$0xFFC00800, %eax  // 0xffC00800
 	wrmsr
+	
+	// MTRR for FLASH +PCI config 
+	movl	$0x204, %ecx		// IA32_MTRR_PHYS Base 1 
+	movl	$0x00000000, %edx 	// 0x00
+	movl	$0xF0000000, %eax 	// As it is a Flash, we set the Flag to Uncacheable =0
+	wrmsr
 
+        movl	$0x205, %ecx             
+	movl	$0x0000000f, %edx 
+	movl	$0xF0000800, %eax  
+	wrmsr
+        
+    
         xor	%eax, %eax
 	xor	%edx, %edx
 	
-	movl	$0x206, %ecx		// IA32_MTRR_PHYS Base 3
+    	movl	$0x206, %ecx		// IA32_MTRR_PHYS Base 3
         wrmsr                                                   
 	movl	$0x207, %ecx		// IA32_MTRR_PHYS_MASK 3
         wrmsr                                                   
@@ -196,179 +198,43 @@ start_linux:
 	movl	$0x20f, %ecx		// IA32_MTRR_PHYS_MASK 7
         wrmsr                                                   
 
-/*
-	// MTRR for Filtror comms area
 
-	movl	$0x206, %ecx   		// IA32_MTRR_PHYS Base 3
-	movl	$0x00000000, %edx 	// 0x00
-	movl	$0xffffe000, %eax 	// == Writethrough == 4
-	wrmsr
-	
-	movl	$0x207, %ecx    	// IA32_MTRR_PHYS_MASK 3
-					// MASK0 set to 0xfffC00[000] == 4M
-	movl	$0x00000000, %edx 	// 0x0f
-	movl	$0xFFFFF800, %eax  	// 0xffC00800
-	wrmsr
-
-*/
 	// Define Memory in IA32_MTRR_DEF_TYPE
 	movl	$0x2ff, %ecx
 	xor	%edx, %edx
-	movl	$0x800, %eax //Enable MTRRs
+	movl	$0x806, %eax 		//Enable MTRRs
 	wrmsr
+      
 
-	/* turn on normal cache */
-
-	movl	%cr0, %eax
-	mov 	%eax, %ebx
-	andl	$0x9FFFFFFF,%eax
-	movl	%eax, %cr0
-
-
-	// set up selectors for everything
-
-	mov	$0x18, %eax
-	.byte 0x8e, 0xd8  // from 2bl first init
-
-//	movl	$ 0x00200000,%esp
-	movl	$ 0x00080000,%esp
-	movw    %ax, %ds
-	movw    %ax, %es
-	movw    %ax, %ss
-  
-  	xor	%eax, %eax
-	movw    %ax, %fs
-	movw    %ax, %gs
-        
-        cld
-    
-/*
-  We are setting the Page directory's Now
-
-*/ 
-
-#if 1
-		// set up the page directory
-
-	mov $0xf000, %edi
-	mov $0x40, %ecx  // 64 x 4M pages
-	mov $0xe3, %eax  // page dir entry: present, cacheable, 4M page
-
-	// +0-+FF AND +800-+8FF, 256M contiguous region pointing at linear 0-256M
-
-patspin:
-	movl %eax, 0x800(%edi)
-	stosl  // .byte 0xab // stosd
-	add $0x400000, %eax // bump by 4MBytes page size
-	loop	patspin
-
-	// +100-+7FF AND +900-+FFF, EMPTY
-
-	mov	$0x1c0, %ecx
-	xor	%eax, %eax  // page dir entry: not present, 4K page
-	mov $0xfffc00f3, %eax  // 4M page, flash area area
-
-patspin2:
-	movl %eax, 0x800(%edi)
-	stosl // .byte 0xab // stosd
-	loop	patspin2
-
-	mov $0xf000, %edi
-
-	mov $0x3c000f3, %eax
-	mov %eax, 0x3c(%edi) // page table f03c
-	mov %eax, 0x83c(%edi) // page table f03c
-
-	mov $0xf063, %eax  // 4K page page table itself
-	mov %eax, 0xc00(%edi) // page table fc00
-
-	mov $0xff0000f3, %eax  // 4M page, flash area area NOT CACHEABLE
-	mov %eax, 0xff0(%edi)// page table entry fffc
-	mov $0xff4000e3, %eax  // 4M page, flash area area
-	mov %eax, 0xff4(%edi)// page table entry fffc
-	mov $0xff8000e3, %eax  // 4M page, flash area area
-	mov %eax, 0xff8(%edi)// page table entry fffc
-	mov $0xffc000e3, %eax  // 4M page, flash area area
-	mov %eax, 0xffc(%edi)// page table entry fffc
-
-	mov $0xfd0000fb, %eax // not cacheable 4M area starting 0xfd000000
-	mov	%eax, %ebx
-
-	shr	$0x14, %ebx  // divide ebx by 1M, 0xfd0
-	add	%edi, %ebx // add to page table base 0xffd0
-
-		// contiguous 16M area starting 0xfd000000 - 0xfdffffff in page tbl at 0xffd0+
-
-	mov	%eax, (%ebx)
-	add	$4, %ebx
-	add	$0x400000, %eax
-	mov	%eax, (%ebx)
-	add	$4, %ebx
-	add	$0x400000, %eax
-	mov	%eax, (%ebx)
-	add	$4, %ebx
-	add	$0x400000, %eax
-	mov	%eax, (%ebx)
-
-	mov 	$0xfe0000fb, %eax // not cacheable 4M area starting 0xfe000000
-	mov	%eax, %ebx
-
-	shr	$0x14, %ebx  // divide ebx by 1M, 0xfe0
-	add	%edi, %ebx // add to page table base 0xffe0
-
-	// contiguous 16M area starting 0xfe000000 - 0xfeffffff in page tbl at 0xffe0+
-
-	mov	%eax, (%ebx)
-	add	$4, %ebx
-	add	$0x400000, %eax
-	mov	%eax, (%ebx)
-	add	$4, %ebx
-	add	$0x400000, %eax
-	mov	%eax, (%ebx)
-	add	$4, %ebx
-	add	$0x400000, %eax
-	mov	%eax, (%ebx)
-
-
-	mov	%cr0, %eax
-	mov	%eax, %ebx
-	and 	$0xdfffffff, %eax
-	or	$0x40000000, %eax
-	mov	%eax, %cr0
-	wbinvd
-
-	mov	$0x277, %ecx
-	mov	$0x70106, %eax // was 70106
-	mov	%eax, %edx
-	wrmsr
-//	invd
-
-	mov	%ebx, %cr0
-
-	mov	%cr4, %eax
-	or	$0x610, %eax
-	mov	%eax, %cr4
-
-	mov	$0xf000, %eax
-	mov	%eax, %cr3
-
-	mov	%cr0, %eax
-	or	$0x80010020, %eax
-	mov	%eax, %cr0
-
-	jmp selfPipeKill
-
-selfPipeKill:
-
-	mov 	$0x00040000, %esp
-
-#endif
+ 
 
 
 /*
   These Init Codes Can be found in the 2'nd Bootloader
 
 */ 
+        
+   
+	movl	$0x600, %eax
+	mov	%eax, %cr4
+
+	mov	%eax, %eax
+	mov	%eax, %cr3
+  
+ 
+   	/* turn on normal cache */
+	//  bit 30 + 29 = CD + NW 
+	// CD = Cache Disable (disable = 1)
+	// NW Not write through (disable = 1)
+	
+	movl	%cr0, %eax
+	mov 	%eax, %ebx
+	andl	$0x9fFFffFF,%eax // we additionally clear the WP flag too
+	movl	%eax, %cr0
+	wbinvd
+	
+	
+	
    
         // something for Video ?
 	mov 	$0x80000854, %eax
@@ -402,6 +268,7 @@ selfPipeKill:
 	outl	%eax, %dx 
       	
       	
+      	/*
 	// CPU Whoami   ? sesless ?
 	mov 	$0x80000080, %eax 
 	movw 	$0xcf8, %dx 
@@ -409,6 +276,7 @@ selfPipeKill:
 	movw 	$0xcfc, %dx 
 	movl 	$0x100, %eax 
 	outl	%eax, %dx 
+        */
 	
 	mov 	$0x8000088C, %eax 
 	movw 	$0xcf8, %dx 
@@ -417,9 +285,6 @@ selfPipeKill:
 	movl 	$0x40000000, %eax 
 	outl	%eax, %dx
 	
-	// Not necessary ?  
-	movl 	$0x0, 0x0f680600
-
 	jmp BootResetAction
 
        

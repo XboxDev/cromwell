@@ -31,7 +31,8 @@
 #define MIN_KERNEL_ADDRESS		KERNEL_ADDRESS
 // Memory reserved to the kernel (1 MB at the moment)
 
-#define KERNEL_SIZE        		0x00040000
+#define KERNEL_SIZE        		0x00060000
+// From 40000 to 60000, as we have now a compressed kernel to handle too
 
 // Location of kernel in RAM
 #define KERNEL_RAM_ADDRESS		0x03A00000

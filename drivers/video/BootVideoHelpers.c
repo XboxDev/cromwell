@@ -309,18 +309,21 @@ bool BootVideoJpegUnpackAsRgb(
 	JPEG * pJpeg
 )
 {
-	struct jpeg_decompress_struct cinfo;
+  
+
+  struct jpeg_decompress_struct cinfo;
   struct jpeg_error_mgr jerr;
   BYTE *pbaResultAsRgb;
   BYTE *pbaResultAsRgbStart;
   JSAMPARRAY buffer;		/* Output row buffer */
   int row_stride;		/* physical row width in output buffer */
-
-	void jpeg_direct_src (j_decompress_ptr pcinfo, char * pbStartOfBuffer, unsigned int nLength);
-
+  
+  
+  void jpeg_direct_src (j_decompress_ptr pcinfo, char * pbStartOfBuffer, unsigned int nLength);
+ 
   pJpeg->m_pBitmapData=NULL;
 	cinfo.err = jpeg_std_error(&jerr);
-
+  
   jpeg_create_decompress(&cinfo);
   jpeg_direct_src(&cinfo, pbaJpegFileImage, nFileLength);
   (void) jpeg_read_header(&cinfo, TRUE);
@@ -341,6 +344,7 @@ bool BootVideoJpegUnpackAsRgb(
 	pJpeg->m_nHeight=cinfo.output_height;
 	pJpeg->m_nBytesPerPixel=cinfo.output_components;
 	pJpeg->m_pBitmapData=pbaResultAsRgbStart;
+      
 
 //	printk("jpeg bpp=%d\n",pJpeg->m_nBytesPerPixel);
 
@@ -349,10 +353,12 @@ bool BootVideoJpegUnpackAsRgb(
 		memcpy(pbaResultAsRgb, buffer[0], row_stride);
 		pbaResultAsRgb+=row_stride;
   }
-  (void) jpeg_finish_decompress(&cinfo);
-  jpeg_destroy_decompress(&cinfo);
+  //(void) jpeg_finish_decompress(&cinfo);
+//  jpeg_destroy_decompress(&cinfo);
 
+  
 	if(jerr.num_warnings==0) return true;
+
 	free(pbaResultAsRgbStart);
 	return false;
 }

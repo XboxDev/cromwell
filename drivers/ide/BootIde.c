@@ -129,7 +129,6 @@ tsHarddiskInfo tsaHarddiskInfo[2];  // static struct stores data about attached 
 //
 
 
-int Delay(void) { int i=0, u=0; while(u<1000) { i+=u++; } return i; }
 
 
 int BootIdeWaitNotBusy(unsigned uIoBase)
@@ -139,13 +138,10 @@ int BootIdeWaitNotBusy(unsigned uIoBase)
 
 //	I2cSetFrontpanelLed(0x66);
 	while (b & 0x80) {
-		Delay();
 		b=IoInputByte(IDE_REG_ALTSTATUS(uIoBase));
 //		printk("%02x %d\n", b, n++);
 //		WATCHDOG;
 	}
-//	printk("Done %d\n", n++);
-//		I2cSetFrontpanelLed(0x14);
 
 	return b&1;
 }
@@ -153,7 +149,7 @@ int BootIdeWaitNotBusy(unsigned uIoBase)
 int BootIdeWaitDataReady(unsigned uIoBase)
 {
 	int i = 0x800000;
-	Delay();
+	wait_smalldelay();
 	do {
 		if ( ((IoInputByte(IDE_REG_ALTSTATUS(uIoBase)) & 0x88) == 0x08)	)	{
 	    if(IoInputByte(IDE_REG_ALTSTATUS(uIoBase)) & 0x01) return 2;
@@ -198,7 +194,7 @@ int BootIdeIssueAtaCommand(
 	IoOutputByte(IDE_REG_DRIVEHEAD(uIoBase), params->m_bDrivehead);
 
 	IoOutputByte(IDE_REG_COMMAND(uIoBase), command);
-	Delay();
+	wait_smalldelay();
 
 	n=BootIdeWaitNotBusy(uIoBase);
 	if(n)	{
@@ -220,7 +216,7 @@ int BootIdeWriteAtapiData(unsigned uIoBase, void * buf, size_t size)
 //		printk("BootIdeWriteAtapiData error before data ready ret %d\n", n);
 //		return 1;
 //	}
-	Delay();
+	wait_smalldelay();
 
 	w=IoInputByte(IDE_REG_CYLINDER_LSB(uIoBase));
 	w|=(IoInputByte(IDE_REG_CYLINDER_MSB(uIoBase)))<<8;
@@ -243,13 +239,13 @@ int BootIdeWriteAtapiData(unsigned uIoBase, void * buf, size_t size)
 //		printk("BootIdeWriteAtapiData Error after writing data err=0x%X\n", n);
 		return 1;
 	}
-	Delay();
+	wait_smalldelay();
 	n=BootIdeWaitNotBusy(uIoBase);
 	if(n) {
 //		printk("BootIdeWriteAtapiData timeout or error before not busy ret %d\n", n);
 		return 1;
 	}
-	Delay();
+	wait_smalldelay();
 
    if(IoInputByte(IDE_REG_ALTSTATUS(uIoBase)) & 0x01) return 2;
 	return 0;
@@ -267,7 +263,7 @@ int BootIdeWriteData(unsigned uIoBase, void * buf, size_t size)
 //		printk("BootIdeWriteData timeout or error from BootIdeWaitDataReady ret %d\n", n);
 //		return 1;
 //	}
-	Delay();
+	wait_smalldelay();
 
 	while (size > 1) {
 
@@ -275,9 +271,9 @@ int BootIdeWriteData(unsigned uIoBase, void * buf, size_t size)
 		size -= 2;
 		ptr++;
 	}
-	Delay();
+	wait_smalldelay();
 	n=BootIdeWaitNotBusy(uIoBase);
-	Delay();
+	wait_smalldelay();
 	if(n) {
 		printk("BootIdeWriteData timeout or error from BootIdeWaitNotBusy ret %d\n", n);
 		return 1;
@@ -292,10 +288,8 @@ int BootIdeWriteData(unsigned uIoBase, void * buf, size_t size)
 BYTE BootIdeGetTrayState()
 {
 	BYTE b;
-	DWORD dw;
-	BootPciInterruptGlobalStackStateAndDisable(&dw);
 	b=I2CTransmitByteGetReturn(0x10, 0x03); // this is the tray state
-	BootPciInterruptGlobalPopState(dw);
+
 	return b;
 }
 
@@ -400,7 +394,7 @@ static int BootIdeDriveInit(unsigned uIoBase, int nIndexDrive)
 
 //	printk_debug("  Drive %d: Waiting\n", nIndexDrive);
 
-	I2cSetFrontpanelLed(0xf1);
+	//I2cSetFrontpanelLed(0xf1);
 
 	if(BootIdeWaitNotBusy(uIoBase)) {
 			printk_debug("  Drive %d: Not Ready\n", nIndexDrive);
@@ -1370,7 +1364,7 @@ int BootIdeSetTransferMode(int nIndexDrive, int nMode)
 	tsIdeCommandParams tsicp = IDE_DEFAULT_COMMAND;
 	unsigned int uIoBase = tsaHarddiskInfo[nIndexDrive].m_fwPortBase;
 	BYTE b;
-	DWORD dw;
+//	DWORD dw;
 
 	tsicp.m_bDrivehead = IDE_DH_DEFAULT | IDE_DH_HEAD(0) | IDE_DH_CHS | IDE_DH_DRIVE(nIndexDrive);
 	IoOutputByte(IDE_REG_DRIVEHEAD(uIoBase), tsicp.m_bDrivehead);
@@ -1387,7 +1381,7 @@ int BootIdeSetTransferMode(int nIndexDrive, int nMode)
 	IoOutputByte(IDE_REG_FEATURE(uIoBase), 0x01); // enable DMA
 
 	if(tsaHarddiskInfo[nIndexDrive].m_bCableConductors==80) {
-//		PciWriteDword(BUS_0, DEV_9, FUNC_0, 0x4c, 0xffff00ff); // 2x30nS address setup on IDE
+
 	}
 
 	if(BootIdeWaitNotBusy(uIoBase)) {
@@ -1413,6 +1407,7 @@ int BootIdeSetTransferMode(int nIndexDrive, int nMode)
 			case 5: b=6; break;
 			default: b=6; break;
 		}
+		/*
 		b|=0xc0;
 		dw=PciReadDword(BUS_0, DEV_9, FUNC_0, 0x60);
 		if(nIndexDrive) { // slave
@@ -1423,7 +1418,7 @@ int BootIdeSetTransferMode(int nIndexDrive, int nMode)
 			dw|=(b<<24) | (b<<8);
 		}
 //		PciWriteDword(BUS_0, DEV_9, FUNC_0, 0x60, dw); // new
-
+                 */
 		return nReturn;
 	}
 	return 0;

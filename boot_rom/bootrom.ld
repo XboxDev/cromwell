@@ -47,7 +47,21 @@ SECTIONS {
 
 	/* ram allocations */
 
-	.data (RAM_BASE) : AT( 0x1000 + SIZEOF(.rom) ) {
+        /* Caution:
+        RoData is not copy'd to memory, it operates in ROM !
+        So Take care, and control with the -M flag in the linkere, that there are no data there (or sensible one)
+        as it is very very "dangerous" to read direct from ROM
+        */
+        
+       	.rodata ( 0xfffc1000+ SIZEOF(.rom) ) : AT (0x1000 + SIZEOF(.rom)) {
+		*(.rodata);
+		*(.rodata.str1.1);
+		*(.rodata.str1.32);
+		*(.rodata.cst4);
+		*(.rodata.cst8);
+	}
+    
+	.data (RAM_BASE) : AT( 0x1000 + SIZEOF(.rom) +  SIZEOF(.rodata)) {
 		_start_data = .;
 		*(.data);
 		*(.sdata);
@@ -56,9 +70,10 @@ SECTIONS {
 		_end_data = .;
 	}
 
-	.text (RAM_CODE) : AT( 0x1000 + SIZEOF(.rom)+ SIZEOF(.data)) {
+	
+	.text (RAM_CODE) : AT( 0x1000 + SIZEOF(.rom)+ SIZEOF(.data) + SIZEOF(.rodata)) {
 		_ram_location = .;
-		_start_ramcopy = 0x1000 + SIZEOF(.rom)+ SIZEOF(.data) - RAM_CODE + 0xFFFC0000;
+		_start_ramcopy = 0x1000 + SIZEOF(.rom)+ SIZEOF(.data)+ SIZEOF(.rodata) - RAM_CODE + 0xFFFC0000;
 		*(.text);
 		_end_ramcopy = .;
 		_size_ramcopy = . - RAM_CODE;

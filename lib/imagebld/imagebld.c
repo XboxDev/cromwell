@@ -15,8 +15,23 @@
 #include "sha1.h"
 #include "xbe-header.h"
 
+// compression Lib
+#include "minilzo.h"
 
 #define debug
+
+
+// For the compression Lib
+
+
+
+#define HEAP_ALLOC(var,size) \
+	lzo_align_t __LZO_MMODEL var [ ((size) + (sizeof(lzo_align_t) - 1)) / sizeof(lzo_align_t) ]
+
+static HEAP_ALLOC(wrkmem,LZO1X_1_MEM_COMPRESS);
+
+
+
 
 struct Checksumstruct {
 	unsigned char Checksum[20];	
@@ -37,13 +52,17 @@ void shax(unsigned char *result, unsigned char *data, unsigned int len)
 
 
 
-int xberepair (unsigned char * xbeimage)
+int xberepair (	unsigned char * xbeimage,
+		unsigned char * cromimage
+		)
 {
 	FILE *f;
 	unsigned int xbesize;
-	void * xbe;
         int a;
 	unsigned char sha_Message_Digest[SHA1HashSize];
+        unsigned char crom[1024*1024];
+        unsigned char xbe[1024*1024];
+        unsigned int romsize=0;
          
 	XBE_HEADER *header;
  	XBE_SECTION *sechdr;
@@ -51,31 +70,48 @@ int xberepair (unsigned char * xbeimage)
        	printf("ImageBLD Hasher by XBL Project (c) hamtitampti\n");
        	printf("XBE Modus\n");
 	
+	f = fopen(cromimage, "rb");
+	if (f!=NULL) 
+    	{    
+ 		fseek(f, 0, SEEK_END); 
+         	romsize	 = ftell(f);        
+         	fseek(f, 0, SEEK_SET);
+    		fread(crom, 1, romsize, f);
+    		fclose(f);
+    	}
+    	
+    	if (romsize>0x60000) {
+    		printf("Romsize too big, increase the satic Variables everywhere");
+    		return 1;
+    	}
+    	
 	f = fopen(xbeimage, "rb");
     	if (f!=NULL) 
     	{   
   		fseek(f, 0, SEEK_END); 
          	xbesize	 = ftell(f); 
          	fseek(f, 0, SEEK_SET);
-		xbe = malloc(xbesize+0x40000);    			
-    		memset(xbe,0x00,xbesize+0x40000);
-    		
+
+    		memset(xbe,0x00,sizeof(xbe));
     		fread(xbe, 1, xbesize, f);
     		fclose(f);
+	        
+	        // We copy the ROM image now into the Thing
+	        memcpy(&xbe[0x3000],crom,romsize);
 	        
 	        header = (XBE_HEADER*) xbe;
 		// This selects the First Section, we only have one
 		sechdr = (XBE_SECTION *)(((char *)xbe) + (int)header->Sections - (int)header->BaseAddress);
 	        
 	        // Correcting overall size now
-		xbesize = 0x45000;
+		xbesize = 0x63000;
 	        header->ImageSize = xbesize; 
 		
 		//printf("%08x",sechdr->FileSize);                    
 		
 
-		sechdr->FileSize = 0x44000;
-		sechdr->VirtualSize = 0x44000;
+		sechdr->FileSize = 0x60000+0x2000;
+		sechdr->VirtualSize = 0x60000+0x2000;
 	        
 	 //       printf("Sections: %d\n",header->NumSections);
 
@@ -83,6 +119,14 @@ int xberepair (unsigned char * xbeimage)
 	  	memcpy(&sechdr->ShaHash[0],&sha_Message_Digest[0],20);
 	  	
 	  	#ifdef debug
+	 	printf("Size of all headers:     : 0x%08X\n", (unsigned int)header->HeaderSize);
+         
+         	printf("Size of entire image     : 0x%08X\n", (unsigned int)header->ImageSize);
+		printf("Virtual address          : 0x%08X\n", (unsigned int)sechdr->VirtualAddress);
+         	printf("Virtual size             : 0x%08X\n", (unsigned int)sechdr->VirtualSize);
+         	printf("File address             : 0x%08X\n", (unsigned int)sechdr->FileAddress);
+         	printf("File size                : 0x%08X\n", (unsigned int)sechdr->FileSize);
+
 		printf("Section 0 Hash XBE       : ");
 		for(a=0; a<SHA1HashSize; a++) {
 			printf("%02x",sha_Message_Digest[a]);
@@ -100,7 +144,7 @@ int xberepair (unsigned char * xbeimage)
 	        
 	        printf("XRomwell File Created    : %s\n",xbeimage);
 	        
-		free(xbe);
+
 	}
 
         
@@ -121,8 +165,10 @@ int romcopy (
 	static unsigned char loaderimage[256*1024];
 	static unsigned char flash256[256*1024];
 	static unsigned char flash1024[1024*1024];
-	static unsigned char crom[256*1024];
-	static unsigned char compressedcrom[256*1024];
+	static unsigned char crom[1024*1024];
+	static unsigned char compressedcrom[1524*1024];
+	
+	unsigned int freeflashspace = 256*1024;
 	
        	unsigned int romsize=0;
        	unsigned int compressedromsize=0;
@@ -132,6 +178,9 @@ int romcopy (
 //       	unsigned int compressedimagestart;
        	unsigned int temp;
        	
+
+
+
        	printf("ImageBLD Hasher by XBL Project (c) hamtitampti\n");
        	printf("ROM Modus\n");
        	
@@ -155,8 +204,7 @@ int romcopy (
 	if (f!=NULL) 
     	{    
  		fseek(f, 0, SEEK_END); 
-         	romsize	 = ftell(f); 
-         	compressedromsize = romsize;
+         	romsize	 = ftell(f);        
          	fseek(f, 0, SEEK_SET);
     		fread(crom, 1, romsize, f);
     		fclose(f);
@@ -173,7 +221,19 @@ int romcopy (
 	
 	// Ok, we have loaded both images, we can continue
 	if (a==1) {	
-
+                
+                // Ok, we compress the ROM image now
+               
+                lzo_init();
+                lzo1x_1_compress(crom,romsize,compressedcrom,&compressedromsize,wrkmem);
+                
+                /*
+                memcpy(compressedcrom,crom,romsize);
+                compressedromsize=romsize;
+                */
+                
+		// Ok, we start with the real programm                
+                
 		memcpy(&bootloderpos,&loaderimage[0x40],4);   // This can be foun in the 2bBootStartup.S
 		memcpy(&bootloaderstruct,&loaderimage[bootloderpos],sizeof(struct Checksumstruct));
 		
@@ -186,6 +246,12 @@ int romcopy (
 		temp = temp + 0x10;
 		bootloaderstruct.compressed_image_start = temp;
 		bootloaderstruct.compressed_image_size =  compressedromsize;
+
+		freeflashspace = freeflashspace - 512; // We decrement the TOP ROM
+		freeflashspace = freeflashspace - bootloaderstruct.compressed_image_start;
+
+
+
 		
 		bootloaderstruct.Biossize_type = 0; // Means it is a 256 kbyte Image
 		memcpy(&flash256[bootloderpos],&bootloaderstruct,sizeof(struct Checksumstruct));
@@ -196,7 +262,10 @@ int romcopy (
 		printf("BootLoaderPos            : %08x\n",bootloderpos);
 		printf("Size2blRamcopy           : %08x\n",bootloaderstruct.Size_ramcopy);		
 		printf("ROM Image Start          : %08x\n",bootloaderstruct.compressed_image_start);
-		printf("ROM Image Size           : %08x\n",bootloaderstruct.compressed_image_size);
+		printf("ROM Image Size           : %08x (%d Byte)\n",romsize,romsize); 
+		printf("ROM compressed Image Size: %08x (%d Byte)\n",bootloaderstruct.compressed_image_size,bootloaderstruct.compressed_image_size); 
+		printf("Avaliable Size in ROM    : %08x (%d Byte)\n",freeflashspace,freeflashspace);
+		printf("Percent of ROM USED:     : %2.2f \n",(float)bootloaderstruct.compressed_image_size/freeflashspace*100);
 		#endif
 		
 		// We have calculated the size of the kompressed image and where it can start (where the 2bl ends)
@@ -245,16 +314,16 @@ int romcopy (
 
 	      	
 	        // The first 20 bytes of the compressed image are the checksum
-		memcpy(&flash256[bootloaderstruct.compressed_image_start+20],&crom[0],compressedromsize);
+		memcpy(&flash256[bootloaderstruct.compressed_image_start+20],&compressedcrom[0],compressedromsize);
 		SHA1Reset(&context);
 		SHA1Input(&context,&flash256[bootloaderstruct.compressed_image_start+20],compressedromsize);
 		SHA1Result(&context,SHA1_result);                                
 		memcpy(&flash256[bootloaderstruct.compressed_image_start],SHA1_result,20);			
     			
 		memcpy(&flash1024[bootloaderstruct.compressed_image_start+(1*256*1024)],SHA1_result,20);			
-		memcpy(&flash1024[bootloaderstruct.compressed_image_start+20+(1*256*1024)],&crom[0],compressedromsize);
+		memcpy(&flash1024[bootloaderstruct.compressed_image_start+20+(1*256*1024)],&compressedcrom[0],compressedromsize);
 		memcpy(&flash1024[bootloaderstruct.compressed_image_start+(2*256*1024)],SHA1_result,20);			
-	      	memcpy(&flash1024[bootloaderstruct.compressed_image_start+20+(2*256*1024)],&crom[0],compressedromsize);
+	      	memcpy(&flash1024[bootloaderstruct.compressed_image_start+20+(2*256*1024)],&compressedcrom[0],compressedromsize);
 	      	
 	      	#ifdef debug
 		printf("ROM Hash 1MB             : ");
@@ -290,7 +359,7 @@ int main (int argc, const char * argv[])
 	if( argc < 3 ) 	return -1;
 	
 	if (strcmp(argv[1],"-xbe")==0) { 
-		xberepair((unsigned char*)argv[2]);
+		xberepair((unsigned char*)argv[2],(unsigned char*)argv[3]);
 		}
 	if (strcmp(argv[1],"-rom")==0) { 
 		if( argc < 4 ) return -1;

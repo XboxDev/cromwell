@@ -90,13 +90,16 @@ start_bootloader:
 	xor	%edx, %edx
 	xor	%ecx, %ecx
 	
-	// kill the cache
-       	mov %cr0, %eax
+	// kill the cache  = Disable bit 30 + 29 = CD + NW 
+	// CD = Cache Disable (disable = 1)
+	// NW Not write through (disable = 1)
+       	mov 	%cr0, %eax
 	orl	$0x60000000, %eax
 	mov	%eax, %cr0
 	wbinvd
 
-	mov	%cr3, %eax
+	// We clear the cr3 register
+	mov	%eax, %eax
 	mov	%eax, %cr3
 
 	// Clear Mmeory Type register
@@ -116,46 +119,57 @@ start_bootloader:
 	movl	$0x00000000, %edx 	// 0x00
 	movl	$0x00000006, %eax 	// == WB_CACHE == 6
 	wrmsr
-
+       //201
 	// MASK0 set to 0xffc000[000] == 64M    
         inc %ecx  		// IA32_MTRR_PHYS_MASK 0
 	movl	$0x0f, %edx 		// 0x0f
 	movl	$0xfc000800, %eax  	// 0xfc000800 b11= enable MTRR
 	wrmsr
 	
+	
+	//202
 	// MTRR for BIOS
 	inc %ecx		// IA32_MTRR_PHYS Base 1 
 	movl	$0x00000000, %edx 	// 0x00
 	movl	$0xFFF00006, %eax 	// == WB cache  NOTE SIZING!  Only last 1M cached!
 	wrmsr
-
+        //203
         // MASK0 set to 0xff0000[000] == 16M
         inc %ecx             // IA32_MTRR_PHYS_MASK 1
 	movl	$0x0000000f, %edx // 0x0f
 	movl	$0xFFF00800, %eax  // 0xff000800
 	wrmsr
         
-        
+        //204
         // MTRR for Video Memory (last 4MByte of shared Ram)
 	// Writethrough type trumps Writeback for overlapping region
       	inc %ecx           	// IA32_MTRR_PHYS Base 2
 	movl	$0x00000000, %edx 	// 0x00
 	movl	$0x03C00004, %eax 	// == Writethrough == 4
 	wrmsr
-	
+	//205
 	// MASK0 set to 0xfffC00[000] == 4M
 	inc %ecx            		// IA32_MTRR_PHYS_MASK 2
 	movl	$0x0000000f, %edx // 0x0f
 	movl	$0xFFC00800, %eax  // 0xffC00800
 	wrmsr
+        
+        //206
+        // PCI Config Space   
+	inc %ecx          
+	movl    $0x00000000, %edx       // 0x00   
+	movl    $0xf0000000, %eax       
+	wrmsr   
+	//207
+	inc %ecx           
+	movl    $0x0000000f, %edx       //   
+	movl    $0xF0100800, %eax       //   
+	wrmsr 
+
 
         xor	%eax, %eax
 	xor	%edx, %edx
 	
-	inc %ecx		// IA32_MTRR_PHYS Base 3
-        wrmsr                                                   
-	inc %ecx		// IA32_MTRR_PHYS_MASK 3
-        wrmsr                                                   
 
 	inc %ecx		// IA32_MTRR_PHYS Base 4
         wrmsr                                                   
@@ -184,7 +198,9 @@ start_bootloader:
 	wrmsr
 
 	/* turn on normal cache */
-
+	//  bit 30 + 29 = CD + NW 
+	// CD = Cache Disable (disable = 1)
+	// NW Not write through (disable = 1)
 	movl	%cr0, %eax
 	mov 	%eax, %ebx
 	andl	$0x9FFFFFFF,%eax
@@ -283,7 +299,6 @@ initaftermemcpy:
 	mov	$0x18, %eax
 	.byte 0x8e, 0xd8  // from 2bl first init
 
-//	movl	$ 0x00200000,%esp
 	movl	$ 0x00080000,%esp
 	movw    %ax, %ds
 	movw    %ax, %es
@@ -299,13 +314,10 @@ initaftermemcpy:
 	out	%al, %dx
 
 	// FPU SETUP -- Not perfect, soembody should take a close look to it
-	movl %cr0,%eax          
-	andl $0x80000011,%eax   
-	orl $0x50022,%eax       
-	movl %eax,%cr0
+
 	clts
 	fninit
-	.byte 0xDB,0xE4         /* fsetpm for 287, ignored by 387 */	
+	
 
 	mov $0x80000810, %eax ;	movw $0xcf8, %dx ; outl	%eax, %dx ;	movw $0xcfc, %dx ;	mov	$0x8001, %eax ;	outl	%eax, %dx  // v1.0 ACPI IO region enable
 	mov $0x80000884, %eax ;	movw $0xcf8, %dx ; outl	%eax, %dx ;	movw $0xcfc, %dx ;	mov	$0x8001, %eax ;	outl	%eax, %dx  // v1.1  "
@@ -403,9 +415,9 @@ nota1b:
 	movw $0xc002, %dx ;	movb $0x0a, %al ;	outb %al, %dx
 
 spin1:
-	movw $0xc000, %dx
-	inb %dx, %al
-	cmp $0x10, %al
+	movw 	$0xc000, %dx
+	inb 	%dx, %al
+	cmp 	$0x10, %al
 	jnz	spin1
 
 	  // (skipped PIC test here)
@@ -429,17 +441,19 @@ spin1a:
 
 skipPicDecidedInit:
 
-	movb 0x0f000000, %al
-	cmpb $0xa1, %al
-	jnz nota1c
+	movb 	0x0f000000, %al
+	cmpb 	$0xa1, %al
+	jnz 	nota1c
 
-	mov $0x10101010, %eax ; mov 0x0f001214, %eax
+	mov 	$0x10101010, %eax 
+	mov 	0x0f001214, %eax
 
 	jmp donea1c
 
 nota1c:
 
-	mov $0x12121212, %eax ; mov 0x0f001214, %eax
+	mov $0x12121212, %eax  
+	mov 0x0f001214, %eax
 
 donea1c:
 
@@ -517,12 +531,14 @@ spin2:
 
 		// B76
 spin3:
-	movw $0xc000, %dx
-	inb %dx, %al
-	cmp $0x10, %al
+	movw 	$0xc000, %dx
+	inb 	%dx, %al
+	cmp 	$0x10, %al
 	jnz	spin3
 
-	movw $0xc000, %dx ;	movb $0x10, %al ;	outb %al, %dx
+	movw 	$0xc000, %dx 
+	movb 	$0x10, %al 
+	outb 	%al, %dx
 
 	mov $0x8000f020, %eax ;	movw $0xcf8, %dx ;	outl	%eax, %dx ;	movw $0xcfc, %dx ;	mov	$0xfdf0fd00, %eax ;	outl	%eax, %dx
 	mov $0x80010010, %eax ;	movw $0xcf8, %dx ;	outl	%eax, %dx ;	movw $0xcfc, %dx ;	mov	$0xfd000000, %eax ;	outl	%eax, %dx

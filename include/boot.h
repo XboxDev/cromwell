@@ -22,6 +22,7 @@
 #include "consts.h"
 #include "jpeglib.h"
 
+
 unsigned int cromwell_config;
 unsigned int cromwell_retryload;
 unsigned int cromwell_loadbank;
@@ -108,8 +109,15 @@ volatile DWORD VIDEO_RSCALING;
 volatile DWORD VIDEO_BSCALING;
 volatile DWORD VIDEO_VSYNC_COUNT;
 volatile DWORD BIOS_TICK_COUNT;
+volatile DWORD BIOS_WAIT_COUNT;
 volatile DWORD VIDEO_VSYNC_POSITION;
 volatile DWORD VIDEO_VSYNC_DIR;
+volatile DWORD DVD_TRAY_STATE;
+
+#define DVD_CLOSED 		0
+#define DVD_CLOSING 		1
+#define DVD_OPEN   		2
+#define DVD_OPENING   		3
 
 /////////////////////////////////
 // Superfunky i386 internal structures
@@ -256,8 +264,7 @@ static __inline DWORD IoInputDword(WORD wAds) {
 			  : /* no outputs */ \
 			  : "c" (msr), "a" (val1), "d" (val2))
 
-void BootPciInterruptGlobalStackStateAndDisable(DWORD * dw);
-void BootPciInterruptGlobalPopState(DWORD dw);
+
 void BootPciInterruptEnable(void);
 
 	// boot process
@@ -349,9 +356,26 @@ void ListEntryRemove(LIST_ENTRY *plistentryCurrent);
 
 int BootPerformXCodeActions(void);
 
+#include "BootEEPROM.h"
+
+///////// BootParser.c
+#define MAX_LINE 1024
+typedef struct _CONFIGENTRY {
+        int  nValid;
+	char szPath[MAX_LINE];
+        char szKernel[MAX_LINE];
+        char szInitrd[MAX_LINE];
+        char szAppend[MAX_LINE];
+        int nRivaFB;
+	int nVesaFB;
+} CONFIGENTRY, *LPCONFIGENTRY;
+
+int ParseConfig(char *szBuffer, CONFIGENTRY *entry, EEPROMDATA *eeprom);
+
 ////////// BootStartBios.c
 
-void StartBios(int nDrive, int nActivePartition, int nFATXPresent);
+void StartBios(CONFIGENTRY *config,int nActivePartition, int nFATXPresent,int bootfrom);
+int BootMenue(CONFIGENTRY *config,int nDrive,int nActivePartition, int nFATXPresent);
 
 ////////// BootResetActions.c
 void ClearIDT (void);
@@ -361,8 +385,8 @@ int printk(const char *szFormat, ...);
 void BiosCmosWrite(BYTE bAds, BYTE bData);
 BYTE BiosCmosRead(BYTE bAds);
 
-////////// BootPciPeripheralInitialization.c
 
+///////// BootPciPeripheralInitialization.c
 void BootPciPeripheralInitialization(void);
 extern void	ReadPCIByte(unsigned int bus, unsigned int dev, unsigned intfunc, 	unsigned int reg_off, unsigned char *pbyteval);
 extern void	WritePCIByte(unsigned int bus, unsigned int dev, unsigned int func,	unsigned int reg_off, unsigned char byteval);
@@ -468,6 +492,10 @@ typedef struct {
 	AUDIO_ELEMENT * m_paudioelementFirst;
 } AC97_DEVICE  __attribute__ ((aligned (8))) ;
 
+void wait_tick(DWORD ticks);
+void wait_ms_trigger(void);
+void wait_ms(DWORD ticks);
+void wait_smalldelay(void);
 void BootAudioInit(volatile AC97_DEVICE * pac97device);
 void BootAudioInterrupt(volatile AC97_DEVICE * pac97device);
 void BootAudioSilence(volatile AC97_DEVICE * pac97device);

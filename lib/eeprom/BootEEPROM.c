@@ -4,15 +4,14 @@
 void BootEepromReadEntireEEPROM() {
 	int i;
 	BYTE *pb=(BYTE *)&eeprom;
-	DWORD dwTempInt;
 
 	bprintf("Starting EEPROM read\n");
-	BootPciInterruptGlobalStackStateAndDisable(&dwTempInt);
+	
 	for(i = 0; i < 256; i++) {
 		*pb++ = I2CTransmitByteGetReturn(0x54, i);
 //		bprintf("%d\n", i);
 	}
-	BootPciInterruptGlobalPopState(dwTempInt);
+	
 }
 
 void BootEepromPrintInfo() {

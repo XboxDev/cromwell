@@ -25,35 +25,8 @@
 #define SCREEN_HEIGHT_576 576
 #define SCREEN_HEIGHT_480 480
 
-/* memory layout */
 
-/* a retail Xbox has 64 MB of RAM */
-#define RAMSIZE (64 * 1024*1024)
 
-#define SCREEN_SIZE_480 (SCREEN_HEIGHT_480 * SCREEN_WIDTH * 4)
-#define SCREEN_SIZE_576 (SCREEN_HEIGHT_576 * SCREEN_WIDTH * 4)
-#define FRAMEBUFFER_SIZE_480 ((SCREEN_SIZE_480+0xFFFF)& 0xFFFF0000)
-#define FRAMEBUFFER_SIZE_576 ((SCREEN_SIZE_576+0xFFFF)& 0xFFFF0000)
-#define NEW_FRAMEBUFFER_480 (RAMSIZE - FRAMEBUFFER_SIZE_480)
-#define NEW_FRAMEBUFFER_576 (RAMSIZE - FRAMEBUFFER_SIZE_576)
-#define RAMSIZE_USE_480 (NEW_FRAMEBUFFER_480)
-#define RAMSIZE_USE_576 (NEW_FRAMEBUFFER_576)
-
-#define MAX_KERNEL_SIZE (2*1024*1024)
-#define MAX_INITRD_SIZE (6*1024*1024)
-
-/* position of kernel setup data */
-#define SETUP 0x90000
-/* the GDT must not be overwritten, so we place it at the ISA VGA memory location */
-#define GDT 0xA0000
-/* position of protected mode kernel */
-#define PM_KERNEL_DEST 0x100000
-
-/* Lowest allowable address of the kernel (at or above 1 meg) */
-#define MIN_KERNEL PM_KERNEL_DEST
-/* Highest allowable address */
-#define MAX_KERNEL_480 (RAMSIZE_USE_480-1)
-#define MAX_KERNEL_576 (RAMSIZE_USE_576-1)
 
 /* i386 constants */
 

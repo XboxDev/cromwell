@@ -23,7 +23,7 @@
 int I2CTransmitByteGetReturn(BYTE bPicAddressI2cFormat, BYTE bDataToWrite)
 {
 	int nRetriesToLive=400;
-
+	
 	if(IoInputWord(I2C_IO_BASE+0)&0x8000) { bprintf("Smb status=%x\n",IoInputWord(I2C_IO_BASE+0)); }
 	while(IoInputWord(I2C_IO_BASE+0)&0x0800) ;  // Franz's spin while bus busy with any master traffic
 
@@ -48,7 +48,7 @@ int I2CTransmitByteGetReturn(BYTE bPicAddressI2cFormat, BYTE bDataToWrite)
 			}
 		}
 	}
-
+       
 	return ERR_I2C_ERROR_BUS;
 }
 
@@ -58,8 +58,10 @@ int I2CTransmitByteGetReturn(BYTE bPicAddressI2cFormat, BYTE bDataToWrite)
 
 int I2CTransmitWord(BYTE bPicAddressI2cFormat, WORD wDataToWrite)
 {
+	
 	int nRetriesToLive=400;
-
+       
+        
 	if(IoInputWord(I2C_IO_BASE+0)&0x8000) { bprintf("Smb status=%x\n",IoInputWord(I2C_IO_BASE+0)); }
 	while(IoInputWord(I2C_IO_BASE+0)&0x0800) ;  // Franz's spin while bus busy with any master traffic
 
@@ -86,7 +88,7 @@ int I2CTransmitWord(BYTE bPicAddressI2cFormat, WORD wDataToWrite)
 			}
 		}
 	}
-
+        
 	return ERR_I2C_ERROR_BUS;
 }
 
@@ -160,22 +162,18 @@ int BootPerformPicChallengeResponseAction()
 
 extern int I2cSetFrontpanelLed(BYTE b)
 {
-	DWORD dw;
-	BootPciInterruptGlobalStackStateAndDisable(&dw);
 	I2CTransmitWord( 0x10, 0x800 | b);  // sequencing thanks to Jarin the Penguin!
 	I2CTransmitWord( 0x10, 0x701);
-	BootPciInterruptGlobalPopState(dw);
+
 
 	return ERR_SUCCESS;
 }
 
 bool I2CGetTemperature(int * pnLocalTemp, int * pExternalTemp)
 {
-	DWORD dw;
-	BootPciInterruptGlobalStackStateAndDisable(&dw);
 	*pnLocalTemp=I2CTransmitByteGetReturn(0x4c, 0x01);
 	*pExternalTemp=I2CTransmitByteGetReturn(0x4c, 0x00);
-	BootPciInterruptGlobalPopState(dw);
+
 	return true;
 }
 

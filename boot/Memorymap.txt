@@ -13,7 +13,8 @@ Memory Mapping C/X romwell
 	
 	0x0040 5000 command Line Pointer for the Kernel
 	
-	0x0050 0000 Linked Rambase in Memory
+	0x0070 0000 Stack Pointer Upper Limit
+	0x0070 0000 Linked Rambase in Memory
 	?? until ? , but sure Enought
 
  	0x0100 0000 Memorymanager for Cromwell (0x1000000 size = 16 MB)

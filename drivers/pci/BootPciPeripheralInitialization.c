@@ -13,6 +13,8 @@
  ***************************************************************************/
 
 
+
+
 BYTE PciReadByte(unsigned int bus, unsigned int dev, unsigned int func, unsigned int reg_off)
 {
 	DWORD base_addr = 0x80000000;
@@ -123,7 +125,81 @@ DWORD PciWriteDword(unsigned int bus, unsigned int dev, unsigned int func, unsig
 
 	return 0;    
 }
+#define RTC_REG_A		10
+#define RTC_REG_B		11
+#define RTC_REG_C		12
+#define RTC_REG_D		13
+#define RTC_FREQ_SELECT		RTC_REG_A
+#define RTC_CONTROL		RTC_REG_B
+#define RTC_INTR_FLAGS		RTC_REG_C
 
+/* On PCs, the checksum is built only over bytes 16..45 */
+#define PC_CKS_RANGE_START	16
+#define PC_CKS_RANGE_END	45
+#define PC_CKS_LOC		46
+
+#define RTC_RATE_1024HZ		0x06
+#define RTC_REF_CLCK_32KHZ	0x20
+#define RTC_FREQ_SELECT_DEFAULT (RTC_REF_CLCK_32KHZ | RTC_RATE_1024HZ)
+#define RTC_24H 		0x02
+#define RTC_CONTROL_DEFAULT (RTC_24H)
+
+
+// access to RTC CMOS memory
+
+ 
+
+BYTE CMOS_READ(BYTE addr) { 
+	IoOutputByte(0x70,addr); 
+	return IoInputByte(0x71); 
+}
+
+void CMOS_WRITE(BYTE val, BYTE addr) { 
+	IoOutputByte(0x70,addr);
+	IoOutputByte(0x71,val); 
+}
+
+
+void BiosCmosWrite(BYTE bAds, BYTE bData) {
+	IoOutputByte(0x70, bAds);
+	IoOutputByte(0x71, bData);
+
+	IoOutputByte(0x72, bAds);
+	IoOutputByte(0x73, bData);
+}
+
+BYTE BiosCmosRead(BYTE bAds)
+{
+	IoOutputByte(0x72, bAds);
+	return IoInputByte(0x73);
+}
+
+
+int rtc_checksum_valid(int range_start, int range_end, int cks_loc)
+{
+	int i;
+	unsigned sum, old_sum;
+	sum = 0;
+	for(i = range_start; i <= range_end; i++) {
+		sum += CMOS_READ(i);
+	}
+	sum = (~sum)&0x0ffff;
+	old_sum = ((CMOS_READ(cks_loc)<<8) | CMOS_READ(cks_loc+1))&0x0ffff;
+	return sum == old_sum;
+}
+
+void rtc_set_checksum(int range_start, int range_end, int cks_loc)
+{
+	int i;
+	unsigned sum;
+	sum = 0;
+	for(i = range_start; i <= range_end; i++) {
+		sum += CMOS_READ(i);
+	}
+	sum = ~(sum & 0x0ffff);
+	CMOS_WRITE(((sum >> 8) & 0x0ff), cks_loc);
+	CMOS_WRITE(((sum >> 0) & 0x0ff), cks_loc+1);
+}
 
 
 
@@ -144,12 +220,27 @@ void BootPciPeripheralInitialization()
 	PciWriteDword(BUS_0, DEV_0, FUNC_0, 0x48, 0x00000114);
 	PciWriteDword(BUS_0, DEV_0, FUNC_0, 0x44, 0x80000000); // new 2003-01-23 ag  trying to get single write actions on TSOP
 
-	PciWriteDword(BUS_0, DEV_0, 3, 0x40, 0x0017cc00);
-	PciWriteDword(BUS_0, DEV_0, 3, 0x58, 0x00008000);
+
+	PciWriteDword(BUS_0, DEV_0, FUNC_0, 0xa4, 0x0000e35a);  // AGP register ? Xbeboot-compare
+	PciWriteByte(BUS_0, DEV_0, FUNC_0, 0x87, 3); // kern 8001FC21
+	
+		
+	PciWriteDword(BUS_0, DEV_0, 3, 0x40, 0x0f0fc0c0);  // Xbeboot-compare
+	PciWriteDword(BUS_0, DEV_0, 3, 0x58, 0x00000000);  // Xbeboot-compare
+	PciWriteDword(BUS_0, DEV_0, 3, 0x64, 0x00e08001);  // Xbeboot-compare
+
+
+	PciWriteByte(BUS_0, DEV_0, 8, 0, 0x42);       // Xbeboot-compare
+	
+	
+//	PciWriteDword(BUS_0, DEV_0, 3, 0x40, 0x0017cc00);  // Orginal Andy
+//	PciWriteDword(BUS_0, DEV_0, 3, 0x58, 0x00008000);  // original Andy
 
 //	PciWriteByte(BUS_0, DEV_0, FUNC_0, 0x4b,0x00); --> BAD !!! -- Xbox Dies sometimes
 
-	PciWriteByte(BUS_0, DEV_0, 3, 0x4c,0x19);     // could this be the System inactivity timer disable ?
+
+
+//	PciWriteDword(BUS_0, DEV_9, FUNC_0, 0x4c, 0xffff00ff); // 2x30nS address setup on IDE
 	
 	IoOutputByte(0x2e, 0x55);
 	IoOutputByte(0x2e, 0x26);
@@ -161,7 +252,7 @@ void BootPciPeripheralInitialization()
 
 	// gah, failure to do this caused long delays and timeouts on boot and shutdown of Linux
 	// RTC CMOS was disabled, rtc driver was polling "safe to read" bit which was never okay
-	
+	/*
 	IoOutputByte(0x70, 0x30);	
 	IoOutputByte(0x71, 0x03);  // activate RTC bank1, bank0 and RTC
 	IoOutputByte(0x72, 0xf0);	
@@ -178,11 +269,78 @@ void BootPciPeripheralInitialization()
 	IoInputByte(0x71);
 	IoOutputByte(0x70, 0x0d);
 	IoInputByte(0x71);
-        
-	IoOutputByte(0x43, 0x36);
-	IoOutputByte(0x40, 0xff);
-	IoOutputByte(0x40, 0xff);
+ 
+          */
+          
                 
+        
+        IoOutputByte(0x43, 0x36);         	// Timer 0 (system time): mode 3
+        IoOutputByte(0x40, 0xFF);              // 18.2Hz (1.19318MHz/65535)
+        IoOutputByte(0x40, 0xFF);
+        IoOutputByte(0x43, 0x54);         	// Timer 1 (ISA refresh): mode 2
+        IoOutputByte(0x41, 18);                // 64KHz (1.19318MHz/18)
+
+        IoOutputByte(0x00, 0);                 // clear base address 0
+        IoOutputByte(0x00, 0);
+        IoOutputByte(0x01, 0);                 // clear count 0
+        IoOutputByte(0x01, 0);
+        IoOutputByte(0x02, 0);                 // clear base address 1
+        IoOutputByte(0x02, 0 );
+        IoOutputByte(0x03, 0);                 // clear count 1
+        IoOutputByte(0x03, 0);
+        IoOutputByte(0x04, 0);                 // clear base address 2
+        IoOutputByte(0x04, 0);
+        IoOutputByte(0x05, 0);                 // clear count 2
+        IoOutputByte(0x05, 0);
+        IoOutputByte(0x06, 0);                 // clear base address 3
+        IoOutputByte(0x06, 0);
+        IoOutputByte(0x07, 0);                 // clear count 3
+        IoOutputByte(0x07, 0);
+        IoOutputByte(0x0B, 0x40);         	// set channel 0 to single mode, verify transfer
+        IoOutputByte(0x0B, 0x41);         	// set channel 1 to single mode, verify transfer
+        IoOutputByte(0x0B, 0x42);         	// set channel 2 to single mode, verify transfer
+        IoOutputByte(0x0B, 0x43);         	// set channel 3 to single mode, verify transfer
+        IoOutputByte(0x08, 0);                 // enable controller
+
+        IoOutputByte(0xC0, 0);                 // clear base address 0
+        IoOutputByte(0xC0, 0);
+        IoOutputByte(0xC2, 0);                 // clear count 0
+        IoOutputByte(0xC2, 0);
+        IoOutputByte(0xC4, 0);                // clear base address 1
+        IoOutputByte(0xC4, 0);
+        IoOutputByte(0xC6, 0);                 // clear count 1
+        IoOutputByte(0xC6, 0);
+        IoOutputByte(0xC8, 0);                 // clear base address 2
+        IoOutputByte(0xC8, 0);
+        IoOutputByte(0xCA, 0);                 // clear count 2
+        IoOutputByte(0xCA, 0);
+        IoOutputByte(0xCC, 0);                 // clear base address 3
+        IoOutputByte(0xCC, 0);
+        IoOutputByte(0xCE, 0);                 // clear count 3
+        IoOutputByte(0xCE, 0);
+        IoOutputByte(0xD6, 0xC0);         // set channel 0 to cascade mode
+        IoOutputByte(0xD6, 0xC1);         // set channel 1 to single mode, verify transfer
+        IoOutputByte(0xD6, 0xC2);         // set channel 2 to single mode, verify transfer
+        IoOutputByte(0xD6, 0xC3);         // set channel 3 to single mode, verify transfer
+        IoOutputByte(0xD0, 0);                 // enable controller
+        
+        IoOutputByte(0x0E, 0);                 // enable DMA0 channels
+        IoOutputByte(0xD4, 0);                 // clear chain 4 mask
+
+
+	/* Setup the real time clock */
+	CMOS_WRITE(RTC_CONTROL_DEFAULT, RTC_CONTROL);
+	/* Setup the frequency it operates at */
+	CMOS_WRITE(RTC_FREQ_SELECT_DEFAULT, RTC_FREQ_SELECT);
+	/* Make certain we have a valid checksum */
+	rtc_set_checksum(PC_CKS_RANGE_START,
+                        PC_CKS_RANGE_END,PC_CKS_LOC);
+	/* Clear any pending interrupts */
+	(void) CMOS_READ(RTC_INTR_FLAGS);
+
+
+
+
         
 	// configure ACPI hardware to generate interrupt on PIC-chip pin6 action (via EXTSMI#)
 
@@ -366,8 +524,6 @@ void BootPciPeripheralInitialization()
 	PciWriteDword(BUS_1, DEV_0, FUNC_0, 4, PciReadDword(BUS_1, DEV_0, FUNC_0, 4) | 7 );
 	PciWriteDword(BUS_1, DEV_0, FUNC_0, 0x3c, (PciReadDword(BUS_1, DEV_0, FUNC_0, 0x3c) &0xffff0000) | 0x0103 );  // should get vid irq!!
 	PciWriteDword(BUS_1, DEV_0, FUNC_0, 0x4c, 0x00000114);
-
-	PciWriteByte(BUS_0, DEV_0, FUNC_0, 0x87, 3); // kern 8001FC21
 
 // frankenregisters so Xromwell matches Cromwell
 

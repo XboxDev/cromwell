@@ -15,11 +15,12 @@
 #include "boot.h"
 #include "config.h"
 #include "BootUsbOhci.h"
-//#include "cpu.h"
+#include "cpu.h"
 
 volatile int nCountI2cinterrupts, nCountUnusedInterrupts, nCountUnusedInterruptsPic2, nCountInterruptsSmc, nCountInterruptsIde;
 volatile bool fSeenPowerdown;
 volatile TRAY_STATE traystate;
+unsigned int wait_ms_time;
 
 volatile int nInteruptable = 0;
 
@@ -28,7 +29,7 @@ extern volatile AC97_DEVICE ac97device;
 extern volatile AUDIO_ELEMENT_SINE aesTux;
 extern volatile AUDIO_ELEMENT_NOISE aenTux;
 #endif
-
+void BlinkTux(void);
 
 DWORD dwaTitleArea[1024*64];
 
@@ -126,17 +127,56 @@ const ISR_PREP isrprep[] = {
 
 
 
+void wait_tick(DWORD ticks) {
+	// 1 sec = 18.2 Ticks
+	BIOS_WAIT_COUNT = 0;
+	while(BIOS_WAIT_COUNT<ticks); 
+}
+
+void wait_smalldelay(void) {
+	int u=0; 
+	while(u<3000) { 
+		u++; 
+	} 
+}
+
+void wait_ms(DWORD ticks) {
+	unsigned int a;
+	unsigned int b;
+	for (a=0; a<wait_ms_time;a++) {
+		for (b=0; b<ticks;b++) {;}
+	}
+}
+
+void wait_ms_trigger(void) {
+	
+	unsigned int start;
+
+	start=BIOS_TICK_COUNT;
+	// We wait for the first Trigger
+	start++;
+	while(start!=BIOS_TICK_COUNT);
+	start=start+2;
+	for (wait_ms_time=0;wait_ms_time<0xffffff;wait_ms_time++) {
+		if (BIOS_TICK_COUNT==start) break;
+	}
+	wait_ms_time= (unsigned int)wait_ms_time/40;
+	
+}
+
+
 void BootInterruptsWriteIdt() {
 
 
 	volatile ts_pm_interrupt * ptspmi=(volatile ts_pm_interrupt *)(0x00400000);  // ie, start of IDT area
 	int n, n1=0;
 
-			// init storage used by ISRs
+	// init storage used by ISRs
 
 	VIDEO_VSYNC_COUNT=0;
 	VIDEO_VSYNC_POSITION=0;
 	BIOS_TICK_COUNT=0;
+	BIOS_WAIT_COUNT = 0;
 	VIDEO_VSYNC_DIR=0;
 	nCountI2cinterrupts=0;
 	nCountUnusedInterrupts=0;
@@ -182,8 +222,9 @@ void BootInterruptsWriteIdt() {
 
 	// enable interrupts
 
-	__asm__ __volatile__("wbinvd; mov $0x1b, %%cx ; rdmsr ; andl $0xfffff7ff, %%eax ; wrmsr; sti" : : : "%ecx", "%eax", "%edx");
-//	intel_interrupts_on();
+	//__asm__ __volatile__("wbinvd; mov $0x1b, %%cx ; rdmsr ; andl $0xfffff7ff, %%eax ; wrmsr; sti" : : : "%ecx", "%eax", "%edx");
+	intel_interrupts_on();
+
 		
 }
 
@@ -197,8 +238,6 @@ void BootInterruptsWriteIdt() {
 void IntHandlerCSmc(void)
 {
 	BYTE bStatus, nBit=0;
-	DWORD dwTempInt;
-	BootPciInterruptGlobalStackStateAndDisable(&dwTempInt);
 
 	nCountInterruptsSmc++;
 
@@ -250,10 +289,12 @@ void IntHandlerCSmc(void)
 				case 1: // CDROM TRAY IS NOW CLOSED
 					traystate=ETS_CLOSED;
 					bprintf("SMC Interrupt %d: CDROM Tray now Closed\n", nCountInterruptsSmc);
+					DVD_TRAY_STATE = DVD_CLOSED;
 					break;
 
 				case 2: // CDROM TRAY IS STARTING OPENING
 					traystate=ETS_OPEN_OR_OPENING;
+					DVD_TRAY_STATE = DVD_OPENING;
 					I2CTransmitWord(0x10, 0x0d02);
 					bprintf("SMC Interrupt %d: CDROM starting opening\n", nCountInterruptsSmc);
 					break;
@@ -291,6 +332,7 @@ if (cromwell_config==CROMWELL) {
 
 				case 6: // CDROM TRAY IS STARTING CLOSING
 					traystate=ETS_CLOSING;
+					DVD_TRAY_STATE = DVD_CLOSING;
 					bprintf("SMC Interrupt %d: CDROM tray starting closing\n", nCountInterruptsSmc);
 					break;
 
@@ -302,7 +344,7 @@ if (cromwell_config==CROMWELL) {
 		nBit++;
 		bStatus>>=1;
 	}
-	BootPciInterruptGlobalPopState(dwTempInt);
+
 }
 
 void IntHandlerCIde(void)
@@ -337,6 +379,7 @@ void IntHandlerUnusedC2(void)
 }
 
 
+
 // this guy is getting called at 18.2Hz
 
 void IntHandlerCTimer0(void)
@@ -346,7 +389,8 @@ void IntHandlerCTimer0(void)
 #endif
 	
 	BIOS_TICK_COUNT++;
-
+        BIOS_WAIT_COUNT++;
+        
 #ifdef DEBUG_MODE
         if(!nInteruptable) return;
 
@@ -372,11 +416,48 @@ void IntHandler2C(void)
 	if(!nInteruptable) return;
 	bprintf("Interrupt 2\n");
 }
+
+
+
+
+
+
+
+
+void IntHandler3VsyncC(void)  // video VSYNC
+{
+
+	int i;
+        
+	VIDEO_VSYNC_COUNT++;
+	
+    
+        i=1000;
+	*((volatile DWORD *)0xfd600100)=0x1;  // clear VSYNC int
+	while ( ((*((volatile DWORD *)0xfd600100)) & 0x1)) {
+		i--;
+		if (i==0) break;
+		}  // We wait, until the Vsync IRQ has been deleted / or the Timeout kills us
+	
+	
+} 
+
+
+
+
+
+
+
+
+/*
+
+
 void IntHandler3VsyncC(void)  // video VSYNC
 {
 	DWORD dwTempInt;
+	int i;
 	
-	if(!nInteruptable) return;
+	if(!nInteruptable) goto endvsyncirq;
 	
 	BootPciInterruptGlobalStackStateAndDisable(&dwTempInt);
 	VIDEO_VSYNC_COUNT++;
@@ -466,7 +547,7 @@ void IntHandler3VsyncC(void)  // video VSYNC
 		}
 
 #ifndef DEBUG_MODE
-		/*
+		
 		BootVideoJpegBlitBlend(
 			(DWORD *)(FRAMEBUFFER_START+currentvideomodedetails.m_dwWidthInPixels*4*currentvideomodedetails.m_dwMarginYInLinesRecommended+currentvideomodedetails.m_dwMarginXInPixelsRecommended*4+(dwOld<<2)),
 			currentvideomodedetails.m_dwWidthInPixels * 4, &jpegBackdrop,
@@ -477,8 +558,7 @@ void IntHandler3VsyncC(void)  // video VSYNC
 			4,
 			ICON_WIDTH, ICON_HEIGH
 		);
-		*/
-	/*
+	
 		BootVideoJpegBlitBlend(
 			(DWORD *)(FRAMEBUFFER_START+currentvideomodedetails.m_dwWidthInPixels*4*currentvideomodedetails.m_dwMarginYInLinesRecommended+currentvideomodedetails.m_dwMarginXInPixelsRecommended*4+(VIDEO_VSYNC_POSITION<<2)),
 			currentvideomodedetails.m_dwWidthInPixels * 4, &jpegBackdrop,
@@ -489,14 +569,33 @@ void IntHandler3VsyncC(void)  // video VSYNC
 			4,
 			ICON_WIDTH, ICON_HEIGH
 		);
-		*/
+		
 #endif
 	}
 
+endvsyncirq:
+
+        i=1000;
 	*((volatile DWORD *)0xfd600100)=0x1;  // clear VSYNC int
+	while ( ((*((volatile DWORD *)0xfd600100)) & 0x1)) {
+		i--;
+		if (i==0) break;
+		}  // We wait, until the Vsync IRQ has been deleted / or the Timeout kills us
 	
 	BootPciInterruptGlobalPopState(dwTempInt);
-}
+} 
+
+
+*/
+
+
+
+
+
+
+
+
+
 
 void IntHandler4C(void)
 {
@@ -513,6 +612,7 @@ void IntHandler5C(void)
 
 void IntHandler6C(void)
 {
+	
 	if(!nInteruptable) return;
 #ifndef DEBUG_MODE
 	BootAudioInterrupt(&ac97device);
