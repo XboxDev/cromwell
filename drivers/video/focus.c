@@ -76,7 +76,7 @@ int focus_calc_hdtv_mode(
 	*/
 
 	/* Turn on bridge bypass */
-	regs[0x0a] &= 0x10;
+	regs[0x0a] |= 0x10;
 	/* Turn on the HDTV clock, and turn off the SDTV one */	
 	regs[0xa1] = 0x04;
 	
