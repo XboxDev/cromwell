@@ -47,15 +47,13 @@ void IconMenuInit(void) {
 	AddIcon(iconPtr);
 #endif	
 	//Uncomment this one to test the new text menu system.
-	//It's NOT production ready.
-	/*
+	/*	
 	iconPtr = (ICON *)malloc(sizeof(ICON));
 	iconPtr->iconSlot = ICON_SOURCE_SLOT0;
 	iconPtr->szCaption = "Advanced";
-	iconPtr->functionPtr = BootTextMenu;
+	iconPtr->functionPtr = MoveToTextMenu;
 	AddIcon(iconPtr);
 	*/
-
 	//Set this to point to the icon you want to be selected by default.
 	//Otherwise, leave it alone, and the first icon will be selected.
 	//selectedIcon = iconPtr;

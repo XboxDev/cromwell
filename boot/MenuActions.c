@@ -19,6 +19,11 @@
 #include "BootFlash.h"
 #include "cpu.h"
 
+void MoveToTextMenu(void *nothing) {
+	TextMenuInit();
+	TextMenu();
+}
+
 void BootFromCD(void *data) {
 	CONFIGENTRY config;
 	BootLoadConfigCD(*(int*)data, &config);
@@ -36,6 +41,10 @@ void BootFromFATX(void *configEntry) {
 	CONFIGENTRY config;
 	BootLoadConfigFATX(&config);
 	ExittoLinux(&config);
+}
+
+void SetLEDColor(void *color) {
+	I2cSetFrontpanelLed(*(BYTE*)color);
 }
 
 //More grub bits

@@ -6,53 +6,17 @@
  *   (at your option) any later version.                                   *
  *                                                                         *
  ***************************************************************************/
-#include "boot.h"
-#include "video.h"
-#include "memory_layout.h"
-#include <shared.h>
-#include "BootFATX.h"
-#include "xbox.h"
-#include "BootFlash.h"
-#include "cpu.h"
-#include "BootIde.h"
-#include "MenuActions.h"
-#include "config.h"
+
+#include "TextMenu.h"
 
 void TextMenuDraw(void);
 void TextMenuBack(void);
 
-struct TEXTMENUITEM;
-struct TEXTMENU;
-
-typedef struct {
-	//Menu item text
-	char *szCaption;
-	//Pointer to function to run when menu item selected.
-	void (*functionPtr) (void *);
-	//Pointer data, 0l if none.
-	void *functionDataPtr;
-	//Child menu, if any, attached to this menu item
-	struct TEXTMENU *childMenu;
-	//Next / previous menu items within this menu
-	struct TEXTMENUITEM *previousMenuItem;
-	struct TEXTMENUITEM *nextMenuItem;
-} TEXTMENUITEM;
-
-typedef struct {
-	//Menu title e.g. "Main Menu"
-	char *szCaption;
-	//A pointer to the first item of the linked list of menuitems that
-	//make up this menu.
-	TEXTMENUITEM* firstMenuItem;
-	//If 0l, we're a top level menu, otherwise a "BACK" menu item will be created,
-	//which takes us back to the parent menu..
-	struct TEXTMENU* parentMenu;
-} TEXTMENU;
-
-TEXTMENU *firstMenu=0l;
-TEXTMENU *currentMenu=0l;
 TEXTMENUITEM *firstVisibleMenuItem=0l;
 TEXTMENUITEM *selectedMenuItem=0l;
+TEXTMENU *firstMenu=0l;
+TEXTMENU *currentMenu=0l;
+		
 unsigned char *textmenusavepage;
 
 void TextMenuAddItem(TEXTMENU *menu, TEXTMENUITEM *newMenuItem) {
@@ -115,7 +79,7 @@ void TextMenuDraw(void) {
 	}
 }
 
-int BootTextMenu(void *nothing) {
+void TextMenu(void) {
 	TEXTMENUITEM *itemPtr;
 	TEXTMENU *menuPtr;
 	
@@ -123,82 +87,6 @@ int BootTextMenu(void *nothing) {
 	textmenusavepage = malloc(FB_SIZE);
 	memcpy(textmenusavepage,(void*)FB_START,FB_SIZE);
 
-	//Create the root menu - MANDATORY
-	firstMenu = malloc(sizeof(TEXTMENU));
-	firstMenu->szCaption="Main Menu\n";
-	firstMenu->parentMenu=0l;
-	firstMenu->firstMenuItem=0l;
-	
-	//Add the first Item
-	itemPtr = (TEXTMENUITEM*)malloc(sizeof(TEXTMENUITEM));
-	memset(itemPtr,0x00,sizeof(TEXTMENUITEM));
-	itemPtr->szCaption="Test 1";	
-	TextMenuAddItem(firstMenu, itemPtr);
-
-	itemPtr = (TEXTMENUITEM*)malloc(sizeof(TEXTMENUITEM));
-	memset(itemPtr,0x00,sizeof(TEXTMENUITEM));
-	itemPtr->szCaption="Test 2";	
-	TextMenuAddItem(firstMenu, itemPtr);
-
-	itemPtr = (TEXTMENUITEM*)malloc(sizeof(TEXTMENUITEM));
-	memset(itemPtr,0x00,sizeof(TEXTMENUITEM));
-	itemPtr->szCaption="Test 3";	
-	TextMenuAddItem(firstMenu, itemPtr);
-
-	itemPtr = (TEXTMENUITEM*)malloc(sizeof(TEXTMENUITEM));
-	memset(itemPtr,0x00,sizeof(TEXTMENUITEM));
-	itemPtr->szCaption="Test 4";	
-	TextMenuAddItem(firstMenu, itemPtr);
-
-	itemPtr = (TEXTMENUITEM*)malloc(sizeof(TEXTMENUITEM));
-	memset(itemPtr,0x00,sizeof(TEXTMENUITEM));
-	itemPtr->szCaption="Test 5";	
-	TextMenuAddItem(firstMenu, itemPtr);
-
-	itemPtr = (TEXTMENUITEM*)malloc(sizeof(TEXTMENUITEM));
-	memset(itemPtr,0x00,sizeof(TEXTMENUITEM));
-	itemPtr->szCaption="Test 6";	
-	TextMenuAddItem(firstMenu, itemPtr);
-
-	itemPtr = (TEXTMENUITEM*)malloc(sizeof(TEXTMENUITEM));
-	memset(itemPtr,0x00,sizeof(TEXTMENUITEM));
-	itemPtr->szCaption="Test 7";	
-	TextMenuAddItem(firstMenu, itemPtr);
-	
-	itemPtr = (TEXTMENUITEM*)malloc(sizeof(TEXTMENUITEM));
-	memset(itemPtr,0x00,sizeof(TEXTMENUITEM));
-	itemPtr->szCaption="Test 8";	
-	TextMenuAddItem(firstMenu, itemPtr);
-	
-	itemPtr = (TEXTMENUITEM*)malloc(sizeof(TEXTMENUITEM));
-	memset(itemPtr,0x00,sizeof(TEXTMENUITEM));
-	itemPtr->szCaption="Test 9";	
-	TextMenuAddItem(firstMenu, itemPtr);
-	
-	itemPtr = (TEXTMENUITEM*)malloc(sizeof(TEXTMENUITEM));
-	memset(itemPtr,0x00,sizeof(TEXTMENUITEM));
-	itemPtr->szCaption="Child Menu";	
-	TextMenuAddItem(firstMenu, itemPtr);
-
-	//Child menu
-	menuPtr = (TEXTMENU*)malloc(sizeof(TEXTMENU));
-	memset(menuPtr,0x00,sizeof(TEXTMENU));
-	menuPtr->szCaption="Test Child Menu";
-	menuPtr->parentMenu=(struct TEXTMENU*)firstMenu;
-	//itemptr here points to "Test 10", so this child menu is
-	//attached to it.
-	itemPtr->childMenu = (struct TEXTMENU*)menuPtr;
-
-	itemPtr = (TEXTMENUITEM*)malloc(sizeof(TEXTMENUITEM));
-	memset(itemPtr,0x00,sizeof(TEXTMENUITEM));
-	itemPtr->szCaption="Child Menu Item 1";	
-	TextMenuAddItem(menuPtr, itemPtr);
-	
-	itemPtr = (TEXTMENUITEM*)malloc(sizeof(TEXTMENUITEM));
-	memset(itemPtr,0x00,sizeof(TEXTMENUITEM));
-	itemPtr->szCaption="Child Menu Item 2";	
-	TextMenuAddItem(menuPtr, itemPtr);
-	
 	TextMenuDraw();
 	
 	//Main menu event loop.

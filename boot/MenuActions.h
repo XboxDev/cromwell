@@ -9,10 +9,15 @@
  *                                                                         *
  ***************************************************************************/
 
+//For the text menu jump
+void MoveToTextMenu(void *nothing);
+
+
 #ifdef ETHERBOOT
 void BootFromEtherboot(void *);
 #endif
 
+void SetLEDColor(void *);
 void BootFromCD(void *);
 void BootFromNative(void *);
 void BootFromFATX(void *);
