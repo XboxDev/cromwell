@@ -24,7 +24,6 @@
  */
 
 #include  "boot.h"
-//#include "string.h"
 #include "grub/shared.h"
 #include "BootEEPROM.h"
 
@@ -366,11 +365,24 @@ static int BootIdeDriveInit(unsigned uIoBase, int nIndexDrive)
 
 	{ int n;  // get rid of trailing spaces, add terminating '\0'
 		WORD * pw=(WORD *)&(drive_info[10]);
+	        if(pw[0] == 'D' && pw[1] == 'W' && pw[2] == 'W') { // This is needed for the WD disk
+			for(n=0;n<0x14;n++) {	// from ED. This is needed for the WD disk
+				if(pw[n] == ' ') pw[n] = 0;
+			}
+		}
+		tsaHarddiskInfo[nIndexDrive].s_length = 
+			copy_swap_trim(tsaHarddiskInfo[nIndexDrive].m_szSerial,(BYTE*)pw,0x14);
+		pw=(WORD *)&(drive_info[27]);
+		tsaHarddiskInfo[nIndexDrive].m_length = 
+			copy_swap_trim(tsaHarddiskInfo[nIndexDrive].m_szIdentityModelNumber,(BYTE *)pw,0x28);
+
+/*
 		for(n=0; n<20;n+=2) { tsaHarddiskInfo[nIndexDrive].m_szSerial[n]=(*pw)>>8; tsaHarddiskInfo[nIndexDrive].m_szSerial[n+1]=(char)(*pw); pw++; }
 		n=19; while(tsaHarddiskInfo[nIndexDrive].m_szSerial[n]==' ') n--; tsaHarddiskInfo[nIndexDrive].m_szSerial[n+1]='\0';
 		pw=(WORD *)&(drive_info[27]);
 		for(n=0; n<40;n+=2) { tsaHarddiskInfo[nIndexDrive].m_szIdentityModelNumber[n]=(*pw)>>8;tsaHarddiskInfo[nIndexDrive].m_szIdentityModelNumber[n+1]=(char)(*pw); pw++; }
 		n=39; while(tsaHarddiskInfo[nIndexDrive].m_szIdentityModelNumber[n]==' ') n--; tsaHarddiskInfo[nIndexDrive].m_szIdentityModelNumber[n+1]='\0';
+*/
 	}
 	tsaHarddiskInfo[nIndexDrive].m_fDriveExists = 1;
 
@@ -474,12 +486,6 @@ static int BootIdeDriveInit(unsigned uIoBase, int nIndexDrive)
 		int n,nVersionHashing;
 		tsIdeCommandParams tsicp1 = IDE_DEFAULT_COMMAND;
 		DWORD dwMagicFromEEPROM;
-		void genHDPass(
-			BYTE * beepkey,
-			unsigned char *HDSerial,
-			unsigned char *HDModel,
-			unsigned char *HDPass
-		);
 		DWORD BootHddKeyGenerateEepromKeyData(
 			BYTE *eeprom_data,
 			BYTE *HDKey
@@ -496,7 +502,13 @@ static int BootIdeDriveInit(unsigned uIoBase, int nIndexDrive)
 			memcpy(&baEeprom[0], &eeprom, 0x30); // first 0x30 bytes from EEPROM image we picked up earlier
 			nVersionHashing = BootHddKeyGenerateEepromKeyData( &baEeprom[0], &baKeyFromEEPROM[0]);
 			for(n=0;n<0x200;n++) baMagic[n]=0;
-      genHDPass( baKeyFromEEPROM, tsaHarddiskInfo[nIndexDrive].m_szSerial, tsaHarddiskInfo[nIndexDrive].m_szIdentityModelNumber, &baMagic[2]);
+			HMAC_SHA1 (&baMagic[2], baKeyFromEEPROM, 0x10, 
+					 tsaHarddiskInfo[nIndexDrive].m_szIdentityModelNumber, 
+					 tsaHarddiskInfo[nIndexDrive].m_length, 
+					 tsaHarddiskInfo[nIndexDrive].m_szSerial,
+					 tsaHarddiskInfo[nIndexDrive].s_length);
+//     genHDPass( baKeyFromEEPROM, tsaHarddiskInfo[nIndexDrive].m_szSerial, tsaHarddiskInfo[nIndexDrive].m_szIdentityModelNumber, &baMagic[2]);
+
                         if (nVersionHashing == 0)
                         {
                          	printk("Got a 0 return from BootHddKeyGenerateEepromKeyData\n");

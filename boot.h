@@ -117,11 +117,13 @@ typedef struct {  // this is the retained knowledge about an IDE device after in
     unsigned char m_bLbaMode;	/* am i lba (0x40) or chs (0x00) */
     unsigned char m_szIdentityModelNumber[41];
     unsigned char m_szSerial[21];
-		unsigned char m_fDriveExists;
-		unsigned char m_fAtapi;  // true if a CDROM, etc
-		enumDriveType m_enumDriveType;
-		unsigned char m_bCableConductors;  // valid for device 0 if present
-		unsigned short m_wAtaRevisionSupported;
+    unsigned char m_fDriveExists;
+    unsigned char m_fAtapi;  // true if a CDROM, etc
+    enumDriveType m_enumDriveType;
+    unsigned char m_bCableConductors;  // valid for device 0 if present
+    unsigned short m_wAtaRevisionSupported;
+    unsigned char s_length;
+    unsigned char m_length;
 } tsHarddiskInfo;
 
 
@@ -437,3 +439,8 @@ extern volatile TRAY_STATE traystate;
 
 void BootInterruptsWriteIdt(void);
 
+int copy_swap_trim(unsigned char *dst, unsigned char *src, int len);
+void HMAC_SHA1( unsigned char *result,
+                unsigned char *key, int key_length,
+                unsigned char *text1, int text1_length,
+                unsigned char *text2, int text2_length );
