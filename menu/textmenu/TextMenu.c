@@ -125,7 +125,7 @@ void TextMenu(void) {
 			}
 		}
 			
-		else if ((risefall_xpad_BUTTON(TRIGGER_XPAD_KEY_A) == 1)) {
+		else if (risefall_xpad_BUTTON(TRIGGER_XPAD_KEY_A) == 1 || risefall_xpad_BUTTON(TRIGGER_XPAD_KEY_START) == 1) {
 			//Redraw the page as it was before the menu was displayed.
 			memcpy((void*)FB_START,textmenusavepage,FB_SIZE);
 			free(textmenusavepage);
@@ -142,8 +142,8 @@ void TextMenu(void) {
 			}
 			changed=1;
 		}
-		else if ((risefall_xpad_BUTTON(TRIGGER_XPAD_KEY_B) == 1)) {
-			//B button takes us back up a menu
+		else if (risefall_xpad_BUTTON(TRIGGER_XPAD_KEY_B) == 1 || risefall_xpad_BUTTON(TRIGGER_XPAD_KEY_BACK) == 1) {
+			//B or Back button takes us back up a menu
 			if (currentMenu->parentMenu==0l) {
 				//If this is the top level menu, save and quit the text menu.
 				memcpy((void*)FB_START,textmenusavepage,FB_SIZE);
