@@ -79,7 +79,6 @@ xbox_av_type DetectAvType(void) {
          	case 7: avType = AV_VGA; break;
 		default: avType = AV_COMPOSITE; break;
 	}
-
 	return avType;
 }
 

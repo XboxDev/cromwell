@@ -35,7 +35,6 @@ void BootVgaInitializationKernelNG(CURRENT_VIDEO_MODE_DETAILS * pcurrentvideomod
 	BYTE b;
 	RIVA_HW_INST riva;
         struct riva_regs newmode;
-	int dotClock;
 	int encoder_ok = 0;
 	int i=0;
 	GPU_PARAMETER gpu;
@@ -146,8 +145,7 @@ void BootVgaInitializationKernelNG(CURRENT_VIDEO_MODE_DETAILS * pcurrentvideomod
 			gpu.crtchdispend = pcurrentvideomodedetails->m_dwWidthInPixels;
 			gpu.crtcvstart = gpu.nvvstart;
 			
-			dotClock = 27027000;
-			pll_int = (unsigned char)((double)dotClock * 6.0 / 13.5e3 + 0.5);
+			pll_int = (unsigned char)((double)27027 * 6.0 / 13.5e3 + 0.5);
 			if (video_encoder == ENCODER_CONEXANT)
 				encoder_ok = conexant_calc_hdtv_mode(hdtv_mode, pll_int, newmode.encoder_mode);
 			else if (video_encoder == ENCODER_FOCUS)
@@ -171,8 +169,7 @@ void BootVgaInitializationKernelNG(CURRENT_VIDEO_MODE_DETAILS * pcurrentvideomod
 			gpu.crtchdispend = pcurrentvideomodedetails->m_dwWidthInPixels;
 			gpu.crtcvstart = gpu.nvvstart;
 			
-			dotClock = 36000000;
-			pll_int = (unsigned char)((double)dotClock * 6.0 / 13.5e3 + 0.5);
+			pll_int = (unsigned char)((double)36000 * 6.0 / 13.5e3 + 0.5);
 			
 			if (video_encoder == ENCODER_CONEXANT)
 				encoder_ok = conexant_calc_vga_mode(av_type, pll_int, newmode.encoder_mode);

@@ -1,7 +1,6 @@
 #ifndef VIDEOINITIALIZATION_H
 #define VIDEOINITIALIZATION_H
 
-//These two came from the kernel driver
 typedef enum enumVideoStandards {
         TV_ENC_INVALID=-1,
         TV_ENC_NTSC=0,
@@ -43,9 +42,6 @@ typedef struct {
 	long pixelDepth;
 	xbox_av_type av_type;
 } GPU_PARAMETER;
-
-static const double dPllBaseClockFrequency = 13500000.0;
-static const double dPllBasePeriod = (1.0/13500000.0);
 
 ///////// VideoInitialization.c
 
