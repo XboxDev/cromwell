@@ -84,7 +84,6 @@ extern void BootStartBiosLoader ( void ) {
 	unsigned int compressed_image_start;
 	unsigned int compressed_image_size;
 	unsigned int Biossize_type;
-	int temp;
 	
         int validimage;
         	

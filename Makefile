@@ -10,9 +10,13 @@ INCLUDE = -I$(TOPDIR)/grub -I$(TOPDIR)/include -I$(TOPDIR)/ -I./ -I$(TOPDIR)/fs/
 	-I$(TOPDIR)/startuploader -I$(TOPDIR)/drivers/cpu \
 	-I$(TOPDIR)/lib/jpeg/ -I$(TOPDIR)/menu/actions -I$(TOPDIR)/menu/textmenu -I$(TOPDIR)/menu/iconmenu
 
-CROM_CFLAGS= -O2 -mcpu=pentium -Werror $(INCLUDE) -Wstrict-prototypes -fomit-frame-pointer -pipe
+#These are intended to be non-overridable.
+CROM_CFLAGS=$(INCLUDE)
 
-# add the option for gcc 3.3 only
+#You can override these if you wish.
+CFLAGS= -O2 -g -mcpu=pentium -Werror -pipe -fomit-frame-pointer -Wstrict-prototypes
+
+# add the option for gcc 3.3 only, again, non-overridable
 ifeq ($(GCC_3.3), 1)
 CROM_CFLAGS += -fno-zero-initialized-in-bss
 endif
@@ -159,7 +163,7 @@ endif
 
 cromsubdirs: $(patsubst %, _dir_%, $(SUBDIRS))
 $(patsubst %, _dir_%, $(SUBDIRS)) : dummy
-	$(MAKE) CFLAGS="$(CROM_CFLAGS) $(CFLAGS)" -C $(patsubst _dir_%, %, $@)
+	$(MAKE) CFLAGS="$(CFLAGS) $(CROM_CFLAGS)" -C $(patsubst _dir_%, %, $@)
 
 dummy:
 
