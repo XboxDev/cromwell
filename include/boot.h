@@ -98,9 +98,6 @@ extern void WATCHDOG(void);
 
 extern volatile CURRENT_VIDEO_MODE_DETAILS currentvideomodedetails;
 
-
-#define FRAMEBUFFER_START  	0xf3c00000 
-
 volatile DWORD VIDEO_CURSOR_POSX;
 volatile DWORD VIDEO_CURSOR_POSY;
 volatile DWORD VIDEO_ATTR;
@@ -147,9 +144,9 @@ typedef struct tsHarddiskInfo {  // this is the retained knowledge about an IDE 
     unsigned short m_wCountSectorsPerTrack;
     unsigned long m_dwCountSectorsTotal; /* total */
     unsigned char m_bLbaMode;	/* am i lba (0x40) or chs (0x00) */
-    unsigned char m_szIdentityModelNumber[40];      
+    unsigned char m_szIdentityModelNumber[40];
     unsigned char term_space_1[2];
-    unsigned char m_szSerial[20]; 
+    unsigned char m_szSerial[20];
     unsigned char term_space_2[2];
     char m_szFirmware[8];
     unsigned char term_space_3[2];
@@ -164,6 +161,12 @@ typedef struct tsHarddiskInfo {  // this is the retained knowledge about an IDE 
 } tsHarddiskInfo;
 
 
+/* a retail Xbox has 64 MB of RAM */
+#define RAMSIZE (64 * 1024*1024)
+/* the size of the framebuffer (defaults to 4 MB) */
+#define FRAMEBUFFER_SIZE 0x00400000
+/* the start of the framebuffer */
+#define FRAMEBUFFER_START (0xf0000000 | (RAMSIZE - FRAMEBUFFER_SIZE))
 /* the protected mode part of the kernel has to reside at 1 MB in RAM */
 #define PM_KERNEL_DEST 0x100000
 /* parameters for the kernel have to be here */
@@ -174,10 +177,8 @@ typedef struct tsHarddiskInfo {  // this is the retained knowledge about an IDE 
 /* same with the command line */
 #define CMD_LINE_LOC (KERNEL_SETUP+0x1000)
 
-/* a retail Xbox has 64 MB of RAM */
-#define RAMSIZE (64 * 1024*1024)
-/* let's reserve 1 MB at the top for the framebuffer */
-#define RAMSIZE_USE (RAMSIZE - 4096*1024)
+/* let's reserve 4 MB at the top for the framebuffer */
+#define RAMSIZE_USE (RAMSIZE - FRAMEBUFFER_SIZE)
 /* the initrd resides at 1 MB from the top of RAM */
 #define INITRD_DEST (RAMSIZE_USE - 1024*1024)
 
