@@ -7,7 +7,7 @@
 // (c) 2001 Andrew de Quincey
 
 
-#define STORE_SIZE	(0x131F00000)
+#define STORE_SIZE	(0x131F00000LL)
 #define SYSTEM_SIZE	(0x1f400000)
 #define	CACHE1_SIZE	(0x2ee80000)
 #define	CACHE2_SIZE	(0x2ee80000)
