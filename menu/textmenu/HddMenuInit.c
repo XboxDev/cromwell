@@ -28,9 +28,9 @@ void HddMenuInit(TEXTMENUITEM *parentItem) {
 			//If it's not ATAPI, it must be IDE
 			if((tsaHarddiskInfo[i].m_securitySettings &0x0004)==0x0004) {
 				//This drive is locked - produce an unlock menu
+   				char *driveName=malloc(sizeof(char)*32);
 				itemPtr = (TEXTMENUITEM*)malloc(sizeof(TEXTMENUITEM));
 				memset(itemPtr,0x00,sizeof(TEXTMENUITEM));
-   				char *driveName=malloc(sizeof(char)*32);
 				sprintf(driveName,"Unlock HDD (hd%c)",i ? 'b':'a');
 				itemPtr->szCaption = driveName;
 				itemPtr->functionPtr= UnlockHdd;
@@ -40,9 +40,9 @@ void HddMenuInit(TEXTMENUITEM *parentItem) {
 			}
 			else {
 				//This drive is unlocked - produce an lock menu
+   				char *driveName=malloc(sizeof(char)*32);
 				itemPtr = (TEXTMENUITEM*)malloc(sizeof(TEXTMENUITEM));
 				memset(itemPtr,0x00,sizeof(TEXTMENUITEM));
-   				char *driveName=malloc(sizeof(char)*32);
 				sprintf(driveName,"Lock HDD (hd%c)",i ? 'b':'a');
 				itemPtr->szCaption = driveName;
 				itemPtr->functionPtr= LockHdd;

@@ -25,9 +25,9 @@ void FlashMenuInit(TEXTMENUITEM *parentItem) {
 
 	for (i=0; i<2; ++i) {
 		if (tsaHarddiskInfo[i].m_fDriveExists && tsaHarddiskInfo[i].m_fAtapi) {
+   			char *driveName=malloc(sizeof(char)*32);
 			itemPtr = (TEXTMENUITEM*)malloc(sizeof(TEXTMENUITEM));
 			memset(itemPtr,0x00,sizeof(TEXTMENUITEM));
-   			char *driveName=malloc(sizeof(char)*32);
                         sprintf(driveName,"Flash bios from CD-ROM (hd%c)",i ? 'b':'a');
 			itemPtr->szCaption = driveName;
 			itemPtr->functionPtr= FlashBiosFromCD;
