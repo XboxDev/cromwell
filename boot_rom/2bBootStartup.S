@@ -408,6 +408,9 @@ nota1b:
 
 	// skipped unnecessary conexant init
 
+/* The following code just locks out debug boxes - it's not needed for
+  Cromwell
+
 	movw $0xc000, %dx ;	movb $0x10, %al ;	outb %al, %dx
 	movw $0xc004, %dx ;	movb $0x20, %al ;	outb %al, %dx
 	movw $0xc008, %dx ;	movb $0x01, %al ;	outb %al, %dx
@@ -440,6 +443,7 @@ spin1a:
 	mov $0x8000036c, %eax ;	movw $0xcf8, %dx ;	outl	%eax, %dx ;	movw $0xcfc, %dx ;	mov	$0x01000000, %eax ;	outl	%eax, %dx
 
 skipPicDecidedInit:
+*/
 
 	movb 	0x0f000000, %al
 	cmpb 	$0xa1, %al
