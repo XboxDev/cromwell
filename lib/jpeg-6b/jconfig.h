@@ -16,6 +16,7 @@
 #undef NEED_SHORT_EXTERNAL_NAMES
 /* Define this if you get warnings about undefined structures. */
 #undef INCOMPLETE_TYPES_BROKEN
+#undef UPSAMPLE_MERGING_SUPPORTED  /* Fast path for sloppy upsampling? */
 
 #ifdef JPEG_INTERNALS
 
@@ -29,11 +30,11 @@
 
 #ifdef JPEG_CJPEG_DJPEG
 
-#define BMP_SUPPORTED		/* BMP image file format */
-#define GIF_SUPPORTED		/* GIF image file format */
-#define PPM_SUPPORTED		/* PBMPLUS PPM/PGM image file format */
+#undef BMP_SUPPORTED		/* BMP image file format */
+#undef GIF_SUPPORTED		/* GIF image file format */
+#undef PPM_SUPPORTED		/* PBMPLUS PPM/PGM image file format */
 #undef RLE_SUPPORTED		/* Utah RLE image file format */
-#define TARGA_SUPPORTED		/* Targa image file format */
+#undef TARGA_SUPPORTED		/* Targa image file format */
 
 #undef TWO_FILE_COMMANDLINE
 #undef NEED_SIGNAL_CATCHER

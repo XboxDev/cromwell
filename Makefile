@@ -1,4 +1,4 @@
-CC	= gcc
+CC	= gcc-3.2
 # prepare check for gcc 3.3, $(GCC_3.3) will either be 0 or 1
 GCC_3.3 := $(shell expr `$(CC) -dumpversion` \>= 3.3)
 
@@ -9,7 +9,7 @@ INCLUDE = -I$(TOPDIR)/grub -I$(TOPDIR)/include -I$(TOPDIR)/ -I./ -I$(TOPDIR)/fs/
 	-I$(TOPDIR)/boot_xbe/ -I$(TOPDIR)/fs/grub -I$(TOPDIR)/lib/font -I$(TOPDIR)/lib/jpeg-6b \
 	-I$(TOPDIR)/startuploader -I$(TOPDIR)/drivers/cpu
 
-CFLAGS	= -Os -mcpu=pentium -Werror $(INCLUDE) -Wstrict-prototypes -fomit-frame-pointer -pipe
+CFLAGS	= -O2 -mcpu=pentium -Werror $(INCLUDE) -Wstrict-prototypes -fomit-frame-pointer -pipe
 
 # add the option for gcc 3.3 only
 ifeq ($(GCC_3.3), 1)
@@ -57,7 +57,6 @@ OBJECTS-ROMBOOT += $(TOPDIR)/obj/2bPicResponseAction.o
 OBJECTS-ROMBOOT += $(TOPDIR)/obj/2bBootStartBios.o
 OBJECTS-ROMBOOT += $(TOPDIR)/obj/sha1.o
 OBJECTS-ROMBOOT += $(TOPDIR)/obj/2bBootLibrary.o
-#OBJECTS-ROMBOOT += $(TOPDIR)/obj/2bdecompress.o
 OBJECTS-ROMBOOT += $(TOPDIR)/obj/misc.o
                                              
 OBJECTS-CROM = $(TOPDIR)/obj/BootStartup.o
