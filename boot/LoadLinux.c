@@ -293,9 +293,9 @@ int BootLoadConfigCD(int cdromId, CONFIGENTRY *config) {
 	memset((BYTE *)KERNEL_SETUP,0,4096);
 
 	//See if we already have a CDROM in the drive
-	//Try for 4 seconds.
+	//Try for 8 seconds - takes a while to 'spin up'.
 	I2CTransmitWord(0x10, 0x0c01); // close DVD tray
-	for (n=0;n<16;++n) {
+	for (n=0;n<32;++n) {
 		if((BootIso9660GetFile(cdromId,"/linuxboo.cfg", (BYTE *)KERNEL_SETUP, 0x800)) >=0 ) {
 			cdPresent=1;
 			break;
@@ -388,8 +388,6 @@ int BootLoadFlashCD(int cdromId) {
 	DWORD dwConfigSize=0, dw;
 	int n;
 	int cdPresent=0;
-	DWORD dwY=VIDEO_CURSOR_POSY;
-	DWORD dwX=VIDEO_CURSOR_POSX;
 	BYTE* tempBuf;
 	struct SHA1Context context;
 	unsigned char SHA1_result[20];
@@ -415,8 +413,7 @@ int BootLoadFlashCD(int cdromId) {
 		wait_ms(2000); // Wait for DVD to become responsive to inject command
 			
 		VIDEO_ATTR=0xffeeeeff;
-		VIDEO_CURSOR_POSX=dwX;
-		VIDEO_CURSOR_POSY=dwY;
+		
 		printk("Please insert CD with image.bin file on, and press Button A\n");
 
 		while(1) {
@@ -451,23 +448,23 @@ int BootLoadFlashCD(int cdromId) {
 	printk("Image size: %i\n", dwConfigSize);
         if (dwConfigSize!=256*1024) {
 		printk("Image is not a 256kB image - aborted\n");
-		while (1) ;
+		while (1);
 	}
 	SHA1Reset(&context);
 	SHA1Input(&context,(BYTE *)KERNEL_PM_CODE,dwConfigSize);
 	SHA1Result(&context,SHA1_result);
 	memcpy(checksum,SHA1_result,20);
-	printk("Error code: %d\n", BootReflashAndReset((BYTE*) KERNEL_PM_CODE, (DWORD) 0, (DWORD) dwConfigSize));
+	printk("Result code: %d\n", BootReflashAndReset((BYTE*) KERNEL_PM_CODE, (DWORD) 0, (DWORD) dwConfigSize));
 	SHA1Reset(&context);
 	SHA1Input(&context,(void *)LPCFlashadress,dwConfigSize);
 	SHA1Result(&context,SHA1_result);
-	if (memcmp(&checksum[0],&SHA1_result[0],20)==0) {
+	if (memcmp(checksum,SHA1_result,20)==0) {
 		printk("Checksum in flash matches - Flash successful.\nRebooting.");
 		wait_ms(2000);
 		I2CRebootSlow();	
 	} else {
-		printk("Checksum in Flash not matching - MISTAKE -Reflashing!\n");
-		printk("Error code: %d\n", BootReflashAndReset((BYTE*) KERNEL_PM_CODE, (DWORD) 0, (DWORD) dwConfigSize));
+		printk("Checksum in Flash not matching - MISTAKE - Reflashing!\n");
+		printk("Result code: %d\n", BootReflashAndReset((BYTE*) KERNEL_PM_CODE, (DWORD) 0, (DWORD) dwConfigSize));
 	}
 }
 #endif //Flash
