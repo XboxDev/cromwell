@@ -324,9 +324,9 @@ void IntHandlerCTimer0(void)
 
 void IntHandler1C(void)
 {
-	extern volatile USB_CONTROLLER_OBJECT usbcontroller[2];
 //	bprintf("USB1 Interrupt 1\n");
 #ifndef XBE
+	extern volatile USB_CONTROLLER_OBJECT usbcontroller[2];
 	BootUsbInterrupt(&usbcontroller[0]);
 #endif
 }
@@ -449,8 +449,8 @@ void IntHandler8C(void)
 void IntHandler9C(void)
 {
 //	bprintf("USB2 Interrupt 9\n");
-	extern volatile USB_CONTROLLER_OBJECT usbcontroller[2];
 #ifndef XBE
+	extern volatile USB_CONTROLLER_OBJECT usbcontroller[2];
 	BootUsbInterrupt(&usbcontroller[1]);
 #endif
 }
