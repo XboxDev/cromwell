@@ -253,7 +253,7 @@ void IntHandlerCSmc(void)
 	bStatus=I2CTransmitByteGetReturn(0x10, 0x11); // Query PIC for interrupt reason
 	
 	// we do nothing, if there is not Interrupt reason
-//	if (bStatus==0x0) return;
+	if (bStatus==0x0) return;
 	
 	while(nBit<7) {
 		if(bStatus & 1) {

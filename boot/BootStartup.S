@@ -67,7 +67,7 @@ start_linux:
 	// NW Not write through (disable = 1)
        //	mov 	%cr0, %eax
 	//orl	$0x60000000, %eax
-	mov 	$0x60000033, %eax
+	mov 	$0x60010033, %eax
 	mov	%eax, %cr0
 	wbinvd
 
@@ -179,7 +179,7 @@ reload_cs:
 	// MTRR for FLASH   
 	movl	$0x202, %ecx		
 	movl	$0x00000000, %edx 	
-	movl	$0xFff00005, %eax 	    // We set to Write Protected
+	movl	$0xFff00000, %eax 	    // We set to Write Protected
 	wrmsr
 
         movl	$0x203, %ecx             
@@ -246,7 +246,7 @@ reload_cs:
 	
 	movl	%cr0, %eax
 	mov 	%eax, %ebx
-	andl	$0x9fFFffFF,%eax // we additionally clear the WP flag too
+	andl	$0x9fFFffFF,%eax
 	movl	%eax, %cr0
 	wbinvd
 	

@@ -823,10 +823,12 @@ void StartBios(CONFIGENTRY *config, int nActivePartition , int nFATXPresent,int 
 	);
          
 
-
+	asm volatile ("wbinvd\n");
+	
+	wait_ms(200);
+	
 	__asm __volatile__ (
-
-	"cli \n"
+       	"cli \n"
 	"xor 	%ebx, %ebx \n"
 	"xor 	%eax, %eax \n"
 	"xor 	%ecx, %ecx \n"
