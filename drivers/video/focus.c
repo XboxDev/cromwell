@@ -53,10 +53,7 @@ int focus_calc_hdtv_mode(
 	int tv_vtotal, tv_htotal, tv_vactive, tv_hactive, vga_htotal, vga_vtotal;
 	int pll_n, pll_m, pll_p, ncon, ncod;
 
-	for (m=0x00; m<sizeof(focus_defaults); m++) {
-		regs[m] = focus_defaults[m];
-	}
-
+	memcpy(regs,focus_defaults,sizeof(focus_defaults));	
 	/* Uncomment for HDTV 480p colour bars */
 	//regs[0x0d]|=0x02;
 	
@@ -182,9 +179,7 @@ int focus_calc_mode(xbox_video_mode * mode, struct riva_regs * riva_out)
 	long ncon, ncod;
 	int pll_m, pll_n, pll_p, vsc, hsc;
 
-	for (m=0x00; m<sizeof(focus_defaults); m++) {
-		regs[m] = focus_defaults[m];
-	}
+	memcpy(regs,focus_defaults,sizeof(focus_defaults));
 	
 	/* Uncomment for SDTV colour bars */
 	//regs[0x45]=0x02;

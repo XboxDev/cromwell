@@ -14,9 +14,10 @@
  *      none
  */
 
-//#include "encoder-i2c.h"
+#include "encoder-i2c.h"
 #include "conexant.h"
-//#include <asm/io.h>
+#include "focus.h"
+#include <asm/io.h>
 
 #define ADR(x) (x / 2 - 0x17)
 
@@ -173,11 +174,8 @@ int conexant_calc_mode(xbox_video_mode * mode, struct riva_regs * riva_out)
 	if (conexant_calc_mode_params(mode, &param))
 	{
 		// copy default mode settings
-		for(m=0;m<sizeof(default_mode);m++) {
-			regs[m] = default_mode[m];
-		}
+		memcpy(regs,default_mode,sizeof(default_mode));
 
-		// regs[ADR(0xb8)] = 0x07; // Set autoconfig, 800x600, PAL, YCrCb in
 		regs[ADR(0x32)] = 0x28; // DRVS = 1, IN_MODE[3] = 1;
 
 		// H_CLKI
