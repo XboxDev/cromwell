@@ -33,12 +33,21 @@ static void xpad_irq(struct urb *urb, struct pt_regs *regs)
 {
 	struct xpad_info *xpi = urb->context;
 	unsigned char* data= urb->transfer_buffer;
-	struct xpad_data *xp=&XPAD_current[xpi->num];
-	struct xpad_data *xpo=&XPAD_last[xpi->num];
 	
+//	struct xpad_data *xp=&XPAD_current[xpi->num];
+//	struct xpad_data *xpo=&XPAD_last[xpi->num];
+
+	/* This hack means the xpad event always gets posted to the
+	 * first xpad - avoids problems iterating over multiple xpads
+	 * as the xpi->num entries are not reused when xpads are
+	 * connected, then removed */
+
+	struct xpad_data *xp=&XPAD_current[0];
+	struct xpad_data *xpo=&XPAD_last[0];
 	
 	if (xpi->num<0 || xpi->num>3)
 		return;
+	
 	memcpy(xpo,xp,sizeof(struct xpad_data));
 	
 	xp->stick_left_x=(short) (((short)data[13] << 8) | data[12]);
@@ -107,7 +116,6 @@ static int xpad_probe(struct usb_interface *intf, const struct usb_device_id *id
 static void xpad_disconnect(struct usb_interface *intf)
 {
 	struct xpad_info *xpi=usb_get_intfdata (intf);
-	usbprintk("XPAD disconnected\n ");
 	usb_unlink_urb(xpi->urb);
 	usb_free_urb(xpi->urb);
 	kfree(xpi);
@@ -153,10 +161,10 @@ void XPADInit(void)
 	int n;
 	for(n=0;n<4;n++)
 	{
-		memset(XPAD_current,0, sizeof(struct xpad_data));
-		memset(XPAD_last,0, sizeof(struct xpad_data));
+		memset(&XPAD_current[n], 0, sizeof(struct xpad_data));
+		memset(&XPAD_last[n], 0, sizeof(struct xpad_data));
 	}
-	memset(&xpad_button_history,0x0,sizeof(xpad_button_history));
+	memset(&xpad_button_history, 0, sizeof(xpad_button_history));
 	
 	usbprintk("XPAD probe %p ",xpad_probe);
 	if (usb_register(&xpad_driver) < 0) {
