@@ -109,8 +109,7 @@ image.elf:
 
 image.bin:
 	${OBJCOPY} --output-target=binary --strip-all $(TOPDIR)/obj/image.elf $(TOPDIR)/image/$@
-	$(TOPDIR)/obj/imagebld -rom $(TOPDIR)/image/image.bin $(TOPDIR)/obj/image-crom.bin
-	cat $(TOPDIR)/image/image.bin $(TOPDIR)/image/image.bin $(TOPDIR)/image/image.bin $(TOPDIR)/image/image.bin > $(TOPDIR)/image/image_1024.bin
+	$(TOPDIR)/obj/imagebld -rom $(TOPDIR)/image/image.bin $(TOPDIR)/obj/image-crom.bin  $(TOPDIR)/image/image_1024.bin
 
 imagebld:
 	gcc $(OBJECTS-IMAGEBLD) -o $(TOPDIR)/obj/imagebld $(INCLUDE)

@@ -94,13 +94,16 @@ int xberepair (unsigned char * xbeimage)
 
 int romcopy (
 		unsigned char * binname256,
-		unsigned char * cromimage)
+		unsigned char * cromimage,
+		unsigned char * binname1024
+		)
 {
 	
 	unsigned char SHA1_result[SHA1HashSize];
 	struct SHA1Context context;
 	FILE *f;
 	unsigned char flash[256*1024];
+	unsigned char flash1024[1024*1024];
 	unsigned char crom[256*1024];
        	unsigned int romsize=0;
        	unsigned int compressedromsize=0;
@@ -208,6 +211,16 @@ int romcopy (
 		fwrite(flash, 1, 256*1024, f);
          	fclose(f);	
 		
+		
+		memcpy(&flash1024[0*256*1024],&flash[0],256*1024);
+	      	memcpy(&flash1024[1*256*1024],&flash[0],256*1024);
+	      	memcpy(&flash1024[2*256*1024],&flash[0],256*1024);
+	      	memcpy(&flash1024[3*256*1024],&flash[0],256*1024);
+	      	
+	      	f = fopen(binname1024, "wb");               
+		fwrite(flash1024, 1, 1024*1024, f);
+         	fclose(f);	
+
 		printf("Checksum Successfully Created for %s\n",binname256);	              
 		
 	} 
@@ -222,7 +235,7 @@ int main (int argc, const char * argv[])
 		xberepair((unsigned char*)argv[2]);
 		}
 	if (strcmp(argv[1],"-rom")==0) { 
-		romcopy((unsigned char*)argv[2],(unsigned char*)argv[3]);
+		romcopy((unsigned char*)argv[2],(unsigned char*)argv[3],(unsigned char*)argv[4]);
 		}
 	return 0;	
 }
