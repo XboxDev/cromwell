@@ -106,8 +106,7 @@ const char * const szaSenseKeys[] = {
 //  Helper routines
 //
 
-int UnlockDrive(unsigned uIoBase, int driveId, char *password);
-int DisableDrivePassword(unsigned uIoBase, int driveId, char *password);
+int DriveSecurityChange(unsigned uIoBase, int driveId, ide_command_t ide_cmd, char *password);
 /* -------------------------------------------------------------------------------- */
 
 int BootIdeWaitNotBusy(unsigned uIoBase)
@@ -634,7 +633,14 @@ int BootIdeDriveInit(unsigned uIoBase, int nIndexDrive,int drivetype)
 					printk("Unable to generate password from EEPROM - corrupt?\n");
 				}
 
-				if (UnlockDrive(uIoBase, nIndexDrive, &baMagic[2])) {
+				//You wont want this - testing only.
+				//if (DriveSecurityChange(uIoBase, nIndexDrive, IDE_CMD_SECURITY_SET_PASSWORD, &baMagic[2])) {
+				//printk("Lock failed!");
+				//}
+				//else printk("Lock successful");	
+				
+
+				if (DriveSecurityChange(uIoBase, nIndexDrive, IDE_CMD_SECURITY_UNLOCK, &baMagic[2])) {
 					printk("Unlock failed!");
 				}
 				else printk("Unlock successful");	
@@ -642,7 +648,7 @@ int BootIdeDriveInit(unsigned uIoBase, int nIndexDrive,int drivetype)
 				//Uncomment this if you want cromwell to automatically disable the password
 				//on locked harddisks
 				
-				/*if (DisableDrivePassword(uIoBase, nIndexDrive, &baMagic[2])) {
+				/*if (DriveSecurityChange(uIoBase, nIndexDrive, IDE_CMD_SECURITY_DISABLE, &baMagic[2])) {
 					printk("Disable failed");
 				}
 				else printk("Disable successful!");
@@ -727,7 +733,7 @@ int BootIdeDriveInit(unsigned uIoBase, int nIndexDrive,int drivetype)
 
 
 /* -------------------------------------------------------------------------------- */
-int UnlockDrive(unsigned uIoBase, int driveId, char *password) {
+int DriveSecurityChange(unsigned uIoBase, int driveId, ide_command_t ide_cmd, char *password) {
 				//Should check it's ACTUALLY locked first, but lets assume the caller did, for now.	
 				char ide_cmd_data[2+512];	
 				char baBuffer[512];
@@ -747,7 +753,7 @@ int UnlockDrive(unsigned uIoBase, int driveId, char *password) {
 				}
 				tsicp1.m_bDrivehead = IDE_DH_DEFAULT | IDE_DH_HEAD(0) | IDE_DH_CHS | IDE_DH_DRIVE(driveId);
 	
-				if(BootIdeIssueAtaCommand(uIoBase, IDE_CMD_SECURITY_UNLOCK, &tsicp1)) return 1;
+				if(BootIdeIssueAtaCommand(uIoBase, ide_cmd, &tsicp1)) return 1;
 				
 				BootIdeWaitDataReady(uIoBase);
 				BootIdeWriteData(uIoBase, ide_cmd_data, IDE_SECTOR_SIZE);
@@ -768,62 +774,6 @@ int UnlockDrive(unsigned uIoBase, int driveId, char *password) {
 					return 1;
 				}
 
-				if(drive_info[128]&0x0004) 
-				{
-					//Drive is still locked
-					return 1;
-				} else {
-					//Unlock was successful
-					return 0;
-				}
-}
-
-int LockDrive (char *password) {
-
-}
-
-int DisableDrivePassword(unsigned uIoBase, int driveId, char *password) {
-				//Drive should be already unlocked - this will fail if it isnt.
-				char ide_cmd_data[2+512];	
-				char baBuffer[512];
-				unsigned short*	drive_info = (unsigned short*)baBuffer;
-				
-				memset(ide_cmd_data,0x00,512);
-				tsIdeCommandParams tsicp = IDE_DEFAULT_COMMAND;
-				tsIdeCommandParams tsicp1 = IDE_DEFAULT_COMMAND;
-
-				//Password is only 20 bytes long - the rest is 0-padded.
-				memcpy(&ide_cmd_data[2],password,20);
-				
-				if(BootIdeWaitNotBusy(uIoBase)) 
-				{
-					printk("  %d:  Not Ready\n", driveId);
-					return 1;
-				}
-				tsicp1.m_bDrivehead = IDE_DH_DEFAULT | IDE_DH_HEAD(0) | IDE_DH_CHS | IDE_DH_DRIVE(driveId);
-	
-				if(BootIdeIssueAtaCommand(uIoBase, IDE_CMD_SECURITY_DISABLE, &tsicp1)) return 1;
-				
-				BootIdeWaitDataReady(uIoBase);
-				BootIdeWriteData(uIoBase, ide_cmd_data, IDE_SECTOR_SIZE);
-        	
-				if (BootIdeWaitNotBusy(uIoBase))	
-				{
-					return 1;
-				}
-				// check that we are unlocked
-				tsicp.m_bDrivehead = IDE_DH_DEFAULT | IDE_DH_HEAD(0) | IDE_DH_CHS | IDE_DH_DRIVE(driveId);
-				if(BootIdeIssueAtaCommand(uIoBase, IDE_CMD_GET_INFO, &tsicp)) 
-				{
-					return 1;
-				}
-				BootIdeWaitDataReady(uIoBase);
-				if(BootIdeReadData(uIoBase, baBuffer, IDE_SECTOR_SIZE)) 
-				{
-					return 1;
-				}
-
-				//These checks need updating.
 				if(drive_info[128]&0x0004) 
 				{
 					//Drive is still locked
