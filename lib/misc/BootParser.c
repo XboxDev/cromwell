@@ -3,6 +3,8 @@
 CONFIGENTRY *ParseConfig(char *szBuffer, unsigned int fileLen, char *szPath) {
 	char *linePtr;
 	char *currentPos = szBuffer;
+	char *defaultTitle=NULL;
+
 	CONFIGENTRY *rootEntry = (CONFIGENTRY*)malloc(sizeof(CONFIGENTRY));
 	CONFIGENTRY *currentEntry = rootEntry;
 	
@@ -16,10 +18,6 @@ CONFIGENTRY *ParseConfig(char *szBuffer, unsigned int fileLen, char *szPath) {
 		
 		param = (char *)strsep(&linePtr," \t");
 	
-/*		if (linePtr==NULL) {
-			continue;
-		}
-*/
 		p=param+strlen(param)+1;
 		//Strip off leading whitespace
 		while (isspace(*p)) p++;
@@ -30,7 +28,7 @@ CONFIGENTRY *ParseConfig(char *szBuffer, unsigned int fileLen, char *szPath) {
 		p=paramdata+strlen(paramdata)-1;
 		while (p!=paramdata && isspace(*p)) p--;
 		*(p+1)=0;
-		
+	
 		if (!strncmp(param,"title",5)) {
 			//Do we already have a title in this entry?
 			//If so, this is the start of a new 'bootitem'.  
@@ -75,6 +73,21 @@ CONFIGENTRY *ParseConfig(char *szBuffer, unsigned int fileLen, char *szPath) {
 		else if (!strncmp(param,"append",6)) {
 			strncpy(currentEntry->szAppend, paramdata, strlen(paramdata));
 		}
+		else if (!strncmp(param,"default",7)) {
+			defaultTitle = paramdata;
+		}
 	}
+	
+	if (defaultTitle!=NULL) {
+		//A default entry was specified. Find it and mark it default.
+		for (currentEntry = rootEntry; currentEntry!=NULL; currentEntry = (CONFIGENTRY*)currentEntry->nextConfigEntry) {
+			if (!strncmp(currentEntry->title, defaultTitle, strlen(defaultTitle))) {
+				currentEntry->isDefault = 1;
+				break;
+			}
+
+		}
+	}
+	
 	return rootEntry;
 }

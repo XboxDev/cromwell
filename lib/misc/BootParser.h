@@ -11,6 +11,7 @@ struct CONFIGENTRY;
 typedef struct {
         int  drive;
 	int  partition;
+	int  isDefault;
 	char title[15];
 	char szPath[MAX_LINE];
         char szKernel[MAX_LINE];
