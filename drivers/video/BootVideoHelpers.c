@@ -409,7 +409,7 @@ void BootVideoChunkedPrint(const char * szBuffer) {
 
 }
 
-int printk(const char *szFormat, ...) {  // printk displays to video and filtror if enabled
+int printk(const char *szFormat, ...) {  // printk displays to video
 	char szBuffer[512*2];
 	WORD wLength=0;
 	va_list argList;
@@ -426,9 +426,6 @@ int printk(const char *szFormat, ...) {  // printk displays to video and filtror
 	        
 	#if INCLUDE_SERIAL
 	serialprint(&szBuffer[0]);
-	#endif
-	#if INCLUDE_FILTROR
-//	BootFiltrorSendArrayToPcModal(&szBuffer[0], wLength);
 	#endif
 
 	BootVideoChunkedPrint(szBuffer);

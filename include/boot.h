@@ -220,15 +220,11 @@ int I2cSetFrontpanelLed(BYTE b);
 	int serialprint(const char *szFormat, ...);
 #endif
 
-#if INCLUDE_FILTROR
-#define bprintf BootFiltrorSendStringToPcModal
-#else
 #if INCLUDE_SERIAL
 #define bprintf serialprint
 #else
 #define bprintf(...)
 #endif /* INCLUDE_SERIAL */
-#endif /* INCLUDE_FILTROR */
 
 #define SPAMI2C() 				__asm__ __volatile__ (\
 	"retry: ; "\

@@ -520,13 +520,7 @@ void IntHandlerException6C(void) {
 	DWORD dwEbp=0;
 	bprintf("CPU Exc: Invalid Opcode\n");
 		__asm__ __volatile__ ( " mov %%esp, %%eax\n " : "=a" (dwEbp) );
-#if INCLUDE_FILTROR
-//	DumpAddressAndData((DWORD)(volatile DWORD *)(dwEbp-0x100), (BYTE *)(((volatile DWORD *)(dwEbp-0x100))), 512);
-#endif
 	bprintf("   %08lX:%08lX\n", *((volatile DWORD *)(dwEbp+0x48)), *((volatile DWORD *)(dwEbp+0x44)));
-#if INCLUDE_FILTROR
-	DumpAddressAndData((*((volatile DWORD *)(dwEbp+0x44)))-0x100, ((BYTE *)(*((volatile DWORD *)(dwEbp+0x44))))-0x100, 512);
-#endif
 	while(1) ;
 }
 //void IntHandlerException7C(void) {	bprintf("CPU Exc: Coprocessor Absent\n");	while(1) ; }

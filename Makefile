@@ -75,7 +75,6 @@ OBJECTS-CROM += $(TOPDIR)/obj/rc4.o
 OBJECTS-CROM += $(TOPDIR)/obj/sha1.o
 OBJECTS-CROM += $(TOPDIR)/obj/BootVideoHelpers.o
 OBJECTS-CROM += $(TOPDIR)/obj/vsprintf.o
-#OBJECTS-CROM += $(TOPDIR)/obj/filtror.o
 OBJECTS-CROM += $(TOPDIR)/obj/BootStartBios.o
 OBJECTS-CROM += $(TOPDIR)/obj/setup.o
 OBJECTS-CROM += $(TOPDIR)/obj/iso9660.o

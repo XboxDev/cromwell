@@ -97,23 +97,9 @@ extern void BootResetAction ( void ) {
 	nInteruptable = 0;	
 
 		
-#if INCLUDE_FILTROR
-	// clear down channel quality stats
-	bfcqs.m_dwBlocksFromPc=0;
-	bfcqs.m_dwCountChecksumErrorsSeenFromPc=0;
-	bfcqs.m_dwBlocksToPc=0;
-	bfcqs.m_dwCountTimeoutErrorsSeenToPc=0;
-#endif
-        
-        
-         
 	// prep our BIOS console print state
 
 	VIDEO_ATTR=0xffffffff;
-
-#if INCLUDE_FILTROR
-	BootFiltrorSendArrayToPc("\nBOOT: starting BootResetAction()\n\r", 34);
-#endif
 
 	// init malloc() and free() structures
       

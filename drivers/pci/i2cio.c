@@ -8,7 +8,6 @@
  ***************************************************************************/
 
 #include "boot.h"
-#include "filtror.h"
 
 /*
 	WriteToSMBus()	by Lehner Franz (franz@caos.at)
