@@ -74,6 +74,9 @@ void InitFatXIcons(void) {
 	   		iconPtr->szCaption = "FatX (E:)";
 	   		iconPtr->functionPtr = BootFromFATX;
 	   		AddIcon(iconPtr);
+			//If we have fatx, mark it as default.
+			//If there are natives, they'll take over shortly
+			selectedIcon = iconPtr;
 		}
 	}
 }
@@ -105,6 +108,9 @@ void InitNativeIcons(void) {
 					iconPtr->functionPtr = BootFromNative;
 					iconPtr->functionDataPtr=malloc(sizeof(int));
 					*(int*)(iconPtr->functionDataPtr)=n;
+					//At the moment, the *LAST* native partition on disk will
+					//be the one selected as bootable by default.
+					selectedIcon = iconPtr;
 					AddIcon(iconPtr);
 				}
 			}
