@@ -114,6 +114,7 @@ typedef struct tsHarddiskInfo {  // this is the retained knowledge about an IDE 
     unsigned char s_length;
     unsigned char m_length;
     unsigned char m_fHasMbr;
+    unsigned short m_securitySettings; //This contains the contents of the ATA security regs
 } tsHarddiskInfo;
 
 /////////////////////////////////

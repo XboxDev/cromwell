@@ -30,8 +30,16 @@ void TextMenuInit(void) {
 	TextMenuAddItem(firstMenu, itemPtr);
 	VideoMenuInit(itemPtr);
 
+	//HDD MENU
+	itemPtr = (TEXTMENUITEM*)malloc(sizeof(TEXTMENUITEM));
+	memset(itemPtr,0x00,sizeof(TEXTMENUITEM));
+	itemPtr->szCaption="Hdd Menu";	
+	TextMenuAddItem(firstMenu, itemPtr);
+	HddMenuInit(itemPtr);
+
+	
 #ifdef FLASH
-	//RESET MENU
+	//FLASH MENU
 	itemPtr = (TEXTMENUITEM*)malloc(sizeof(TEXTMENUITEM));
 	memset(itemPtr,0x00,sizeof(TEXTMENUITEM));
 	itemPtr->szCaption="Flash Menu";	

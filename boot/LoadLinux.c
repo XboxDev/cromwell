@@ -441,8 +441,7 @@ int BootLoadFlashCD(int cdromId) {
 	}
 	printk("CDROM: ");
 	printk("Loading bios image from CDROM:/image.bin. \n");
-	dwConfigSize=BootIso9660GetFile(cdromId,"/image.bin", (BYTE *)KERNEL_SETUP, 0x800);
-	dwConfigSize=BootIso9660GetFile("/IMAGE.BIN", (BYTE *)KERNEL_PM_CODE, 256*1024);
+	dwConfigSize=BootIso9660GetFile(cdromId, "/image.bin", (BYTE *)KERNEL_PM_CODE, 256*1024);
 	
 	if( dwConfigSize < 0 ) { //It's not there
 		printk("image.bin not found on CDROM... Halting\n");
@@ -451,23 +450,24 @@ int BootLoadFlashCD(int cdromId) {
 
 	printk("Image size: %i\n", dwConfigSize);
         if (dwConfigSize!=256*1024) {
-		printk("Image is not a 256kB image\n");
+		printk("Image is not a 256kB image - aborted\n");
 		while (1) ;
 	}
 	SHA1Reset(&context);
 	SHA1Input(&context,(BYTE *)KERNEL_PM_CODE,dwConfigSize);
 	SHA1Result(&context,SHA1_result);
 	memcpy(checksum,SHA1_result,20);
-	printk("Error code: $i\n", BootReflashAndReset((BYTE*) KERNEL_PM_CODE, (DWORD) 0, (DWORD) dwConfigSize));
+	printk("Error code: %d\n", BootReflashAndReset((BYTE*) KERNEL_PM_CODE, (DWORD) 0, (DWORD) dwConfigSize));
 	SHA1Reset(&context);
 	SHA1Input(&context,(void *)LPCFlashadress,dwConfigSize);
 	SHA1Result(&context,SHA1_result);
 	if (memcmp(&checksum[0],&SHA1_result[0],20)==0) {
-		printk("Checksum in flash matching - Flash successful.\nYou should now reboot.");
-		while (1);
+		printk("Checksum in flash matches - Flash successful.\nRebooting.");
+		wait_ms(2000);
+		I2CRebootSlow();	
 	} else {
 		printk("Checksum in Flash not matching - MISTAKE -Reflashing!\n");
-		printk("Error code: %i\n", BootReflashAndReset((BYTE*) KERNEL_PM_CODE, (DWORD) 0, (DWORD) dwConfigSize));
+		printk("Error code: %d\n", BootReflashAndReset((BYTE*) KERNEL_PM_CODE, (DWORD) 0, (DWORD) dwConfigSize));
 	}
 }
 #endif //Flash

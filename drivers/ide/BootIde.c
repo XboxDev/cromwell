@@ -55,42 +55,6 @@ typedef struct {
 } tsIdeCommandParams;
 
 #define IDE_DEFAULT_COMMAND { 0xFFu, 0x01, 0x00, 0x0000, IDE_DH_DEFAULT | IDE_DH_SLAVE }
-
-typedef enum {
-	IDE_CMD_NOOP = 0,
-	IDE_CMD_RECALIBRATE = 0x10,
-	IDE_CMD_READ_MULTI_RETRY = 0x20,
-	IDE_CMD_READ_MULTI = IDE_CMD_READ_MULTI_RETRY,
-	IDE_CMD_READ_MULTI_NORETRY = 0x21,
-	
-	IDE_CMD_READ_EXT = 0x24, /* 48-bit LBA */
-    	
-    	IDE_CMD_WRITE_MULTI_RETRY = 0x30,
-    	
-	IDE_CMD_DRIVE_DIAG = 0x90,
-	IDE_CMD_SET_PARAMS = 0x91,
-	IDE_CMD_STANDBY_IMMEDIATE = 0x94, /* 2 byte command- also send
-	                                     IDE_CMD_STANDBY_IMMEDIATE2 */
-	IDE_CMD_SET_MULTIMODE = 0xC6,
-	IDE_CMD_STANDBY_IMMEDIATE2 = 0xE0,
-	
-	//Get info commands
-	IDE_CMD_IDENTIFY = 0xEC,
-	IDE_CMD_PACKET_IDENTIFY = 0xA1,
-		
-	ATAPI_SOFT_RESET = 0x08,
-	
-	IDE_CMD_SET_FEATURES = 0xEF,
-
-	IDE_CMD_ATAPI_PACKET = 0xA0,
-
-	//IDE security commands
-	IDE_CMD_SECURITY_SET_PASSWORD = 0xF1,
-	IDE_CMD_SECURITY_UNLOCK = 0xF2,
-	IDE_CMD_SECURITY_DISABLE = 0xF6	
-} ide_command_t;
-
-
 #define printk_debug bprintf
 
 
@@ -365,6 +329,7 @@ int BootIdeDriveInit(unsigned uIoBase, int nIndexDrive)
 	tsaHarddiskInfo[nIndexDrive].m_fAtapi=false;
 	tsaHarddiskInfo[nIndexDrive].m_wAtaRevisionSupported=0;
 	tsaHarddiskInfo[nIndexDrive].m_fHasMbr=0;
+	tsaHarddiskInfo[nIndexDrive].m_securitySettings = 0;
 
 	tsicp.m_bDrivehead = IDE_DH_DEFAULT | IDE_DH_HEAD(0) | IDE_DH_CHS | IDE_DH_DRIVE(nIndexDrive);
 	IoOutputByte(IDE_REG_DRIVEHEAD(uIoBase), tsicp.m_bDrivehead);
@@ -496,57 +461,26 @@ int BootIdeDriveInit(unsigned uIoBase, int nIndexDrive)
 //   		tsaHarddiskInfo[nIndexDrive].m_wCountSectorsPerTrack,
 			ulDriveCapacity1024/1000, ulDriveCapacity1024%1000 
 		);
+
+		tsaHarddiskInfo[nIndexDrive].m_securitySettings = drive_info[128];
+		
 		if (cromwell_config==CROMWELL) {
 			// Cromwell Mode
 			if((drive_info[128]&0x0004)==0x0004) 
 			{ 
-				// 'security' is in force, unlock the drive (was 0x104/0x104)
-				BYTE baMagic[0x200], baKeyFromEEPROM[0x10], baEeprom[0x30];
-				int nVersionHashing;
-				tsIdeCommandParams tsicp1 = IDE_DEFAULT_COMMAND;
-				
-				DWORD BootHddKeyGenerateEepromKeyData(BYTE *eeprom_data,BYTE *HDKey);
-				
-				int nVersionSuccessfulDecrypt=0;
+				char password[20];
 
-				printk(" Lck[%x]", drive_info[128]);
-
-	 			nVersionHashing = 0;
-	
-				memcpy(&baEeprom[0], &eeprom, 0x30); // first 0x30 bytes from EEPROM image we picked up earlier
-
-				memset(&baKeyFromEEPROM,0x00,0x10);
-				nVersionHashing = BootHddKeyGenerateEepromKeyData( &baEeprom[0], &baKeyFromEEPROM[0]);
-
-				memset(&baMagic,0x00,0x200);
-		#ifdef HDD_DEBUG
-				printk("Model='%s', Serial='%s'\n", tsaHarddiskInfo[nIndexDrive].m_szIdentityModelNumber, tsaHarddiskInfo[nIndexDrive].m_szSerial);
-				VideoDumpAddressAndData(0, &baKeyFromEEPROM[0], 0x10);
-		#endif
-	
-				// Calculate the hdd pw from EEprom and Serial / Model Number
-				HMAC_SHA1 (&baMagic[2], baKeyFromEEPROM, 0x10,
-						 tsaHarddiskInfo[nIndexDrive].m_szIdentityModelNumber,
-						 tsaHarddiskInfo[nIndexDrive].m_length,
-						 tsaHarddiskInfo[nIndexDrive].m_szSerial,
-						 tsaHarddiskInfo[nIndexDrive].s_length);
-	                       
-				if (nVersionHashing == 0) {
-					printk("Unable to generate password from EEPROM - corrupt?\n");
+				if (CalculateDrivePassword(nIndexDrive,password)) {
+					printk("Unable to calculate drive password - eeprom corrupt?");
+					return 1;
 				}
-
-				//You wont want this - testing only.
-				//if (DriveSecurityChange(uIoBase, nIndexDrive, IDE_CMD_SECURITY_SET_PASSWORD, &baMagic[2])) {
-				//printk("Lock failed!");
-				//}
-				//else printk("Lock successful");	
 				
-
-				if (DriveSecurityChange(uIoBase, nIndexDrive, IDE_CMD_SECURITY_UNLOCK, &baMagic[2])) {
+				if (DriveSecurityChange(uIoBase, nIndexDrive, IDE_CMD_SECURITY_UNLOCK, &password[0])) {
 					printk("Unlock failed!");
 				}
 				else printk("Unlock successful");	
-				
+			
+
 				//Uncomment this if you want cromwell to automatically disable the password
 				//on locked harddisks
 				/*	
@@ -666,6 +600,36 @@ int DriveSecurityChange(unsigned uIoBase, int driveId, ide_command_t ide_cmd, ch
 	//Todo: Check dest. state is the desired one based on command.
 	return 0;
 }
+
+int CalculateDrivePassword(int driveId, unsigned char *key) {
+
+	BYTE baMagic[0x200], baKeyFromEEPROM[0x10], baEeprom[0x30];
+	int nVersionHashing=0;
+	//Ick - forward decl. Should remove this. 
+	DWORD BootHddKeyGenerateEepromKeyData(BYTE *eeprom_data,BYTE *HDKey);
+	
+	memcpy(&baEeprom[0], &eeprom, 0x30); // first 0x30 bytes from EEPROM image we picked up earlier
+
+	memset(&baKeyFromEEPROM,0x00,0x10);
+	nVersionHashing = BootHddKeyGenerateEepromKeyData( &baEeprom[0], &baKeyFromEEPROM[0]);
+	memset(&baMagic,0x00,0x200);
+	// Calculate the hdd pw from EEprom and Serial / Model Number
+	HMAC_SHA1 (&baMagic[2], baKeyFromEEPROM, 0x10,
+		 tsaHarddiskInfo[driveId].m_szIdentityModelNumber,
+		 tsaHarddiskInfo[driveId].m_length,
+		 tsaHarddiskInfo[driveId].m_szSerial,
+		 tsaHarddiskInfo[driveId].s_length);
+
+	//Failed to generate a key
+	if (nVersionHashing==0) return 1;
+
+	memcpy(key,&baMagic[2],20);
+	return 0;
+}
+
+
+
+
 
 
 /////////////////////////////////////////////////
