@@ -23,12 +23,10 @@
 #include "BootVgaInitialization.h"
 #include "encoder.h"
 
-void DetectVideoEncoder(void)
-{
+void DetectVideoEncoder(void) {
 	if (I2CTransmitByteGetReturn(0x6a,0x000) == ERR_I2C_ERROR_BUS) video_encoder = ENCODER_CONEXANT;
 	else video_encoder = ENCODER_FOCUS;
 }
-
 
 void BootVgaInitializationKernelNG(CURRENT_VIDEO_MODE_DETAILS * pcurrentvideomodedetails) {
 	xbox_tv_encoding tv_encoding; 
@@ -43,7 +41,6 @@ void BootVgaInitializationKernelNG(CURRENT_VIDEO_MODE_DETAILS * pcurrentvideomod
 	          hStart, hTotal, vStart, vTotal;
 	int encoder_ok = 0;
 	int i=0;
-
 	
 	tv_encoding = DetectVideoStd();
 	DetectVideoEncoder();
@@ -58,12 +55,6 @@ void BootVgaInitializationKernelNG(CURRENT_VIDEO_MODE_DETAILS * pcurrentvideomod
 		pcurrentvideomodedetails->m_nVideoModeIndex=VIDEO_MODE_1024x576;
 	} else { // 4:3 TV
 		pcurrentvideomodedetails->m_nVideoModeIndex=VIDEO_PREFERRED_MODE;
-	}
-
-	if (video_encoder == ENCODER_FOCUS) {
-		pcurrentvideomodedetails->m_nVideoModeIndex =VIDEO_MODE_640x480;
-	} else {
-		pcurrentvideomodedetails->m_nVideoModeIndex =VIDEO_MODE_800x600;
 	}
 
 	pcurrentvideomodedetails->m_pbBaseAddressVideo=(BYTE *)0xfd000000;
@@ -242,7 +233,7 @@ void BootVgaInitializationKernelNG(CURRENT_VIDEO_MODE_DETAILS * pcurrentvideomod
 		gpu.yres = pcurrentvideomodedetails->m_dwHeightInLines;
 		gpu.nvvstart = newmode.ext.vsyncstart;
 		gpu.nvvtotal = newmode.ext.vtotal;
-		gpu.pixelDepth = (32 + 1) / 8;
+		gpu.pixelDepth = (newmode.ext.bpp + 1) / 8;
 		gpu.crtchdispend = newmode.ext.width;
 		gpu.crtcvstart = newmode.ext.vsyncstart;
 		gpu.crtcvtotal = newmode.ext.vtotal;
@@ -276,10 +267,6 @@ void BootVgaInitializationKernelNG(CURRENT_VIDEO_MODE_DETAILS * pcurrentvideomod
 			I2CWriteBytetoRegister(0x45, 0x6c, 0x80|b);
 			b=I2CTransmitByteGetReturn(0x45,0xc4) & (0xfe);
 			I2CWriteBytetoRegister(0x45, 0xc4, 0x01|b); // EN_OUT = 1
-
-			I2CWriteBytetoRegister(0x45, 0xA8, 0x81);
-			I2CWriteBytetoRegister(0x45, 0xAA, 0x49);
-			I2CWriteBytetoRegister(0x45, 0xAC, 0x8C);
 		}
 		else if (video_encoder == ENCODER_FOCUS) {
 	             	for (i=0; i<0xc4; ++i) {
@@ -302,9 +289,6 @@ void BootVgaInitializationKernelNG(CURRENT_VIDEO_MODE_DETAILS * pcurrentvideomod
 	NVVertIntrEnabled (&riva,0);
 	NVSetFBStart (&riva, 0, pcurrentvideomodedetails->m_dwFrameBufferStart);
 	IoOutputByte(0x80d3, 4);  // ACPI IO video enable REQUIRED <-- particularly crucial to get composite out
-	pcurrentvideomodedetails->m_bFinalConexantA8 = 0x81;
-	pcurrentvideomodedetails->m_bFinalConexantAA = 0x49;
-	pcurrentvideomodedetails->m_bFinalConexantAC = 0x8c;
 	// We dimm the Video OFF - focus video is implicitly disabled.
 	if (video_encoder == ENCODER_CONEXANT) {
 		I2CTransmitWord(0x45, (0xa8<<8)|0);
@@ -313,9 +297,9 @@ void BootVgaInitializationKernelNG(CURRENT_VIDEO_MODE_DETAILS * pcurrentvideomod
 	}
 	NVWriteSeq(&riva, 0x01, 0x01);  /* reenable display */
 	if (video_encoder == ENCODER_CONEXANT) {
-		I2CTransmitWord(0x45, 0xa800 | pcurrentvideomodedetails->m_bFinalConexantA8);
-		I2CTransmitWord(0x45, 0xaa00 | pcurrentvideomodedetails->m_bFinalConexantAA);
-		I2CTransmitWord(0x45, 0xac00 | pcurrentvideomodedetails->m_bFinalConexantAC);
+		I2CWriteBytetoRegister(0x45, 0xA8, 0x81);
+		I2CWriteBytetoRegister(0x45, 0xAA, 0x49);
+		I2CWriteBytetoRegister(0x45, 0xAC, 0x8C);
 	}
 	else if (video_encoder == ENCODER_FOCUS) {
 	     	b = I2CTransmitByteGetReturn(0x6a,0x0c);

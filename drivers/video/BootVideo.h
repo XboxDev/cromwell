@@ -23,9 +23,6 @@ typedef struct {
 	DWORD m_dwMarginXInPixelsRecommended;
 	DWORD m_dwMarginYInLinesRecommended;
 	BYTE m_bAvPack;
-	BYTE m_bFinalConexantA8;
-	BYTE m_bFinalConexantAA;
-	BYTE m_bFinalConexantAC;
 	DWORD m_dwVideoFadeupTimer;
 	double hoc;
 	double voc;
