@@ -132,7 +132,7 @@ int xberepair (	unsigned char * xbeimage,
 	}
 	xbesize = fileinfo.st_size;
 	
-	f = fopen(xbeimage, "rb");
+	f = fopen(xbeimage, "r");
     	if (f==NULL) {
 		fprintf(stderr,"Unable to open xbe destination file %s : %s \nAborting\n",xbeimage,strerror(errno)); 
 		return 1;
@@ -185,7 +185,7 @@ int xberepair (	unsigned char * xbeimage,
       	#endif
       	
 	// Write back the Image to Disk
-	f = fopen(xbeimage, "wb");
+	f = fopen(xbeimage, "w");
     	if (f==NULL) {
 		fprintf(stderr,"Unable to open xbe destination file %s : %s \nAborting\n",xbeimage,strerror(errno)); 
 		return 1;
@@ -229,7 +229,7 @@ int vmlbuild (	unsigned char * vmlimage,
     		return 1;
     	}
 	
-	f = fopen(cromimage, "rb");
+	f = fopen(cromimage, "r");
     	if (f==NULL) {
 		fprintf(stderr,"Unable to open cromwell image file %s : %s \nAborting\n",cromimage,strerror(errno)); 
 		return 1;
@@ -246,7 +246,7 @@ int vmlbuild (	unsigned char * vmlimage,
 
 	vmlsize = fileinfo.st_size;
 
-	f = fopen(vmlimage, "rb");
+	f = fopen(vmlimage, "r");
     	if (f==NULL) {
 		fprintf(stderr,"Unable to open vml image file %s : %s \nAborting\n",vmlimage,strerror(errno)); 
 		return 1;
@@ -262,7 +262,7 @@ int vmlbuild (	unsigned char * vmlimage,
     	vmlsize +=100;
     	
 	// Write back the Image to Disk
-	f = fopen(vmlimage, "wb");
+	f = fopen(vmlimage, "w");
     	if (f==NULL) {
 		fprintf(stderr,"Unable to open vml image file %s : %s \nAborting\n",vmlimage,strerror(errno)); 
 		return 1;
@@ -311,7 +311,7 @@ int romcopy (
 
        	printf("ROM Mode\n");
       	
-	f = fopen(blbinname, "rb");
+	f = fopen(blbinname, "r");
 	if (f==NULL) {
 		fprintf(stderr,"Unable to open blimage file %s : %s \nAborting\n",blbinname,strerror(errno)); 
 		return 1;
@@ -326,7 +326,7 @@ int romcopy (
 	}
 	romsize = fileinfo.st_size;
     	
-	f = fopen(cromimage, "rb");
+	f = fopen(cromimage, "r");
 	if (f==NULL) {
 		fprintf(stderr,"Unable to open cromwell image file %s : %s \nAborting\n",cromimage,strerror(errno)); 
 		return 1;
@@ -471,11 +471,11 @@ int romcopy (
       	writeBiosIdentifier(flash256, 256*1024);
       	writeBiosIdentifier(flash1024, 1024*1024);
 	// Write the 256 /1024 Kbyte Image Back
-      	f = fopen(binname256, "wb");               
+      	f = fopen(binname256, "w");               
 	fwrite(flash256, 1, 256*1024, f);
        	fclose(f);	
 	
-      	f = fopen(binname1024, "wb");               
+      	f = fopen(binname1024, "w");               
 	fwrite(flash1024, 1, 1024*1024, f);
        	fclose(f);	
               
