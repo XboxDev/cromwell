@@ -37,6 +37,9 @@ int ParseConfig(char *szBuffer, CONFIGENTRY *entry, EEPROMDATA *eeprom) {
 			if(_strncmp(ptr,"rivafb",strlen("rivafb")) == 0) {
 				entry->nRivaFB = 1;
 			}
+			if(_strncmp(ptr,"xboxfb",strlen("xboxfb")) == 0) {
+				entry->nXboxFB = 1;
+			}
 			if(_strncmp(ptr,"vesafb",strlen("vesafb")) == 0) {
 				entry->nVesaFB = 1;
 			}
@@ -58,6 +61,20 @@ int ParseConfig(char *szBuffer, CONFIGENTRY *entry, EEPROMDATA *eeprom) {
 				break;
 			case PAL_I:
 				strcpy(szNorm," video=riva:640x480,nomtrr,nohwcursor,tv=PAL ");
+				break;
+			case VID_INVALID:
+			default:
+				printk("%X  ", (int)((VIDEO_STANDARD )eeprom->VideoStandard));
+				break;
+		}
+	}
+	if(entry->nXboxFB == 1) {
+		switch(*((VIDEO_STANDARD *)&eeprom->VideoStandard)) {
+			case NTSC_M:
+				strcpy(szNorm," video=xbox:640x480,nomtrr,nohwcursor,tv=NTSC ");
+				break;
+			case PAL_I:
+				strcpy(szNorm," video=xbox:640x480,nomtrr,nohwcursor,tv=PAL ");
 				break;
 			case VID_INVALID:
 			default:

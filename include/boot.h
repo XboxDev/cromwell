@@ -363,20 +363,7 @@ void ListEntryRemove(LIST_ENTRY *plistentryCurrent);
 int BootPerformXCodeActions(void);
 
 #include "BootEEPROM.h"
-
-///////// BootParser.c
-#define MAX_LINE 1024
-typedef struct _CONFIGENTRY {
-        int  nValid;
-	char szPath[MAX_LINE];
-        char szKernel[MAX_LINE];
-        char szInitrd[MAX_LINE];
-        char szAppend[MAX_LINE];
-        int nRivaFB;
-	int nVesaFB;
-} CONFIGENTRY, *LPCONFIGENTRY;
-
-int ParseConfig(char *szBuffer, CONFIGENTRY *entry, EEPROMDATA *eeprom);
+#include "BootParser.h"
 
 ////////// BootStartBios.c
 

@@ -7,10 +7,11 @@
 
 typedef struct _CONFIGENTRY {
         int  nValid;
-				char szPath[MAX_LINE];
+	char szPath[MAX_LINE];
         char szKernel[MAX_LINE];
         char szInitrd[MAX_LINE];
         char szAppend[MAX_LINE];
+        int nXboxFB;
         int nRivaFB;
 	int nVesaFB;
 } CONFIGENTRY, *LPCONFIGENTRY;
