@@ -67,9 +67,9 @@
 #include "BootFilesystemIso9660.h"
 
 
-#define WATCHDOG __asm__ __volatile__ ( "push %eax; push %edx; movw $0x80cf, %dx ; mov $5, %al ; out %al, %dx ; mov $10000, %eax ; 0: dec %eax ; cmp $0, %eax ; jnz 0b ; mov $4, %al ; out %al, %dx ; pop %edx ; pop %eax " );
+extern void WATCHDOG(void);
 
-#define FRAMEBUFFER_START ( /*0xf0000000 |*/ /*(0x04000000-(640*480*4) -(640*4*4)-(256*4))*/ (*((DWORD *)0xfd600800)) & 0x7fffffff )
+#define FRAMEBUFFER_START ( /* 0xf0000000 */ (*((DWORD *)0xfd600800)) & 0x7fffffff  )
 
 #define VIDEO_CURSOR_POSX (*((volatile DWORD *)0x430))
 #define VIDEO_CURSOR_POSY (*((volatile DWORD *)0x434))
@@ -77,11 +77,13 @@
 #define VIDEO_LUMASCALING (*((volatile DWORD *)0x43c))
 #define VIDEO_RSCALING (*((volatile DWORD *)0x440))
 #define VIDEO_BSCALING (*((volatile DWORD *)0x444))
-//#define MALLOC_BASE (*((volatile DWORD *)0x448))
+#define VIDEO_VSYNC_COUNT (*((volatile DWORD *)0x448))
 #define VIDEO_HEIGHT (*((volatile DWORD *)0x44c))
 #define VIDEO_MARGINX (*((volatile DWORD *)0x450))
 #define VIDEO_MARGINY (*((volatile DWORD *)0x454))
 #define BIOS_TICK_COUNT (*((volatile DWORD *)0x46c))
+#define VIDEO_VSYNC_POSITION (*((volatile DWORD *)0x470))
+#define VIDEO_VSYNC_DIR (*((volatile DWORD *)0x474))
 
 /////////////////////////////////
 // Superfunky i386 internal structures
@@ -221,9 +223,9 @@ static __inline DWORD IoInputDword(WORD wAds) {
 			  : /* no outputs */ \
 			  : "c" (msr), "a" (val1), "d" (val2))
 
-#define BootPciInterruptGlobalStackStateAndDisable() {	__asm__ __volatile__ (  "pushf; cli" ); }
-#define BootPciInterruptGlobalPopState()  {	__asm__ __volatile__  (  "popf" ); }
-
+void BootPciInterruptGlobalStackStateAndDisable(DWORD * dw);
+void BootPciInterruptGlobalPopState(DWORD dw);
+void BootPciInterruptEnable();
 
 	// boot process
 int BootPerformPicChallengeResponseAction(void);
@@ -328,15 +330,22 @@ extern void	WritePCIDword(unsigned int bus, unsigned int dev, unsigned int func,
 extern void	ReadPCIBlock(unsigned int bus, unsigned int dev, unsigned int func,		unsigned int reg_off, unsigned char *buf,	unsigned int nbytes);
 extern void	WritePCIBlock(unsigned int bus, unsigned int dev, unsigned int func, 	unsigned int reg_off, unsigned char *buf, unsigned int nbytes);
 
+void PciWriteByte (unsigned int bus, unsigned int dev, unsigned int func,
+		unsigned int reg_off, unsigned char byteval);
+BYTE PciReadByte(unsigned int bus, unsigned int dev, unsigned int func, unsigned int reg_off);
+void PciWriteDword(unsigned int bus, unsigned int dev, unsigned int func, unsigned int reg_off, DWORD dw);
+DWORD PciReadDword(unsigned int bus, unsigned int dev, unsigned int func, unsigned int reg_off);
+
 ///////// BootPerformPicChallengeResponseAction.c
 
 int I2CTransmitWord(BYTE bPicAddressI2cFormat, WORD wDataToWrite);
 int I2CTransmitByteGetReturn(BYTE bPicAddressI2cFormat, BYTE bDataToWrite);
+bool I2CGetTemperature(int *, int *);
 
 ///////// BootVgaInitialization.c
 
 void BootVgaInitialization(void) ;
-BYTE BootVgaInitializationKernel(int nLinesPref);  // returns AV pack index, call with 480 or 576
+BYTE BootVgaInitializationKernel(int nLinesPref, bool fFakeEncoderAllBlackForStartup);  // returns AV pack index, call with 480 or 576
 
 ///////// BootIde.c
 
@@ -363,23 +372,7 @@ void BootVideoBlit(
 	DWORD dwCountBytesPerLineSource,
 	DWORD dwCountLines
 );
-/*
-void BootGimpVideoBlitBlend(
-	DWORD * pdwTopLeftDestination,
-	DWORD dwCountBytesPerLineDestination,
-	void * pgimpstruct,
-	RGBA m_rgbaTransparent,
-	DWORD * pdwTopLeftBackground,
-	DWORD dwCountBytesPerLineBackground
-);
 
-void BootGimpVideoBlit(
-	DWORD * pdwTopLeftDestination,
-	DWORD dwCountBytesPerLineDestination,
-	void * pgimpstruct,
-	RGBA m_rgbaTransparent
-);
-*/
 void BootVideoVignette(
 	DWORD * pdwaTopLeftDestination,
 	DWORD m_dwCountBytesPerLineDestination,
@@ -411,6 +404,7 @@ void BootVideoJpegBlitBlend(
 	RGBA m_rgbaTransparent,
 	DWORD * pdwTopLeftBackground,
 	DWORD dwCountBytesPerLineBackground,
+	DWORD dwCountBytesPerPixelBackground,
 	int x,
 	int y
 );

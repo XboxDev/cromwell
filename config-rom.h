@@ -16,7 +16,7 @@
 #define REPORT_VIDEO_MODE
 
 // show the MBR table if the MBR is valid
-//#define DISPLAY_MBR_INFO
+#define DISPLAY_MBR_INFO
 
 // show simple menu selection
 #define MENU

@@ -36,6 +36,8 @@ unsigned long saved_partition;
 grub_error_t errnum;
 unsigned long boot_drive;
 
+extern int nTempCursorMbrX, nTempCursorMbrY;
+
 void console_putchar(char c) { printk("%c", c); }
 extern unsigned long current_drive;
 char * strcpy(char *sz, const char *szc);
@@ -61,15 +63,23 @@ void setup(void* KernelPos, void* PhysInitrdPos, void* InitrdSize, char* kernel_
 void BootStartBiosDoIcon(int nDestX, int nDestY, int nSrcX, int nSrcLength, int nSrcHeight, BYTE bOpaqueness)
 {
 		BootVideoJpegBlitBlend(
-			(DWORD *)(FRAMEBUFFER_START+(640*4*VIDEO_MARGINY)+(VIDEO_MARGINX*4)+(nDestX<<2)+(640*4*nDestY)),
+			(DWORD *)(FRAMEBUFFER_START+/*(640*4*VIDEO_MARGINY)*/+(nDestX<<2)+(640*4*nDestY)),
 			640 * 4, // dest bytes per line
 			&jpegBackdrop, // source jpeg object
-			(DWORD *)(((BYTE *)jpegBackdrop.m_pBitmapData)+(640*480*jpegBackdrop.m_nBytesPerPixel)+(nSrcX *jpegBackdrop.m_nBytesPerPixel)),
+			(DWORD *)(((BYTE *)jpegBackdrop.m_pBitmapData)+((jpegBackdrop.m_nHeight-64)*jpegBackdrop.m_nWidth*jpegBackdrop.m_nBytesPerPixel)+(nSrcX *jpegBackdrop.m_nBytesPerPixel)),
 			0xff00ff|(((DWORD)bOpaqueness)<<24),
-			(DWORD *)(((BYTE *)jpegBackdrop.m_pBitmapData)+(jpegBackdrop.m_nWidth * (nDestY) *jpegBackdrop.m_nBytesPerPixel)+((nDestX+VIDEO_MARGINX) *jpegBackdrop.m_nBytesPerPixel)),
+			(DWORD *)(((BYTE *)jpegBackdrop.m_pBitmapData)+(jpegBackdrop.m_nWidth * (nDestY) *jpegBackdrop.m_nBytesPerPixel)+((nDestX) *jpegBackdrop.m_nBytesPerPixel)),
 			jpegBackdrop.m_nWidth*jpegBackdrop.m_nBytesPerPixel,
+			jpegBackdrop.m_nBytesPerPixel,
 			nSrcLength, nSrcHeight
 		);
+}
+
+void RecoverMbrArea()
+{
+		BootVideoClearScreen(&jpegBackdrop, nTempCursorMbrY, VIDEO_CURSOR_POSY+1);  // blank out volatile data area
+		VIDEO_CURSOR_POSX=nTempCursorMbrX;
+		VIDEO_CURSOR_POSY=nTempCursorMbrY;
 }
 
 
@@ -78,7 +88,11 @@ void StartBios(	int nDrive, int nActivePartition ) {
 	DWORD dwConfigSize=0;
 	bool fHaveConfig=false;
 	bool fUseConfig=true;
+	bool fSettings=false;
 	char szGrub[256+4];
+	int nTempCursorResumeX, nTempCursorResumeY;
+
+	BootPciInterruptEnable();
 
 	szGrub[0]=0xff; szGrub[1]=0xff; szGrub[2]=nActivePartition; szGrub[3]=0x00;
 
@@ -87,6 +101,7 @@ void StartBios(	int nDrive, int nActivePartition ) {
 	disk_read_hook=NULL;
 	disk_read_func=NULL;
 
+
 	strcpy(szCommandline, "root=/dev/hda2 devfs=mount kbd-reset"); // default
 	strcpy(szKernelFile, "/boot/vmlinuz");
 	strcpy(szInitrdFile, "/boot/initrd");
@@ -94,90 +109,135 @@ void StartBios(	int nDrive, int nActivePartition ) {
 #ifndef IS_XBE_BOOTLOADER
 #ifdef MENU
 	{
-		int nTempCursorX;
-		int nTempCursorY;
+		int nTempCursorX, nTempCursorY, nTempStartMessageCursorX, nTempStartMessageCursorY, nTempEntryX, nTempEntryY;
+		DWORD dwTick=BIOS_TICK_COUNT;
 		#define DELAY_TICKS 72
 		#define TRANPARENTNESS 0x30
 		#define OPAQUENESS 0xc0
 		#define SELECTED 0xff
 
-		nTempCursorX=VIDEO_CURSOR_POSX;
-		nTempCursorY=VIDEO_CURSOR_POSY+80;
+		nTempCursorResumeX=nTempCursorMbrX;
+		nTempCursorResumeY=nTempCursorMbrY;
 
-		VIDEO_CURSOR_POSX=(195<<2)+VIDEO_MARGINX;
-		VIDEO_CURSOR_POSY-=16;
+		nTempEntryX=VIDEO_CURSOR_POSX;
+		nTempEntryY=VIDEO_CURSOR_POSY;
+
+		nTempCursorX=VIDEO_CURSOR_POSX;
+		nTempCursorY=VIDEO_HEIGHT-80;
+
+		VIDEO_CURSOR_POSX=(215<<2);
+		VIDEO_CURSOR_POSY=nTempCursorY-100;
+ 		nTempStartMessageCursorX=VIDEO_CURSOR_POSX;
+ 		nTempStartMessageCursorY=VIDEO_CURSOR_POSY;
 		VIDEO_ATTR=0xffc8c8c8;
 		printk("Close DVD tray to select\n");
 		VIDEO_ATTR=0xffffffff;
 
-		BootStartBiosDoIcon(80, nTempCursorY-112, 396, 90, 64, TRANPARENTNESS);
-		BootStartBiosDoIcon(200, nTempCursorY-112, 396, 90, 64, TRANPARENTNESS);
-		BootStartBiosDoIcon(310, nTempCursorY-112, 488, 555-488, 64, TRANPARENTNESS);
-		BootStartBiosDoIcon(400, nTempCursorY-112, 556, 639-556, 64, TRANPARENTNESS);
+		BootStartBiosDoIcon(120, nTempCursorY-74, 396, 90, 64, TRANPARENTNESS);
+		BootStartBiosDoIcon(240, nTempCursorY-74, 396, 90, 64, TRANPARENTNESS);
+		BootStartBiosDoIcon(350, nTempCursorY-74, 488, 555-488, 64, TRANPARENTNESS);
+		BootStartBiosDoIcon(440, nTempCursorY-74, 556, 639-556, 64, TRANPARENTNESS);
 
-		if(nDrive != 1)  // if no MBR, don't ask, just boot CDROM
+		  // if no MBR, don't ask, just boot CDROM
 		{
-			DWORD dwTick=BIOS_TICK_COUNT;
+
 			VIDEO_CURSOR_POSX=60<<2;
 			VIDEO_CURSOR_POSY=nTempCursorY;
-			printk("/dev/hda/boot/linuxboot.cfg\n");
-			while((BIOS_TICK_COUNT<(dwTick+DELAY_TICKS)) && (traystate==ETS_OPEN_OR_OPENING)) {
-				BootStartBiosDoIcon(80, nTempCursorY-112, 396, 90, 64, OPAQUENESS-((OPAQUENESS-TRANPARENTNESS)*(BIOS_TICK_COUNT-dwTick))/DELAY_TICKS);
+			if(nDrive != 1) printk("/dev/hda/boot/linuxboot.cfg\n");
+			while((BIOS_TICK_COUNT<(dwTick+DELAY_TICKS)) && (traystate==ETS_OPEN_OR_OPENING) && (nDrive != 1)) {
+				BootStartBiosDoIcon(120, nTempCursorY-74, 396, 90, 64, OPAQUENESS-((OPAQUENESS-TRANPARENTNESS)*(BIOS_TICK_COUNT-dwTick))/DELAY_TICKS);
 			}
-			if(traystate!=ETS_OPEN_OR_OPENING) {
-				BootStartBiosDoIcon(80, nTempCursorY-112, 396, 90, 64, SELECTED);
+			if((traystate!=ETS_OPEN_OR_OPENING) && (nDrive != 1)) {
+				VIDEO_CURSOR_POSX=nTempEntryX;
+				VIDEO_CURSOR_POSY=nTempEntryY;
+				RecoverMbrArea();
+				BootStartBiosDoIcon(120, nTempCursorY-74, 396, 90, 64, SELECTED);
 				fUseConfig=true;
 			} else {
 				dwTick=BIOS_TICK_COUNT;
 				BootVideoClearScreen(&jpegBackdrop, nTempCursorY, VIDEO_CURSOR_POSY+1);  // blank out volatile data area
 				VIDEO_CURSOR_POSX=200<<2;
 				VIDEO_CURSOR_POSY=nTempCursorY;
-				printk("/dev/hda/boot/vmlinuz\n");
-				while((BIOS_TICK_COUNT<(dwTick+DELAY_TICKS)) && (traystate==ETS_OPEN_OR_OPENING)) {
-					BootStartBiosDoIcon(200, nTempCursorY-112, 396, 90, 64, OPAQUENESS-((OPAQUENESS-TRANPARENTNESS)*(BIOS_TICK_COUNT-dwTick))/DELAY_TICKS);
+				if(nDrive != 1) printk("/dev/hda/boot/vmlinuz\n");
+				while((BIOS_TICK_COUNT<(dwTick+DELAY_TICKS)) && (traystate==ETS_OPEN_OR_OPENING) && (nDrive != 1)) {
+					BootStartBiosDoIcon(240, nTempCursorY-74, 396, 90, 64, OPAQUENESS-((OPAQUENESS-TRANPARENTNESS)*(BIOS_TICK_COUNT-dwTick))/DELAY_TICKS);
 				}
-				if(traystate!=ETS_OPEN_OR_OPENING) {
-					BootStartBiosDoIcon(200, nTempCursorY-112, 396, 90, 64, SELECTED);
+				if((traystate!=ETS_OPEN_OR_OPENING) && (nDrive != 1)) {
+					VIDEO_CURSOR_POSX=nTempEntryX;
+					VIDEO_CURSOR_POSY=nTempEntryY;
+					RecoverMbrArea();
+					BootStartBiosDoIcon(240, nTempCursorY-74, 396, 90, 64, SELECTED);
 					fUseConfig=false;
 				} else {
 					dwTick=BIOS_TICK_COUNT;
 					BootVideoClearScreen(&jpegBackdrop, nTempCursorY, VIDEO_CURSOR_POSY+1);  // blank out volatile data area
-					VIDEO_CURSOR_POSX=(340<<2)+VIDEO_MARGINX;
+					VIDEO_CURSOR_POSX=(350<<2)+VIDEO_MARGINX;
 					VIDEO_CURSOR_POSY=nTempCursorY;
 					printk("/dev/hdb\n");
 					while((BIOS_TICK_COUNT<(dwTick+DELAY_TICKS)) && (traystate==ETS_OPEN_OR_OPENING)) {
-						BootStartBiosDoIcon(310, nTempCursorY-112, 488, 555-488, 64, OPAQUENESS-((OPAQUENESS-TRANPARENTNESS)*(BIOS_TICK_COUNT-dwTick))/DELAY_TICKS);
+						BootStartBiosDoIcon(350, nTempCursorY-74, 488, 555-488, 64, OPAQUENESS-((OPAQUENESS-TRANPARENTNESS)*(BIOS_TICK_COUNT-dwTick))/DELAY_TICKS);
 					}
 					if(traystate!=ETS_OPEN_OR_OPENING) {
-						BootStartBiosDoIcon(310, nTempCursorY-112, 488, 555-488, 64, SELECTED);
+						VIDEO_CURSOR_POSX=nTempEntryX;
+						VIDEO_CURSOR_POSY=nTempEntryY;
+						RecoverMbrArea();
+						BootStartBiosDoIcon(350, nTempCursorY-74, 488, 555-488, 64, SELECTED);
 						fUseConfig=true;
 						nDrive=1;
 					} else {
 						dwTick=BIOS_TICK_COUNT;
 						BootVideoClearScreen(&jpegBackdrop, nTempCursorY, VIDEO_CURSOR_POSY+1);  // blank out volatile data area
-						VIDEO_CURSOR_POSX=(430<<2)+VIDEO_MARGINX;
+						VIDEO_CURSOR_POSX=(440<<2)+VIDEO_MARGINX;
 						VIDEO_CURSOR_POSY=nTempCursorY;
 						printk("Setup [TBD]\n");
 						while((BIOS_TICK_COUNT<(dwTick+DELAY_TICKS)) && (traystate==ETS_OPEN_OR_OPENING)) {
-							BootStartBiosDoIcon(400, nTempCursorY-112, 556, 639-556, 64, OPAQUENESS-((OPAQUENESS-TRANPARENTNESS)*(BIOS_TICK_COUNT-dwTick))/DELAY_TICKS);
+							BootStartBiosDoIcon(440, nTempCursorY-74, 556, 639-556, 64, OPAQUENESS-((OPAQUENESS-TRANPARENTNESS)*(BIOS_TICK_COUNT-dwTick))/DELAY_TICKS);
 						}
 						if(traystate!=ETS_OPEN_OR_OPENING) {
-							BootStartBiosDoIcon(400, nTempCursorY-112, 556, 639-556, 64, SELECTED);
+							VIDEO_CURSOR_POSX=nTempEntryX;
+							VIDEO_CURSOR_POSY=nTempEntryY;
+							RecoverMbrArea();
+							BootStartBiosDoIcon(440, nTempCursorY-74, 556, 639-556, 64, SELECTED);
+							fSettings=true;
 							// settings mode
 						} else {
-							BootStartBiosDoIcon(80, nTempCursorY-112, 396, 90, 64, SELECTED);
-							BootVideoClearScreen(&jpegBackdrop, nTempCursorY, VIDEO_CURSOR_POSY+1);  // blank out volatile data area
-							VIDEO_CURSOR_POSX=nTempCursorX;
-							VIDEO_CURSOR_POSY=nTempCursorY;
-							printk("Defaulting to HDD boot\n");
+							if(nDrive != 1) {
+								BootStartBiosDoIcon(120, nTempCursorY-74, 396, 90, 64, SELECTED);
+								BootVideoClearScreen(&jpegBackdrop, nTempCursorY, VIDEO_CURSOR_POSY+1);  // blank out volatile data area
+								VIDEO_CURSOR_POSX=nTempEntryX;
+								VIDEO_CURSOR_POSY=nTempEntryY;
+								RecoverMbrArea();
+								printk("Defaulting to HDD boot\n");
+								nTempCursorResumeX=VIDEO_CURSOR_POSX;
+								nTempCursorResumeY=VIDEO_CURSOR_POSY;
+							} else {
+								BootStartBiosDoIcon(350, nTempCursorY-74, 488, 555-488, 64, SELECTED);
+								BootVideoClearScreen(&jpegBackdrop, nTempCursorY, VIDEO_CURSOR_POSY+1);  // blank out volatile data area
+								VIDEO_CURSOR_POSX=nTempEntryX;
+								VIDEO_CURSOR_POSY=nTempEntryY;
+								RecoverMbrArea();
+								printk("Defaulting to CD boot\n");
+								nTempCursorResumeX=VIDEO_CURSOR_POSX;
+								nTempCursorResumeY=VIDEO_CURSOR_POSY;
+							}
 						}
 					}
 				}
 			}
 		}
+		BootVideoClearScreen(&jpegBackdrop, nTempStartMessageCursorY, nTempStartMessageCursorY+16);  // blank out 'close dvd tray' message
+
+		VIDEO_CURSOR_POSX=nTempCursorResumeX;
+		VIDEO_CURSOR_POSY=nTempCursorResumeY;
 	}
+
 #endif
 #endif
+
+	if(fSettings) {
+		printk("Settings mode not done yet :-)\nPlease reboot and try again\n");
+		while(1);
+	}
 
 
 	{
@@ -246,7 +306,11 @@ void StartBios(	int nDrive, int nActivePartition ) {
 						}
 
 						if(!fOkay) {
+							void BootFiltrorDebugShell();
 							printk("cdrom unhappy\n");
+#if INCLUDE_FILTROR
+							BootFiltrorDebugShell();
+#endif
 							while(1);
 						}
 					} else {
@@ -283,7 +347,7 @@ void StartBios(	int nDrive, int nActivePartition ) {
 //			while(1);
 		}
 
-	
+
 	VIDEO_ATTR=0xffd8d8d8;
 
 	if(nDrive==0) { // grub/reiserfs on HDD
@@ -306,10 +370,14 @@ void StartBios(	int nDrive, int nActivePartition ) {
 	} else {  // ISO9660 traversal on CDROM
 
 		printk("  Loading linuxboot.cfg from CDROM... ");
-		dwConfigSize=BootIso9660GetFile("/linuxboot.cfg", (BYTE *)0x90000, 0x400, 0x0);
-		if((int)dwConfigSize<0) { // has to be there on CDROM
-			printk("Unable to find it, halting\n");
-			while(1) ;
+		dwConfigSize=BootIso9660GetFile("/linuxboot.cfg", (BYTE *)0x90000, 0x800, 0x0);
+
+		if((int)dwConfigSize<0) { // not found, try mangled 8.3 version
+			dwConfigSize=BootIso9660GetFile("/LINUXBOO.CFG", (BYTE *)0x90000, 0x800, 0x0);
+			if((int)dwConfigSize<0) { // has to be there on CDROM
+				printk("Unable to find it, halting\n");
+				while(1) ;
+			}
 		}
 		printk("okay\n");
 		fHaveConfig=true;
@@ -345,7 +413,7 @@ void StartBios(	int nDrive, int nActivePartition ) {
 		nRet=grub_open(szGrub);
 
 		if(nRet!=1) {
-			printk("\nUnable to load kernel, Grub error %d\n", errnum);
+			printk("Unable to load kernel, Grub error %d\n", errnum);
 			while(1) ;
 		}
 		dwKernelSize=grub_read((void *)0x90000, 0x400);
@@ -363,10 +431,10 @@ void StartBios(	int nDrive, int nActivePartition ) {
 			strcpy(&szGrub[4], szInitrdFile);
 			nRet=grub_open(szGrub);
 			if(filemax==0) {
-				printf("\nEmpty file\n"); while(1);
+				printf("Empty file\n"); while(1);
 			}
 			if( (nRet!=1 ) || (errnum)) {
-				printk("\nUnable to load initrd, Grub error %d\n", errnum);
+				printk("Unable to load initrd, Grub error %d\n", errnum);
 				while(1) ;
 			}
 			printk(" - %d bytes\n", filemax);
@@ -392,6 +460,10 @@ void StartBios(	int nDrive, int nActivePartition ) {
 		VIDEO_ATTR=0xffa8a8a8;
 
 		dwKernelSize=BootIso9660GetFile(szKernelFile, (BYTE *)0x90000, 0x400, 0x0);
+		if((int)dwKernelSize<0) { // not found, try 8.3
+			strcpy(szKernelFile, "/VMLINUZ.");
+			dwKernelSize=BootIso9660GetFile(szKernelFile, (BYTE *)0x90000, 0x400, 0x0);
+		}
 		nSizeHeader=((*((BYTE *)0x901f1))+1)*512;
 		dwKernelSize+=BootIso9660GetFile(szKernelFile, (void *)0x90400, nSizeHeader-0x400, 0x400);
 		dwKernelSize+=BootIso9660GetFile(szKernelFile, (void *)0x00100000, 4096*1024, nSizeHeader);
@@ -404,6 +476,10 @@ void StartBios(	int nDrive, int nActivePartition ) {
 			VIDEO_ATTR=0xffa8a8a8;
 
 			dwInitrdSize=BootIso9660GetFile(szInitrdFile, (void *)0x03000000, 4096*1024, 0);
+			if((int)dwInitrdSize<0) { // not found, try 8.3
+				strcpy(szInitrdFile, "/INITRD.");
+				dwInitrdSize=BootIso9660GetFile(szInitrdFile, (void *)0x03000000, 4096*1024, 0);
+			}
 			printk(" - %d bytes\n", dwInitrdSize);
 		} else {
 			VIDEO_ATTR=0xffd8d8d8;
@@ -453,12 +529,13 @@ void StartBios(	int nDrive, int nActivePartition ) {
 	}
 		__asm __volatile__ (
 
-//	"wbinvd \n"
+	"cli \n"
 
 		// kill the cache
 
 	"mov %cr0, %eax \n"
 	"orl	$0x60000000, %eax \n"
+	"andl	$0x7fffffff, %eax \n" // turn off paging
 	"mov	%eax, %cr0 \n"
 	"wbinvd \n"
 
@@ -489,7 +566,7 @@ void StartBios(	int nDrive, int nActivePartition ) {
 					// MTRR for shadow video memory
 
 		"movl	$0x00000000, %edx  \n"// 0x00
-		"movl	$0xf0000004, %eax  \n"// == Cacheable
+		"movl	$0xf0000005, %eax  \n"// == Cacheable
 		"wrmsr \n"
 		"inc		%ecx \n"
 			// MASK0 set to 0xfffC00[000] == 4M
@@ -537,11 +614,11 @@ void StartBios(	int nDrive, int nActivePartition ) {
 		"movl	$0x806, %eax  \n"// edx still 0, default to CACHEABLE Enable MTRRs
 		"wrmsr \n"
 
-			/* turn on normal cache */
+			/* turn on normal cache, TURN OFF PAGING */
 
 		"movl	%cr0, %eax \n"
 		"mov %eax, %ebx \n"
-		"andl	$0x9FFFFFFF,%eax \n"
+		"andl	$0x1FFFFFFF,%eax \n"
 		"movl	%eax, %cr0 \n"
 
 	"movl $0x90000, %esi        \n"

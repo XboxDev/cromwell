@@ -14,6 +14,8 @@
 
 #include "boot.h"
 
+BYTE bFinalConexantA8, bFinalConexantAA, bFinalConexantAC;
+
 void * memset(void *dest, int data,  size_t size);
 
 
@@ -249,7 +251,7 @@ const DWORD dwaKernelVideoLookupTable[] = {
 	0x26C, 0x0,
 
 	// mode 2
-	0x10000000, 0x10000000, 0x0, 0x40801080,	0x801080, 0x2, 0x1DF, 0x20C, 
+	0x10000000, 0x10000000, 0x0, 0x40801080,	0x801080, 0x2, 0x1DF, 0x20C,
 	0x1DF, 0x1EA, 0x1ED, 0x0, 0x1DF, 0x2CF, 0x365, 0x2A7,
 	0x2DF, 0x2FF, 0x0, 0x2CF, 0x10100111,	0x0DF05C, 0x20D, 0x0AE,
 	0x2B8, 0x0,
@@ -352,23 +354,19 @@ void vgaout(unsigned int port, unsigned char reg, unsigned char data) {
 	*((volatile unsigned char*)(port+1)) = data;
 }
 
-void voutb(int nAds, BYTE b) {
-	*((volatile unsigned char*)(nAds)) = b;
-}
-void voutw(int nAds, WORD w) {
-	*((volatile WORD*)(nAds)) = w;
-}
-void voutl(int nAds, DWORD dw) {
-	*((volatile DWORD*)(nAds)) = dw;
-}
-BYTE vinb(int nAds) {
-	return *((volatile unsigned char*)(nAds)) ;
-}
+#define voutb(nAds, b) {	*((volatile BYTE*)((nAds))) = (b); }
+#define voutw(nAds, w) {	*((volatile WORD*)((nAds))) = (w); }
+#define voutl(nAds, dw) {	*((volatile DWORD*)((nAds))) = (dw); }
+
+#define vinb(nAds) (*((volatile BYTE*)((nAds))))
+#define vinl(nAds) (*((volatile DWORD*)((nAds))))
+
+
 
 void GetTickCount(DWORD * pdw1, DWORD * pdw2)
 {
 	DWORD dw1, dw2;
-	
+
 	__asm__ __volatile__ (
 		"rdtsc " : "=a" (dw1), "=d" (dw2)
 	);
@@ -388,10 +386,6 @@ void BootVideoDelay(void)
 	}
 }
 
-
-DWORD vinl(int nAds) {
-	return *((volatile DWORD*)(nAds)) ;
-}
 
 #ifndef SKIP_2BL_VIDEO
 
@@ -436,7 +430,7 @@ void BootVgaInitialization() {
 
 		dwaTemp[5]=(dwaTemp[4]+dwaTemp[5]+dwaTemp[6]+dwaTemp[7])>>2;  // sum1 seeing 5e..60
 		dwaTemp[4]=(dwaTemp[0]+dwaTemp[1]+dwaTemp[2]+dwaTemp[3])>>2;  // sum2 seeing 6c..6d
-//		bprintf("  v2bl: sum1=%x, sum2=%x\n", dwaTemp[5], dwaTemp[4]);
+		bprintf("  v2bl: sum1=%x, sum2=%x\n", dwaTemp[5], dwaTemp[4]);
 
 			// sort the results into four categories
 
@@ -707,21 +701,21 @@ void BootVgaInitialization() {
 				if(dwaFinalTable[n]==0) {
 					voutl(0xfd000000, 0);
 				} else {
-//					bprintf("  v2bl: init %d: 0x%02X\n", n, dwaFinalTable[n]);
+//					bprintf("  v2bl: init %d: 0x%08X<-0x%08X\n", n, dwaVideoUnlockIoOfssets[n], dwaFinalTable[n]);
 					voutl(dwaVideoUnlockIoOfssets[n], dwaFinalTable[n]);
 				}
 			}
 		}
 	}
-
+/*
 		*((volatile BYTE *)0xfd009100)=0x0;
 		*((volatile BYTE *)0xfd009140)=0x0;
 		*((volatile BYTE *)0xfd009200)=0x0;
 		*((volatile BYTE *)0xfd009400)=0x0;
 		*((volatile BYTE *)0xfd009410)=0x0;
 		*((volatile BYTE *)0xfd009420)=0x0;
-
-	__asm__ __volatile__ ( "sti" );
+*/
+//	__asm__ __volatile__ ( "sti" );
 
 }
 
@@ -729,7 +723,7 @@ void BootVgaInitialization() {
 
 
 
-BYTE BootVgaInitializationKernel(int nLinesPref)
+BYTE BootVgaInitializationKernel(int nLinesPref, bool fFakeEncoderAllBlackForStartup)
 {
 	int i=0;
 //	int nVideoEncodingType=1; // pal??
@@ -739,14 +733,13 @@ BYTE BootVgaInitializationKernel(int nLinesPref)
 	int nCtr=0;
 	BYTE bAvPack;
 	BYTE bTvStandard;
+	DWORD dwTempIntState;
 
-#ifndef XBE
-	__asm__ __volatile__ ( "pushf ; cli" );
-#endif
-
+	BootPciInterruptGlobalStackStateAndDisable(&dwTempIntState);
 	I2CTransmitWord(0x45, 0x6c46);
 
 	bAvPack=I2CTransmitByteGetReturn(0x10, 0x04);
+//	bAvPack=6;
 	bTvStandard=I2CTransmitByteGetReturn(0x54, 0x5A);
 
 	if(bTvStandard != 0x40) {
@@ -764,15 +757,12 @@ BYTE BootVgaInitializationKernel(int nLinesPref)
 			///  Kernel Video init
 			///////////////
 
-	IoOutputByte(0x80d3, 5);  // definitively kill video out
-
+	IoOutputByte(0x80d3, 4);  // definitively kill video out
 
 	*((volatile BYTE *)0xfd6013d4)=0x1f;
 	*((volatile BYTE *)0xfd6013d5)=0x57;
 	*((volatile BYTE *)0xfd0c03c4)=0x06;
 	*((volatile BYTE *)0xfd0c03c5)=0x57;
-	WATCHDOG;
-	TRACE;
 
 		{
 /* RJS  There is a nasty instability problem right here.
@@ -783,30 +773,24 @@ BYTE BootVgaInitializationKernel(int nLinesPref)
  * 	do with timing.
 
  andy@warmcat.com 2003-01-11  I saw the same behaviour during edits in BootResetAction.c
-                              Adding a WATCHDOG; before the call to this function made it go away
+                              Adding a WATCHDOG()(); before the call to this function made it go away
  */
 
-			bool fMore=true;
+//			bool fMore=true;
 //			int hackcount=0;
-
-			while(fMore /* && (hackcount < 3000) */) {  // some kind of wait for ready loop?
+/*
+			while(fMore  {  // some kind of wait for ready loop?
 				dwStash=vinl(0xfd6806A0);  // var_18
 				if( ! (((!(dwStash >> 4)) ^ (!dwStash)) & 1) ) fMore=false;
 //				hackcount++;
 			}
-
-//	bprintf("hackcount %d\n\r", hackcount);
+*/
 			vgaout(0xfd6013D4, 0x1f, 0x57);
-	TRACE;
 			vgaout(0xfd6013D4, 0x21, 0xff);
-	TRACE;
-
 			voutl(0xfd680880, 0x21121111);
-	TRACE;
 
 		}
-	WATCHDOG;
-	TRACE;
+
 
 		vgaout(0xfd6013D4, 0x13, nArg10/8); // width/8
 /*
@@ -833,21 +817,20 @@ BYTE BootVgaInitializationKernel(int nLinesPref)
 		vgaout(0xfd0C03D4, 0x11, 0);
 		vgaout(0xfd0C03D4, 0x1f, 0x57);
 
-			WATCHDOG;
-			TRACE;
 
-		IoOutputByte(0x80d6, 4);
-		IoOutputByte(0x80d8, 4);
+//		IoOutputByte(0x80d6, 4);
+//		IoOutputByte(0x80d8, 4);
 
+		bprintf("a\n");
 		voutl(0xfd68050c,	vinl(0xfd68050c)|0x10020000);
+		bprintf("b\n");
 
 		voutb(0xfd0C03C3, 1);
 		voutb(0xfd0C03C2, 0xe3);
+		bprintf("c\n");
 
-		voutl(0xfd680600, 0x0100030);  // this is actually set to a parameter to the kernel routine
+		voutl(0xfd680600, 0 /*0x0100030*/);  // this is actually set to a parameter to the kernel routine
 
-	WATCHDOG;
-	TRACE;
 		vgaout(0xfd6013D4, 0x11, 0);
 
 		if(arg_8!=0) {
@@ -870,7 +853,6 @@ BYTE BootVgaInitializationKernel(int nLinesPref)
 				n++;
 			}
 		}
-	WATCHDOG;
 	TRACE;
 		{
 			int n=0;
@@ -879,7 +861,6 @@ BYTE BootVgaInitializationKernel(int nLinesPref)
 				n++;
 			}
 		}
-	WATCHDOG;
 	TRACE;
 
 		{
@@ -899,7 +880,6 @@ BYTE BootVgaInitializationKernel(int nLinesPref)
 				n++;
 			}
 		}
-	WATCHDOG;
 	TRACE;
 		voutb(0xfd6013c0, 0x20);
 
@@ -972,7 +952,6 @@ BYTE BootVgaInitializationKernel(int nLinesPref)
 		for(n=0;n<sizeof(dwAds)/sizeof(DWORD);n++) { voutl(0xfd000000|dwAds[n], dwValue[bAvPack][n]); }
 	}
 
-	WATCHDOG;
 	TRACE;
 
 	voutl(0xfd6806a0, (dwStash & 1)^1);
@@ -1128,7 +1107,7 @@ BYTE BootVgaInitializationKernel(int nLinesPref)
 			0,0,0,0,
 			0,0,0,0,
 			0,0,0,0,
-			0x21101100, 0,0, 0x10001000, 
+			0x21101100, 0,0, 0x10001000,
 			0x10000000, 0x10000000, 0x10000000, 0x10000000
 		}
 		};
@@ -1139,7 +1118,7 @@ BYTE BootVgaInitializationKernel(int nLinesPref)
 				0x45, /**/ 0x3F, 0x40, 0x00, 0x3F, 0x70, 0xE3, 0xFF, 0x3B, 0x3A, 0x85, 0x00, 0x00, 0x00, /**/
 				0x80, 0xFF, 0xFF, 0xA1, 0x00, 0x10, 0x20, 0xA3, 0x83, 0x00, 0x00, 0xFe, 0xFf, 0xE0, 0x00, 0x00,
 				0x00, 0x00, 0x00, 0x11, 0x02, 0x02, 0x02, 0x30, 0x00, 0xFF, 0xFF, 0xFF, 0x7F, 0x00, 0x03, 0x30,
-				0x00 
+				0x00
 			},
 			{ // hdtv
 				0x6F, 0x4F, 0x4F, 0x93, 0x55, 0xB9, 0x0B, 0x3E, 0x00, 0x40, 0x00, 0x00, 0x40, 0x00, 0x00, 0x00,
@@ -1333,11 +1312,7 @@ BYTE BootVgaInitializationKernel(int nLinesPref)
 			0x02, 0x00, 0x01, 0x60, 0x80, 0x8a, 0xa6, 0x68,
 			0xc1, 0x2e, 0xf2, 0x27, 0x00, 0xb0, 0x0a, 0x0b,
 			0x71, 0x5a, 0xe0, 0x36, 0x00, 0x50, 0x72, 0x1c,
-#if 0  // do not start off all black
 			0x0d, 0x24, 0xf0, 0x58, 0x81, 0x49,   0x8c,   0x0c,  // <--- A8==81, AA==49, AC == 8C normally
-#else
-			0x0d, 0x24, 0xf0, 0x58, 0x00, 0x00,   0x00,   0x0c,  // <--- A8==81, AA==49, AC == 8C normally
-#endif
 			0x8c, 0x79, 0x26, 0x52, 0x00, 0x24, 0x00, 0x00,
 			0x00 , 0x00 , 0x01 , 0x9C , 0x9B , 0xC0 , 0xC0 , 0x19,
 			0x00 , 0x00 , 0x00 , 0x00 , 0x40 , 0x05 , 0x57 , 0x20,
@@ -1356,11 +1331,8 @@ BYTE BootVgaInitializationKernel(int nLinesPref)
 			0x0f, 0x00, 0x01, 0x28, 0x88, 0x74, 0x8a, 0x42,
 			0x0a, 0x16, 0x22, 0xa6, 0x00, 0x14, 0x7e, 0x03,
 			0x71, 0x2a, 0x40, 0x0a, 0x00, 0x50, 0xc7, 0xf1,
-#if 0  // do not start off all black
-			0x0a, 0x24, 0xf0, 0x5e, 0xd9, 0x9a,   0x44,   0x18,  // <--- A8==81, AA==49, AC == 8C normally
-#else
-			0x0a, 0x24, 0xf0, 0x5e, 0x00, 0x00,   0x00,   0x18,  // <--- A8==81, AA==49, AC == 8C normally
-#endif
+//			0x0a, 0x24, 0xf0, 0x5e, 0xd9, 0x9a,   0x44,   0x18,  // <--- A8==81, AA==49, AC == 8C normally
+			0x0a, 0x24, 0xf0, 0x5e, 0x81, 0x49,   0x8c,   0x18,  // <--- A8==81, AA==49, AC == 8C normally
 			0x75, 0x17, 0x2e, 0x00, 0x00, 0x24, 0x00, 0x00,
 			0x00 , 0x00 , 0x01 , 0x9C , 0x9B , 0xC0 , 0xC0 , 0x19,
 			0x00 , 0x00 , 0x00 , 0x00 , 0x40 , 0x05 , 0x57 , 0x20,
@@ -1386,6 +1358,7 @@ BYTE BootVgaInitializationKernel(int nLinesPref)
 		}
 		};
 
+
 		while(n < (sizeof(dwa[0])/sizeof(DWORD))) *pdw++=dwa[bAvPack][n++];
 
 		for(n=0;n1<(sizeof(baCrtc[0]));n++) {
@@ -1398,8 +1371,16 @@ BYTE BootVgaInitializationKernel(int nLinesPref)
 
 		for(n=0;n<sizeof(baConexant[0]);n++) {
 			if(n!=(0xb8>>1)) {
-				I2CTransmitWord(0x45, (n<<9)|baConexant[bAvPack][n]);
-				WATCHDOG;
+				if( (fFakeEncoderAllBlackForStartup) && ((n==(0xa8>>1)) || (n==(0xaa>>1)) || (n==(0xac>>1))) ) {
+					I2CTransmitWord(0x45, (n<<9)|0);
+					switch(n) {
+						case (0xa8>>1):  bFinalConexantA8=baConexant[bAvPack][n]; break;
+						case (0xaa>>1):  bFinalConexantAA=baConexant[bAvPack][n]; break;
+						case (0xac>>1):  bFinalConexantAC=baConexant[bAvPack][n]; break;
+					}
+				} else {
+					I2CTransmitWord(0x45, (n<<9)|baConexant[bAvPack][n]);
+				}
 			}
 		}
 	}
@@ -1411,7 +1392,7 @@ BYTE BootVgaInitializationKernel(int nLinesPref)
 	voutl(0xFD609140, 0);
 
 	voutl(0xFD680600, 0);  // without this, blue horrors
-	(*(volatile unsigned int*)0xFD600800)= (60 * 1024 * 1024);
+//	(*(volatile unsigned int*)0xFD600800)= (60 * 1024 * 1024);
 
 	if(bAvPack!=7) {
 		VIDEO_HEIGHT=480;
@@ -1509,8 +1490,7 @@ BYTE BootVgaInitializationKernel(int nLinesPref)
 			break;
 	}
 
-#ifndef XBE
-	voutl(0xfd600800, 0x83c00000);   // new guy, move the video out of the way
+//	voutl(0xfd600800, 0x83c00000);   // new guy, move the video out of the way
 
 			// enable VSYNC interrupt action
 
@@ -1523,34 +1503,27 @@ BYTE BootVgaInitializationKernel(int nLinesPref)
 	*((volatile DWORD *)0xfd008000)=0x3c00000;  //
 	*((volatile DWORD *)0xfd000140)=1;  // enable VSYNC int
 
+
 //	BootVideoDelay();
 	I2CTransmitWord(0x45, 0x6cc6);
-#endif
 	}
-#ifndef XBE
-	__asm__ __volatile__ ( "sti" );
-#endif
 
-
-
+	BootPciInterruptGlobalPopState(dwTempIntState);
 	TRACE;
 	return bAvPack;
-
 }
 
 void BootVideoEnableOutput(BYTE bAvPack)
 {
+
 	IoOutputByte(0x80d3, 5);  // some kind of MCPX thing REQUIRED
 	IoOutputByte(0x80d6, 5);  // some kind of MCPX thing seen in kernel, set to 4 or 5
 	IoOutputByte(0x80d8, 4);  // some kind of MCPX thing seen in kernel, set to 4
 	IoOutputByte(0x80d3, 4);  // some kind of MCPX thing REQUIRED
-	IoOutputByte(0x80d3, 4);  // some kind of MCPX thing REQUIRED
+
 
 	vgaout(0xfd0C03C4, 1, 1); // screen on REQUIRED
 	vgaout(0xfd0C03C4, 1, 1); // screen on REQUIRED
-	voutw(0xfd6013c0, 1|(0x20 <<8));  // kernel: video on REQUIRED
-//	voutb(0xfd6013c0, 0x01);
-//	voutb(0xfd6013c0, 0x01);
 	voutb(0xfd6013c0, 0x01);
 
 	voutb(0xfd0C03C2, 0xe3);
@@ -1558,7 +1531,6 @@ void BootVideoEnableOutput(BYTE bAvPack)
 
 		// enable VSYNC interrupt action
 
-#ifndef XBE
 	*((volatile DWORD *)0xfd600140)=0x1;  // enable VSYNC interrupts
 	*((volatile DWORD *)0xfd600100)=0x1;  // clear VSYNC int
 	*((volatile DWORD *)0xfd608000)=0x3c00000;  //
@@ -1567,7 +1539,6 @@ void BootVideoEnableOutput(BYTE bAvPack)
 	*((volatile DWORD *)0xfd000100)=0x1;  // clear VSYNC int
 	*((volatile DWORD *)0xfd008000)=0x3c00000;  //
 	*((volatile DWORD *)0xfd000140)=1;  // enable VSYNC int
-#endif
 
 }
 

@@ -81,74 +81,6 @@ void BootVideoBlit(
 	}
 }
 
-/*
-void BootGimpVideoBlit(
-	DWORD * pdwTopLeftDestination,
-	DWORD dwCountBytesPerLineDestination,
-	void * pgimpstruct,
-	RGBA m_rgbaTransparent
-) {
-	int n=0;
-	typedef struct { int m_nWidth; int m_nHeight; int m_nCountBytesPerPixel; char m_cFirstByte; } gimp;
-
-	gimp *pgimp=(gimp *)pgimpstruct;
-	BYTE *pData=(BYTE *)&pgimp->m_cFirstByte;
-	int nLines=pgimp->m_nHeight;
-
-	while(nLines--) {
-		BYTE *pbDest=(BYTE *)pdwTopLeftDestination;
-		for(n=0;n<pgimp->m_nWidth;n++) {
-			DWORD dw=(*((DWORD *)&pData[0]))|0xff000000;
-			if(dw!=m_rgbaTransparent) {
-				pbDest[2]=pData[0];
-				pbDest[1]=pData[1];
-				pbDest[0]=pData[2];
-			}
-			pbDest+=4;
-			pData+=pgimp->m_nCountBytesPerPixel;
-		}
-		pdwTopLeftDestination+=dwCountBytesPerLineDestination>>2;
-	}
-}
-
-void BootGimpVideoBlitBlend(
-	DWORD * pdwTopLeftDestination,
-	DWORD dwCountBytesPerLineDestination,
-	void * pgimpstruct,
-	RGBA m_rgbaTransparent,
-	DWORD * pdwTopLeftBackground,
-	DWORD dwCountBytesPerLineBackground
-) {
-	int n=0;
-	typedef struct { int m_nWidth; int m_nHeight; int m_nCountBytesPerPixel; char m_cFirstByte; } gimp;
-
-	gimp *pgimp=(gimp *)pgimpstruct;
-	BYTE *pData=(BYTE *)&pgimp->m_cFirstByte;
-	int nLines=pgimp->m_nHeight;
-	int nTransAsByte=m_rgbaTransparent>>24;
-	int nBackTransAsByte=255-nTransAsByte;
-
-	m_rgbaTransparent|=0xff000000;
-
-	while(nLines--) {
-		BYTE *pbDest=(BYTE *)pdwTopLeftDestination;
-		BYTE *pbBackground=(BYTE *)pdwTopLeftBackground;
-		for(n=0;n<pgimp->m_nWidth;n++) {
-			DWORD dw=(*((DWORD *)&pData[0]))|0xff000000;
-			if(dw!=m_rgbaTransparent) {
-				pbDest[2]=((pData[0]*nTransAsByte)+(pbBackground[2]*nBackTransAsByte))>>8;
-				pbDest[1]=((pData[1]*nTransAsByte)+(pbBackground[1]*nBackTransAsByte))>>8;
-				pbDest[0]=((pData[2]*nTransAsByte)+(pbBackground[0]*nBackTransAsByte))>>8;
-			}
-			pbDest+=4;
-			pData+=pgimp->m_nCountBytesPerPixel;
-		}
-		pdwTopLeftDestination+=dwCountBytesPerLineDestination>>2;
-		pdwTopLeftBackground+=dwCountBytesPerLineBackground>>2;
-	}
-}
-
-*/
 void BootVideoJpegBlitBlend(
 	DWORD * pdwTopLeftDestination,
 	DWORD dwCountBytesPerLineDestination,
@@ -157,6 +89,7 @@ void BootVideoJpegBlitBlend(
 	RGBA m_rgbaTransparent,
 	DWORD * pdwTopLeftBackground,
 	DWORD dwCountBytesPerLineBackground,
+	DWORD dwCountBytesPerPixelBackground,
 	int x,
 	int y
 ) {
@@ -173,23 +106,36 @@ void BootVideoJpegBlitBlend(
 		BYTE *pbBackground=(BYTE *)pdwTopLeftBackground;
 		BYTE *pData=(BYTE *)pdwTopLeftInJpegBitmap;
 
-		for(n=0;n<x;n++) {
-			DWORD dw=((*((DWORD *)&pData[0]))|0xff000000)&0xffc0c0c0;
-			if(dw!=m_rgbaTransparent) {
-				pbDest[2]=((pData[0]*nTransAsByte)+(pbBackground[0]*nBackTransAsByte))>>8;
-				pbDest[1]=((pData[1]*nTransAsByte)+(pbBackground[1]*nBackTransAsByte))>>8;
-				pbDest[0]=((pData[2]*nTransAsByte)+(pbBackground[2]*nBackTransAsByte))>>8;
+		if(dwCountBytesPerPixelBackground!=4) { // jpeg backdrop
+			for(n=0;n<x;n++) {
+				DWORD dw=((*((DWORD *)&pData[0]))|0xff000000)&0xffc0c0c0;
+				if(dw!=m_rgbaTransparent) {
+					pbDest[2]=((pData[0]*nTransAsByte)+(pbBackground[0]*nBackTransAsByte))>>8;
+					pbDest[1]=((pData[1]*nTransAsByte)+(pbBackground[1]*nBackTransAsByte))>>8;
+					pbDest[0]=((pData[2]*nTransAsByte)+(pbBackground[2]*nBackTransAsByte))>>8;
+				}
+				pbDest+=4;
+				pData+=pJpeg->m_nBytesPerPixel;
+				pbBackground+=dwCountBytesPerPixelBackground;
 			}
-			pbDest+=4;
-			pData+=pJpeg->m_nBytesPerPixel;
-			pbBackground+=pJpeg->m_nBytesPerPixel;
+		} else {  // RGBA backdrop
+			for(n=0;n<x;n++) {
+				DWORD dw=((*((DWORD *)&pData[0]))|0xff000000)&0xffc0c0c0;
+				if(dw!=m_rgbaTransparent) {
+					pbDest[2]=((pData[0]*nTransAsByte)+(pbBackground[2]*nBackTransAsByte))>>8;
+					pbDest[1]=((pData[1]*nTransAsByte)+(pbBackground[1]*nBackTransAsByte))>>8;
+					pbDest[0]=((pData[2]*nTransAsByte)+(pbBackground[0]*nBackTransAsByte))>>8;
+				}
+				pbDest+=4;
+				pData+=pJpeg->m_nBytesPerPixel;
+				pbBackground+=dwCountBytesPerPixelBackground;
+			}
 		}
 		pdwTopLeftInJpegBitmap+=(pJpeg->m_nWidth*pJpeg->m_nBytesPerPixel)>>2;
 		pdwTopLeftDestination+=dwCountBytesPerLineDestination>>2;
 		pdwTopLeftBackground+=dwCountBytesPerLineBackground>>2;
 	}
 }
-
 
 // usable for direct write or for prebuffered write
 // returns width of character in pixels
@@ -420,17 +366,20 @@ void BootVideoClearScreen(JPEG * pJpeg, int nStartLine, int nEndLine)
 	if(nEndLine>VIDEO_HEIGHT) nEndLine=VIDEO_HEIGHT;
 
 	{
-		WATCHDOG;
+//		WATCHDOG();
 
 		if(pJpeg->m_pBitmapData!=NULL) {
 			DWORD *pdw=(DWORD *)FRAMEBUFFER_START /*+(640*VIDEO_MARGINY)*/;
-			int nLine=0, n1=0, nBorderLines=VIDEO_MARGINY; // (VIDEO_HEIGHT-480)/2;
+			int nLine=0, n1=0, nBorderLines=(((int)VIDEO_HEIGHT)-((int)pJpeg->m_nHeight-64) )/2;
 
+//			if(nBorderLines<0)	nBorderLines=0;
 //			nStartLine-=VIDEO_MARGINY; nEndLine-=VIDEO_MARGINY;
 
-			while((nLine)<VIDEO_HEIGHT) {
+//			printk("%d - %d\n", VIDEO_HEIGHT, nBorderLines);
+
+			while((nLine)<(int)VIDEO_HEIGHT) {
 				if((nLine>=nStartLine) && (nLine<nEndLine)) {
-					if((nLine>=nBorderLines) && ((nLine-nBorderLines)<480 /*pJpeg->m_nHeight*/)) {
+					if((nLine>=nBorderLines) && ((nLine-nBorderLines)<((int)pJpeg->m_nHeight-64) /*pJpeg->m_nHeight*/)) {
 						int n=0;
 						for(n=0;n<pJpeg->m_nWidth;n++) {
 							pdw[n]=0xff000000|
@@ -449,8 +398,8 @@ void BootVideoClearScreen(JPEG * pJpeg, int nStartLine, int nEndLine)
 							;
 							for(n=0;n<pJpeg->m_nWidth;n++) pdw[n]=dw;
 					}
-				} else {
-					if((nLine>=nBorderLines) && ((nLine-nBorderLines)<480 /*pJpeg->m_nHeight*/)) {
+				} else {  // not in update area
+					if((nLine>=nBorderLines) && ((nLine-nBorderLines)<(pJpeg->m_nHeight-64) /*pJpeg->m_nHeight*/)) {
 						n1+=pJpeg->m_nBytesPerPixel *pJpeg->m_nWidth;
 					}
 				}
@@ -517,7 +466,7 @@ void BootVideoChunkedPrint(char * szBuffer, WORD wLength) {
 					640*4, VIDEO_ATTR, &szBuffer[nDone]
 				)<<2;
 				nDone=n+1;
-			} else { /* f=!nDone; */}
+			}
 			if(f) { VIDEO_CURSOR_POSY+=16; VIDEO_CURSOR_POSX=VIDEO_MARGINX<<2; }
 		}
 	}
@@ -536,15 +485,15 @@ int printk(const char *szFormat, ...) {  // printk displays to video and filtror
 
 	szBuffer[wLength]='\0';
 
+	#if INCLUDE_SERIAL
+	serialprint(&szBuffer[0]);
+	#endif
 	#if INCLUDE_FILTROR
 	BootFiltrorSendArrayToPcModal(&szBuffer[0], wLength);
 	#endif
 
-	#if INCLUDE_SERIAL
-	serialprint(&szBuffer[0]);
-	#endif
-
 	BootVideoChunkedPrint(szBuffer, wLength);
+
 	return wLength;
 }
 

@@ -25,6 +25,10 @@ volatile int nCountI2cinterrupts, nCountUnusedInterrupts, nCountUnusedInterrupts
 volatile bool fSeenPowerdown;
 volatile TRAY_STATE traystate;
 
+DWORD dwaTitleArea[640*64];
+extern BYTE bAvPackType;
+extern BYTE bFinalConexantA8, bFinalConexantAA, bFinalConexantAC;
+
 	// interrupt service stubs defined in BootStartup.S
 
 extern void IntHandlerTimer0(void);
@@ -123,7 +127,10 @@ void BootInterruptsWriteIdt(void) {
 
 			// init storage used by ISRs
 
+	VIDEO_VSYNC_COUNT=0;
+	VIDEO_VSYNC_POSITION=0;
 	BIOS_TICK_COUNT=0;
+	VIDEO_VSYNC_DIR=0;
 	nCountI2cinterrupts=0;
 	nCountUnusedInterrupts=0;
 	nCountUnusedInterruptsPic2=0;
@@ -131,6 +138,9 @@ void BootInterruptsWriteIdt(void) {
 	nCountInterruptsIde=0;
 	fSeenPowerdown=false;
 	traystate=ETS_OPEN_OR_OPENING;
+	VIDEO_LUMASCALING=0;
+	VIDEO_RSCALING=0;
+	VIDEO_BSCALING=0;
 
 		// set up default exception, interrupt vectors to dummy stubs
 
@@ -160,14 +170,14 @@ void BootInterruptsWriteIdt(void) {
 	IoOutputByte(0xa1, 0x02);  // am slave, hooked to INT2 on master
 	IoOutputByte(0xa1, 0x01);  // x86 mode normal EOI
 #ifdef XBE
-	IoOutputByte(0xa1, 0xff);		// enable all ints
+	IoOutputByte(0xa1, 0xff);		// enable no ints
 #else
 	IoOutputByte(0xa1, 0x00);		// enable all ints
 #endif
 
 			// enable interrupts
 
-	__asm__ __volatile__(" push %ecx ; push %edx ; push %eax ; mov $0x1b, %cx ; rdmsr ; andl $0xfffff7ff, %eax ; wrmsr; pop %eax ; pop %edx ; pop %ecx ; sti" );
+	__asm__ __volatile__("wbinvd; mov $0x1b, %%cx ; rdmsr ; andl $0xfffff7ff, %%eax ; wrmsr; sti" : : : "%ecx", "%eax", "%edx");
 
 }
 
@@ -181,6 +191,9 @@ void BootInterruptsWriteIdt(void) {
 void IntHandlerCSmc(void)
 {
 	BYTE bStatus, nBit=0;
+	DWORD dwTempInt;
+	BootPciInterruptGlobalStackStateAndDisable(&dwTempInt);
+
 	nCountInterruptsSmc++;
 	bStatus=I2CTransmitByteGetReturn(0x10, 0x11); // Query PIC for interrupt reason
 	while(nBit<7) {
@@ -188,7 +201,7 @@ void IntHandlerCSmc(void)
 			switch(nBit) {
 
 				case 0: // POWERDOWN EVENT
-					bprintf("SMC Interrupt: Powerdown\n");
+					bprintf("SMC Interrupt %d: Powerdown\n", nCountInterruptsSmc);
 					fSeenPowerdown=true;
 /*
 						// sequence in 2bl at halt_it
@@ -200,51 +213,62 @@ void IntHandlerCSmc(void)
 
 				case 1: // CDROM TRAY IS NOW CLOSED
 					traystate=ETS_CLOSED;
-					bprintf("SMC Interrupt: CDROM Tray now Closed\n");
+					bprintf("SMC Interrupt %d: CDROM Tray now Closed\n", nCountInterruptsSmc);
 					break;
 
 				case 2: // CDROM TRAY IS STARTING OPENING
 					traystate=ETS_OPEN_OR_OPENING;
-					I2CTransmitWord(0x10, 0x0d04);
-					bprintf("SMC Interrupt: CDROM starting opening\n");
+					I2CTransmitWord(0x10, 0x0d02);
+					bprintf("SMC Interrupt %d: CDROM starting opening\n", nCountInterruptsSmc);
 					break;
 
 				case 3: // AV CABLE HAS BEEN PLUGGED IN
-					bprintf("SMC Interrupt: AV cable plugged in\n");
+					{
+						bprintf("SMC Interrupt %d: AV cable plugged in\n", nCountInterruptsSmc);
 #ifndef XBE
-					bAvPackType=BootVgaInitializationKernel(VIDEO_PREFERRED_LINES);
-					BootVideoEnableOutput(bAvPackType);
+						{
+							BYTE b=I2CTransmitByteGetReturn(0x10, 0x04);
+							bprintf("Detected new AV type %d, cf %d\n", b, bAvPackType);
+							if((b!=bAvPackType ) && (!((b==6)&&((bAvPackType==7)||(bAvPackType==8)))) ) {
+								bAvPackType=BootVgaInitializationKernel(VIDEO_PREFERRED_LINES, false);
+								BootVideoEnableOutput(bAvPackType);
+							}
+						}
 #endif
+					}
 					break;
 
 				case 4: // AV CABLE HAS BEEN UNPLUGGED
-					bprintf("SMC Interrupt: AV cable unplugged\n");
+					bprintf("SMC Interrupt %d: AV cable unplugged\n", nCountInterruptsSmc);
 					break;
 
 				case 5: // BUTTON PRESSED REQUESTING TRAY OPEN
 					traystate=ETS_OPEN_OR_OPENING;
 					I2CTransmitWord(0x10, 0x0d04);
 					I2CTransmitWord(0x10, 0x0c00);
-					bprintf("SMC Interrupt: CDROM tray opening by Button press\n");
+					bprintf("SMC Interrupt %d: CDROM tray opening by Button press\n", nCountInterruptsSmc);
+					bStatus&=~0x02; // kill possibility of conflicting closing report
 					break;
 
 				case 6: // CDROM TRAY IS STARTING CLOSING
 					traystate=ETS_CLOSING;
-					bprintf("SMC Interrupt: CDROM tray starting closing\n");
+					bprintf("SMC Interrupt %d: CDROM tray starting closing\n", nCountInterruptsSmc);
 					break;
 
 				case 7: // UNKNOWN
-					bprintf("SMC Interrupt: b7 Reason code\n");
+					bprintf("SMC Interrupt %d: b7 Reason code\n", nCountInterruptsSmc);
 					break;
 			}
 		}
 		nBit++;
 		bStatus>>=1;
 	}
+	BootPciInterruptGlobalPopState(dwTempInt);
 }
 
 void IntHandlerCIde(void)
 {
+	IoInputByte(0x1f7);
 	bprintf("IDE Interrupt\n");
 	nCountInterruptsIde++;
 }
@@ -273,8 +297,22 @@ void IntHandlerUnusedC2(void)
 void IntHandlerCTimer0(void)
 {
 	BIOS_TICK_COUNT++;
+}
 
-	if(BIOS_TICK_COUNT >8) {
+void IntHandler1C(void)
+{
+	bprintf("Interrupt 1\n");
+}
+void IntHandler2C(void)
+{
+	bprintf("Interrupt 2\n");
+}
+void IntHandler3VsyncC(void)  // video VSYNC
+{
+	DWORD dwTempInt;
+//	bprintf("Interrupt 3\n");
+	BootPciInterruptGlobalStackStateAndDisable(&dwTempInt);
+	VIDEO_VSYNC_COUNT++;
 
 		if(fSeenPowerdown) {
 			if(VIDEO_LUMASCALING) {
@@ -291,53 +329,69 @@ void IntHandlerCTimer0(void)
 			}
 		} else {
 
-			if(VIDEO_LUMASCALING<0x8c) {
+			if(VIDEO_LUMASCALING<bFinalConexantAC) {
 				VIDEO_LUMASCALING+=5;
 				I2CTransmitWord(0x45, 0xac00|((VIDEO_LUMASCALING)&0xff)); // 8c
 			}
-			if(VIDEO_RSCALING<0x81) {
+			if(VIDEO_RSCALING<bFinalConexantA8) {
 				VIDEO_RSCALING+=3;
 				I2CTransmitWord(0x45, 0xa800|((VIDEO_RSCALING)&0xff)); // 81
 			}
-			if(VIDEO_BSCALING<0x49) {
+			if(VIDEO_BSCALING<bFinalConexantAA) {
 				VIDEO_BSCALING+=4;
 				I2CTransmitWord(0x45, 0xaa00|((VIDEO_BSCALING)&0xff)); // 49
 			}
 		}
-	}
 
 
-	{
-		char c=(BIOS_TICK_COUNT*5)&0xff;
+	if(VIDEO_VSYNC_COUNT>10) {
+		DWORD dwOld=VIDEO_VSYNC_POSITION;
+		char c=(VIDEO_VSYNC_COUNT*4)&0xff;
 		DWORD dw=c;
 		if(c<0) dw=((-(int)c)-1);
-		dw|=128; dw<<=24;
+
+		switch(VIDEO_VSYNC_DIR) {
+			case 0:
+//				dw+=64; dw<<=24;
+				dw=(((VIDEO_VSYNC_POSITION * 192)/640)+64)<<24;
+				VIDEO_VSYNC_POSITION+=2;
+				if(VIDEO_VSYNC_POSITION>=(640-54-VIDEO_MARGINX-VIDEO_MARGINX)) VIDEO_VSYNC_DIR=2;
+				break;
+			case 1:
+				dw+=64; dw<<=24;
+				VIDEO_VSYNC_POSITION-=2;
+				if((int)VIDEO_VSYNC_POSITION<=0) VIDEO_VSYNC_DIR=0;
+				break;
+			case 2:
+				dw+=128; dw<<=24;
+				break;
+		}
+
 		BootVideoJpegBlitBlend(
-			(DWORD *)(FRAMEBUFFER_START+640*4*VIDEO_MARGINY+VIDEO_MARGINX*4), 640 * 4, &jpegBackdrop,
-			(DWORD *)(((BYTE *)jpegBackdrop.m_pBitmapData)+(640*480*jpegBackdrop.m_nBytesPerPixel)),
-			0x00ff00ff | dw, 
-//			(DWORD *)&baBackdrop[0],
-			(DWORD *)(((BYTE *)jpegBackdrop.m_pBitmapData)+(640 * 0 *jpegBackdrop.m_nBytesPerPixel)+(0 *jpegBackdrop.m_nBytesPerPixel)),
-			640*jpegBackdrop.m_nBytesPerPixel,
+			(DWORD *)(FRAMEBUFFER_START+640*4*VIDEO_MARGINY+VIDEO_MARGINX*4+(dwOld<<2)), 640 * 4, &jpegBackdrop,
+			&dwaTitleArea[dwOld+VIDEO_MARGINX],
+			0x00ff00ff,
+			&dwaTitleArea[dwOld+VIDEO_MARGINX],
+			640*4,
+			4,
+			54, 64
+		);
+		BootVideoJpegBlitBlend(
+			(DWORD *)(FRAMEBUFFER_START+640*4*VIDEO_MARGINY+VIDEO_MARGINX*4+(VIDEO_VSYNC_POSITION<<2)), 640 * 4, &jpegBackdrop,
+			(DWORD *)(((BYTE *)jpegBackdrop.m_pBitmapData)+(640*(jpegBackdrop.m_nHeight-64)*jpegBackdrop.m_nBytesPerPixel)),
+			0x00ff00ff | dw,
+			&dwaTitleArea[VIDEO_VSYNC_POSITION+VIDEO_MARGINX],
+			640*4,
+			4,
 			54, 64
 		);
 
 	}
+
+	*((volatile DWORD *)0xfd600100)=0x1;  // clear VSYNC int
+	BootPciInterruptGlobalPopState(dwTempInt);
 }
 
-void IntHandler1C(void)
-{
-	bprintf("Interrupt 1\n");
-}
-void IntHandler2C(void)
-{
-	bprintf("Interrupt 2\n");
-}
-void IntHandler3VsyncC(void)  // video VSYNC
-{
-//	bprintf("Interrupt 3\n");
-	*((volatile DWORD *)0xfd600100)=0x1;  // clear VSYNC int
-}
 void IntHandler4C(void)
 {
 	bprintf("Interrupt 4\n");
@@ -386,7 +440,19 @@ void IntHandlerException2C(void) {	bprintf("CPU Exc: NMI\n");	while(1) ; }
 void IntHandlerException3C(void) {	bprintf("CPU Exc: Breakpoint\n");	while(1) ; }
 void IntHandlerException4C(void) {	bprintf("CPU Exc: Overflow Trap\n");	while(1) ; }
 void IntHandlerException5C(void) {	bprintf("CPU Exc: BOUND exceeded\n");	while(1) ; }
-void IntHandlerException6C(void) {	bprintf("CPU Exc: Invalid Opcode\n");	while(1) ; }
+void IntHandlerException6C(void) {
+	DWORD dwEbp=0;
+	bprintf("CPU Exc: Invalid Opcode\n");
+		__asm__ __volatile__ ( " mov %%esp, %%eax\n " : "=a" (dwEbp) );
+#if INCLUDE_FILTROR
+//	DumpAddressAndData((DWORD)(volatile DWORD *)(dwEbp-0x100), (BYTE *)(((volatile DWORD *)(dwEbp-0x100))), 512);
+#endif
+	bprintf("   %08lX:%08lX\n", *((volatile DWORD *)(dwEbp+0x48)), *((volatile DWORD *)(dwEbp+0x44)));
+#if INCLUDE_FILTROR
+	DumpAddressAndData((*((volatile DWORD *)(dwEbp+0x44)))-0x100, ((BYTE *)(*((volatile DWORD *)(dwEbp+0x44))))-0x100, 512);
+#endif
+	while(1) ;
+}
 void IntHandlerException7C(void) {	bprintf("CPU Exc: Coprocessor Absent\n");	while(1) ; }
 void IntHandlerException8C(void) {	bprintf("CPU Exc: Double Fault\n");	while(1) ; }
 void IntHandlerException9C(void) {	bprintf("CPU Exc: Copro Seg Overrun\n");	while(1) ; }

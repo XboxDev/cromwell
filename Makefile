@@ -5,6 +5,9 @@
 # free bios project.
 #
 # $Log$
+# Revision 1.10  2003/01/14 15:24:18  warmcat
+# New menu UI.  VSYNC IRQ up.  Franz's I2C check added.  Flashtype and Ed's EEPROM report added.
+#
 # Revision 1.3  2003/01/13 13:33:02  huceke
 # Added a little function for reading the EEPROM content.
 # Added support for setting the MAC Address at boottime.
@@ -79,6 +82,7 @@ jpeg-6b/jmemmgr.o jpeg-6b/jcomapi.o jpeg-6b/jutils.o jpeg-6b/jerror.o \
 BootFlash.o BootEEPROM.o\
 # !!! killed temporarily to allow clean CVS checkin
 #BootEthernet.o \
+#BootUsbOhci.o \
 #nvn/nvnetlib.o
 
 
@@ -91,9 +95,9 @@ RESOURCES = xcodes11.elf backdrop.elf
 all	: image.bin
 
 clean	:
-	mv nvn/nvnetlib.o nvn/nvnetlib.o.tmp
+#	mv nvn/nvnetlib.o nvn/nvnetlib.o.tmp
 	rm -rf *.o *~ core *.core ${OBJECTS} ${RESOURCES} image.elf image.bin
-	mv nvn/nvnetlib.o.tmp nvn/nvnetlib.o
+#	mv nvn/nvnetlib.o.tmp nvn/nvnetlib.o
 	rm -f  *.a _rombios_.c _rombios_.s rombios.s rombios.bin rombios.txt
 	rm -f  backdrop.elf
 
@@ -114,16 +118,16 @@ backdrop.elf : backdrop.jpg
 
 
 ### rules:
-%.o	: %.c boot.h consts.h BootFilesystemIso9660.h
+%.o	: %.c boot.h consts.h BootFilesystemIso9660.h config-rom.h config-xbe.h
 	${CC} ${CFLAGS} -o $@ -c $<
 
-%.o	: %.S consts.h
+%.o	: %.S consts.h config-rom.h config-xbe.h
 	${CC} -DASSEMBLER ${CFLAGSBR} -o $@ -c $<
 
-BootEthernet.o: BootEthernet.c boot.h consts.h
+BootEthernet.o: BootEthernet.c boot.h consts.h config-rom.h config-xbe.h
 	${CC} ${CFLAGSNV} -O2 -o $@ -c $<
 
-BootPerformPicChallengeResponseAction.o: BootPerformPicChallengeResponseAction.c boot.h consts.h
+BootPerformPicChallengeResponseAction.o: BootPerformPicChallengeResponseAction.c boot.h consts.h config-rom.h config-xbe.h
 	${CC} ${CFLAGSBR} -o $@ -c $<
 
 image.bin : image.elf

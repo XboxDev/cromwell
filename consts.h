@@ -13,7 +13,7 @@
  *                                                                         *
  ***************************************************************************/
 
-#define VERSION "1.7"
+#define VERSION "1.8"
 
 #define PCI_CFG_ADDR 0x0CF8
 #define PCI_CFG_DATA 0x0CFC

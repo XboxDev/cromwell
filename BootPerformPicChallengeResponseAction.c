@@ -22,14 +22,13 @@
 
 int I2CTransmitByteGetReturn(BYTE bPicAddressI2cFormat, BYTE bDataToWrite)
 {
-	DWORD dwRetriesToLive=4;
+	int nRetriesToLive=400;
 
-	__asm __volatile__ ( "pushf ; cli" );
-
+//	IoOutputWord(I2C_IO_BASE+0, 0xffff); // clear down all preexisting errors
+	if(IoInputWord(I2C_IO_BASE+0)&0x8000) { bprintf("Smb status=%x\n",IoInputWord(I2C_IO_BASE+0)); }
 	while(IoInputWord(I2C_IO_BASE+0)&0x0800) ;  // Franz's spin while bus busy with any master traffic
 
-	while(dwRetriesToLive--) {
-		DWORD dwSpinsToLive=0x8000000;
+	while(nRetriesToLive--) {
 
 		IoOutputByte(I2C_IO_BASE+4, (bPicAddressI2cFormat<<1)|1);
 		IoOutputByte(I2C_IO_BASE+8, bDataToWrite);
@@ -37,51 +36,36 @@ int I2CTransmitByteGetReturn(BYTE bPicAddressI2cFormat, BYTE bDataToWrite)
 		IoOutputByte(I2C_IO_BASE+2, 0x0a);
 
 		{
-			BYTE b=0;
-			while( (b !=0x10) && ((b&0x26)==0) && (dwSpinsToLive--) ) {
-				b=IoInputByte(I2C_IO_BASE+0);
-//				if(dwSpinsToLive<0x7ffffd) bprintf("%02X\n", b);
-			}
-			if(dwSpinsToLive==0) { __asm __volatile__ ( "popf" ); return ERR_I2C_ERROR_TIMEOUT; }
-			if(b&0x2) {
-
-				continue; // retry
-			}
+			BYTE b=0x0;
+			while( (b&0x36)==0 ) { b=IoInputByte(I2C_IO_BASE+0); }
 
 			if(b&0x24) {
 				bprintf("I2CTransmitByteGetReturn error %x\n", b);
-				continue;
-//				return ERR_I2C_ERROR_BUS;
 			}
 			if(!(b&0x10)) {
 				bprintf("I2CTransmitByteGetReturn no complete, retry\n");
-//				return ERR_I2C_ERROR_BUS;
-				continue;
+			} else {
+				return (int)IoInputByte(I2C_IO_BASE+6);
 			}
-
-			__asm __volatile__ ( "popf" );
-
-				// we are okay, fetch returned byte
-			return (int)IoInputByte(I2C_IO_BASE+6);
-
 		}
 	}
-		__asm __volatile__ ( "popf" );
 
 	return ERR_I2C_ERROR_BUS;
 }
+
+
 
 // transmit a word, no returned data from I2C device
 
 int I2CTransmitWord(BYTE bPicAddressI2cFormat, WORD wDataToWrite)
 {
-	DWORD dwRetriesToLive=4;
-__asm __volatile__ ( "pushf; cli" );
+	int nRetriesToLive=400;
 
+//	IoOutputWord(I2C_IO_BASE+0, 0xffff); // clear down all preexisting errors
+	if(IoInputWord(I2C_IO_BASE+0)&0x8000) { bprintf("Smb status=%x\n",IoInputWord(I2C_IO_BASE+0)); }
 	while(IoInputWord(I2C_IO_BASE+0)&0x0800) ;  // Franz's spin while bus busy with any master traffic
 
-	while(dwRetriesToLive--) {
-		DWORD dwSpinsToLive=0x8000000;
+	while(nRetriesToLive--) {
 
 		IoOutputByte(I2C_IO_BASE+4, (bPicAddressI2cFormat<<1)|0);
 
@@ -92,30 +76,19 @@ __asm __volatile__ ( "pushf; cli" );
 
 		{
 			BYTE b=0x0;
-			while( (b!= 0x10) && ((b&0x26)==0) && (dwSpinsToLive--) ) { b=IoInputByte(I2C_IO_BASE+0); }
+			while( (b&0x36)==0 ) { b=IoInputByte(I2C_IO_BASE+0); }
 
-			if(dwSpinsToLive==0) { 		__asm __volatile__ ( "popf" ); return ERR_I2C_ERROR_TIMEOUT; }
-			if(b&0x2) {
-				continue; // retry
-			}
 			if(b&0x24) {
 				bprintf("I2CTransmitWord error %x\n", b);
-				continue;
-//				return ERR_I2C_ERROR_BUS;
 			}
 			if(!(b&0x10)) {
 				bprintf("I2CTransmitWord no complete, retry\n");
-//				return ERR_I2C_ERROR_BUS;
-				continue;
+			} else {
+				return ERR_SUCCESS;
 			}
-
-			__asm __volatile__ ( "popf" );
-
-				// we are okay, return happy code
-			return ERR_SUCCESS;
 		}
 	}
-		__asm __volatile__ ( "popf" );
+
 	return ERR_I2C_ERROR_BUS;
 }
 
@@ -164,16 +137,16 @@ int BootPerformPicChallengeResponseAction()
 //		return ERR_BOOT_PIC_ALG_BROKEN;
 //	}
 
-	n=I2CTransmitByteGetReturn( 0x10, 0x1c);
+	n=I2CTransmitByteGetReturn( 0x10, 0x1c );
 	if(n<0) return n;
 	bC=n;
-	n=I2CTransmitByteGetReturn( 0x10, 0x1d);
+	n=I2CTransmitByteGetReturn( 0x10, 0x1d );
 	if(n<0) return n;
 	bD=n;
-	n=I2CTransmitByteGetReturn( 0x10, 0x1e);
+	n=I2CTransmitByteGetReturn( 0x10, 0x1e );
 	if(n<0) return n;
 	bE=n;
-	n=I2CTransmitByteGetReturn( 0x10, 0x1f);
+	n=I2CTransmitByteGetReturn( 0x10, 0x1f );
 	if(n<0) return n;
 	bF=n;
 
@@ -181,15 +154,10 @@ int BootPerformPicChallengeResponseAction()
 		WORD w=BootPicManipulation(bC, bD, bE, bF);
 
 		I2CTransmitWord( 0x10, 0x2000 | (w&0xff));
-//		if(n<0) return n;
-
 		I2CTransmitWord( 0x10, 0x2100 | (w>>8) );
-//		if(n<0) return n;
-
 	}
 
-		n=I2CTransmitWord( 0x10, 0x0100 );
-		if(n<0) return n;
+	n=I2CTransmitWord( 0x10, 0x0100 );
 
 /*
 		// the following traffic was observed during a normal boot
@@ -216,19 +184,31 @@ int BootPerformPicChallengeResponseAction()
 		" movw $0xcf8, %dx \n"
 		" outl	%eax, %dx \n"
 		" movw $0xcfc, %dx \n"
-		" movl	$0x40000000, %eax \n"
-		" outl	%eax, %dx \n"
+		" movl	$0x4000000, %eax \n"
+		" outl	%eax, %dx "
 		);
 	return ERR_SUCCESS;
 }
 
 extern int I2cSetFrontpanelLed(BYTE b)
 {
-	__asm __volatile__ ( "pushf ; cli" );
+	DWORD dw;
+	BootPciInterruptGlobalStackStateAndDisable(&dw);
 	I2CTransmitWord( 0x10, 0x800 | b);  // sequencing thanks to Jarin the Penguin!
 	I2CTransmitWord( 0x10, 0x701);
-	__asm __volatile__ ( "popf" );
+	BootPciInterruptGlobalPopState(dw);
 
 	return ERR_SUCCESS;
 }
+
+bool I2CGetTemperature(int * pnLocalTemp, int * pExternalTemp)
+{
+	DWORD dw;
+	BootPciInterruptGlobalStackStateAndDisable(&dw);
+	*pnLocalTemp=I2CTransmitByteGetReturn(0x4c, 0x01);
+	*pExternalTemp=I2CTransmitByteGetReturn(0x4c, 0x00);
+	BootPciInterruptGlobalPopState(dw);
+	return true;
+}
+
 

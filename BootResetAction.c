@@ -32,15 +32,11 @@
 #include "config-rom.h"
 #endif
 
-#ifdef memcpy
-#undef memcpy
-#endif
-#ifdef memset
-#undef memset
-#endif
 
-BYTE baBackdrop[60*72*4];
+extern DWORD dwaTitleArea[640*64];
 JPEG jpegBackdrop;
+BYTE bAvPackType;
+int nTempCursorMbrX, nTempCursorMbrY;
 
 const KNOWN_FLASH_TYPE aknownflashtypesDefault[] = {
 	{ 0xbf, 0x61, "SST49LF020", 0x40000 },  // default flash types
@@ -80,8 +76,7 @@ BYTE BiosCmosRead(BYTE bAds)
 //  BootResetAction()
 
 extern void BootResetAction ( void ) {
-	BYTE bAvPackType;
-	__int64 i64Timestamp;
+//	__int64 i64Timestamp;
 	bool fMbrPresent=false;
 	bool fSeenActive=false;
 	int nActivePartitionIndex=0;
@@ -95,45 +90,65 @@ extern void BootResetAction ( void ) {
 	bfcqs.m_dwCountTimeoutErrorsSeenToPc=0;
 #endif
 
-	bprintf("\nBOOT: starting BootResetAction()\n\r");
+		// prep our BIOS console print state
+
+	VIDEO_ATTR=0xffffffff;
+
+#if INCLUDE_FILTROR
+	BootFiltrorSendArrayToPc("\nBOOT: starting BootResetAction()\n\r", 34);
+#endif
+
+	BootInterruptsWriteIdt();
+//	bprintf("BOOT: done interrupts\n\r");
 
 		// init malloc() and free() structures
-
 #ifdef XBE
 	MemoryManagementInitialization((void *)0x1000000, 0x0E00000);
 #else
 	MemoryManagementInitialization((void *)0x1000000, 0x2000000);
 #endif
 
-	// then setup the interrupt table
-	// RJS - I tried to enable interrupts earlier to fix some instability
-	// but there was no improvement -  table setup left here
-
-
-		// prep our BIOS console print state
-
-	VIDEO_ATTR=0xffffffff;
-	VIDEO_LUMASCALING=0;
-	VIDEO_RSCALING=0;
-	VIDEO_BSCALING=0;
-
 		// if we don't make the PIC happy within 200mS, the damn thing will reset us
 
 	BootPerformPicChallengeResponseAction();
-	WATCHDOG;
 	bprintf("BOOT: done with PIC challenge\n\r");
+
+		// initialize the PCI devices
+
+	bprintf("BOOT: starting PCI init\n\r");
+	BootPciPeripheralInitialization();
+	bprintf("BOOT: done with PCI initialization\n\r");
+
 
 	// bring up Video (2BL portion)
 #ifndef XBE
 	BootVgaInitialization();
-	WATCHDOG;
 	bprintf("BOOT: done with VGA initialization\n\r");
 #endif
 
 	BootEepromReadEntireEEPROM();
+	bprintf("BOOT: Read EEPROM\n\r");
+//	DumpAddressAndData(0, (BYTE *)&eeprom, 256);
 
-	WATCHDOG;
-	bAvPackType=BootVgaInitializationKernel(VIDEO_PREFERRED_LINES);
+			// configure ACPI hardware to generate interrupt on PIC-chip pin6 action (via EXTSMI#)
+	{
+		DWORD dw;
+		BootPciInterruptGlobalStackStateAndDisable(&dw);
+//		IoOutputByte(0x80c0, 0x08);  // from 2bl
+		IoOutputByte(0x8004, IoInputByte(0x8004)|1);  // KERN: SCI enable == SCI interrupt generated
+		IoOutputByte(0x8022, IoInputByte(0x8022)|2);  // KERN: Interrupt enable register, b1 RESERVED in AMD docs
+		IoOutputByte(0x8002, IoInputByte(0x8002)|1);  // KERN: Enable SCI interrupt when timer status goes high
+		IoOutputByte(0x8028, IoInputByte(0x8028)|1);  // KERN: setting readonly trap event???
+
+		I2CTransmitWord(0x10, 0x0b00); // unknown, done after video update
+		I2CTransmitWord(0x10, 0x0b01); // unknown, done immediately after reading out eeprom data
+		I2CTransmitWord(0x10, 0x1a01); // unknown, done immediately after reading out eeprom data
+		I2CTransmitWord( 0x10, 0x1b04); // unknown
+		BootPciInterruptGlobalPopState(dw);
+	}
+
+	bAvPackType=BootVgaInitializationKernel(VIDEO_PREFERRED_LINES, true);
+	bprintf("BOOT: kern VGA init done\n\r");
 
 	{ // decode and malloc backdrop bitmap
 		extern int _start_backdrop, _end_backdrop;
@@ -143,79 +158,114 @@ extern void BootResetAction ( void ) {
 			&jpegBackdrop
 		);
 	}
-
-	WATCHDOG; 	TRACE;
-
 		// paint the backdrop
-
 	BootVideoClearScreen(&jpegBackdrop, 0, 0xffff);
-	TRACE;
-
-		// get icon background into storage array
-
-	BootVideoBlit((DWORD *)&baBackdrop[0], 60*4, (DWORD *)(FRAMEBUFFER_START+640*4*VIDEO_MARGINY+VIDEO_MARGINX*4), 640*4, 72);
-	TRACE;
+	bprintf("BOOT: done backdrop\n\r");
 
 		// finally bring up video
+#ifndef XBE
 	BootVideoEnableOutput(bAvPackType);
-		// initialize the PCI devices
+#endif
+	bprintf("BOOT: video up\n\r");
 
-	BootPciPeripheralInitialization();
-	WATCHDOG;
-	bprintf("BOOT: done with PCI initialization\n\r");
-
-
+/*
 	{ // instability tracking, looking for duration changes
 		int a2, a3;
 		 __asm__ __volatile__ (" rdtsc" :"=a" (a3), "=d" (a2));
 		i64Timestamp=((__int64)a3)|(((__int64)a2)<<32);
 	}
-
-	BootInterruptsWriteIdt();
-	WATCHDOG;
+*/
 
 		// display solid red frontpanel LED while we start up
 	I2cSetFrontpanelLed(I2C_LED_RED0 | I2C_LED_RED1 | I2C_LED_RED2 | I2C_LED_RED3 );
 
-	I2CTransmitWord(0x10, 0x1901); // no reset on eject
+	{
+		DWORD dw;
+		BootPciInterruptGlobalStackStateAndDisable(&dw);
+
+		I2CTransmitWord(0x10, 0x1901); // no reset on eject
 #ifdef IS_XBE_BOOTLOADER
-	I2CTransmitWord(0x10, 0x0c01); // close DVD tray
+		I2CTransmitWord(0x10, 0x0c01); // close DVD tray
 #else
-	I2CTransmitWord(0x10, 0x0c00); // eject DVD tray
+		I2CTransmitWord(0x10, 0x0c00); // eject DVD tray
 #endif
-
-	WATCHDOG;
-
+		BootPciInterruptGlobalPopState(dw);
+	}
 		// start up Timer 0 so we get the 18.2Hz tick interrupts
 
-	IoOutputByte(0x43, 0x36); // was 0x36
+	IoOutputByte(0x43, 0x36);
 	IoOutputByte(0x40, 0xff);
 	IoOutputByte(0x40, 0xff);
 
-	WATCHDOG;
-	TRACE;
-
+/*
+	while(1) {
+		int n;
+//		__asm__ __volatile__ ("wbinvd");
+		BootPciInterruptEnable();
+		for(n=0;n<0x10000000;n++) ;
+		BootVideoClearScreen(&jpegBackdrop, 0, 0xffff);
+	}
+*/
 	VIDEO_CURSOR_POSY=VIDEO_MARGINY;
-	VIDEO_CURSOR_POSX=(VIDEO_MARGINX+64)*4;
+	VIDEO_CURSOR_POSX=(VIDEO_MARGINX/*+64*/)*4;
 #ifdef XBE
 	printk("\2Xbox Linux XROMWELL  " VERSION "\2\n" );
 #else
 	printk("\2Xbox Linux Clean BIOS  " VERSION "\2\n" );
 #endif
 	VIDEO_CURSOR_POSY=VIDEO_MARGINY+32;
-	VIDEO_CURSOR_POSX=(VIDEO_MARGINX+64)*4;
+	VIDEO_CURSOR_POSX=(VIDEO_MARGINX/*+64*/)*4;
 	printk( __DATE__ " -  http://xbox-linux.sf.net\n");
-	VIDEO_CURSOR_POSX=(VIDEO_MARGINX+64)*4;
+	VIDEO_CURSOR_POSX=(VIDEO_MARGINX/*+64*/)*4;
 	printk("(C)2002 Xbox Linux Team - Licensed under the GPL\n");
 	printk("\n");
+
+		// capture title area
+	BootVideoBlit(&dwaTitleArea[0], 640*4, ((DWORD *)FRAMEBUFFER_START)+(VIDEO_MARGINY*640), 640*4, 64);
 
 	nTempCursorX=VIDEO_CURSOR_POSX;
 	nTempCursorY=VIDEO_CURSOR_POSY;
 
-#ifdef REPORT_VIDEO_MODE
-	
 	VIDEO_ATTR=0xffc8c8c8;
-	printk("AV Cable : ");
+	printk("Xbox Rev: ");
+	VIDEO_ATTR=0xffc8c800;
+	if((PciReadDword(BUS_0, DEV_1, 0, 0x08)&0xff)<=0xb2) {
+		printk("v1.0  ");
+	} else {
+		printk("v1.1  ");
+//		printk("v1.1  %x", PciReadDword(BUS_0, DEV_1, 0, 0x08)&0xff);
+	}
+
+
+	BootPciInterruptEnable();
+
+
+/*
+	{
+		DWORD dw1, dw2;
+		rdmsr(0x2a, dw1, dw2);
+//		printk("%x %x  ", dw1, dw2);
+
+	}
+*/
+	{
+		int n, nx;
+		I2CGetTemperature(&n, &nx);
+		VIDEO_ATTR=0xffc8c8c8;
+		printk("CPU Temp: ");
+		VIDEO_ATTR=0xffc8c800;
+		printk("%doC  ", n);
+		VIDEO_ATTR=0xffc8c8c8;
+		printk("M/b Temp: ");
+		VIDEO_ATTR=0xffc8c800;
+		printk("%doC  ", nx);
+	}
+
+
+#ifdef REPORT_VIDEO_MODE
+
+	VIDEO_ATTR=0xffc8c8c8;
+	printk("AV: ");
 	VIDEO_ATTR=0xffc8c800;
 
 	switch(bAvPackType) {
@@ -238,13 +288,13 @@ extern void BootResetAction ( void ) {
 			printk("Type 5");
 			break;
 		case 6:
-			printk("Composite 480 PAL");
+			printk("Composite");
 			break;
 		case 7:
-			printk("Composite 576 PAL");
+			printk("Composite");
 			break;
 		case 8:
-			printk("Composite 480 NTSC");
+			printk("Composite");
 			break;
 	}
 
@@ -252,7 +302,7 @@ extern void BootResetAction ( void ) {
 	printk("\n");
 #endif
 
-	WATCHDOG;
+	
 
 		I2cSetFrontpanelLed(I2C_LED_RED0 | I2C_LED_RED1 | I2C_LED_RED2 | I2C_LED_RED3 );
 
@@ -280,7 +330,25 @@ extern void BootResetAction ( void ) {
 				0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 				0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x44, 0x00, 0x00, 0x00
 			};
+/* my v1.1 EEPROM in case of crisis
+00000000: 1D BF 03 AF 54 48 56 FF : 1E 1D 53 81 41 22 32 00    ....THV...S.A"2.
+00000010: 83 AA AC F0 B6 63 5A 7F : 76 D9 93 08 34 98 80 53    .....cZ.v...4..S
+00000020: D1 E5 BE 3D A8 3E 85 63 : 87 3A C6 B2 ED E3 52 00    ...=.>.c.:....R.
+00000030: 1B B2 A0 B5 33 30 30 36 : 36 39 34 32 33 32 30 35    ....300669423205
+00000040: 00 50 F2 82 7F 01 00 00 : B2 53 65 EB A0 37 E3 6C    .P.......Se..7.l
+00000050: 79 01 F0 5B FB D0 1F 75 : 00 03 80 00 00 00 00 00    y..[...u........
+00000060: A1 55 47 FC 00 00 00 00 : 47 4D 54 00 42 53 54 00    .UG.....GMT.BST.
+00000070: 00 00 00 00 00 00 00 00 : 0A 05 00 02 03 05 00 01    ................
+00000080: 00 00 00 00 00 00 00 00 : 00 00 00 00 C4 FF FF FF    ................
+00000090: 01 00 00 00 00 00 10 00 : 02 00 00 00 00 00 00 00    ................
+000000A0: 00 00 00 00 00 00 00 00 : 00 00 00 00 00 00 00 00    ................
+000000B0: 00 00 00 00 00 00 00 00 : 00 00 00 00 00 00 00 00    ................
+000000C0: 00 00 00 00 00 00 00 00 : 00 00 00 00 00 00 00 00    ................
+000000D0: 00 00 00 00 00 00 00 00 : 00 00 00 00 00 00 00 00    ................
+000000E0: 00 00 00 00 00 00 00 00 : 00 00 00 00 00 00 00 00    ................
+000000F0: 00 00 00 00 00 00 00 00 : 00 00 00 00 40 00 00 00    ............@...
 
+*/
 			bprintf("Rewriting EEPROM, please wait...\n");
 
 			while(nAds<0x100) {
@@ -310,15 +378,6 @@ extern void BootResetAction ( void ) {
 //			BiosCmosWrite(0x3d, 0); // boot method: default=0=do not attempt boot (set in BootIde.c)
 		}
 
-			// configure ACPI hardware to generate interrupt on PIC-chip pin6 action (via EXTSMI#)
-
-	IoOutputByte(0x80c0, 0x08);  // from 2bl
-	IoOutputByte(0x8004, IoInputByte(0x8004)|1);  // KERN: SCI enable == SCI interrupt generated
-	IoOutputByte(0x8022, IoInputByte(0x8022)|2);  // KERN: Interrupt enable register, b1 RESERVED in AMD docs
-	IoOutputByte(0x8002, IoInputByte(0x8002)|1);  // KERN: Enable SCI interrupt when timer status goes high
-	IoOutputByte(0x8028, IoInputByte(0x8028)|1);  // KERN: setting readonly trap event???
-
-
 			// gggb while waiting for Ethernet & Hdd
 
 		I2cSetFrontpanelLed(I2C_LED_GREEN0 | I2C_LED_GREEN1 | I2C_LED_GREEN2);
@@ -332,6 +391,7 @@ extern void BootResetAction ( void ) {
 		}
 #endif
 
+//		BootPciInterruptEnable();
 		BootEepromPrintInfo();
 
 #ifndef XBE
@@ -354,19 +414,20 @@ extern void BootResetAction ( void ) {
 			// wait around for HDD to become ready
 
 		BootIdeWaitNotBusy(0x1f0);
+		printk("Ready\n");
 
-			// reuse BIOS status area
+					// reuse BIOS status area
 
 		BootVideoClearScreen(&jpegBackdrop, nTempCursorY, VIDEO_CURSOR_POSY+1);  // blank out volatile data area
 		VIDEO_CURSOR_POSX=nTempCursorX;
 		VIDEO_CURSOR_POSY=nTempCursorY;
 
+		bprintf("Entering BootIdeInit()\n");
 		BootIdeInit();
 		printk("\n");
 
-		I2CTransmitWord(0x10, 0x0b01); // unknown, done immediately after reading out eeprom data
-		I2CTransmitWord(0x10, 0x0b00); // unknown, done after video update
-		I2CTransmitWord(0x10, 0x1a01); // unknown, done immediately after reading out eeprom data
+		nTempCursorMbrX=VIDEO_CURSOR_POSX;
+		nTempCursorMbrY=VIDEO_CURSOR_POSY;
 
 			// HDD Partition Table dump
 

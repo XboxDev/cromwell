@@ -104,18 +104,22 @@ tsHarddiskInfo tsaHarddiskInfo[2];  // static struct stores data about attached 
 //
 
 
-int Delay() { int i=0, u=0; while(u<100) { i+=u++; } return i; }
+int Delay() { int i=0, u=0; while(u<1000) { i+=u++; } return i; }
 
 
 int BootIdeWaitNotBusy(unsigned uIoBase)
 {
 	BYTE b = 0x80;
-	Delay();
+//	int n=0;
+
 //	I2cSetFrontpanelLed(0x66);
 	while (b & 0x80) {
+		Delay();
 		b=IoInputByte(IDE_REG_ALTSTATUS(uIoBase));
-		WATCHDOG;
+//		printk("%02x %d\n", b, n++);
+//		WATCHDOG;
 	}
+//	printk("Done %d\n", n++);
 //		I2cSetFrontpanelLed(0x14);
 
 	return b&1;
@@ -130,7 +134,7 @@ int BootIdeWaitDataReady(unsigned uIoBase)
 	    if(IoInputByte(IDE_REG_ALTSTATUS(uIoBase)) & 0x01) return 2;
 			return 0;
 		}
-		WATCHDOG;
+//		WATCHDOG();
 		i--;
 	} while (i != 0);
 
@@ -217,7 +221,12 @@ int BootIdeWriteData(unsigned uIoBase, void * buf, size_t size)
 
 BYTE BootIdeGetTrayState()
 {
-		return I2CTransmitByteGetReturn(0x10, 0x03); // this is the tray state
+	BYTE b;
+	DWORD dw;
+	BootPciInterruptGlobalStackStateAndDisable(&dw);
+	b=I2CTransmitByteGetReturn(0x10, 0x03); // this is the tray state
+	BootPciInterruptGlobalPopState(dw);
+	return b;
 }
 
 int BootIdeIssueAtapiPacketCommandAndPacket(int nDriveIndex, BYTE *pAtapiCommandPacket12Bytes)
@@ -310,7 +319,7 @@ static int BootIdeDriveInit(unsigned uIoBase, int nIndexDrive)
 
 //	printk_debug("  Drive %d: Waiting\n", nIndexDrive);
 
-			I2cSetFrontpanelLed(0xf1);
+	I2cSetFrontpanelLed(0xf1);
 
 	if(BootIdeWaitNotBusy(uIoBase)) {
 			printk_debug("  Drive %d: Not Ready\n", nIndexDrive);

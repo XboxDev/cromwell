@@ -41,10 +41,11 @@ mcpx_magic:  // needs to be DWORD aligned
 		jmp	start_linux
 
 		.org 0x6c
-		.byte 0x03, 0x01
+		.byte 0x07, 0x01
 		.org 0x70
 
-		.byte 0x0f, 0x00, 0x00, 0x00, 0x00, 0x44, 0x00, 0x40, 0x60, 0x00, 0x00, 0x00, 0x30, 0x0c, 0x00, 0x00
+		.byte 0x0f, 0x00, 0x00, 0x00, 0x00, 0x44, 0x00, 0x40
+		.byte 0x70, 0x00, 0xd1, 0x12, 0x90, 0x0c, 0x00, 0x00
 
 	.section .text, "ax"
 	.text
@@ -94,44 +95,42 @@ start_linux:
 #ifdef XBE
 	jmp bootloader2
 #endif
+	
 	cli
 
 	mov %cr0, %eax
 	orl	$0x60000000, %eax
 	mov	%eax, %cr0
-//	wbinvd
+	invd
 
-		xorl	%edx, %edx
-		movl	$0x2ff, %ecx
-		movl	$0x000, %eax // KILL MTRRs
-		wrmsr
-/*
-		mov	$0, %al
-		mov	$0x72, %dx
-		out	%al, %dx
-*/
+	xorl	%edx, %edx
+	movl	$0x2ff, %ecx
+	movl	$0x000, %eax // KILL MTRRs
+	wrmsr
 
-/*
-		movl $0x8000, %edx
-		movb	$1, %al
-spin80xx:
-		out %al, %dx
-		inc	%dl
-		cmp	$0, %dl
-		jnz spin80xx
-*/
+//		mov	$0, %al
+//		mov	$0x72, %dx
+//		out	%al, %dx
+
+	mov	$0x8, %al
+	mov	$0x61, %dx
+	out	%al, %dx
 
 		// xcode actions first of all
 
-	mov $0x80000810, %eax ;	movw $0xcf8, %dx ; outl	%eax, %dx ;	movw $0xcfc, %dx ;	mov	$0x8001, %eax ;	outl	%eax, %dx
+	mov $0x80000810, %eax ;	movw $0xcf8, %dx ; outl	%eax, %dx ;	movw $0xcfc, %dx ;	mov	$0x8001, %eax ;	outl	%eax, %dx  // v1.0 ACPI IO region enable
+	mov $0x80000884, %eax ;	movw $0xcf8, %dx ; outl	%eax, %dx ;	movw $0xcfc, %dx ;	mov	$0x8001, %eax ;	outl	%eax, %dx  // v1.1  "
+	movw $0x8026, %dx ;	movw $0x2201, %ax ;	outb %al, %dx // extsmi# able to control power (b0<-0 causes CPU powerdown after couple of seconds)
+#if 1
 	mov $0x80000804, %eax ;	movw $0xcf8, %dx ;	outl	%eax, %dx ;	movw $0xcfc, %dx ;	mov	$0x3, %eax ;	outl	%eax, %dx
 
+	movw $0x80d6, %dx ;	movb $4, %al ;	outb %al, %dx
+	movw $0x80d8, %dx ;	movb $4, %al ;	outb %al, %dx
 	movw $0x8049, %dx ;	movb $8, %al ;	outb %al, %dx
-	movw $0x80d9, %dx ;	movb $0, %al ;	outb %al, %dx
-	movw $0x8026, %dx ;	movb $1, %al ;	outb %al, %dx
+//	movw $0x80d9, %dx ;	movb $0, %al ;	outb %al, %dx
 
-	mov $0x8000036c, %eax ;	movw $0xcf8, %dx ;	outl	%eax, %dx ;	movw $0xcfc, %dx ;	mov	$0x0, %eax ;	outl	%eax, %dx
-	mov $0x80000340, %eax ;	movw $0xcf8, %dx ;	outl	%eax, %dx ;	movw $0xcfc, %dx ;	mov	$0xf81c4400, %eax ;	outl	%eax, %dx
+//	mov $0x8000036c, %eax ;	movw $0xcf8, %dx ;	outl	%eax, %dx ;	movw $0xcfc, %dx ;	mov	$0x0, %eax ;	outl	%eax, %dx
+//	mov $0x80000340, %eax ;	movw $0xcf8, %dx ;	outl	%eax, %dx ;	movw $0xcfc, %dx ;	mov	$0xf81c4400, %eax ;	outl	%eax, %dx
 
 	mov $0x8000f04c, %eax ;	movw $0xcf8, %dx ;	outl	%eax, %dx ;	movw $0xcfc, %dx ;	mov	$0x00000001, %eax ;	outl	%eax, %dx
 	mov $0x8000f018, %eax ;	movw $0xcf8, %dx ;	outl	%eax, %dx ;	movw $0xcfc, %dx ;	mov	$0x00010100, %eax ;	outl	%eax, %dx
@@ -143,35 +142,41 @@ spin80xx:
 	mov $0x80010004, %eax ;	movw $0xcf8, %dx ;	outl	%eax, %dx ;	movw $0xcfc, %dx ;	mov	$0x00000007, %eax ;	outl	%eax, %dx
 	mov $0x8000f004, %eax ;	movw $0xcf8, %dx ;	outl	%eax, %dx ;	movw $0xcfc, %dx ;	mov	$0x00000007, %eax ;	outl	%eax, %dx
 
-	movl $0x83c00000, 0x0f600800  // new guy, move the video out of the way
+	movl $0x07633461, 0x0f0010b0
+	movl $0x66660000, 0x0f0010cc
 
+//	movl $0x03e00000, 0x0f600800  // new guy, move the video out of the way
+//	movl $0x0, 0x0f680600  // stopped blue horrors previously
 
 	cld             // clear direction flag
 
-	movl $0x0f680000, %edi
-	xor	%eax, %eax
- 	movl	$0x1000, %ecx
-	rep
-  stosb
-
-
-	movb 0x0f000000, %al
-	cmpb $0xa1, %al
+	movl 0x0f101000, %eax
+	testl $0x000c0000, %eax
 	jnz nota1a
 
-	movl $0x07633451, 0x0f0010b0
-	movl $0x0, 0x0f0010cc
-	movl $0xffff0000, 0x0f0010b8
-	movl $0x5, 0x0f0010d4
+	andl	$0xe1f3ffff, %eax
+	orl $0x80000000, %eax
+	movl %eax, 0x0f101000
+	movl	$0xeeee0000, 0x0f0010b8
+
+//	movl $0x07633451, 0x0f0010b0
+//	movl $0x0, 0x0f0010cc
+//	movl $0xffff0000, 0x0f0010b8
+//	movl $0x5, 0x0f0010d4
 
 	jmp donea1a
 
 nota1a:
 
-	movl $0x07633461, 0x0f0010b0
-	movl $0x66660000, 0x0f0010cc
-	movl $0xffff0000, 0x0f0010b8
-	movl $0x9, 0x0f0010d4
+	andl	$0xe1f3ffff, %eax
+	orl $0x860c0000, %eax
+	movl %eax, 0x0f101000
+	movl	$0xffff0000, 0x0f0010b8
+
+//	movl $0x07633461, 0x0f0010b0
+//	movl $0x66660000, 0x0f0010cc
+//	movl $0xffff0000, 0x0f0010b8
+//	movl $0x9, 0x0f0010d4
 
 donea1a:
 
@@ -293,18 +298,10 @@ donea1c:
 	mov $0x80000340, %eax ;	movw $0xcf8, %dx ;	outl	%eax, %dx ;	movw $0xcfc, %dx ;	mov	$0xf0f0c0c0, %eax ;	outl	%eax, %dx
 	mov $0x80000344, %eax ;	movw $0xcf8, %dx ;	outl	%eax, %dx ;	movw $0xcfc, %dx ;	mov	$0x00c00000, %eax ;	outl	%eax, %dx
 	mov $0x8000035c, %eax ;	movw $0xcf8, %dx ;	outl	%eax, %dx ;	movw $0xcfc, %dx ;	mov	$0x04070000, %eax ;	outl	%eax, %dx
-
-		// skipped dumppy read of MMIO +0 here
-
-//	mov $8, %eax ; timloop1: dec %eax ; cmp $0, %eax ; jnz timloop1
-
-// 5CD
-
 	mov $0x8000036c, %eax ;	movw $0xcf8, %dx ;	outl	%eax, %dx ;	movw $0xcfc, %dx ;	mov	$0x00230801, %eax ;	outl	%eax, %dx
 	mov $0x8000036c, %eax ;	movw $0xcf8, %dx ;	outl	%eax, %dx ;	movw $0xcfc, %dx ;	mov	$0x01230801, %eax ;	outl	%eax, %dx
 
-		// skipped 2 NOPs
-//	mov $8, %eax ; timloop2: dec %eax ; cmp $0, %eax ; jnz timloop2
+	mov $8, %eax ; timloop2: dec %eax ; cmp $0, %eax ; jnz timloop2
 
 		// 5F1
 
@@ -351,6 +348,9 @@ spin3:
 	mov $0x8000f020, %eax ;	movw $0xcf8, %dx ;	outl	%eax, %dx ;	movw $0xcfc, %dx ;	mov	$0xfdf0fd00, %eax ;	outl	%eax, %dx
 	mov $0x80010010, %eax ;	movw $0xcf8, %dx ;	outl	%eax, %dx ;	movw $0xcfc, %dx ;	mov	$0xfd000000, %eax ;	outl	%eax, %dx
 
+#endif
+
+
 
 bootloader2:
 
@@ -377,7 +377,7 @@ selftarget:
 		xor		%edx, %edx
 		wrmsr
 
-		// Init the MTRRs for Ram and BIOS
+		// Init the MTRR for Ram
 
 		movl	$0x200, %ecx // from MCPX 0xee action
 
@@ -424,20 +424,6 @@ selftarget:
 		inc %ecx
 
 /*
-					// MTRR for Video Memory shadow region,
-			// Writethrough type trumps Writeback for overlapping region
-
-		movl	$0x00000000, %edx // 0x00
-		movl	$0xf3000004, %eax // == Writethrough == 4
-		wrmsr
-		inc		%ecx
-			// MASK0 set to 0xfffC00[000] == 4M
-		movl	$0x0000000f, %edx // 0x0f
-		movl	$0xFF000800, %eax  // 0xffC00800
-		wrmsr
-		inc %ecx
-*/
-/*
 			// MTRR for Filtror comms area
 
 		movl	$0x00000000, %edx // 0x00
@@ -466,7 +452,7 @@ cleardown:
 		wrmsr
 
 			/* turn on normal cache */
-
+//		invd
 		movl	%cr0, %eax
 		mov %eax, %ebx
 		andl	$0x9FFFFFFF,%eax
@@ -478,7 +464,7 @@ cleardown:
 		mov	$0x18, %eax
 		.byte 0x8e, 0xd8  // from 2bl first init
 //		movl	$ 0x00200000,%esp
-		movl	$ 0x80000,%esp
+		movl	$ 0x00080000,%esp
 		movw    %ax, %ds
 		movw    %ax, %es
 		movw    %ax, %ss
@@ -488,19 +474,27 @@ cleardown:
 		movw    %ax, %gs
 
 		cld
-#if 0
+
+#if 1
+		// set up the page directory
+
 	mov $0xf000, %edi
-	mov $0x40, %ecx
-	mov $0xe3, %eax
+	mov $0x40, %ecx  // 64 x 4M pages
+	mov $0xe3, %eax  // page dir entry: present, cacheable, 4M page
+
+	// +0-+FF AND +800-+8FF, 256M contiguous region pointing at linear 0-256M
 
 patspin:
 	movl %eax, 0x800(%edi)
 	stosl  // .byte 0xab // stosd
-	add $0x400000, %eax
+	add $0x400000, %eax // bump by 4MBytes page size
 	loop	patspin
 
+	// +100-+7FF AND +900-+FFF, EMPTY
+
 	mov	$0x1c0, %ecx
-	xor	%eax, %eax
+	xor	%eax, %eax  // page dir entry: not present, 4K page
+	mov $0xfffc00f3, %eax  // 4M page, flash area area
 
 patspin2:
 	movl %eax, 0x800(%edi)
@@ -508,14 +502,31 @@ patspin2:
 	loop	patspin2
 
 	mov $0xf000, %edi
-	mov $0xf063, %eax
-	mov %eax, 0xc00(%edi)
-	mov $0xffc000e3, %eax
-	mov %eax, 0xffc(%edi)
-	mov $0xfd0000fb, %eax
+
+	mov $0x3c000f3, %eax
+	mov %eax, 0x3c(%edi) // page table f03c
+	mov %eax, 0x83c(%edi) // page table f03c
+
+	mov $0xf063, %eax  // 4K page page table itself
+	mov %eax, 0xc00(%edi) // page table fc00
+
+	mov $0xff0000e3, %eax  // 4M page, flash area area
+	mov %eax, 0xff0(%edi)// page table entry fffc
+	mov $0xff4000e3, %eax  // 4M page, flash area area
+	mov %eax, 0xff4(%edi)// page table entry fffc
+	mov $0xff8000e3, %eax  // 4M page, flash area area
+	mov %eax, 0xff8(%edi)// page table entry fffc
+	mov $0xffc000e3, %eax  // 4M page, flash area area
+	mov %eax, 0xffc(%edi)// page table entry fffc
+
+	mov $0xfd0000fb, %eax // not cacheable 4M area starting 0xfd000000
 	mov	%eax, %ebx
-	shr	$0x14, %ebx
-	add	%ebx, %edi
+
+	shr	$0x14, %ebx  // divide ebx by 1M, 0xfd0
+	add	%ebx, %edi // add to page table base 0xffd0
+
+		// contiguous 16M area starting 0xfd000000 - 0xfdffffff in page tbl at 0xffd0+
+
 	mov	%eax, (%edi)
 	add	$4, %edi
 	add	$0x400000, %eax
@@ -529,19 +540,18 @@ patspin2:
 
 	mov	%cr0, %eax
 	mov	%eax, %ebx
-	and $0xdf000000, %eax
-	or	$0x04000000, %eax
+	and $0xdfffffff, %eax
+	or	$0x40000000, %eax
 	mov	%eax, %cr0
 	wbinvd
 
 	mov	$0x277, %ecx
-	mov	$0x70106, %eax
+	mov	$0x70106, %eax // was 70106
 	mov	%eax, %edx
 	wrmsr
-	wbinvd
+//	invd
 
 	mov	%ebx, %cr0
-
 
 	mov	%cr4, %eax
 	or	$0x610, %eax
@@ -557,10 +567,10 @@ patspin2:
 	jmp selfPipeKill
 selfPipeKill:
 
-	mov $0x80400000, %esp
+	mov $0x00040000, %esp
 
 #endif
-
+/*
   cld             // clear direction flag
 
 	movl $0, %edi
@@ -568,6 +578,8 @@ selfPipeKill:
  	movl	$0x100000, %ecx
 	rep
   stosb
+
+//	mov $0x00040000, %esp
 
         // copy initiliazed data to ram
 
@@ -589,7 +601,7 @@ selfPipeKill:
         rep
         stosb
 .nobss:
-
+*/
 
 	jmp BootResetAction  // this can be found in BootResetAction.c
 
@@ -604,6 +616,7 @@ selfPipeKill:
 IntHandlerTimer0:
 	pusha
 	pushf
+	cli
 	call	IntHandlerCTimer0
 	mov	$0x20, %al
 	outb	%al, $0x20
@@ -618,6 +631,7 @@ IntHandlerTimer0:
 IntHandler1:
 	pusha
 	pushf
+	cli
 	call	IntHandler1C
 	mov	$0x21, %al
 	outb	%al, $0x20
@@ -632,6 +646,7 @@ IntHandler1:
 IntHandler2:
 	pusha
 	pushf
+	cli
 	call	IntHandler2C
 	mov	$0x22, %al
 	outb	%al, $0x20
@@ -646,6 +661,7 @@ IntHandler2:
 IntHandler3:
 	pusha
 	pushf
+	cli
 	call	IntHandler3VsyncC
 	mov	$0x23, %al
 	outb	%al, $0x20
@@ -660,6 +676,7 @@ IntHandler3:
 IntHandler4:
 	pusha
 	pushf
+	cli
 	call	IntHandler4C
 	mov	$0x24, %al
 	outb	%al, $0x20
@@ -674,6 +691,7 @@ IntHandler4:
 IntHandler5:
 	pusha
 	pushf
+	cli
 	call	IntHandler5C
 	mov	$0x25, %al
 	outb	%al, $0x20
@@ -688,6 +706,7 @@ IntHandler5:
 IntHandler6:
 	pusha
 	pushf
+	cli
 	call	IntHandler6C
 	mov	$0x26, %al
 	outb	%al, $0x20
@@ -702,6 +721,7 @@ IntHandler6:
 IntHandler7:
 	pusha
 	pushf
+	cli
 	call	IntHandler7C
 	mov	$0x27, %al
 	outb	%al, $0x20
@@ -716,6 +736,7 @@ IntHandler7:
 IntHandler8:
 	pusha
 	pushf
+	cli
 	call	IntHandler8C
 		// EOI on master and slave needed
 	mov	$0x60, %al
@@ -733,6 +754,7 @@ IntHandler8:
 IntHandler9:
 	pusha
 	pushf
+	cli
 	call	IntHandler9C
 		// EOI on master and slave needed
 	mov	$0x61, %al
@@ -749,6 +771,7 @@ IntHandler9:
 IntHandler10:
 	pusha
 	pushf
+	cli
 	call	IntHandler10C
 		// EOI on master and slave needed
 	mov	$0x62, %al
@@ -765,15 +788,9 @@ IntHandler10:
 IntHandlerI2C:
 	pusha
 	pushf
+	cli
 	call	IntHandlerCI2C
-/*
-	mov $0xffff, %ax
-	mov	$0x8028, %dx
-	outw	%ax, %dx
-	mov	$0x80cc, %dx
-	mov	$0x40, %al
-	outb	%al, %dx
-*/
+
 		// EOI on master and slave needed
 	mov	$0x63, %al
 	out	%al, $0xa0
@@ -789,6 +806,7 @@ IntHandlerI2C:
 IntHandlerSmc:
 	pusha
 	pushf
+	cli
 	call	IntHandlerCSmc
 
 		// acknowledge EXTSMI# action (from PIC p6)
@@ -813,6 +831,7 @@ IntHandlerSmc:
 IntHandler13:
 	pusha
 	pushf
+	cli
 	call	IntHandler13C
 		// EOI on master and slave needed
 	mov	$0x65, %al
@@ -829,13 +848,9 @@ IntHandler13:
 IntHandlerIde:
 	pusha
 	pushf
+	cli
 	call	IntHandlerCIde
-	mov $0xffff, %ax
-	mov	$0x8028, %dx
-	outw	%ax, %dx
-	mov	$0x80cc, %dx
-	mov	$0x40, %al
-	outb	%al, %dx
+
 		// EOI on master and slave needed
 	mov	$0x66, %al // was $0x20
 	out	%al, $0xa0
@@ -851,6 +866,7 @@ IntHandlerIde:
 IntHandler15:
 	pusha
 	pushf
+	cli
 	call	IntHandler15C
 		// EOI on master and slave needed
 	mov	$0x67, %al
@@ -868,6 +884,7 @@ IntHandler15:
 IntHandlerUnused:
 	pusha
 	pushf
+	cli
 	call	IntHandlerUnusedC
 	mov	$0x20, %al
 	out	%al, $0x20
@@ -881,6 +898,7 @@ IntHandlerUnused:
 IntHandlerUnusedPic2:
 	pusha
 	pushf
+	cli
 	call	IntHandlerUnusedC2
 	mov $0xffff, %ax
 	mov	$0x8028, %dx
@@ -907,6 +925,7 @@ SpareIntNop:
 IntHandlerException0:
 	pusha
 	pushf
+	cli
 	call	IntHandlerException0C
 	popf
 	popa
@@ -916,6 +935,7 @@ IntHandlerException0:
 IntHandlerException1:
 	pusha
 	pushf
+	cli
 	call	IntHandlerException1C
 	popf
 	popa
@@ -925,6 +945,7 @@ IntHandlerException1:
 IntHandlerException2:
 	pusha
 	pushf
+	cli
 	call	IntHandlerException2C
 	popf
 	popa
@@ -934,6 +955,7 @@ IntHandlerException2:
 IntHandlerException3:
 	pusha
 	pushf
+	cli
 	call	IntHandlerException3C
 	popf
 	popa
@@ -943,6 +965,7 @@ IntHandlerException3:
 IntHandlerException4:
 	pusha
 	pushf
+	cli
 	call	IntHandlerException4C
 	popf
 	popa
@@ -952,6 +975,7 @@ IntHandlerException4:
 IntHandlerException5:
 	pusha
 	pushf
+	cli
 	call	IntHandlerException5C
 	popf
 	popa
@@ -961,6 +985,7 @@ IntHandlerException5:
 IntHandlerException6:
 	pusha
 	pushf
+	cli
 	call	IntHandlerException6C
 	popf
 	popa
@@ -970,6 +995,7 @@ IntHandlerException6:
 IntHandlerException7:
 	pusha
 	pushf
+	cli
 	call	IntHandlerException7C
 	popf
 	popa
@@ -979,6 +1005,7 @@ IntHandlerException7:
 IntHandlerException8:
 	pusha
 	pushf
+	cli
 	call	IntHandlerException8C
 	popf
 	popa
@@ -988,6 +1015,7 @@ IntHandlerException8:
 IntHandlerException9:
 	pusha
 	pushf
+	cli
 	call	IntHandlerException9C
 	popf
 	popa
@@ -997,6 +1025,7 @@ IntHandlerException9:
 IntHandlerExceptionA:
 	pusha
 	pushf
+	cli
 	call	IntHandlerExceptionAC
 	popf
 	popa
@@ -1006,6 +1035,7 @@ IntHandlerExceptionA:
 IntHandlerExceptionB:
 	pusha
 	pushf
+	cli
 	call	IntHandlerExceptionBC
 	popf
 	popa
@@ -1015,6 +1045,7 @@ IntHandlerExceptionB:
 IntHandlerExceptionC:
 	pusha
 	pushf
+	cli
 	call	IntHandlerExceptionCC
 	popf
 	popa
@@ -1024,6 +1055,7 @@ IntHandlerExceptionC:
 IntHandlerExceptionD:
 	pusha
 	pushf
+	cli
 	call	IntHandlerExceptionDC
 	popf
 	popa
@@ -1033,6 +1065,7 @@ IntHandlerExceptionD:
 IntHandlerExceptionE:
 	pusha
 	pushf
+	cli
 	call	IntHandlerExceptionEC
 	popf
 	popa
@@ -1042,6 +1075,7 @@ IntHandlerExceptionE:
 IntHandlerExceptionF:
 	pusha
 	pushf
+	cli
 	call	IntHandlerExceptionFC
 	popf
 	popa
@@ -1051,6 +1085,7 @@ IntHandlerExceptionF:
 IntHandlerException10:
 	pusha
 	pushf
+	cli
 	call	IntHandlerException10C
 	popf
 	popa

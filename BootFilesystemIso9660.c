@@ -12,6 +12,7 @@
 
 #include "boot.h"
 #include <ctype.h>
+#include <string.h>
 
 // ISO9660 likes fixed length, space-padded strings, we don't.
 
@@ -72,12 +73,42 @@ int BootIso9660GoDownOneLevelOrHit(DWORD dwSector, DWORD dwBytesToScan, const ch
 
 		char *szc = (char *)(&pisdr->m_cFirstFileIdPlaceholder);
 			// compute what's left after total struct size and 8.3 name
-		int nCharsLeft=pisdr->m_bLength - ((szc-((char *)pisdr)) + pisdr->m_bFileIdentifierLength );
+		int nCharsLeft=pisdr->m_bLength - ((szc-((char *)pisdr))  );
+
+			// check mangled 8.3 version
+
+//		{ int n=0; for(n=0;n<pisdr->m_bFileIdentifierLength;n++) { printk("%c", szc[n]); } printk("\n"); }
+
+		 {
+
+			int n=0;
+			while((n<strlen(szcName)) && (szc[n]==szcName[n]) && (szc[n]!=';')) n++;
+
+			if((n==strlen(szcName)) && (szc[n]==';')) {
+
+				*pisdrForFile = *pisdr; // copy over results
+				if(pisdr->m_bFileFlags & 1) {
+//						printk("returning dir hit\n");
+					free(ba);
+					return 2; // its a hit: its a directory
+				}
+//					printk("returning file hit\n");
+				free(ba);
+				return 1; // its a hit: its a file
+			}
+		}
+
+		nCharsLeft-=pisdr->m_bFileIdentifierLength;
 		szc+=pisdr->m_bFileIdentifierLength; // skip over the horrible mangled 8.3 version
 
 //		 VideoDumpAddressAndData((DWORD)pisdr, (BYTE *)szc-0x10, 0x20);
 
 //		printk("pisdr->m_bFileIdentifierLength=%d\n", pisdr->m_bFileIdentifierLength);
+		if(pisdr->m_bFileIdentifierLength==0) { // uh oh
+//				printk("returning, zero length identifier seen\n");
+				free(ba);
+				return 0;
+		}
 		if(*szc=='\0') szc++;  // 00 separator on some, not on others.  Can never be 00 by accident
 
 			// structure of extended names seems to be two char extension descriptor, eg, RR
@@ -111,7 +142,7 @@ int BootIso9660GoDownOneLevelOrHit(DWORD dwSector, DWORD dwBytesToScan, const ch
 					if(szcName[n1]=='\0') { fGood=false; n=nHitLength; }
 					if(szc[n++]!=szcName[n1++]) { fGood=false; n=nHitLength; }
 				}
-				
+
 				if(fGood) if(szcName[n1]!='\0') fGood=false;
 
 				if(fGood) {

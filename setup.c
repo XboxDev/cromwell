@@ -70,9 +70,12 @@ extern void* framebuffer;
 void setup(void* KernelPos, void* PhysInitrdPos, void* InitrdSize, char* kernel_cmdline) {
     int cmd_line_ptr;
     struct kernel_setup_t *kernel_setup = (struct kernel_setup_t*)KernelPos;
-//		int resolution=480;
+		DWORD dwInterrupt;
+		
+		BootPciInterruptGlobalStackStateAndDisable(&dwInterrupt);
 
-    /* init kernel parameters */
+
+		/* init kernel parameters */
     kernel_setup->loader = 0xff;		/* must be != 0 */
     kernel_setup->heap_end_ptr = 0xffff;	/* 64K heap */
     kernel_setup->flags = 0x81;			/* loaded high, heap existant */
@@ -100,10 +103,10 @@ void setup(void* KernelPos, void* PhysInitrdPos, void* InitrdSize, char* kernel_
     kernel_setup->orig_video_points = 16;
     kernel_setup->lfb_depth = 32;
     kernel_setup->lfb_width = SCREEN_WIDTH;
-	    
+
 		kernel_setup->lfb_height = VIDEO_HEIGHT; // SCREEN_HEIGHT_480;
-		memcpy((void *)(60 * 1024 * 1024), (void *)((*(unsigned int*)0xFD600800)&0x7fffffff), 640*480*4);
-		(*(unsigned int*)0xFD600800)= (60 * 1024 * 1024)|0x80000000;
+		memcpy((void *)(60 * 1024 * 1024), (void *)((*(unsigned int*)0xFD600800)&0x7fffffff), 640*VIDEO_HEIGHT*4);
+		(*(unsigned int*)0xFD600800)= (60 * 1024 * 1024);
 	  kernel_setup->lfb_base = (0xf0000000|*(unsigned int*)0xFD600800); // 0xF0000000+NEW_FRAMEBUFFER_480;
 //	printk("kernel_setup->lfb_base=0x%08X\n", kernel_setup->lfb_base);
 		kernel_setup->lfb_size = (4 * 1024 * 1024)/0x10000; // (FRAMEBUFFER_SIZE_480+0xFFFF)/0x10000;
@@ -137,4 +140,7 @@ void setup(void* KernelPos, void* PhysInitrdPos, void* InitrdSize, char* kernel_
     kernel_setup->cmd_line_ptr = (DWORD)((BYTE *)kernel_setup)+cmd_line_ptr;
     memcpy((char*)(KernelPos+cmd_line_ptr), kernel_cmdline, 512);
     *(char*)(KernelPos+cmd_line_ptr+511) = 0;
+
+		BootPciInterruptGlobalPopState(dwInterrupt);
+
 }
