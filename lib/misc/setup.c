@@ -70,9 +70,10 @@ extern void* framebuffer;
 void setup(void* KernelPos, void* PhysInitrdPos, void* InitrdSize, char* kernel_cmdline) {
     int cmd_line_ptr;
     struct kernel_setup_t *kernel_setup = (struct kernel_setup_t*)KernelPos;
-		DWORD dwInterrupt;
+    DWORD dwInterrupt;
 
-		BootPciInterruptGlobalStackStateAndDisable(&dwInterrupt);
+    //memset(kernel_setup,0x00,sizeof(struct kernel_setup_t));
+    BootPciInterruptGlobalStackStateAndDisable(&dwInterrupt);
 
 
 		/* init kernel parameters */

@@ -1,4 +1,4 @@
 
-O_TARGET := BootStartBios.o BootStartup.o MachineInit.o
+O_TARGET := BootStartBios.o BootStartup.o
 
 include $(TOPDIR)/Rules.make

@@ -110,7 +110,7 @@ int BootLodaConfigNative(int nActivePartition, CONFIGENTRY *config, bool fJustTe
 	DWORD dwConfigSize=0;
 	char szGrub[256+4];
         
-        memset(&szGrub,0x00,256+4);
+        memset(szGrub,0,256+4);
         
 	memset((BYTE *)0x90000,0,4096);
 
@@ -143,7 +143,7 @@ int BootLodaConfigNative(int nActivePartition, CONFIGENTRY *config, bool fJustTe
 
 	//strcpy(&szGrub[4], config->szKernel);
         _strncpy(&szGrub[4], config->szKernel,sizeof(config->szKernel));
-        
+
 		// Force a particular kernel to be loaded here
 		// leave commented out normally
 //	strcpy(&szGrub[4], "/boot/vmlinuz-2.4.20-xbox");
@@ -170,8 +170,8 @@ int BootLodaConfigNative(int nActivePartition, CONFIGENTRY *config, bool fJustTe
 		VIDEO_ATTR=0xffd8d8d8;
 		printk("  Loading %s ", config->szInitrd);
 		VIDEO_ATTR=0xffa8a8a8;
-		//strcpy(&szGrub[4], config->szInitrd);
-		_strncpy(&szGrub[4], config->szInitrd,sizeof(config->szInitrd));
+//		strcpy(&szGrub[4], config->szInitrd); 
+ 		_strncpy(&szGrub[4], config->szInitrd,sizeof(config->szInitrd));
 		nRet=grub_open(szGrub);
 		if(filemax==0) {
 			printf("Empty file\n"); while(1);
@@ -201,7 +201,10 @@ int BootLodaConfigFATX(CONFIGENTRY *config, bool fJustTestingForPossible) {
 	static FATXFILEINFO infoinitrd;
 
 	memset((BYTE *)0x90000,0,4096);
-
+	memset(&fileinfo,0x00,sizeof(fileinfo));
+	memset(&infokernel,0x00,sizeof(infokernel));
+	memset(&infoinitrd,0x00,sizeof(infoinitrd));
+	
 	if(!fJustTestingForPossible) printk("Loading linuxboot.cfg form FATX\n");
 	partition = OpenFATXPartition(0,
 			SECTOR_STORE,
@@ -380,12 +383,10 @@ int BootLodaConfigCD(CONFIGENTRY *config) {
 	dwKernelSize=BootIso9660GetFile(config->szKernel, (BYTE *)0x90000, 0x400, 0x0);
 
 	if(((int)dwKernelSize)<0) { // not found, try 8.3
-		//strcpy(config->szKernel, "/VMLINUZ.");
-		_strncpy(config->szKernel, "/VMLINUZ.",sizeof(config->szKernel));
+		strcpy(config->szKernel, "/VMLINUZ.");
 		dwKernelSize=BootIso9660GetFile(config->szKernel, (BYTE *)0x90000, 0x400, 0x0);
 		if(((int)dwKernelSize)<0) { 
-			//strcpy(config->szKernel, "/VMLINUZ_.");
-			_strncpy(config->szKernel, "/VMLINUZ_.",sizeof(config->szKernel));
+			strcpy(config->szKernel, "/VMLINUZ_.");
 			dwKernelSize=BootIso9660GetFile(config->szKernel, (BYTE *)0x90000, 0x400, 0x0);
 			if(((int)dwKernelSize)<0) { printk("Not Found, error %d\nHalting\n", dwKernelSize); while(1) ; }
 		}
@@ -406,12 +407,10 @@ int BootLodaConfigCD(CONFIGENTRY *config) {
 
 		dwInitrdSize=BootIso9660GetFile(config->szInitrd, (void *)0x03000000, 4096*1024, 0);
 		if((int)dwInitrdSize<0) { // not found, try 8.3
-			//strcpy(config->szInitrd, "/INITRD.");
-			_strncpy(config->szInitrd, "/INITRD.",sizeof(config->szInitrd));
+			strcpy(config->szInitrd, "/INITRD.");
 			dwInitrdSize=BootIso9660GetFile(config->szInitrd, (void *)0x03000000, 4096*1024, 0);
 			if((int)dwInitrdSize<0) { // not found, try 8.3
-				//strcpy(config->szInitrd, "/INITRD_I.");
-				_strncpy(config->szInitrd, "/INITRD_I.",sizeof(config->szInitrd));
+				strcpy(config->szInitrd, "/INITRD_I.");
 				dwInitrdSize=BootIso9660GetFile(config->szInitrd, (void *)0x03000000, 4096*1024, 0);
 				if((int)dwInitrdSize<0) { printk("Not Found, error %d\nHalting\n", dwInitrdSize); while(1) ; }
 			}
@@ -503,14 +502,12 @@ void StartBios(	int nDrive, int nActivePartition , int nFATXPresent) {
 #ifdef MENU
 	int nTempCursorResumeX, nTempCursorResumeY, nTempStartMessageCursorX, nTempStartMessageCursorY;
 #endif
-	int nIcon = ICONCOUNT;
-
+	int nIcon = ICONCOUNT; 
 
 	BootPciInterruptEnable();
-        
-        memset(&szGrub,0,256+4);
+
+	memset(szGrub,0x00,sizeof(szGrub));
 	memset(&config,0,sizeof(CONFIGENTRY));
-	
 
 	szGrub[0]=0xff; szGrub[1]=0xff; szGrub[2]=nActivePartition; szGrub[3]=0x00;
 
@@ -682,6 +679,44 @@ void StartBios(	int nDrive, int nActivePartition , int nFATXPresent) {
 		} else {
 			printk("Defaulting to CD boot\n");
 			nIcon = ICON_CD;
+			
+			
+			//Dumping some PCI registers
+			//DWORD PciReadDword(unsigned int bus, unsigned int dev, unsigned int func, unsigned int reg_off);
+                 /*
+			for (a=0x10;a<0xF0;a=a+16) {
+				tmp = PciReadDword(0,0,0,a);
+				printk("%02X :-> %08x  ",a,tmp);
+	
+				tmp = PciReadDword(0,0,0,a+4);				
+				printk("%02X :-> %08x  ",a+4,tmp);
+
+				tmp = PciReadDword(0,0,0,a+4+4);				
+				printk("%02X :-> %08x  ",a+4+4,tmp);
+
+				tmp = PciReadDword(0,0,0,a+4+4+4);				
+				printk("%02X :-> %08x \n",a+4+4+4,tmp);
+	
+
+
+				
+			}
+		*/	
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
+			
 		}
 	}
 
@@ -778,95 +813,113 @@ void StartBios(	int nDrive, int nActivePartition , int nFATXPresent) {
 
 	"cli \n"
 
-		// kill the cache
+	// kill the cache
 
 	"mov %cr0, %eax \n"
 	"orl	$0x60000000, %eax \n"
-	"andl	$0x7fffffff, %eax \n" // turn off paging
+	"andl	$0x7fffffff, %eax \n" 		// turn off paging
 	"mov	%eax, %cr0 \n"
 	"wbinvd \n"
 
 	"mov	%cr3, %eax \n"
 	"mov	%eax, %cr3 \n"
 
+	// Clear Memory Defines
 	"movl	$0x2ff, %ecx \n"
-		"xor		%eax, %eax \n"
-		"xor		%edx, %edx \n"
-		"wrmsr \n"
+	"xor	%eax, %eax \n"
+	"xor	%edx, %edx \n"
+	"wrmsr \n"
 
-		// Init the MTRRs for Ram and BIOS
+	// Init the MTRRs for Ram and BIOS
+        
+        // MTRR for Memory-mapped regs 0xf8xxxxxx .. 0xffxxxxxx - uncached
+	"movl	$0x200, %ecx \n"		// Base 0
+        "movl	$0x00000000, %edx \n" 		// 0x00
+	"movl	$0xF8000000, %eax  \n"		// == no cache
+	"wrmsr \n"
+	
+	"movl	$0x201, %ecx \n"		// Mask 0
+						// MASK0 set to 0xff0000[000] == 16M
+	"movl	$0x0000000f, %edx \n" 		// 0x0f
+	"movl	$0xF8000800, %eax \n"  		// 0xff000800
+	"wrmsr \n"
+	
+	
+	"movl	$0x202, %ecx \n"		// Base 1
+						// MTRR for shadow video memory
+        "movl	$0x00000000, %edx  \n"		// 0x00
+	"movl	$0xf0000005, %eax  \n"		// == Cacheable
+	"wrmsr \n"
+	
+	"movl	$0x203, %ecx \n"		// Mask 1
+						// MASK set to 0xfffC00[000] == 4M
+	"movl	$0x0000000f, %edx  \n"		// 0x0f
+	"movl	$0xff000800, %eax   \n"		// 0xffC00800
+	"wrmsr \n"
+	
+	
+	"movl	$0x204, %ecx \n"		// Base 2
+						// MTRR for shadow video memory
+	"movl	$0x00000000, %edx  \n"		// 0x00
+	"movl	$0xc0000004, %eax  \n"		// == Cacheable
+	"wrmsr \n"
+	
+	"movl	$0x205, %ecx \n"       		// Mask 2
+						// MASK set to 0xfffC00[000] == 4M
+	"movl	$0x0000000f, %edx  \n"		// 0x0f
+	"movl	$0xc0000800, %eax   \n"		// 0xffC00800
+	"wrmsr \n"                              
+	
+	"movl	$0x206, %ecx \n"		// Base 3
+						// MTRR for main RAM
+	"movl	$0x00000000, %edx  \n"		// 0x00
+	"movl	$0x00000006, %eax  \n"		// == Cacheable
+	"wrmsr \n"
+	
+	"movl	$0x207, %ecx \n"		// Mask 3
+						// MASK set to 0xfffC00[000] == 4M
+	"movl	$0x0000000f, %edx  \n"		// 0x0f
+	"movl	$0xfc000800, %eax   \n"		// 0xffC00800
+	"wrmsr \n"
+	
+	
+        "xor	%eax, %eax  \n"
+	"xor	%edx, %edx  \n"
+	
+	"movl	$0x208, %ecx  \n"		// IA32_MTRR_PHYS Base 4
+        "wrmsr  \n"                                                   
+	"movl	$0x209, %ecx  \n"		// IA32_MTRR_PHYS_MASK 4
+        "wrmsr  \n"                                                   
 
-		"movl	$0x200, %ecx \n" // from MCPX 0xee action
+	"movl	$0x20a, %ecx  \n"		// IA32_MTRR_PHYS Base 5
+        "wrmsr  \n"                                                   
+	"movl	$0x20b, %ecx  \n"		// IA32_MTRR_PHYS_MASK 5
+        "wrmsr  \n"                                                   
 
-			// MTRR for Memory-mapped regs 0xf8xxxxxx .. 0xffxxxxxx - uncached
+	"movl	$0x20c, %ecx  \n"		// IA32_MTRR_PHYS Base 6
+        "wrmsr  \n"                                                   
+	"movl	$0x20d, %ecx  \n"		// IA32_MTRR_PHYS_MASK 6
+        "wrmsr  \n"                                                   
 
-		"movl	$0x00000000, %edx \n" // 0x00
-		"movl	$0xF8000000, %eax  \n"// == no cache
-		"wrmsr \n"
-		"inc		%ecx \n"
-			// MASK0 set to 0xff0000[000] == 16M
-		"movl	$0x0000000f, %edx \n" // 0x0f
-		"movl	$0xF8000800, %eax \n"  // 0xff000800
-		"wrmsr \n"
-		"inc %ecx \n"
-
-					// MTRR for shadow video memory
-
-		"movl	$0x00000000, %edx  \n"// 0x00
-		"movl	$0xf0000005, %eax  \n"// == Cacheable
-		"wrmsr \n"
-		"inc		%ecx \n"
-			// MASK0 set to 0xfffC00[000] == 4M
-		"movl	$0x0000000f, %edx  \n"// 0x0f
-		"movl	$0xff000800, %eax   \n"// 0xffC00800
-		"wrmsr \n"
-		"inc %ecx \n"
-
-							// MTRR for shadow video memory
-
-		"movl	$0x00000000, %edx  \n"// 0x00
-		"movl	$0xc0000004, %eax  \n"// == Cacheable
-		"wrmsr \n"
-		"inc		%ecx \n"
-			// MASK0 set to 0xfffC00[000] == 4M
-		"movl	$0x0000000f, %edx  \n"// 0x0f
-		"movl	$0xc0000800, %eax   \n"// 0xffC00800
-		"wrmsr \n"
-		"inc %ecx \n"
-
-
-			// MTRR for main RAM
-
-		"movl	$0x00000000, %edx  \n"// 0x00
-		"movl	$0x00000006, %eax  \n"// == Cacheable
-		"wrmsr \n"
-		"inc		%ecx \n"
-			// MASK0 set to 0xfffC00[000] == 4M
-		"movl	$0x0000000f, %edx  \n"// 0x0f
-		"movl	$0xfc000800, %eax   \n"// 0xffC00800
-		"wrmsr \n"
-		"inc %ecx \n"
-
-		"xor		%eax, %eax \n"
-		"xor		%edx, %edx \n"
-"cleardown: \n"
-		"wrmsr \n"
-		"inc	%ecx \n"
-		"cmpb	$0xf, %cl \n"
-		"jna cleardown \n"
-
+	"movl	$0x20e, %ecx  \n"		// IA32_MTRR_PHYS Base 7
+        "wrmsr  \n"                                                   
+	"movl	$0x20f, %ecx  \n"		// IA32_MTRR_PHYS_MASK 7
+        "wrmsr  \n"                                                   
+        
+        
 // madeline
 
-		"movl	$0x2ff, %ecx \n"
-		"movl	$0x806, %eax  \n"// edx still 0, default to CACHEABLE Enable MTRRs
-		"wrmsr \n"
+	"xor %edx, %edx \n"
+	"movl	$0x2ff, %ecx \n"
+	"movl	$0x806, %eax  \n"		// default to CACHEABLE Enable MTRRs
+	"wrmsr \n"
 
-			/* turn on normal cache, TURN OFF PAGING */
+	/* turn on normal cache, TURN OFF PAGING */
 
-		"movl	%cr0, %eax \n"
-		"mov %eax, %ebx \n"
-		"andl	$0x1FFFFFFF,%eax \n"
-		"movl	%eax, %cr0 \n"
+	"movl	%cr0, %eax \n"
+	"mov %eax, %ebx \n"
+	"andl	$0x1FFFFFFF,%eax \n"
+	"movl	%eax, %cr0 \n"
 
 	"movl $0x90000, %esi        \n"
 	"xor %ebx, %ebx \n"

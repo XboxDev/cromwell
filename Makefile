@@ -3,16 +3,16 @@ INCLUDE = -I$(TOPDIR)/grub -I$(TOPDIR)/include -I$(TOPDIR)/ -I./ -I$(TOPDIR)/fs/
 	-I$(TOPDIR)/fs/fatx -I$(TOPDIR)/lib/eeprom -I$(TOPDIR)/lib/crypt -I$(TOPDIR)/drivers/usb \
 	-I$(TOPDIR)/drivers/video -I$(TOPDIR)/drivers/flash -I$(TOPDIR)/lib/misc \
 	-I$(TOPDIR)/fs/grub -I$(TOPDIR)/lib/font -I$(TOPDIR)/lib/jpeg-6b
-#CFLAGS	= -g -O2 -Wall -Werror $(INCLUDE)
-CFLAGS	= -g -O2 -Wall -fomit-frame-pointer -mcpu=pentium3 $(INCLUDE)
+CFLAGS	= -g -O2 -Wall -Werror $(INCLUDE)
 #CFLAGS	= -g -O0 -Wall -Werror $(INCLUDE)
 LD      = ld
 OBJCOPY = objcopy
 
+export CC
+
 TOPDIR  := $(shell /bin/pwd)
 SUBDIRS	=	fs drivers lib boot boot_xbe
 OBJECTS = $(TOPDIR)/obj/BootStartup.o
-OBJECTS += $(TOPDIR)/obj/MachineInit.o
 OBJECTS += $(TOPDIR)/obj/BootPerformPicChallengeResponseAction.o
 OBJECTS += $(TOPDIR)/obj/BootPciPeripheralInitialization.o
 OBJECTS += $(TOPDIR)/obj/BootVgaInitialization.o
