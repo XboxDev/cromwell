@@ -60,7 +60,7 @@
 .section .low_rom, "ax"
 
 .org 0x0
-	/* MCPX Magic Values */
+	/* MCPX Magic Values - clock timings*/
 	
 	.long 0xff000009
 	.long 0xff000008
@@ -74,7 +74,7 @@
 	.long 0xc8fc7c8a	// MCPX =< D5
 	.long 0x44290213
 	.long 0x90004998		
-	.long 0x0
+	.long 0x00000000
 	#else
 	.long 0xc8b4588a	// MCPX 1.6 > D5
 	.long 0x00100000
@@ -98,12 +98,12 @@
 	
 	#ifndef MCPXREVD5
 	.long 0x12d10070
+	.long 0x00000c90
 	#else
 	.long 0x16ce0090
+	.long 0x00000dc0	
 	#endif
 	
-	.long 0x00000c90
-		
 	
 	// Here, the Bytecode interpretor starts
 	.org 0x80
@@ -278,11 +278,7 @@
 
 	// If SMC version does not match ... ?????
 	xcode_inb(SMBUS+6);
-#if 0
-        xcode_ifgoto(0x00000050,2);
-        xcode_goto(2);
-	xcode_pciout(0x8000036c, 0x01000000);
-#endif
+	
 	xcode_poke(0x0f680500, 0x00011c01);
 	xcode_poke(0x0f68050c, 0x000a0400);
 	xcode_poke(0x0f001220, 0x00000000);
@@ -377,12 +373,8 @@
 
        	xcode_END(0x806);
 
-
-
-
-
 	// Note: never change this from offset 0x1000 ....
-// This is the Main Entry point ....        
+	// This is the Main Entry point ....        
         .org 0x1000
         
        	// Good Morning CPU
@@ -418,7 +410,7 @@
 	mov	%eax, %eax
 	mov	%eax, %cr3
 
-	// Clear Mmeory Type register
+	// Clear Memory Type register
 	movl	$0x2ff, %ecx
 	xor	%eax, %eax
 	xor	%edx, %edx
@@ -528,14 +520,7 @@
 /*
   We leave Flash at this point, we never come back to it anymore.
   the following ASM instructions below, already are linked to memory (look to the ldscript in this case)
-  
-
 */
-
-
-
-
-
 
 .section .text, "ax"
                          
@@ -582,7 +567,7 @@ initaftermemcpy:
 
 */ 
         // We set up a GDT now, this is not necessary needed, 
-        // but i perfeer a GDT, as we have more ability with commands
+        // but it is preferred, as we have more ability with commands
         
         // We clear the IDT in RAM
         xor %eax,%eax
