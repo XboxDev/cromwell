@@ -109,7 +109,9 @@ void StartBios(	int nDrive, int nActivePartition ) {
 	FATXFILEINFO infokernel;
 	FATXFILEINFO infoinitrd;
 	FATXPartition *partition = NULL;
+	/*
 	struct SHA1Context context;
+	*/
 #endif
 
 #ifndef XBE

@@ -19,7 +19,7 @@
 #define DISPLAY_MBR_INFO
 
 // Enable FATX Support
-//#define ENABLE_FATX
+#define ENABLE_FATX
 
 // uncomment to do Ethernet init
 //#define DO_ETHERNET 1
