@@ -392,34 +392,20 @@ static int ohci_get_frame (struct usb_hcd *hcd)
 static int hc_reset (struct ohci_hcd *ohci)
 {
 	u32 temp;
-
-	/* SMM owns the HC?  not for long!
-	 * On PA-RISC, PDC can leave IR set incorrectly; ignore it there.
-	 */
-#ifndef __hppa__
-	if (readl (&ohci->regs->control) & OHCI_CTRL_IR) {
-		ohci_dbg (ohci, "USB HC TakeOver from BIOS/SMM\n");
-
-		/* this timeout is arbitrary.  we make it long, so systems
-		 * depending on usb keyboards may be usable even if the
-		 * BIOS/SMM code seems pretty broken.
-		 */
-		temp = 500;	/* arbitrary: five seconds */
-
-		writel (OHCI_INTR_OC, &ohci->regs->intrenable);
-		writel (OHCI_OCR, &ohci->regs->cmdstatus);
-		while (readl (&ohci->regs->control) & OHCI_CTRL_IR) {
-			wait_ms (10);
-			if (--temp == 0) {
-				ohci_err (ohci, "USB HC TakeOver failed!\n");
-				return -1;
-			}
-		}
-	}
-#endif
-
+	u32 ints;
+	u32 control;
+	
 	/* Disable HC interrupts */
 	writel (OHCI_INTR_MIE, &ohci->regs->intrdisable);
+	// acknowledge all pending interrupts
+	ints = readl(&ohci->regs->intrstatus);
+	writel (ints, &ohci->regs->intrstatus);
+
+	if (readl (&ohci->regs->control) & OHCI_CTRL_IR) {
+		// takeover without negotiation - there is noone to negotiate with
+		control = readl (&ohci->regs->control) & ~OHCI_CTRL_IR;
+		writel (control, &ohci->regs->control);
+	}
 
 	ohci_dbg (ohci, "USB HC reset_hc %s: ctrl = 0x%x ;\n",
 		hcd_to_bus (&ohci->hcd)->bus_name,
