@@ -43,5 +43,7 @@ typedef enum {
 int BootIdeInit(void);
 int BootIdeReadSector(int nDriveIndex, void * pbBuffer, unsigned int block, int byte_offset, int n_bytes) ;
 int BootIdeReadData(unsigned uIoBase, void * buf, size_t size);
+int DriveSecurityChange(unsigned uIoBase, int driveId, ide_command_t ide_cmd, unsigned char *password);
+int CalculateDrivePassword(int driveId, unsigned char *key);
 
 #endif

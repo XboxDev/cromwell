@@ -36,7 +36,7 @@ void DetectVideoEncoder(void) {
 char *VideoEncoderName(void) {
 	char *focus_name="Focus";
 	char *conexant_name="Conexant";
-	char *xcalibur_name="XCalibur";
+	char *xcalibur_name="Xcalibur";
 	char *unknown_name="Unknown";
 
 	switch (video_encoder) {
@@ -123,17 +123,19 @@ void BootVgaInitializationKernelNG(CURRENT_VIDEO_MODE_DETAILS * pvmode) {
 	pvmode->m_fForceEncoderLumaAndChromaToZeroInitially=1;
 	pvmode->m_bBPP = 32;
 
-	b=I2CTransmitByteGetReturn(0x54, 0x5A); // the eeprom defines the TV standard for the box
-
 	// The values for hoc and voc are stolen from nvtv small mode
-
-	if(b != 0x40) {
-		pvmode->hoc = 13.44;
-		pvmode->voc = 14.24;
-	} else {
-		pvmode->hoc = 15.11;
-		pvmode->voc = 14.81;
+	switch (tv_encoding) {
+		case TV_ENC_PALBDGHI:
+			pvmode->hoc = 13.44;
+			pvmode->voc = 14.24;
+			break;
+		case TV_ENC_NTSC:
+		default:
+			pvmode->hoc = 15.11;
+			pvmode->voc = 14.81;
+			break;
 	}
+
 	pvmode->hoc /= 100.0;
 	pvmode->voc /= 100.0;
 
@@ -197,7 +199,6 @@ void BootVgaInitializationKernelNG(CURRENT_VIDEO_MODE_DETAILS * pvmode) {
 			pvmode->height=480;
 			pvmode->xmargin=0;
 		 	pvmode->ymargin=0;
-        
 
 			if (video_encoder==ENCODER_XCALIBUR) {
 				/* This info should be in the xcalibur.c file, but
@@ -222,12 +223,17 @@ void BootVgaInitializationKernelNG(CURRENT_VIDEO_MODE_DETAILS * pvmode) {
 			gpu.crtcvtotal = gpu.nvvtotal;
 			
 			pll_int = (unsigned char)((double)27027 * 6.0 / 13.5e3 + 0.5);
-			if (video_encoder == ENCODER_CONEXANT)
-				encoder_ok = conexant_calc_hdtv_mode(hdtv_mode, pll_int, &(newmode.encoder_regs));
-			else if (video_encoder == ENCODER_FOCUS)
-				encoder_ok = focus_calc_hdtv_mode(hdtv_mode, pll_int, &(newmode.encoder_regs));
-			else if (video_encoder == ENCODER_XCALIBUR) 
-				encoder_ok = xcalibur_calc_hdtv_mode(hdtv_mode, pll_int, &(newmode.encoder_regs));
+			switch (video_encoder) {
+				case ENCODER_CONEXANT:
+					encoder_ok = conexant_calc_hdtv_mode(hdtv_mode, pll_int, &(newmode.encoder_regs));
+					break;
+				case ENCODER_FOCUS:
+					encoder_ok = focus_calc_hdtv_mode(hdtv_mode, pll_int, &(newmode.encoder_regs));
+					break;
+				case ENCODER_XCALIBUR:
+					encoder_ok = xcalibur_calc_hdtv_mode(hdtv_mode, pll_int, &(newmode.encoder_regs));
+					break;
+			}
 		}
 		else {
 			//VGA or VGA_SOG
@@ -248,11 +254,17 @@ void BootVgaInitializationKernelNG(CURRENT_VIDEO_MODE_DETAILS * pvmode) {
 			gpu.crtcvstart = gpu.nvvstart;
 			gpu.crtcvtotal = gpu.nvvtotal;
 			pll_int = (unsigned char)((double)36000 * 6.0 / 13.5e3 + 0.5);
-			
-			if (video_encoder == ENCODER_CONEXANT)
-				encoder_ok = conexant_calc_vga_mode(av_type, pll_int, &(newmode.encoder_regs));
-			else if (video_encoder == ENCODER_FOCUS);
-				//No focus VGA functions as yet
+		
+			switch (video_encoder) {
+				case ENCODER_CONEXANT:
+					encoder_ok = conexant_calc_vga_mode(av_type, pll_int, &(newmode.encoder_regs));
+					break;
+				case ENCODER_FOCUS:
+				case ENCODER_XCALIBUR:
+					//No support for these yet
+					break;
+		
+			}
 		}
 	}
 	else {	
@@ -298,14 +310,16 @@ void BootVgaInitializationKernelNG(CURRENT_VIDEO_MODE_DETAILS * pvmode) {
 		encoder_mode.av_type = av_type;
 		encoder_mode.tv_encoding = tv_encoding;
 
-		if (video_encoder == ENCODER_CONEXANT) {
-			encoder_ok = conexant_calc_mode(&encoder_mode, &newmode);
-		}
-		else if (video_encoder == ENCODER_FOCUS) {
-			encoder_ok = focus_calc_mode(&encoder_mode, &newmode);
-		}
-		else if (video_encoder == ENCODER_XCALIBUR) {
-			encoder_ok = xcalibur_calc_mode(&encoder_mode, &newmode);
+		switch (video_encoder) {
+			case ENCODER_CONEXANT:
+				encoder_ok = conexant_calc_mode(&encoder_mode, &newmode);
+				break;
+			case ENCODER_FOCUS:
+				encoder_ok = focus_calc_mode(&encoder_mode, &newmode);
+				break;
+			case ENCODER_XCALIBUR:
+				encoder_ok = xcalibur_calc_mode(&encoder_mode, &newmode);
+				break;
 		}
         	
 		gpu.xres = pvmode->width;
@@ -399,28 +413,32 @@ void BootVgaInitializationKernelNG(CURRENT_VIDEO_MODE_DETAILS * pvmode) {
 	NVSetFBStart (&riva, 0, pvmode->m_dwFrameBufferStart);
 	IoOutputByte(0x80d3, 4);  // ACPI IO video enable REQUIRED <-- particularly crucial to get composite out
 	// We dim the Video out - focus video is implicitly disabled.
+
 	if (video_encoder == ENCODER_CONEXANT) {
 		I2CTransmitWord(0x45, (0xa8<<8)|0);
 		I2CTransmitWord(0x45, (0xaa<<8)|0);
 		I2CTransmitWord(0x45, (0xac<<8)|0);
 	}
+	
 	NVWriteSeq(&riva, 0x01, 0x01);  /* reenable display */
-	if (video_encoder == ENCODER_CONEXANT) {
-		I2CWriteBytetoRegister(0x45, 0xA8, 0x81);
-		I2CWriteBytetoRegister(0x45, 0xAA, 0x49);
-		I2CWriteBytetoRegister(0x45, 0xAC, 0x8C);
-	}
-	else if (video_encoder == ENCODER_FOCUS) {
-	     	b = I2CTransmitByteGetReturn(0x6a,0x0c);
-		b &= ~0x01;
-		I2CWriteBytetoRegister(0x6a,0x0c,b);
-		b = I2CTransmitByteGetReturn(0x6a,0x0d);
-		I2CWriteBytetoRegister(0x6a,0x0d,b);
-	}
-	else if (video_encoder == ENCODER_XCALIBUR) {
-		//Video output is already on.
-	}
 
+	switch (video_encoder) {
+		case ENCODER_CONEXANT:
+			I2CWriteBytetoRegister(0x45, 0xA8, 0x81);
+			I2CWriteBytetoRegister(0x45, 0xAA, 0x49);
+			I2CWriteBytetoRegister(0x45, 0xAC, 0x8C);
+			break;
+		case ENCODER_FOCUS:
+	     		b = I2CTransmitByteGetReturn(0x6a,0x0c);
+			b &= ~0x01;
+			I2CWriteBytetoRegister(0x6a,0x0c,b);
+			b = I2CTransmitByteGetReturn(0x6a,0x0d);
+			I2CWriteBytetoRegister(0x6a,0x0d,b);
+			break;
+		case ENCODER_XCALIBUR:
+			//No action required
+			break;
+	}
 }
 
 
