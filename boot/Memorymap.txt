@@ -5,12 +5,12 @@ Memory Mapping C/X romwell
  	
  	0x0009 0000 Kernel Info Header( 0x10000 size = 65536Bytes)
  	0x0009 FFFF Kernel Info Header
+ 	0x000a 0000 Kernel / cromwell GDT Table
+	0x000B 0000 Kernel / cromwell IDT Table
  	
- 	0x0010 0000 Kompressed Kernel ( 0x200000 size = 2 MB)
+	0x0010 0000 Kompressed Kernel ( 0x200000 size = 2 MB)
  	0x003F FFFF Kompressed Kernel
 
-	0x0040 0000 IDT for the CPU
-	
 	0x0040 5000 command Line Pointer for the Kernel
 	
 	0x0070 0000 Stack Pointer Upper Limit

@@ -61,7 +61,7 @@ int xberepair (	unsigned char * xbeimage,
         int a;
 	unsigned char sha_Message_Digest[SHA1HashSize];
         unsigned char crom[1024*1024];
-        unsigned char xbe[1024*1024];
+        unsigned char xbe[1024*1024+0x3000];
         unsigned int romsize=0;
          
 	XBE_HEADER *header;
@@ -80,7 +80,7 @@ int xberepair (	unsigned char * xbeimage,
     		fclose(f);
     	}
     	
-    	if (romsize>0x60000) {
+    	if (romsize>0x100000) {
     		printf("Romsize too big, increase the satic Variables everywhere");
     		return 1;
     	}
@@ -98,20 +98,24 @@ int xberepair (	unsigned char * xbeimage,
 	        
 	        // We copy the ROM image now into the Thing
 	        memcpy(&xbe[0x3000],crom,romsize);
+	        memcpy(&xbe[0x1084],&romsize,4);	// We dump the ROM Size into the Image
+	        
+	        romsize = (romsize & 0xfffffff0) + 32;	// We fill it up with "spaces"
+	        
 	        
 	        header = (XBE_HEADER*) xbe;
 		// This selects the First Section, we only have one
 		sechdr = (XBE_SECTION *)(((char *)xbe) + (int)header->Sections - (int)header->BaseAddress);
 	        
 	        // Correcting overall size now
-		xbesize = 0x63000;
+		xbesize = 0x3000+romsize;
 	        header->ImageSize = xbesize; 
 		
 		//printf("%08x",sechdr->FileSize);                    
 		
 
-		sechdr->FileSize = 0x60000+0x2000;
-		sechdr->VirtualSize = 0x60000+0x2000;
+		sechdr->FileSize = 0x2000+romsize;
+		sechdr->VirtualSize = 0x2000+romsize;
 	        
 	 //       printf("Sections: %d\n",header->NumSections);
 

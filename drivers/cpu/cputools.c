@@ -36,7 +36,7 @@ extern void cache_disable(void)
 	unsigned int tmp;
 
 	/* Disable cache */
-	printk("Disable Cache\n");
+	//printk("Disable Cache\n");
 
 	/* Write back the cache and flush TLB */
 	asm volatile ("movl  %%cr0, %0\n\t"
@@ -56,5 +56,5 @@ extern void cache_enable(void)
 		      "movl  %0, %%cr0\n\t"
 		      :"=r" (tmp) : : "memory");
 
-	printk("Enable Cache\n");
+	//printk("Enable Cache\n");
 }

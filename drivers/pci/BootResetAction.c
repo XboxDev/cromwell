@@ -155,9 +155,6 @@ extern void BootResetAction ( void ) {
 	BootInterruptsWriteIdt();	// Save Mode, not all fully Setup
 	bprintf("BOOT: done interrupts\n\r");
 
-	// Very cosmetic, but very secure
-       	memset((void*)0x00090000,0x00,0x70000);  // Linux Kernel Info Space
-      	memset((void*)0x00100000,0x00,0x200000);  // Kompressed Kernel
 
 	// initialize the PCI devices
 	bprintf("BOOT: starting PCI init\n\r");

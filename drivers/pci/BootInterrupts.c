@@ -168,7 +168,7 @@ void wait_ms_trigger(void) {
 void BootInterruptsWriteIdt() {
 
 
-	volatile ts_pm_interrupt * ptspmi=(volatile ts_pm_interrupt *)(0x00400000);  // ie, start of IDT area
+	volatile ts_pm_interrupt * ptspmi=(volatile ts_pm_interrupt *)(0xb0000);  // ie, start of IDT area
 	int n, n1=0;
 
 	// init storage used by ISRs
@@ -431,7 +431,11 @@ void IntHandler3VsyncC(void)  // video VSYNC
         
 	VIDEO_VSYNC_COUNT++;
 	
-    
+	memset((void*)FRAMEBUFFER_START,0x66,5000);
+	
+	// We write back the CPU cache to the Memory
+	asm volatile ("wbinvd\n");
+        
         i=1000;
 	*((volatile DWORD *)0xfd600100)=0x1;  // clear VSYNC int
 	while ( ((*((volatile DWORD *)0xfd600100)) & 0x1)) {

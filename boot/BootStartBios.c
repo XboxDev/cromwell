@@ -59,19 +59,6 @@ DWORD dwKernelSize, dwInitrdSize;
 int nSizeHeader;
 
 
-const BYTE baGdt[] = {
-	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // 0x00 dummy
-	0xff, 0xff, 0x00, 0x00, 0x00, 0x9a, 0xcf, 0x00, // 0x08 code32
-	0xff, 0xff, 0x00, 0x00, 0x00, 0x9a, 0xcf, 0x00, // 0x10 code32
-	0xff, 0xff, 0x00, 0x00, 0x00, 0x92, 0xcf, 0x00, // 0x18 data32
-	0xff, 0xff, 0x00, 0x00, 0x00, 0x9a, 0x8f, 0x00, // 0x20 code16 (8f indicates 4K granularity, ie, huge limit)
-	0xff, 0xff, 0x00, 0x00, 0x00, 0x92, 0x8f, 0x00, // 0x28 data16
-
-	0x30, 0x00, 0x00, 0x00, 0x0a, 0x00, 0x00, 0x00,
-	0x00, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
-};
-
-
   
 enum {
 	ICON_FATX = 0,
@@ -705,7 +692,6 @@ void StartBios(CONFIGENTRY *config, int nActivePartition , int nFATXPresent,int 
 
 	memset(szGrub,0x00,sizeof(szGrub));
 
-
 	szGrub[0]=0xff; 
 	szGrub[1]=0xff; 
 	szGrub[2]=nActivePartition; 
@@ -809,16 +795,6 @@ void StartBios(CONFIGENTRY *config, int nActivePartition , int nFATXPresent,int 
     
         I2cSetFrontpanelLed(I2C_LED_RED0 | I2C_LED_RED1 | I2C_LED_RED2 | I2C_LED_RED3 );
 
-
-	// we have to copy the GDT to a safe place, because one of the first
-	// things Linux is going to do is reinint the paging, making the BIOS
-	// inaccessible and so crashing if we leave the GDT in BIOS
-        
-    
-        memset((void *)0xa0000,0x00,0x100);
-        memcpy((void *)0xa0000, (void *)&baGdt[0], sizeof(baGdt));
-	// prep the Linux startup struct
-
 	setup( (void *)0x90000, (void *)INITRD_POS, (void *)dwInitrdSize, config->szAppend);
         
 	{
@@ -851,23 +827,22 @@ void StartBios(CONFIGENTRY *config, int nActivePartition , int nFATXPresent,int 
 	__asm __volatile__ (
 
 	"cli \n"
-      
-	"movl 	$0x90000, %esi\n"
 	"xor 	%ebx, %ebx \n"
 	"xor 	%eax, %eax \n"
 	"xor 	%ecx, %ecx \n"
 	"xor 	%edx, %edx \n"
 	"xor 	%edi, %edi \n"
-
-	"lgdt 	0xa0030\n"
-  	"ljmp 	$0x10, $0x100000\n"
+	"lidt 	0xa0000\n"		// We clear the IDT table (the first 8 bytes of the GDT are 0x0)
+	"movl 	$0x90000, %esi\n"       // Offset of the GRUB
+  	"ljmp 	$0x10, $0x100000\n"	// Jump to Kernel
 	);
-
-
-//		DumpAddressAndData(0x100000, (void *)0x100000, 1024);
-
+	
+	// We are not longer here, we are already in the Linux loader, we never come back here
+	
+	// See you again in Linux then	
 	while(1);
 }
+
 
 /*
 #if 0

@@ -221,20 +221,20 @@ void BootPciPeripheralInitialization()
 	PciWriteDword(BUS_0, DEV_0, FUNC_0, 0x44, 0x80000000); // new 2003-01-23 ag  trying to get single write actions on TSOP
 
 
-	PciWriteDword(BUS_0, DEV_0, FUNC_0, 0xa4, 0x0000e35a);  // AGP register ? Xbeboot-compare
+//	PciWriteDword(BUS_0, DEV_0, FUNC_0, 0xa4, 0x0000e35a);  // AGP register ? Xbeboot-compare
 	PciWriteByte(BUS_0, DEV_0, FUNC_0, 0x87, 3); // kern 8001FC21
 	
 		
-	PciWriteDword(BUS_0, DEV_0, 3, 0x40, 0x0f0fc0c0);  // Xbeboot-compare
-	PciWriteDword(BUS_0, DEV_0, 3, 0x58, 0x00000000);  // Xbeboot-compare
-	PciWriteDword(BUS_0, DEV_0, 3, 0x64, 0x00e08001);  // Xbeboot-compare
+//	PciWriteDword(BUS_0, DEV_0, 3, 0x40, 0x0f0fc0c0);  // Xbeboot-compare
+//	PciWriteDword(BUS_0, DEV_0, 3, 0x58, 0x00000000);  // Xbeboot-compare
+//	PciWriteDword(BUS_0, DEV_0, 3, 0x64, 0x00e08001);  // Xbeboot-compare
 
 
 	PciWriteByte(BUS_0, DEV_0, 8, 0, 0x42);       // Xbeboot-compare
 	
 	
-//	PciWriteDword(BUS_0, DEV_0, 3, 0x40, 0x0017cc00);  // Orginal Andy
-//	PciWriteDword(BUS_0, DEV_0, 3, 0x58, 0x00008000);  // original Andy
+	PciWriteDword(BUS_0, DEV_0, 3, 0x40, 0x0017cc00);  // Orginal Andy
+	PciWriteDword(BUS_0, DEV_0, 3, 0x58, 0x00008000);  // original Andy
 
 //	PciWriteByte(BUS_0, DEV_0, FUNC_0, 0x4b,0x00); --> BAD !!! -- Xbox Dies sometimes
 
@@ -463,7 +463,7 @@ void BootPciPeripheralInitialization()
 
 
 	bprintf("b\n");
-/*
+
 //
 // Bus 0, Device 1e, Function 0 = nForce AGP Host to PCI Bridge
 //
@@ -488,16 +488,16 @@ void BootPciPeripheralInitialization()
 	PciWriteDword(BUS_0, DEV_1e, FUNC_0, 0x0c, 0xff019ee7);
 	PciWriteDword(BUS_0, DEV_1e, FUNC_0, 0x10, 0xbcfaf7e7);
 	PciWriteDword(BUS_0, DEV_1e, FUNC_0, 0x14, 0x0101fafa);
-	PciWriteDword(BUS_0, DEV_1e, FUNC_0, 0x1c, 0x02a000f0);
+	PciWriteDword(BUS_0, DEV_1e, FUNC_0, 0x1c, 0x02a000f0);    // Coud this be the BASE Video Address ?
 	PciWriteDword(BUS_0, DEV_1e, FUNC_0, 0x20, 0xfdf0fd00);
 	PciWriteDword(BUS_0, DEV_1e, FUNC_0, 0x24, 0xf7f0f000);
 	PciWriteDword(BUS_0, DEV_1e, FUNC_0, 0x28, 0x8e7ffcff);
 	PciWriteDword(BUS_0, DEV_1e, FUNC_0, 0x2c, 0xf8bfef87);
 	PciWriteDword(BUS_0, DEV_1e, FUNC_0, 0x30, 0xdf758fa3);
 	PciWriteDword(BUS_0, DEV_1e, FUNC_0, 0x38, 0xb785fccc);
- */     
+
       
-   
+ /*  
 	PciWriteDword(BUS_0, DEV_1e, FUNC_0, 0x04, 0x02200007);
 	PciWriteDword(BUS_0, DEV_1e, FUNC_0, 0x08, 0x060400a1);
 	PciWriteDword(BUS_0, DEV_1e, FUNC_0, 0x0c, 0xff019ee7);
@@ -517,7 +517,7 @@ void BootPciPeripheralInitialization()
     	PciWriteDword(BUS_0, DEV_1e, FUNC_0, 0x44, 0x80000000);
       	PciWriteDword(BUS_0, DEV_1e, FUNC_0, 0x48, 0x80000014);
         PciWriteDword(BUS_0, DEV_1e, FUNC_0, 0x4c, 0x80000001);
-   
+*/   
 //
 // Bus 1, Device 0, Function 0 = NV2A GeForce3 Integrated GPU
 //

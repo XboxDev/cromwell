@@ -28,88 +28,41 @@ Cromwellconfig:
         .long 0x0	// Bank, from where Loaded
         .long 0x0	// 0 .. Bios = 256 k, 1 .. Bios = 1MB
         
-	.org 0x40       // We have linkbase for this programm 0x03A00000 + 0x40 = divisable /4 .. so CPU likes it
+	
+.align 16
 tableGdt:
-
+        
 	.byte 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 // 0x00 dummy
-	.byte 0xff, 0xff, 0x00, 0x00, 0x00, 0x9b, 0xcf, 0x00 // 0x08 code32
-	.byte 0xff, 0xff, 0x00, 0x00, 0x00, 0x9b, 0xcf, 0x00 // 0x10 code32
-	.byte 0xff, 0xff, 0x00, 0x00, 0x00, 0x93, 0xcf, 0x00 // 0x18 data32
-	.byte 0xff, 0xff, 0x00, 0x00, 0x00, 0x9b, 0x8f, 0x00 // 0x20 code16 (8f indicates 4K granularity, ie, huge limit)
-	.byte 0xff, 0xff, 0x00, 0x00, 0x00, 0x93, 0x8f, 0x00 // 0x28 data16
-        .byte 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 // Dummy
-  
-  	// We are Dword Alligated until now
-tableGdtDescriptor:
+	.byte 0xff, 0xff, 0x00, 0x00, 0x00, 0x9a, 0xcf, 0x00 // 0x08 code32
+	.byte 0xff, 0xff, 0x00, 0x00, 0x00, 0x9a, 0xcf, 0x00 // 0x10 code32
+	.byte 0xff, 0xff, 0x00, 0x00, 0x00, 0x92, 0xcf, 0x00 // 0x18 data32
+	.byte 0xff, 0xff, 0x00, 0x00, 0x00, 0x9a, 0x8f, 0x00 // 0x20 code16 (8f indicates 4K granularity, ie, huge limit)
+	.byte 0xff, 0xff, 0x00, 0x00, 0x00, 0x92, 0x8f, 0x00 // 0x28 data16
+	
+	// This is the GDT header having 8 bytes
+	.word 0x30	// 30 Bytes Big GDT
+	.long 0xa0000	// GDT located @ 0xa0000
+	.word 0		// Fillup
+	
+	// Summary = 0x38 bytes
+	
 
-	.word 0x30
-	.long tableGdt
-	.word 0    // fill Word, so we get alliged again
-        
-        // We are again Dword Alligated now
-        
+.align 16
 tableIdtDescriptor:
 
 	.word 2048
-	.long 0x00400000
+	.long 0xb0000
 	.word 0     // fill Word, so we get alliged again
         
         // We are again Dword Alligated now
         
 	.globl start_linux
 start_linux:
-
-
-        // Clear Intel Interrupts in Processor Register
-	// Everytime very good, specially when comming out of a running envoronment
-	
-	/*  
-  	 There are Some Nops here
-  	 Basically, they are useless, it works without them too.
-  	 BUT !
-  	 IA32 Manual Recommends some waiting after doing eg. CPU swapout or reloading of the IDT, GDT, as the CPU
-  	 nees some minor time to settel.
-  	 basically, they recommend a small "dummy" loop, but NOP is also good, but wastes more space .. who cares
-  	 we have 733 Mhz here
-  	*/
+       	
+       	// i am sure, the irq's are turned off, but who knows this for sure
+       	// never trust anybody
+       	cli
   	
-        nop
-	nop
-	nop
-	// Move the Stack Pointer to Upper Limit
-	movl    $RAM_BASE, %esp
-
-	movl	$0x1b, %ecx
-	xor	%eax, %eax
-	xor	%edx, %edx
-	wrmsr
-
-        // We clear the IDT in RAM
-        xor %eax,%eax
-	mov $0x5000,%ecx
-	mov $0x400000,%edi
-	rep stosb
-
-	//call ClearIDT
-	lgdt tableGdtDescriptor
-	lidt tableIdtDescriptor
-
-       // FPU SETUP
-
-	clts
-	fninit
-	//.byte 0xDB,0xE4         /* fsetpm for 287, ignored by 387 */	
-
-
-	nop
-	nop
-	nop    
-	
-	xor	%eax, %eax
-	xor	%edx, %edx
-	xor	%ecx, %ecx
-	
-	
 	// kill the cache  = Disable bit 30 + 29 = CD + NW 
 	// CD = Cache Disable (disable = 1)
 	// NW Not write through (disable = 1)
@@ -118,9 +71,53 @@ start_linux:
 	mov	%eax, %cr0
 	wbinvd
 
+	// Move the Stack Pointer to Upper Limit
+	
+	movl    $RAM_BASE, %esp
+	
+	// We kill the Local Descriptor Table        
+        xor	%eax, %eax
+	lldt	%ax	
+	
+	/*
+	IMPORTANT !
+	Linux Expects the GDT located at this position, so we have to move it to 0xa0000
+	*/
+	
+	// We copy the GDT at the final location in RAM
+	mov 	$0xa0000, %edi
+	mov 	$tableGdt, %esi
+	mov 	$0x40, %ecx  // this value should be GDT size + GDT header
+	repe movsb
+	
+	// We load a new GDT Table 
+	lgdt 0xa0030	// this is the pointer to the GDT header
+
+        
+        // We clear the IDT in RAM   (IDT located @  0xb0000 )
+        xor %eax,%eax
+	mov $0x5000,%ecx
+	mov $0xb0000,%edi
+	rep stosb
+	
+	// We load the Interrupt Descriptor Table
+	lidt tableIdtDescriptor
+
+       // FPU SETUP
+	xor	%eax, %eax
+	xor	%edx, %edx
+	xor	%ecx, %ecx
+	
+	clts
+	fninit
+	
+	xor	%eax, %eax
+	xor	%edx, %edx
+	xor	%ecx, %ecx
+	
   
-  	// We clear the cr3 register
-	mov	%eax, %eax
+  	// We flush the TLB
+	mov	%cr3, %eax
 	mov	%eax, %cr3
 
 	// Clear Mmeory Type register
@@ -130,50 +127,89 @@ start_linux:
 	wrmsr
 
 
-
+#if 0
 	// MTRR for RAM
-	// from address 0, Writeback Caching, 60MB range
-        movl	$0x200, %ecx 		// 
-	movl	$0x00000000, %edx 	// 
+	// from address 0, Writeback Caching, 64MB range
+        movl	$0x200, %ecx 		
+	movl	$0x00000000, %edx 	 
 	movl	$0x00000006, %eax 	// == WB_CACHE == 6
 	wrmsr
 
-	// MASK0 set to 0xffc400[000] == 60M    
-        movl	$0x201, %ecx  		// 
-	movl	$0x0000000f, %edx 	// 0x0f
-	movl	$0xfc400800, %eax  	// 0xfc000800 b11= enable MTRR
+	// MASK0 set to 0xffc400[000] == 64M    
+        movl	$0x201, %ecx  		 
+	movl	$0x0000000f, %edx 	
+	movl	$0xfc000800, %eax  	
+	wrmsr
+#else      
+
+
+	// Very funny. We have no memory there, but if we set the memory from 64 to 192MB to 0 (UC type)
+	// we freeze .. maybe a kind of memory from the Video Card
+      	// So we set 64 MB memory + 128 MB (found out with try and error)
+      	// PLEASE find the problem, it is happening in loading from .xbe mode
+      	
+      	movl	$0x200, %ecx 		
+	movl	$0x00000000, %edx 	
+	movl	$0x00000006, %eax 	// == WB_CACHE == 6
+	wrmsr
+
+	// MASK0 set to  == 192 MB
+        movl	$0x201, %ecx  		
+	movl	$0x0000000f, %edx 	
+	movl	$0xf4000800, %eax  	
 	wrmsr
 
 
-        // MTRR for Video Memory (last 4MByte of shared Ram, starts at 60MB)
-	// Writethrough type trumps Writeback for overlapping region
-        movl	$0x202, %ecx           	// IA32_MTRR_PHYS Base 2
-	movl	$0x00000000, %edx 	// 0x00
-	movl	$0x03C00004, %eax 	// == Writethrough == 4
-	wrmsr
-	       
-	// MASK0 set to 0xfffC00[000] == 4M
-	movl	$0x203, %ecx            // IA32_MTRR_PHYS_MASK 2
-	movl	$0x0000000f, %edx // 0x0f
-	movl	$0xFFC00800, %eax  // 0xffC00800
-	wrmsr
+#endif
+
+
+#if 0
+	/*
+	Mega Mysterios thing.
 	
-	// MTRR for FLASH +PCI config 
-	movl	$0x204, %ecx		// IA32_MTRR_PHYS Base 1 
-	movl	$0x00000000, %edx 	// 0x00
-	movl	$0xF0000000, %eax 	// As it is a Flash, we set the Flag to Uncacheable =0
+	MS sets the Memory Type for the flash to 5 (means WP write-protected)
+	Seems to be locical.
+	
+	BUT !
+	Linux loader crashes then
+	
+	very mysterious 
+	also, they defined only !?? the last 512 kbyte of the flash, no idea why
+	But i did 1MB
+	
+	BUT: As this memory type == 0, and the global Memory type is set to 0, we can leave out the whole thing.
+	
+	*/
+	
+	// MTRR for FLASH   
+	movl	$0x202, %ecx		
+	movl	$0x00000000, %edx 	
+	movl	$0xFff00000, %eax 	
 	wrmsr
 
-        movl	$0x205, %ecx             
+        movl	$0x203, %ecx             
 	movl	$0x0000000f, %edx 
-	movl	$0xF0000800, %eax  
-	wrmsr
-        
+	movl	$0xfff00800, %eax  
+	wrmsr	        
+#else   
+  	xor	%eax, %eax
+	xor	%edx, %edx
+	movl	$0x202, %ecx	
+        wrmsr                                                   
+	movl	$0x203, %ecx	
+        wrmsr                                                   
+
+#endif
     
         xor	%eax, %eax
 	xor	%edx, %edx
 	
-    	movl	$0x206, %ecx		// IA32_MTRR_PHYS Base 3
+	movl	$0x204, %ecx		// IA32_MTRR_PHYS Base 2
+        wrmsr                                                   
+	movl	$0x205, %ecx		// IA32_MTRR_PHYS_MASK 2
+        wrmsr                                                   
+                                                
+	movl	$0x206, %ecx		// IA32_MTRR_PHYS Base 3
         wrmsr                                                   
 	movl	$0x207, %ecx		// IA32_MTRR_PHYS_MASK 3
         wrmsr                                                   
@@ -199,26 +235,21 @@ start_linux:
         wrmsr                                                   
 
 
-	// Define Memory in IA32_MTRR_DEF_TYPE
+	// Ok, we tell now the processor, we finished Memory Type definitions
+	// We set the Default Memory Type in the Box now to Type == 0 .. Means UC .. Uncacheable
+	
 	movl	$0x2ff, %ecx
 	xor	%edx, %edx
-	movl	$0x806, %eax 		//Enable MTRRs
+	movl	$0x800, %eax 		//Enable MTRRs
 	wrmsr
       
 
- 
-
-
-/*
-  These Init Codes Can be found in the 2'nd Bootloader
-
-*/ 
         
    
 	movl	$0x600, %eax
 	mov	%eax, %cr4
 
-	mov	%eax, %eax
+	mov	%eax, %eax       // Flush the TLB    and resets it
 	mov	%eax, %cr3
   
  

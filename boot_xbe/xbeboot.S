@@ -30,10 +30,7 @@
 // Minimum physical address at which the kernel can reside temporarily
 #define MIN_KERNEL_ADDRESS		KERNEL_ADDRESS
 // Memory reserved to the kernel (1 MB at the moment)
-
-#define KERNEL_SIZE        		0x00060000
-// From 40000 to 60000, as we have now a compressed kernel to handle too
-
+#define KERNEL_MAX_SIZE			0x00100000 // 1MB maximum Kernel for Cromwell
 // Location of kernel in RAM
 #define KERNEL_RAM_ADDRESS		0x03A00000
 // Size of memory on a retail XBOX unit
@@ -51,6 +48,7 @@
 
 #define FRAMEBUFFER 0xF0040240
 #define TEXTBUFFER (FRAMEBUFFER + 80 * 640 * 4) 
+
 
 //#define DebugOut
 
@@ -112,7 +110,8 @@ PARAM_LFB_PAGES		= PARAM+0x32
 // tools) are likely to fail, but it is a valid header for the Xbox kernel.
 #include "xbe.S"
 
-.align 0x1000
+
+.org 0x1000
 section_1_start:		// this should be 0x11000
 // kernel thunk table
 MmAllocateContiguousMemoryEx:
@@ -124,39 +123,40 @@ NtAllocateVirtualMemory:
 
 	.long	0		// end of table
 
-.align 0x100
+.org 0x1080
+cromwellstart:
+	.long 0x3000		// Start of the ROM image
+cromwellsize:	
+	.long 0x00060000	// Size  of the ROM image   (this Value will be overwritten by Imagebld)
+
+.org 0x1100
 entry:				// this should be 0x11100
 
 .globl _start
 .intel_syntax noprefix
 _start:
 
-// debug output
+
+
+
     #ifdef DebugOut
     mov ebx, 0		// x position
     mov ecx, 0		// y position
-    #endif
-      
-    #ifdef DebugOut
+
     lea esi, text1 
-    #endif
     mov eax, MmAllocateContiguousMemoryEx
-    #ifdef DebugOut
     call strhexout
+
     lea esi, text2
-    #endif
     mov eax, MmGetPhysicalAddress
-    #ifdef DebugOut
     call strhexout
+
     lea esi, text3
-    #endif
     mov eax, NtAllocateVirtualMemory
-    #ifdef DebugOut
     call strhexout 
+  
     lea esi, text_kernel
-    #endif
     mov eax, offset kernel
-    #ifdef DebugOut
     call strhexout 
     #endif
 
@@ -168,21 +168,22 @@ _start:
         push	PAGE_READWRITE
         push	0
         push	RETAIL_RAM_SIZE / 2 - 1
-        push	MIN_KERNEL_ADDRESS + (KERNEL_SIZE) 
-        push	(KERNEL_SIZE)
+	push	MIN_KERNEL_ADDRESS + (KERNEL_MAX_SIZE) 
+        push	(KERNEL_MAX_SIZE)
         call	dword ptr [MmAllocateContiguousMemoryEx]
         mov	[kernelram], eax
 
     pop ecx
     pop ebx
 
-    push eax
     #ifdef DebugOut
+    push eax
     lea esi, text_kernelram
     call strhexout
-    #endif
     pop eax		// kernelram
-
+    #endif
+    
+    
 // 3. MmGetPhysicalAddress that memory
     push ebx
     push ecx
@@ -200,10 +201,12 @@ _start:
     #endif
 
 // 2. put kernel there
+    
+    // UWEI
     push ecx
     mov esi, offset kernel
     mov edi, dword ptr [kernelram]
-    mov ecx, KERNEL_SIZE    
+    mov ecx, [cromwellsize]    
     rep movsb
     pop ecx
 
@@ -258,7 +261,7 @@ _start:
     push ecx
 
         push	PAGE_READWRITE
-        push	MEM_RESERVE + MEM_COMMIT
+        push	MEM_RESERVE + MEM_COMMIT        // sum = 3000
         push	offset ptr_PAGE_SIZE
         push	0 // 0 is used when the caller determines address
         push	offset phys_bootloaderram
@@ -362,39 +365,14 @@ ptr_newloc:
 newloc:
  	// copy the Cromwell to it's new position
 	mov	edi, KERNEL_RAM_ADDRESS 
-	mov	ecx, KERNEL_SIZE 
+	mov	ecx, KERNEL_MAX_SIZE 
 	rep 	movsb
 
 	
-  // Kill Interrupt Handler  
+// Kill Interrupt Handler  
    
    	cli
-	mov	al,0x11		// initialization sequence
-	out	0x20,al		// send it to 8259A-1
-	.word	0x00eb,0x00eb		// jmp $+2, jmp $+2
-	out	0xA0,al		// and to 8259A-2
-	.word	0x00eb,0x00eb
-	mov	al,0x20		// start of hardware int's (0x20)
-	out	0x21,al
-	.word	0x00eb,0x00eb
-	mov	al,0x28		// start of hardware int's 2 (0x28)
-	out	0xA1,al
-	.word	0x00eb,0x00eb
-	mov	al,0x04		// 8259-1 is master
-	out	0x21,al
-	.word	0x00eb,0x00eb
-	mov	al,0x02		// 8259-2 is slave
-	out	0xA1,al
-	.word	0x00eb,0x00eb
-	mov	al,0x01		// 8086 mode for both
-	out	0x21,al
-	.word	0x00eb,0x00eb
-	out	0xA1,al
-	.word	0x00eb,0x00eb
-	mov	al,0xFF		// mask off all interrupts for now
-	out	0x21,al
-	.word	0x00eb,0x00eb
-	out	0xA1,al      
+ 
 	
 // Interrupt Handler Now Dead      
         
@@ -660,5 +638,6 @@ phys_bootloaderram:
 
 #include "font.S"
 
-.align 4096
+//.align 4096.
+.org 0x3000
 kernel:
