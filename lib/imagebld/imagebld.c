@@ -208,7 +208,7 @@ int vmlbuild (	unsigned char * vmlimage,
         	 fclose(f);			
 		} 
 		
-	        printf("VML File Created    : %s\n",vmlimage);    		
+	        printf("VML File Created         : %s\n",vmlimage);    		
     		
     	}
 

@@ -116,7 +116,7 @@ RESOURCES = $(TOPDIR)/obj/backdrop.elf
 export INCLUDE
 export TOPDIR
 
-all: clean xcodes11.elf cromsubdirs image.elf imagebld backdrop.elf image-crom.elf image-crom.bin default.xbe vmlboot image.bin
+all: clean xcodes11.elf cromsubdirs image.elf imagebld backdrop.elf image-crom.elf image-crom.bin default.xbe vmlboot image.bin imagecompress
 
 cromsubdirs: $(patsubst %, _dir_%, $(SUBDIRS))
 $(patsubst %, _dir_%, $(SUBDIRS)) : dummy
@@ -132,7 +132,6 @@ image.elf:
 
 image.bin:
 	${OBJCOPY} --output-target=binary --strip-all $(TOPDIR)/obj/image.elf $(TOPDIR)/image/$@
-	$(TOPDIR)/bin/imagebld -rom $(TOPDIR)/image/image.bin $(TOPDIR)/obj/image-crom.bin  $(TOPDIR)/image/image_1024.bin
 
 imagebld:
 	gcc $(OBJECTS-IMAGEBLD) -o $(TOPDIR)/bin/imagebld $(INCLUDE)
@@ -166,14 +165,17 @@ vmlboot.elf: ${OBJECTS-VML}
         
 vmlboot: vmlboot.elf
 	${OBJCOPY} --output-target=binary --strip-all $(TOPDIR)/obj/vmlboot.elf $(TOPDIR)/boot_vml/disk/$@
-	$(TOPDIR)/bin/imagebld -vml $(TOPDIR)/boot_vml/disk/vmlboot $(TOPDIR)/obj/image-crom.bin 
 		
 default.xbe: default.elf
 	${OBJCOPY} --output-target=binary --strip-all $(TOPDIR)/obj/default.elf $(TOPDIR)/xbe/$@
-	$(TOPDIR)/bin/imagebld -xbe $(TOPDIR)/xbe/default.xbe $(TOPDIR)/obj/image-crom.bin
 
 image-crom.elf:
 	${LD} -o $(TOPDIR)/obj/$@ ${OBJECTS-CROM} ${RESOURCES} ${LDFLAGS-ROM}
 
 image-crom.bin:
 	${OBJCOPY} --output-target=binary --strip-all $(TOPDIR)/obj/image-crom.elf $(TOPDIR)/obj/$@
+
+imagecompress:
+	$(TOPDIR)/bin/imagebld -rom $(TOPDIR)/image/image.bin $(TOPDIR)/obj/image-crom.bin  $(TOPDIR)/image/image_1024.bin	
+	$(TOPDIR)/bin/imagebld -xbe $(TOPDIR)/xbe/default.xbe $(TOPDIR)/obj/image-crom.bin
+	$(TOPDIR)/bin/imagebld -vml $(TOPDIR)/boot_vml/disk/vmlboot $(TOPDIR)/obj/image-crom.bin 
