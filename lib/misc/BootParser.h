@@ -11,8 +11,6 @@ typedef struct _CONFIGENTRY {
         char szKernel[MAX_LINE];
         char szInitrd[MAX_LINE];
         char szAppend[MAX_LINE];
-        int nXboxFB;
-	int nVesaFB;
 } CONFIGENTRY, *LPCONFIGENTRY;
 
 int ParseConfig(char *szBuffer, CONFIGENTRY *entry, EEPROMDATA *eeprom, char *szPath);

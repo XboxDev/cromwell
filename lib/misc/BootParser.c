@@ -42,14 +42,6 @@ int ParseConfig(char *szBuffer, CONFIGENTRY *entry, EEPROMDATA *eeprom, char *sz
 				sprintf(entry->szInitrd,"%s%s",entry->szInitrd,szTmp);
 			}
 			
-			if(_strncmp(ptr,"xboxfb",strlen("xboxfb")) == 0) {
-				entry->nXboxFB = 1;
-			}
-			
-			if(_strncmp(ptr,"vesafb",strlen("vesafb")) == 0) {
-				entry->nVesaFB = 1;
-			}
-			
 			if(_strncmp(ptr,"append ",strlen("append ")) == 0)
 				HelpGetParm(entry->szAppend, ptr);
 		} else {
@@ -60,12 +52,6 @@ int ParseConfig(char *szBuffer, CONFIGENTRY *entry, EEPROMDATA *eeprom, char *sz
 		
 	}
 
-	if(entry->nXboxFB == 1) {
-		strcpy(szNorm," video=xbox:640x480,nomtrr,nohwcursor ");
-	}
-	if(entry->nVesaFB == 1) {
-		strcpy(szNorm," video=vesa:640x480 ");
-	}
 	if(szNorm[0] != 0) {
 		sprintf(entry->szAppend,"%s%s",entry->szAppend,szNorm);
 	}
