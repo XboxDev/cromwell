@@ -740,7 +740,9 @@ BYTE BootVgaInitializationKernel(int nLinesPref)
 	BYTE bAvPack;
 	BYTE bTvStandard;
 
+#ifndef XBE
 	__asm__ __volatile__ ( "pushf ; cli" );
+#endif
 
 	I2CTransmitWord(0x45, 0x6c46);
 
@@ -763,6 +765,7 @@ BYTE BootVgaInitializationKernel(int nLinesPref)
 			///////////////
 
 	IoOutputByte(0x80d3, 5);  // definitively kill video out
+
 
 	*((volatile BYTE *)0xfd6013d4)=0x1f;
 	*((volatile BYTE *)0xfd6013d5)=0x57;
@@ -1506,6 +1509,7 @@ BYTE BootVgaInitializationKernel(int nLinesPref)
 			break;
 	}
 
+#ifndef XBE
 	voutl(0xfd600800, 0x83c00000);   // new guy, move the video out of the way
 
 			// enable VSYNC interrupt action
@@ -1519,13 +1523,14 @@ BYTE BootVgaInitializationKernel(int nLinesPref)
 	*((volatile DWORD *)0xfd008000)=0x3c00000;  //
 	*((volatile DWORD *)0xfd000140)=1;  // enable VSYNC int
 
-
 //	BootVideoDelay();
 	I2CTransmitWord(0x45, 0x6cc6);
+#endif
 	}
-
-
+#ifndef XBE
 	__asm__ __volatile__ ( "sti" );
+#endif
+
 
 
 	TRACE;
@@ -1553,6 +1558,7 @@ void BootVideoEnableOutput(BYTE bAvPack)
 
 		// enable VSYNC interrupt action
 
+#ifndef XBE
 	*((volatile DWORD *)0xfd600140)=0x1;  // enable VSYNC interrupts
 	*((volatile DWORD *)0xfd600100)=0x1;  // clear VSYNC int
 	*((volatile DWORD *)0xfd608000)=0x3c00000;  //
@@ -1561,6 +1567,7 @@ void BootVideoEnableOutput(BYTE bAvPack)
 	*((volatile DWORD *)0xfd000100)=0x1;  // clear VSYNC int
 	*((volatile DWORD *)0xfd008000)=0x3c00000;  //
 	*((volatile DWORD *)0xfd000140)=1;  // enable VSYNC int
+#endif
 
 }
 
