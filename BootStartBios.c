@@ -33,6 +33,8 @@
 #include "config-rom.h"
 #endif
 
+extern EEPROMDATA eeprom;
+
 #include "BootUsbOhci.h"
 extern volatile USB_CONTROLLER_OBJECT usbcontroller[2];
 
@@ -117,7 +119,7 @@ int BootLodaConfigNative(int nActivePartition, CONFIGENTRY *config) {
 		printk("linuxboot.cfg not found, using defaults\n");
 	} else {
 		grub_read((void *)0x90000, filemax);
-		ParseConfig((char *)0x90000,config);
+		ParseConfig((char *)0x90000,config,&eeprom);
 		BootPrintConfig(config);
 		printf("linuxboot.cfg is %d bytes long.\n", dwConfigSize);
 	}
@@ -178,7 +180,7 @@ int BootLodaConfigFATX(CONFIGENTRY *config) {
 		if(!LoadFATXFile(partition,"/linuxboot.cfg",&fileinfo) ) {
 			printk("linuxboot.cfg not found, using defaults\n");
 		} else {
-			ParseConfig(fileinfo.buffer,config);
+			ParseConfig(fileinfo.buffer,config,&eeprom);
 		}
 	}
 
@@ -336,7 +338,7 @@ int BootLodaConfigCD(CONFIGENTRY *config) {
 		}
 	}
 	
-	ParseConfig((char *)0x90000,config);
+	ParseConfig((char *)0x90000,config,&eeprom);
 	BootPrintConfig(config);
 	
 	dwKernelSize=BootIso9660GetFile(config->szKernel, (BYTE *)0x90000, 0x400, 0x0);

@@ -333,38 +333,6 @@ void HelpGetParm(char *szBuffer, char *szOrig) {
 	*copy = 0;
 }
 
-char *HelpStrrchr(const char *string, int ch) {
-        char *last = 0;
-        char c = (char) ch;
-        for (; *string; string++) {
- 		if (*string == c) {
-			last = (char *) string;
-		}
-	}
-        return last;
-}
-
-char *HelpCopyUntil(char* d, char* s, int max) {
-        while ((*s!=' ')&&(*s!='\n')&&(*s!='\r')&&(*s)&&(max--)) {
-                *d++ = *s++;
-        }
-        *d = 0;
-        return s;
-}
-
-char *HelpScan0(char* s) {
-        while (*s) s++;
-        return s;
-}
-
-int HelpStrlen(char *str) {
-        char *ptr = str;
-
-        while(*ptr != 0) ptr++;
-
-        return ptr-str;
-}
-
 char *strrchr0(char *string, char ch) {
         char *ptr = string;
 	while(*ptr != 0) {

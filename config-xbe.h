@@ -1,18 +1,18 @@
 ////////////////////// compile-time options ////////////////////////////////
 
 // selects between the supported video modes, see boot.h for enum listing those available
-#define VIDEO_PREFERRED_MODE VIDEO_MODE_800x600
+#define VIDEO_PREFERRED_MODE VIDEO_MODE_640x480
 
 //
 // uncomment to force CD boot mode even if MBR present
 // default is to boot from HDD if MBR present, else CD
-//#define FORCE_CD_BOOT
-//#define IS_XBE_CDLOADER
-#define MENU
+#define FORCE_CD_BOOT
+#define IS_XBE_CDLOADER
+//#define MENU
 
 // uncomment to default to FATX boot if you
 // run xromwell as bootloader for FATX
-#define DEFAULT_FATX
+//#define DEFAULT_FATX
 
 // Usefull combinations
 //
