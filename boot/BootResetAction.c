@@ -10,7 +10,6 @@
  *   (at your option) any later version.                                   *
  *                                                                         *
  ***************************************************************************
-
  */
 
 #include "boot.h"
@@ -20,9 +19,6 @@
 #include "xbox.h"
 #include "cpu.h"
 #include "config.h"
-/*
-#include "audio.h"
-*/
 #include "video.h"
 #include "memory_layout.h"
 
@@ -35,46 +31,13 @@ int nTempCursorMbrX, nTempCursorMbrY;
 extern volatile int nInteruptable;
 
 volatile CURRENT_VIDEO_MODE_DETAILS vmode;
-/*
-volatile AC97_DEVICE ac97device;
-
-volatile AUDIO_ELEMENT_SINE aesTux;
-volatile AUDIO_ELEMENT_SINE aesSong;
-volatile AUDIO_ELEMENT_NOISE aenTux;
-*/
 extern KNOWN_FLASH_TYPE aknownflashtypesDefault[];
-
-/*
-const SONG_NOTE songnoteaIntro[] = {
-	{  370, 200, 207 },
-	{  730, 200, 207 },
-	{ 1080, 200, 207 },
-	{ 1460, 200, 184 },
-	{ 1630, 200, 207 },
-	{ 2000, 200, 207 },
-	{ 2150, 200, 207 },
-	{ 2520, 200, 207 },
-	{ 2680, 200, 184 },
-	{ 2830, 200, 207 },
-	{ 3190, 200, 207 },
-	{ 3550, 200, 184 },
-	{ 3720, 200, 207 },
-	{ 3900, 200, 207 },
-	{ 4250, 200, 207 },
-	{ 4400, 200, 207 },
-	{ 4760, 200, 184 },
-	{ 4900, 200, 207 },
-	{ 5260, 200, 207 },
-	{ 6000, 0, 0 }
-};
-*/
 
 //////////////////////////////////////////////////////////////////////
 //
 //  BootResetAction()
 
 extern void BootResetAction ( void ) {
-//	__int64 i64Timestamp;
 	bool fMbrPresent=false;
 	bool fSeenActive=false;
 	int nActivePartitionIndex=0;
@@ -94,18 +57,13 @@ extern void BootResetAction ( void ) {
 	VIDEO_AV_MODE = 0xff;
 	nInteruptable = 0;	
 
-		
 	// prep our BIOS console print state
 	VIDEO_ATTR=0xffffffff;
 
 	// init malloc() and free() structures
 	MemoryManagementInitialization((void *)MEMORYMANAGERSTART, MEMORYMANAGERSIZE);
 	
-
-
 	BootInterruptsWriteIdt();	
-	//bprintf("BOOT: done interrupts\n\r");
-
 
 	// initialize the PCI devices
 	//bprintf("BOOT: starting PCI init\n\r");
@@ -125,17 +83,14 @@ extern void BootResetAction ( void ) {
 	
 	BootEepromReadEntireEEPROM();
 	bprintf("BOOT: Read EEPROM\n\r");
-//	DumpAddressAndData(0, (BYTE *)&eeprom, 256);
+	//DumpAddressAndData(0, (BYTE *)&eeprom, 256);
         
         // Load and Init the Background image
-        
         // clear the Video Ram
 	memset((void *)FB_START,0x00,0x400000);
 	
 	BootVgaInitializationKernelNG((CURRENT_VIDEO_MODE_DETAILS *)&vmode);
 
-	//bprintf("BOOT: kern VGA init done\n\r");
-        
 	{ // decode and malloc backdrop bitmap
 		extern int _start_backdrop;
 		BootVideoJpegUnpackAsRgb(
@@ -147,38 +102,20 @@ extern void BootResetAction ( void ) {
 	// display solid red frontpanel LED while we start up
 	I2cSetFrontpanelLed(I2C_LED_RED0 | I2C_LED_RED1 | I2C_LED_RED2 | I2C_LED_RED3 );
        
-   
-       
 	// paint the backdrop
 #ifndef DEBUG_MODE
 	BootVideoClearScreen(&jpegBackdrop, 0, 0xffff);
 #endif
-	//bprintf("BOOT: done backdrop\n\r");
 
 	nInteruptable = 1;	      
        
 	I2CTransmitWord(0x10, 0x1a01); // unknown, done immediately after reading out eeprom data
 	I2CTransmitWord(0x10, 0x1b04); // unknown
-	/*
-	// Audio Section
-	BootAudioInit(&ac97device);
-	ConstructAUDIO_ELEMENT_SINE(&aesTux, 1000);  // constructed silent, manipulated in video IRQ that moves tux
-	BootAudioAttachAudioElement(&ac97device, (AUDIO_ELEMENT *)&aesTux);
-	ConstructAUDIO_ELEMENT_SINE(&aesSong, 1000);  // constructed silent, manipulated in video IRQ that moves tux
-	aesSong.m_paudioelement.m_pvPayload=(SONG_NOTE *)&songnoteaIntro[0];
-	aesSong.m_saVolumePerHarmonicZeroIsNone7FFFIsFull[0]=0x1fff;
-	aesSong.m_paudioelement.m_bStageZeroIsAttack=3; // silenced initially until first note
-	aesSong.m_paudioelement.m_bStageZeroIsAttack=3; // silenced initially until first note
-	BootAudioAttachAudioElement(&ac97device, (AUDIO_ELEMENT *)&aesSong);
-	ConstructAUDIO_ELEMENT_NOISE(&aenTux);  // constructed silent, manipulated in video IRQ that moves tux
-	BootAudioAttachAudioElement(&ac97device, (AUDIO_ELEMENT *)&aenTux);
-	BootAudioPlayDescriptors(&ac97device);
-	*/
+	
 	/* Here, the interrupts are Switched on now */
 	BootPciInterruptEnable();
         /* We allow interrupts */
 	nInteruptable = 1;	
-	
 
 	I2CTransmitWord(0x10, 0x1901); // no reset on eject
          
@@ -192,11 +129,6 @@ extern void BootResetAction ( void ) {
 	printk( __DATE__ " -  http://xbox-linux.org\n");
 	VIDEO_CURSOR_POSX=(vmode.xmargin/*+64*/)*4;
 	printk("(C)2002-2004 Xbox Linux Team   RAM : %d MB  ",xbox_ram);
-	if (cromwell_config==CROMWELL) {
-		printk("(Load Tries: %d Bank: %d ",cromwell_retryload,cromwell_loadbank);
-		if (cromwell_Biostype == 0) printk("Bios: 256k)");
-		if (cromwell_Biostype == 1) printk("Bios: 1MB)");
-	}
         printk("\n");
     
 	// capture title area
@@ -246,7 +178,6 @@ extern void BootResetAction ( void ) {
 		OBJECT_FLASH of;
 		memset(&of,0x00,sizeof(of));
 		of.m_pbMemoryMappedStartAddress=(BYTE *)LPCFlashadress;
-		//BootFlashCopyCodeToRam();
 		BootFlashGetDescriptor(&of, (KNOWN_FLASH_TYPE *)&aknownflashtypesDefault[0]);
 		VIDEO_ATTR=0xffc8c8c8;
 		printk("Flash type: ");
@@ -369,27 +300,16 @@ extern void BootResetAction ( void ) {
 
 //	printk("i2C=%d SMC=%d, IDE=%d, tick=%d una=%d unb=%d\n", nCountI2cinterrupts, nCountInterruptsSmc, nCountInterruptsIde, BIOS_TICK_COUNT, nCountUnusedInterrupts, nCountUnusedInterruptsPic2);
 
-//#ifndef IS_XBE_CDLOADER
-	
-
-
-	temp = -1; // Nothing Choosed
+	temp = -1; // Nothing chosen
   	memset(&kernel_config,0,sizeof(CONFIGENTRY));
-  		
-#ifdef MENU
 
+#ifdef MENU
 	if(fMbrPresent && fSeenActive) {
 		temp = BootMenu(&kernel_config, 0,nActivePartitionIndex, nFATXPresent);
 	} else {
 		temp = BootMenu(&kernel_config, 1,0, nFATXPresent); 
 	}
 #endif  
- 
-        //printk("We are starting the config %d\n",temp); 
      	StartBios(&kernel_config, nActivePartitionIndex, nFATXPresent,temp);
-    
     while(1);   
- 
-
-
 }

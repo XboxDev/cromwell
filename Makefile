@@ -88,8 +88,6 @@ OBJECTS-CROM += $(TOPDIR)/obj/fsys_ext2fs.o
 OBJECTS-CROM += $(TOPDIR)/obj/char_io.o
 OBJECTS-CROM += $(TOPDIR)/obj/disk_io.o
 OBJECTS-CROM += $(TOPDIR)/obj/decode-jpg.o
-#AUDIO
-#OBJECTS-CROM += $(TOPDIR)/obj/BootAudio.o
 OBJECTS-CROM += $(TOPDIR)/obj/BootFlash.o
 OBJECTS-CROM += $(TOPDIR)/obj/BootFlashUi.o
 OBJECTS-CROM += $(TOPDIR)/obj/BootEEPROM.o
