@@ -132,7 +132,7 @@ reload_cs:
 	mov %eax, %gs
 
 	// Set the stack pointer to give us a valid stack
-	movl $0x03BFFFFC, %esp
+	movl $0x03BFFFF0, %esp
 
         
         // We clear the IDT in RAM   (IDT located @  0xb0000 )
@@ -140,6 +140,7 @@ reload_cs:
 	movl $0x5000/4, %ecx
 	movl $0xB0000, %edi
 	rep stosl
+	wbinvd
 	
 	// We load the Interrupt Descriptor Table
 	lidt tableIdtDescriptor
@@ -243,30 +244,29 @@ reload_cs:
 	movl	$0x800, %eax 		//Enable MTRRs
 	wrmsr
       
-
         
    
-	movl	$0x600, %eax
-	mov	%eax, %cr4
+//	movl	$0x600, %eax
+//	mov	%eax, %cr4
 
 	mov	%eax, %eax       // Flush the TLB    and resets it
 	mov	%eax, %cr3
-  
+ 	wbinvd 
  
    	/* turn on normal cache */
 	//  bit 30 + 29 = CD + NW 
 	// CD = Cache Disable (disable = 1)
 	// NW Not write through (disable = 1)
 	
-	movl	%cr0, %eax
-	mov 	%eax, %ebx
-	andl	$0x9fFFffFF,%eax
-	movl	%eax, %cr0
-	wbinvd
-	
-	
-	
-   
+//	movl	%cr0, %eax
+//	mov 	%eax, %ebx
+//	andl	$0x9fFFffFF,%eax
+//	movl	%eax, %cr0
+//	wbinvd
+
+	jmp BootResetAction
+
+#if 0	
         // something for Video ?
 	mov 	$0x80000854, %eax
 	movw 	$0xcf8, %dx
@@ -275,7 +275,7 @@ reload_cs:
 	inl 	%dx, %eax 
 	orl 	$0x88000000, %eax
 	outl 	%eax, %dx 
-     
+        wbinvd
 	
 	// Important
 	mov 	$0x80000064, %eax 
@@ -285,6 +285,7 @@ reload_cs:
 	inl 	%dx, %eax 
 	orl 	$0x88000000, %eax 
 	outl	%eax, %dx 
+	wbinvd
 	
 	// Important
 	mov 	$0x8000006c, %eax 
@@ -297,9 +298,9 @@ reload_cs:
 	outl	%eax, %dx 
 	pop 	%eax
 	outl	%eax, %dx 
+      	wbinvd
       	
-      	
-      	/*
+/*      	
 	// CPU Whoami   ? sesless ?
 	mov 	$0x80000080, %eax 
 	movw 	$0xcf8, %dx 
@@ -307,17 +308,18 @@ reload_cs:
 	movw 	$0xcfc, %dx 
 	movl 	$0x100, %eax 
 	outl	%eax, %dx 
-        */
-	
+        wbinvd
+*/	
 	mov 	$0x8000088C, %eax 
 	movw 	$0xcf8, %dx 
 	outl	%eax, %dx 
 	movw 	$0xcfc, %dx 
 	movl 	$0x40000000, %eax 
 	outl	%eax, %dx
+	wbinvd
 	
 	jmp BootResetAction
-
+#endif
        
 
 

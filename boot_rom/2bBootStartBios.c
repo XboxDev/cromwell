@@ -28,7 +28,48 @@ Hints:
  a 4MByte image instead of a 1MByte one, the linker has added the RAM init at 400000.
 */
 
+DWORD PciWriteDword(unsigned int bus, unsigned int dev, unsigned int func, unsigned int reg_off, unsigned int dw) 
+{
+		
+	DWORD base_addr = 0x80000000;
+	base_addr |= ((bus & 0xFF) << 16);	// bus #
+	base_addr |= ((dev & 0x1F) << 11);	// device #
+	base_addr |= ((func & 0x07) << 8);	// func #
+	base_addr |= ((reg_off & 0xff));
 
+	IoOutputDword(0xcf8, base_addr );	
+	IoOutputDword(0xcfc ,dw);
+
+	return 0;    
+}
+
+DWORD PciReadDword(unsigned int bus, unsigned int dev, unsigned int func, unsigned int reg_off)
+{
+	DWORD base_addr = 0x80000000;
+	base_addr |= ((bus & 0xFF) << 16);	// bus #
+	base_addr |= ((dev & 0x1F) << 11);	// device #
+	base_addr |= ((func & 0x07) << 8);	// func #
+        base_addr |= ((func & 0x07) << 8);
+        base_addr |= ((reg_off & 0xff));
+        
+	IoOutputDword(0xcf8, base_addr);
+	return IoInputDword(0xcfc);
+}
+
+void BootAGPBUSInitialization(void)
+{
+	DWORD temp;
+	PciWriteDword(BUS_0, DEV_1, FUNC_0, 0x54,   PciReadDword(BUS_0, DEV_1, FUNC_0, 0x54) | 0x88000000 );
+	
+	PciWriteDword(BUS_0, DEV_0, FUNC_0, 0x64,   (PciReadDword(BUS_0, DEV_0, FUNC_0, 0x64))| 0x88000000 );
+	
+	temp =  PciReadDword(BUS_0, DEV_0, FUNC_0, 0x6C);
+	IoOutputDword(0xcfc , temp & 0xFFFFFFFE);
+	IoOutputDword(0xcfc , temp );
+	
+	PciWriteDword(BUS_0, DEV_0, FUNC_0, 0x80, 0x00000100);
+    
+}
 
 
 extern void *MemoryChecksum;
@@ -58,7 +99,7 @@ extern void BootStartBiosLoader ( void ) {
 	unsigned int compressed_image_start;
 	unsigned int compressed_image_size;
 	unsigned int Biossize_type;
-	
+	int temp;
 	
         int validimage;
         free_mem_ptr = 0x02500000;		// Main Dynamic Memory starts here
@@ -88,9 +129,12 @@ extern void BootStartBiosLoader ( void ) {
 		while(1);
 	}
 	#endif
-	
-        
+        // Sets the Graphics Card to 60 MB start address
+        (*(unsigned int*)0xFD600800) = (0xf0000000 | ((64*0x100000) - 0x00400000));
 
+	BootAGPBUSInitialization();
+	
+	
 	
 	// Lets go, we have finished, the Most important Startup, we have now a valid Micro-loder im Ram
 	// we are quite happy now
@@ -136,9 +180,9 @@ extern void BootStartBiosLoader ( void ) {
                 
         	// Copy From Flash To RAM
       		memcpy(&bootloaderChecksum[0],(void*)(Buildinflash_Flash[flashbank]+compressed_image_start),20);
-        	//memcpy((void*)CROMWELL_compress_temploc,(void*)(Buildinflash_Flash[flashbank]+compressed_image_start+20),compressed_image_size);
-                
+
                 memcpy((void*)CROMWELL_compress_temploc,(void*)(Buildinflash_Flash[flashbank]+compressed_image_start+20),compressed_image_size);
+		memset((void*)(CROMWELL_compress_temploc+compressed_image_size),0x00,20*1024);
 		
 		// Lets Look, if we have got a Valid thing from Flash        	
       		SHA1Reset(&context);
@@ -149,23 +193,33 @@ extern void BootStartBiosLoader ( void ) {
 			// The Checksum is good                          
 			// We start the Cromwell immediatly
 			/*
-			I2cSetFrontpanelLed(I2C_LED_RED0 | I2C_LED_RED1 | I2C_LED_RED2 | I2C_LED_RED3 );
+			
 	
 			I2CTransmitWord(0x10, 0x1901);
 			I2CTransmitWord(0x10, 0x0c00);
                         */
-                
+                        
+                        
                         unsigned int de_compressed_image_size;
-
-                        lzo_init();                        
-
-                        lzo1x_decompress(
+                        
+                        I2cSetFrontpanelLed(I2C_LED_RED0 | I2C_LED_RED1 | I2C_LED_RED2 | I2C_LED_RED3 );
+                        
+                        
+                        
+                        //lzo_init();                        
+                        
+                        //tryagain:
+                        temp = lzo1x_decompress_safe(
                         		(void*)(CROMWELL_compress_temploc),
                         		compressed_image_size,
                         		(void*)CROMWELL_Memory_pos,
                         		&de_compressed_image_size,
                         		NULL);
-                        
+			//if (compressed_image_size==de_compressed_image_size) goto tryagain;
+			//if (temp != LZO_E_OK ) goto tryagain;
+			
+			memset((void*)(CROMWELL_Memory_pos+de_compressed_image_size),0x0,1024);
+			memset((void*)(0x0),0x0,20*1024);
 			
 			//I2cSetFrontpanelLed(I2C_LED_RED0 | I2C_LED_RED1 | I2C_LED_RED2 | I2C_LED_RED3 );
 			
@@ -202,10 +256,18 @@ extern void BootStartBiosLoader ( void ) {
 	
         
         if (validimage==1) {
-
+                
+                
+                I2cSetFrontpanelLed(
+		I2C_LED_GREEN0 | I2C_LED_GREEN1 | I2C_LED_GREEN2 | I2C_LED_GREEN3 |
+		I2C_LED_RED0 | I2C_LED_RED1 | I2C_LED_RED2 | I2C_LED_RED3
+		);
+	
 	        // We now jump to the cromwell, Good bye 2bl loader
 		// This means: jmp CROMWELL_Memory_pos == 0x03A00000
 		__asm __volatile__ (
+		"wbinvd\n"
+		"cld\n"
 		"ljmp $0x10, $0x03A00000\n"   
 		);
 		// We are not Longer here

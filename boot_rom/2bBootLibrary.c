@@ -46,11 +46,18 @@ int _memcmp(const BYTE *pb, const BYTE *pb1, int n) {
 void *malloc(size_t size)
 {
 	void *p;
-
-	free_mem_ptr = (free_mem_ptr + 3) & ~3;	/* Align */
+/*
+	free_mem_ptr = (free_mem_ptr + 3) & ~3;	
 	p = (void *) free_mem_ptr;
 	free_mem_ptr += size;
 	return p;
+*/
+	free_mem_ptr = (free_mem_ptr + 0x100) & ~0x100;	
+	p = (void *) free_mem_ptr;
+	free_mem_ptr += size+30;
+	return p;
+
+
 }
 
 void free(void *where)

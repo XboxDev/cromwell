@@ -456,82 +456,72 @@
 */ 
 
 	// MTRR for RAM
-	// from address 0, Writeback Caching, 64MB range
-        movl	$0x200, %ecx 		// IA32_MTRR_PHYS Base 0
-	movl	$0x00000000, %edx 	// 0x00
+	// from address 0, Writeback Caching, 128MB range
+        movl	$0x200, %ecx
+	movl	$0x00000000, %edx
 	movl	$0x00000006, %eax 	// == WB_CACHE == 6
+	//movl	$0x00000004, %eax 	// Temporary, as USB development
 	wrmsr
-       //201
-	// MASK0 set to 0xffc000[000] == 64M    
-        inc %ecx  		// IA32_MTRR_PHYS_MASK 0
-	movl	$0x0f, %edx 		// 0x0f
-	movl	$0xfc000800, %eax  	// 0xfc000800 b11= enable MTRR
-	wrmsr
-	
-	
-	//202
-	// MTRR for BIOS
-	inc %ecx		// IA32_MTRR_PHYS Base 1 
-	movl	$0x00000000, %edx 	// 0x00
-	movl	$0xFFF00006, %eax 	// == WB cache  NOTE SIZING!  Only last 1M cached!
-	wrmsr
-        //203
-        // MASK0 set to 0xff0000[000] == 16M
-        inc %ecx             // IA32_MTRR_PHYS_MASK 1
-	movl	$0x0000000f, %edx // 0x0f
-	movl	$0xFFF00800, %eax  // 0xff000800
-	wrmsr
-        
-        //204
-        // MTRR for Video Memory (last 4MByte of shared Ram)
-	// Writethrough type trumps Writeback for overlapping region
-      	inc %ecx           	// IA32_MTRR_PHYS Base 2
-	movl	$0x00000000, %edx 	// 0x00
-	movl	$0x03C00004, %eax 	// == Writethrough == 4
-	wrmsr
-	//205
-	// MASK0 set to 0xfffC00[000] == 4M
-	inc %ecx            		// IA32_MTRR_PHYS_MASK 2
-	movl	$0x0000000f, %edx // 0x0f
-	movl	$0xFFC00800, %eax  // 0xffC00800
-	wrmsr
-        
-        //206
-        // PCI Config Space   
-	inc %ecx          
-	movl    $0x00000000, %edx       // 0x00   
-	movl    $0xf0000000, %eax       
-	wrmsr   
-	//207
-	inc %ecx           
-	movl    $0x0000000f, %edx       //   
-	movl    $0xF0100800, %eax       //   
-	wrmsr 
 
+	// MASK0 set to 0xf8000[000] == 128M
+        movl	$0x201, %ecx
+	movl	$0x0000000f, %edx
+	movl	$0xf8000800, %eax
+	wrmsr
+
+	// MTRR for shadow RAM
+	// from address 0xf0000000, Write-combining Caching, 128MB range
+        movl	$0x202, %ecx
+	movl	$0x00000000, %edx
+	movl	$0xf0000001, %eax 	// Write-Combining == 1
+	wrmsr
+
+	// MASK0 set to 0xf8000[000] == 128M
+        movl	$0x203, %ecx
+	movl	$0x0000000f, %edx
+	movl	$0xf8000800, %eax
+	wrmsr
+
+     // MTRR for FLASH
+	movl	$0x204, %ecx
+	movl	$0x00000000, %edx
+	movl	$0xFff00000, %eax 	    // We set to Uncacheable
+	wrmsr
+
+        movl	$0x205, %ecx
+	movl	$0x0000000f, %edx
+	movl	$0xfff00800, %eax
+	wrmsr
+	
 
         xor	%eax, %eax
 	xor	%edx, %edx
-	
 
-	inc %ecx		// IA32_MTRR_PHYS Base 4
-        wrmsr                                                   
-	inc %ecx		// IA32_MTRR_PHYS_MASK 4
-        wrmsr                                                   
-
-	inc %ecx		// IA32_MTRR_PHYS Base 5
-        wrmsr                                                   
-	inc %ecx		// IA32_MTRR_PHYS_MASK 5
-        wrmsr                                                   
-
-	inc %ecx		// IA32_MTRR_PHYS Base 6
-        wrmsr                                                   
-	inc %ecx		// IA32_MTRR_PHYS_MASK 6
+	movl	$0x206, %ecx		// IA32_MTRR_PHYS Base 3
+        wrmsr
+	movl	$0x207, %ecx		// IA32_MTRR_PHYS_MASK 3
         wrmsr
 
-	inc %ecx		// IA32_MTRR_PHYS Base 7
-        wrmsr
-	inc %ecx		// IA32_MTRR_PHYS_MASK 7
+	movl	$0x208, %ecx		// IA32_MTRR_PHYS Base 4
         wrmsr                                                   
+	movl	$0x209, %ecx		// IA32_MTRR_PHYS_MASK 4
+        wrmsr                                                   
+
+	movl	$0x20a, %ecx		// IA32_MTRR_PHYS Base 5
+        wrmsr                                                   
+	movl	$0x20b, %ecx		// IA32_MTRR_PHYS_MASK 5
+        wrmsr                                                   
+
+	movl	$0x20c, %ecx		// IA32_MTRR_PHYS Base 6
+        wrmsr                                                   
+	movl	$0x20d, %ecx		// IA32_MTRR_PHYS_MASK 6
+        wrmsr
+
+	movl	$0x20e, %ecx		// IA32_MTRR_PHYS Base 7
+        wrmsr
+	movl	$0x20f, %ecx		// IA32_MTRR_PHYS_MASK 7
+        wrmsr                                                   
+                                              
 
 	// Define Memory in IA32_MTRR_DEF_TYPE
 	movl	$0x2ff, %ecx
@@ -550,24 +540,15 @@
 
         cld
 
-// copy everything into RAM + Verify the Read from the Flash
+	// copy everything into RAM 
 
 	mov 	$_ram_location, %edi
 	mov 	$_start_ramcopy, %esi
-	mov 	$_size_ramcopy, %ecx
-loop_read:	
-	lodsb
-retry_read:
-	dec   	%esi
-	xchg  	%ebx,%eax
-	lodsb
-	cmp   	%al,%bl
-	jne   	retry_read
-	stosb
-	dec   	%ecx
-	jnz   	loop_read
+	mov 	$(_size_ramcopy + 100), %ecx
+	rep 	movsb
 
         jmp   initaftermemcpy
+
 
 /*
   We leave Flash at this point, we never come back to it anymore.
@@ -638,28 +619,37 @@ initaftermemcpy:
 	lgdt tableGdtDescriptor
 	// set up selectors for everything
 
-	mov	$0x18, %eax
-	.byte 0x8e, 0xd8  // from 2bl first init
 
-	movl	$ 0x00080000,%esp
-	movw    %ax, %ds
-	movw    %ax, %es
-	movw    %ax, %ss
-  
-  	xor	%eax, %eax
-	movw    %ax, %fs
-	movw    %ax, %gs
-                
- 
+	xor	%eax, %eax
+	lldt %ax
+
+	// Reload CS as 0010 from the new GDT using a far jump
+	.byte 0xEA          // jmp far 0010:reload_cs
+	.long reload_cs
+	.word 0x0010
+.align 16
+reload_cs:
+
+	// CS is now a valid entry in the GDT.  Set SS, DS, and ES to valid
+	// descriptors, but clear FS and GS as they are not necessary.
+
+	// Set SS, DS, and ES to a data32 segment with maximum limit.
+	movw $0x0018, %ax
+	mov %eax, %ss
+	mov %eax, %ds
+	mov %eax, %es
+
+	// Clear FS and GS
+	xor %eax, %eax
+	mov %eax, %fs
+	mov %eax, %gs
+	
+	movl	$ 0x1ffffe,%esp
+
 	mov	$0x8, %al
 	mov	$0x61, %dx
 	out	%al, %dx
 
-	// FPU SETUP -- Not perfect, soembody should take a close look to it
-
-	clts
-	fninit
-	
 
 	mov $0x80000810, %eax ;	movw $0xcf8, %dx ; outl	%eax, %dx ;	movw $0xcfc, %dx ;	mov	$0x8001, %eax ;	outl	%eax, %dx  // v1.0 ACPI IO region enable
 	mov $0x80000884, %eax ;	movw $0xcf8, %dx ; outl	%eax, %dx ;	movw $0xcfc, %dx ;	mov	$0x8001, %eax ;	outl	%eax, %dx  // v1.1  "
@@ -863,6 +853,24 @@ spin3:
 	mov	$0xfd000000, %eax 
 	outl	%eax, %dx
 
+
+	// Enable IDE and NIC
+	mov 	$0x8000088C, %eax 
+	movw 	$0xcf8, %dx 
+	outl	%eax, %dx 
+	movw 	$0xcfc, %dx 
+	movl 	$0x40000000, %eax 
+	outl	%eax, %dx
+	
+      	
+	// CPU Whoami   ? sesless ?
+	mov 	$0x80000080, %eax 
+	movw 	$0xcf8, %dx 
+	outl	%eax, %dx 
+	movw 	$0xcfc, %dx 
+	movl 	$0x100, %eax 
+	outl	%eax, %dx 
+        
 	jmp 	BootStartBiosLoader  // this can be found in BootResetAction.c
                          
                          

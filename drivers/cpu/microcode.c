@@ -327,13 +327,13 @@ void display_cpuid_update_microcode(void)
 //	printk("microcode_info: sig = 0x%08x pf=0x%08x rev = 0x%08x\n",sig, pf, rev);
   
 	m = (struct microcode *)microcode_updates;
-	for(i = 0; i < sizeof(microcode_updates)/sizeof(struct microcode); i++) {
+	// We have 2 microocde Tables
+	for(i = 0; i < 2; i++) {
 		if ((m[i].sig == sig) && (m[i].pf == pf)) {
 			wrmsr(0x79, (unsigned int)&m[i].bits, 0);
 			__asm__ __volatile__ ("cpuid" : : : "ax", "bx", "cx", "dx");
 			rdmsr(0x8B, val[0], val[1]);
-			printk("microcode updated from revision %d to %d\n",
-			       rev, val[1]);
+			//printk("microcode updated from revision %d to %d\n", rev, val[1]);
 			found = 1;
 		}
 	}

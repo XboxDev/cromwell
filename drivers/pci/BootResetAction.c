@@ -89,7 +89,9 @@ extern void BootResetAction ( void ) {
         memcpy(&cromwell_Biostype,(void*)(0x03A00000+0x2C),4);
  	
  	cromwell_haverombios = 1;
- 	
+
+	VIDEO_CURSOR_POSX=40;
+	VIDEO_CURSOR_POSY=140; 	
         
 	VIDEO_AV_MODE = 0xff;
         CACHE_VSYNC_WRITEBACK = 0;
