@@ -23,7 +23,6 @@
 #define S43 15
 #define S44 21
 
-#define POINTER unsigned int*
 
 static void MD5Transform (UINT4 state[4], unsigned char block[64]);
 static void Encode (unsigned char *output, UINT4 *input, unsigned int len);
@@ -102,16 +101,18 @@ void MD5Update (MD5_CTX *context, unsigned char *input, unsigned int inputLen)
  context->count[1]++;
   context->count[1] += ((UINT4)inputLen >> 29);
 
+
   partLen = 64 - index;
 
   /* Transform as many times as possible.
 */
   if (inputLen >= partLen) {
- MD5_memcpy
-   ((POINTER)&context->buffer[index], (POINTER)input, partLen);
+ MD5_memcpy ((POINTER)&context->buffer[index], (POINTER)input, partLen);
+
  MD5Transform (context->state, context->buffer);
 
  for (i = partLen; i + 63 < inputLen; i += 64)
+ //  printk("step5\n");
    MD5Transform (context->state, &input[i]);
 
  index = 0;
@@ -120,9 +121,8 @@ void MD5Update (MD5_CTX *context, unsigned char *input, unsigned int inputLen)
  i = 0;
 
   /* Buffer remaining input */
-  MD5_memcpy
- ((POINTER)&context->buffer[index], (POINTER)&input[i],
-  inputLen-i);
+  MD5_memcpy  ((POINTER)&context->buffer[index], (POINTER)&input[i],  inputLen-i);
+
 }
 
 /* MD5 finalization. Ends an MD5 message-digest operation, writing the
