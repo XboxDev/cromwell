@@ -355,3 +355,15 @@ int HelpStrlen(char *str) {
 
         return ptr-str;
 }
+
+char *strrchr0(char *string, char ch) {
+        char *ptr = string;
+	while(*ptr != 0) {
+		if(*ptr == ch) {
+			return ptr;
+		} else {
+			ptr++;
+		}
+	}
+	return NULL;
+}

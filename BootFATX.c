@@ -7,6 +7,8 @@
 #include "boot.h"
 #include "BootFATX.h"
 
+#undef FATX_DEBUG
+
 int checkForLastDirectoryEntry(unsigned char* entry) {
 
 	// if the filename length byte is 0 or 0xff,
@@ -298,11 +300,11 @@ int FATXLoadFromDisk(FATXPartition* partition, FATXFILEINFO *fileinfo) {
 		fileinfo->fileRead+=written;
 		ptr+=written;
 
-			// Find next cluster
+		// Find next cluster
 		clusterId = getNextClusterInChain(partition, clusterId);
 	}
 
-		// check we actually found enough data
+	// check we actually found enough data
 	if (fileSize != 0) {
     		printk("Hit end of cluster chain before file size was zero\n");
 		free(fileinfo->buffer);
@@ -318,6 +320,11 @@ int FATXFindFile(FATXPartition* partition,
 
 	int i = 0;
 
+#ifdef FATX_DEBUG
+	VIDEO_ATTR=0xffc8c8c8;
+	printk("FATXFindFile : %s\n",filename);
+#endif
+	
   	// convert any '\' to '/' characters
   	while(filename[i] != 0) {
 	    	if (filename[i] == '\\') {
@@ -325,7 +332,7 @@ int FATXFindFile(FATXPartition* partition,
 	    	}
 	    	i++;
   	}
-
+	
   	// skip over any leading / characters
   	i=0;
   	while((filename[i] != 0) && (filename[i] == '/')) {
@@ -354,7 +361,7 @@ int _FATXFindFile(FATXPartition* partition,
 
 
 	// work out the filename we're looking for
-	slashPos = HelpStrrchr(filename, '/');
+	slashPos = strrchr0(filename, '/');
 	if (slashPos == NULL) {
 	// looking for file
 		lookForFile = 1;
@@ -382,6 +389,10 @@ int _FATXFindFile(FATXPartition* partition,
 		seekFilename[slashPos - filename] = 0;
 	}
 
+#ifdef FATX_DEBUG
+	VIDEO_ATTR=0xffc8c8c8;
+	printk("_FATXFindFile : %s\n",filename);
+#endif
 	// OK, search through directory entries
 	endOfDirectory = 0;
 	while(clusterId != -1) {
@@ -428,7 +439,7 @@ int _FATXFindFile(FATXPartition* partition,
 				// if we're looking for a directory and found a directory
 				if (lookForDirectory) {
 					if (flags & FATX_FILEATTR_DIRECTORY) {
-						return FATXFindFile(partition, slashPos+1, entryClusterId,fileinfo);
+						return _FATXFindFile(partition, slashPos+1, entryClusterId,fileinfo);
 					} else {
 						printk("File not found\n");
 						return false;
@@ -444,7 +455,7 @@ int _FATXFindFile(FATXPartition* partition,
 						strcpy(fileinfo->filename,filename);
 						return true;
 					} else {
-						printk("File not found\n");
+						printk("File not found %s\n",filename);
 						return false;
 					}
 				}
