@@ -35,7 +35,72 @@ void BootFromCD(void *data) {
 		BootVideoClearScreen(&jpegBackdrop, nTempCursorY, VIDEO_CURSOR_POSY+1);	
 		return;
 	}
-	LoadKernelCdrom(config);
+	DrawBootMenu(config);
+}
+
+void DrawBootMenu(void *rootEntry) {
+	//entry is the pointer to the root config entry
+	TEXTMENU *menu;
+	TEXTMENUITEM *menuPtr;
+	CONFIGENTRY *configEntry, *currentConfigEntry;
+	extern int timedOut;
+	
+	configEntry = (CONFIGENTRY*)rootEntry;
+
+	if (configEntry->nextConfigEntry==NULL) {
+		//If there is only one option, just boot it.
+		BootMenuEntry(configEntry);
+		return;
+	}
+
+	if (timedOut) {
+		//We should be non-interactive, then.
+		//If there is a default entry, boot that.
+		for (currentConfigEntry = configEntry; currentConfigEntry != NULL; 
+			currentConfigEntry = (CONFIGENTRY*)currentConfigEntry->nextConfigEntry) {
+			if (currentConfigEntry->isDefault) {
+				BootMenuEntry(currentConfigEntry);
+				return;
+			}
+		}
+		//There wasn't a default entry, so just boot the first in the list
+		BootMenuEntry(configEntry);
+		return;
+	}
+	
+	menu = malloc(sizeof(TEXTMENU));
+	memset(menu,0x00,sizeof(TEXTMENU));
+	menu->szCaption="Boot menu\n";
+  
+	for (currentConfigEntry = configEntry; currentConfigEntry != NULL; 
+		currentConfigEntry = (CONFIGENTRY*)currentConfigEntry->nextConfigEntry) {
+	
+		menuPtr = (TEXTMENUITEM *)malloc(sizeof(TEXTMENUITEM*));
+		memset(menuPtr, 0x00, sizeof(menuPtr));
+		if (currentConfigEntry->title == NULL) {
+			menuPtr->szCaption="Untitled";
+		}
+		else menuPtr->szCaption=currentConfigEntry->title;
+		menuPtr->functionPtr = BootMenuEntry;
+		menuPtr->functionDataPtr = (void *)currentConfigEntry;
+		TextMenuAddItem(menu,menuPtr);
+	}
+	TextMenu(menu);
+}
+
+void BootMenuEntry(void *entry) {
+	CONFIGENTRY *config = (CONFIGENTRY*)entry;
+	switch (config->bootType) {
+		case BOOT_CDROM:
+			LoadKernelCdrom(config);
+			break;
+		case BOOT_FATX:
+			LoadKernelFatX(config);
+			break;
+		case BOOT_NATIVE:
+			LoadKernelNative(config);
+			break;
+	}
 	ExittoLinux(config);
 }
 
@@ -56,20 +121,3 @@ void FlashBios(void *data) {
 }
 #endif
 
-void BootFromFATX(void *configEntry) {
-	LoadKernelFatX((CONFIGENTRY*)configEntry);
-	ExittoLinux((CONFIGENTRY*)configEntry);
-}
-
-//More grub bits
-unsigned long saved_drive;
-unsigned long saved_partition;
-grub_error_t errnum;
-unsigned long boot_drive;
-
-extern unsigned long current_drive;
-
-void BootFromNative(void *config) {
-	LoadKernelNative((CONFIGENTRY*)config);
-	ExittoLinux((CONFIGENTRY*)config);
-}

@@ -22,7 +22,12 @@
 
 #include "config.h"
 
-
+//Grub bits
+unsigned long saved_drive;
+grub_error_t errnum;
+unsigned long saved_partition;
+unsigned long boot_drive;
+	
 static int nRet;
 static u32 dwKernelSize= 0, dwInitrdSize = 0;
 
@@ -72,7 +77,7 @@ CONFIGENTRY* LoadConfigNative(int drive, int partition) {
 	u32 dwConfigSize=0;
 	char *szGrub;
 	u8* tempBuf;
-        
+	
 	szGrub = (char *) malloc(265+4);
         memset(szGrub,0,256+4);
         
@@ -119,8 +124,9 @@ CONFIGENTRY* LoadConfigNative(int drive, int partition) {
 	
 	config = ParseConfig((char *)KERNEL_SETUP, nLen, NULL);
 
-	for (currentConfigItem = (CONFIGENTRY*) config; currentConfigItem; currentConfigItem = (CONFIGENTRY*)currentConfigItem->nextConfigEntry) {
+	for (currentConfigItem = (CONFIGENTRY*) config; currentConfigItem!=NULL ; currentConfigItem = (CONFIGENTRY*)currentConfigItem->nextConfigEntry) {
 		//Set the drive ID and partition IDs for the returned config items
+		currentConfigItem->bootType=BOOT_NATIVE;
 		currentConfigItem->drive=drive;
 		currentConfigItem->partition=partition;
 	}
@@ -135,7 +141,7 @@ int LoadKernelNative(CONFIGENTRY *config) {
 	u32 dwConfigSize=0;
 	char *szGrub;
 	u8* tempBuf;
-        
+
 	szGrub = (char *) malloc(265+4);
         memset(szGrub,0,256+4);
         
@@ -208,33 +214,32 @@ CONFIGENTRY* LoadConfigFatX(void) {
 	FATXPartition *partition = NULL;
 	FATXFILEINFO fileinfo;
 	FATXFILEINFO infokernel;
-	int nConfig = 0;
-	u8 *tempBuf;
-
+	CONFIGENTRY *config, *currentConfigItem;
+	
 	partition = OpenFATXPartition(0,SECTOR_STORE,STORE_SIZE);
 	
 	if(partition != NULL) {
 
 		if(LoadFATXFile(partition,"/linuxboot.cfg",&fileinfo)) {
 			//Root of E has a linuxboot.cfg in
-			CONFIGENTRY *entry = (CONFIGENTRY*)malloc(sizeof(CONFIGENTRY));	
-			memset(entry,0x00,sizeof(CONFIGENTRY));
-			entry = ParseConfig(fileinfo.buffer, fileinfo.fileSize, NULL);
+			config = (CONFIGENTRY*)malloc(sizeof(CONFIGENTRY));	
+			config = ParseConfig(fileinfo.buffer, fileinfo.fileSize, NULL);
 			free(fileinfo.buffer);
-			return entry;
 		}
-		
-		if(LoadFATXFile(partition,"/debian/linuxboot.cfg",&fileinfo) ) {
+		else if(LoadFATXFile(partition,"/debian/linuxboot.cfg",&fileinfo) ) {
 			//Try in /debian on E
-			CONFIGENTRY *entry = (CONFIGENTRY*)malloc(sizeof(CONFIGENTRY));	
-			entry = ParseConfig(fileinfo.buffer, fileinfo.fileSize, "/debian");
+			config = (CONFIGENTRY*)malloc(sizeof(CONFIGENTRY));	
+			config = ParseConfig(fileinfo.buffer, fileinfo.fileSize, "/debian");
 			free(fileinfo.buffer);
 			CloseFATXPartition(partition);
-			return entry;
 		}
 	} 
-	//Failed
-	return NULL;
+	if (config == NULL) return NULL;
+
+	for (currentConfigItem = (CONFIGENTRY*) config; currentConfigItem!= NULL ; currentConfigItem = (CONFIGENTRY*)currentConfigItem->nextConfigEntry) {
+		currentConfigItem->bootType = BOOT_FATX;
+	}
+	return config;
 }
 
 int LoadKernelFatX(CONFIGENTRY *config) {
@@ -362,9 +367,10 @@ CONFIGENTRY *LoadConfigCD(int cdromId) {
 	// LinuxBoot.cfg File Loaded
 	config = ParseConfig((char *)KERNEL_SETUP, dwConfigSize, NULL);
 	//Populate the configs with the drive ID
-	for (currentConfigItem = (CONFIGENTRY*) config; currentConfigItem; currentConfigItem = (CONFIGENTRY*)currentConfigItem->nextConfigEntry) {
+	for (currentConfigItem = (CONFIGENTRY*) config; currentConfigItem!=NULL; currentConfigItem = (CONFIGENTRY*)currentConfigItem->nextConfigEntry) {
 		//Set the drive ID and partition IDs for the returned config items
 		currentConfigItem->drive=cdromId;
+		currentConfigItem->bootType=BOOT_CDROM;
 	}
 	
 	return config;

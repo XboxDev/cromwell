@@ -18,9 +18,13 @@ void DrawChildTextMenu(void *menu);
 void SetWidescreen(void *);
 void SetVideoStandard(void *);
 void SetLEDColor(void *);
-void BootFromCD(void *);
-void BootFromNative(void *);
-void BootFromFATX(void *);
+
+
+void DrawBootMenu(void *entry);
+void BootMenuEntry(void *entry);
+
+//Ick, this needs to be removed.
+void BootFromCD(void *driveId);
 
 #ifdef FLASH
 void FlashBios(void *);

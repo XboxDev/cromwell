@@ -35,6 +35,7 @@
 ICON *firstIcon=NULL;
 ICON *selectedIcon=NULL;
 ICON *firstVisibleIcon=NULL;
+int timedOut=0;
 
 void AddIcon(ICON *newIcon) {
 	ICON *iconPtr = firstIcon;
@@ -178,11 +179,11 @@ void IconMenu(void) {
 			
 			VIDEO_CURSOR_POSX=nTempCursorResumeX;
 			VIDEO_CURSOR_POSY=nTempCursorResumeY;
+			
+			if (temp>(0x369E99*BOOT_TIMEWAIT)) timedOut=1;
 			//Icon selected - invoke function pointer.
 			if (selectedIcon->functionPtr!=NULL) selectedIcon->functionPtr(selectedIcon->functionDataPtr);
-			//Shouldn't usually come back but at least if we do, the menu can
-			//continue to work.
-			//Setting changed means the icon menu will redraw itself.
+			//If we come back to this menu, make sure we are redrawn, and that we resave the video page
 			changed=1;
 			videosavepage = malloc(FB_SIZE);
 			memcpy(videosavepage,(void*)FB_START,FB_SIZE);

@@ -35,7 +35,7 @@ void IconMenuInit(void) {
 			AddIcon(iconPtr);
 		}
 	}
-	//Load the config file from FATX and native, and add the icons for it.
+	//Load the config file from FATX and native, and add the icons, if found.
 	InitFatXIcons();
 	InitNativeIcons();
 	
@@ -47,8 +47,6 @@ void IconMenuInit(void) {
 	iconPtr->functionPtr = BootFromEtherboot;
 	AddIcon(iconPtr);
 #endif	
-
-	//Uncomment this one to test the new text menu system.
 	iconPtr = (ICON *)malloc(sizeof(ICON));
 	iconPtr->iconSlot = ICON_SOURCE_SLOT0;
 	iconPtr->szCaption = "Advanced";
@@ -69,20 +67,17 @@ void InitFatXIcons(void) {
 		BootIdeReadSector(driveId, ba, 3, 0, 512);
 		if (!strncmp("BRFR",ba,4)) {
 			//Got a FATX formatted HDD
-			CONFIGENTRY *entry;
-			
-			for (entry = (CONFIGENTRY*)LoadConfigFatX(); entry; entry=(CONFIGENTRY*)entry->nextConfigEntry) {
+			CONFIGENTRY *entry = (CONFIGENTRY*)LoadConfigFatX();
+			if (entry !=NULL) {
+				//There is a config file present.
 				iconPtr = (ICON *)malloc(sizeof(ICON));
 		   		iconPtr->iconSlot = ICON_SOURCE_SLOT4;
-		   		if (strlen(entry->title)==0) {
-					iconPtr->szCaption="FatX (E:)";
-				}
-				else iconPtr->szCaption=entry->title;
-		   		iconPtr->functionPtr = BootFromFATX;
+				iconPtr->szCaption="FatX (E:)";
+				iconPtr->functionPtr = DrawBootMenu;
 				iconPtr->functionDataPtr = (void *)entry;
 		   		AddIcon(iconPtr);
 				//If we have fatx, mark it as default.
-				//If there are natives, they'll take over shortly
+				//If there are natives, they'll get priority shortly
 				selectedIcon = iconPtr;
 			}
 		}
@@ -110,20 +105,17 @@ void InitNativeIcons(void) {
 			for (n=0; n<4; n++,pb+=16) {
 				if(pb[0]&0x80) {
 					//Bootable flag IS set on this partition.
-					CONFIGENTRY *entry;
-					for (entry = (CONFIGENTRY*)LoadConfigNative(driveId, n); entry; entry=(CONFIGENTRY*)entry->nextConfigEntry) {
-						//Got a partition with a linuxboot.cfg on - lets add an icon for it
+					CONFIGENTRY *entry = (CONFIGENTRY*)LoadConfigNative(driveId, n);
+					if (entry!=NULL) {
+						//There is a valid config file here.
+						//Add an icon for this partition 
 						iconPtr = (ICON *)malloc(sizeof(ICON));
 			  			iconPtr->iconSlot = ICON_SOURCE_SLOT1;
-			  			if (strlen(entry->title)==0) {
-							iconPtr->szCaption = driveId?"HDD (hdb)":"HDD (hda)";
-						}
-						else iconPtr->szCaption=entry->title;
-						iconPtr->functionPtr = BootFromNative;
+						iconPtr->szCaption=malloc(10);
+						sprintf(iconPtr->szCaption, "hd%c%d", driveId+'a', n);
+						iconPtr->functionPtr = DrawBootMenu;
 						iconPtr->functionDataPtr = (void *)entry;
 			  			AddIcon(iconPtr);
-						//At the moment, the *LAST* native partition on disk will
-						//be the one selected as bootable by default.
 						selectedIcon = iconPtr;
 					}
 				}
