@@ -222,7 +222,7 @@ extern void BootResetAction ( void ) {
 	VIDEO_CURSOR_POSX=(currentvideomodedetails.m_dwMarginXInPixelsRecommended/*+64*/)*4;
 	printk( __DATE__ " -  http://xbox-linux.org\n");
 	VIDEO_CURSOR_POSX=(currentvideomodedetails.m_dwMarginXInPixelsRecommended/*+64*/)*4;
-	printk("(C)2002-2003 Xbox Linux Team   RAM : %d MB  ",xbox_ram);
+	printk("(C)2002-2004 Xbox Linux Team   RAM : %d MB  ",xbox_ram);
 	if (cromwell_config==CROMWELL) {
 		printk("(Load Tries: %d Bank: %d ",cromwell_retryload,cromwell_loadbank);
 		if (cromwell_Biostype == 0) printk("Bios: 256k)");
