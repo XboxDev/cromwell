@@ -280,26 +280,6 @@ void ListEntryRemove(LIST_ENTRY *plistentryCurrent)
 	}
 }
 
-int copy_swap_trim(unsigned char *dst, unsigned char *src, int len)
-{
-	unsigned char tmp;
-	int i;
-        for (i=0; i < len; i+=2) {
-		tmp = src[i];     //allow swap in place
-		dst[i] = src[i+1];
-		dst[i+1] = tmp;
-	}
-
-	--dst;
-	for (i=len; i>0; --i) {
-		if (dst[i] != ' ') {
-			dst[i+1] = 0;
-			break;
-		}
-	}
-	return i;
-}
-
 char *HelpGetToken(char *ptr,char token) {
 	static char *old;
 	char *mark;

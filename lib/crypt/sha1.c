@@ -58,50 +58,7 @@
  *      sha Error Code.
  *
  */ 
-int HMAC1Reset(int version,SHA1Context *context)
-{
-  SHA1Reset(context);
-  if (version==10) {
-		context->Intermediate_Hash[0] = 0x72127625;
-		context->Intermediate_Hash[1] = 0x336472B9;
-		context->Intermediate_Hash[2] = 0xBE609BEA;
-		context->Intermediate_Hash[3] = 0xF55E226B;
-		context->Intermediate_Hash[4] = 0x99958DAC;
-	}
-	if (version==11) {
-		context->Intermediate_Hash[0] = 0x39B06E79;
-		context->Intermediate_Hash[1] = 0xC9BD25E8;
-		context->Intermediate_Hash[2] = 0xDBC6B498;
-		context->Intermediate_Hash[3] = 0x40B4389D;
-		context->Intermediate_Hash[4] = 0x86BBD7ED;
-	}
 
-	context->Length_Low = 512;
-
-	return shaSuccess;
-}
-
-int HMAC2Reset(int version,SHA1Context *context)
-{
-	SHA1Reset(context);
-	if (version==10) {
-		context->Intermediate_Hash[0] = 0x76441D41;
-		context->Intermediate_Hash[1] = 0x4DE82659;
-		context->Intermediate_Hash[2] = 0x2E8EF85E;
-		context->Intermediate_Hash[3] = 0xB256FACA;
-		context->Intermediate_Hash[4] = 0xC4FE2DE8;
-	}
-	if (version==11) {
-		context->Intermediate_Hash[0] = 0x9B49BED3;
-		context->Intermediate_Hash[1] = 0x84B430FC;
-		context->Intermediate_Hash[2] = 0x6B8749CD;
-		context->Intermediate_Hash[3] = 0xEBFE5FE5;
-		context->Intermediate_Hash[4] = 0xD96E7393;
-	}
-	context->Length_Low  = 512;
-	return shaSuccess;
-
-}
 
 int SHA1Reset(SHA1Context *context)
 {
