@@ -1,0 +1,75 @@
+CROMWELL 1.3   2002-09-14
+Xbox Linux Team
+
+-----------
+IMPORTANT... Don't run this code without backing up your EEPROM
+contents somehow first.  Corruption has been observed during
+development after crashes.  Don't ignore this warning!!!
+-----------
+
+This version is not yet usable by general users, it is the first
+development version we are putting in CVS.  It has the filtror IO
+enabled and so will not even do anything in a non-filtror
+environment without the filtror stuff being disabled in boot.h.
+
+
+
+This development release is based on crom 1.0 and has the following
+additions:
+
+ - interrupts, including the 18.2Hz coming to a C function, which
+ increments a DWORD in the standard BIOS location
+
+ - Master and Slave device detection and reporting
+
+ - Automatic unlock is the drive reports security active, yet the
+    code does not include the RC4 key from the original bootrom,
+	  thanks to some cryptoanalysis by Franz (see BootHddKey.c)
+
+ - ATA and ATAPI functionality for reading arbitrary sectors
+
+ - ATAPI code to find out if there is a CD in the tray
+
+ - El Torito Bootable CD functionality and MBR HDD booting ( <--
+ only as far as reading the correct sector into a buffer)
+
+ - Untested, but reasonably goodlooking code for displaying a
+ proportional 4bpp antialised font (the font is also included
+ as a 6K const struct), with colour and transparency support.
+ Also code for 2D blitting.  All of this is compatible with
+ offscreen compositing and is not hardcoded to any resolution
+ (but assumes 32bpp).
+
+ - The Linux boot stuff is removed in Cromwell
+
+ In a later release, the size will be reduced to 256KBytes
+ instead of 1MB; note that at this time the 256KBytes will
+ have to be loaded at the start and end of any 1MByte
+ flash or filtror.
+
+ At the moment the code in BootResetAction.c initializes
+ everything including the IDE, and then waits for a
+ bootable CDROM to be loaded in the DVD drive.  When
+ this happens, after a 5 - 10 seconds pause the
+ contents of the executable boot sector for the CD will
+ be dumped via filtror.
+
+ An example:
+
+
+Xbox Linux Clean BIOS 1.3    Licensed under the GPL     http://xbox-linux.sf.net
+(C)2002 The Xbox Linux Team - Hardware subsidy by Microsoft, everything else GPL
+
+Initializing IDE Controller
+  0: ST310211A 6DB2WF1K (16/16383/63)=8.56GB, Sec=0107
+      FATX Formatted Drive
+      No MBR at start of drive
+  1: THOMSON-DVD
+
+Insert bootable CD...
+00000000: FA 33 C0 8E D0 BC 00 7C : FB 8C C8 8E D8 52 E8 00    .3.....|.....R..
+00000010: 00 5E 81 EE 11 00 74 12 : 81 FE 00 7C 75 75 8C C8    .^....t....|uu..
+....
+000007D0: 00 00 00 00 00 00 00 00 : 00 00 00 00 00 00 00 00    ................
+000007E0: 00 00 00 00 00 00 00 00 : 00 00 00 00 00 00 00 00    ................
+000007F0: 00 00 00 00 00 00 00 00 : 00 00 00 00 00 00 55 AA    ..............U.

@@ -1,0 +1,189 @@
+
+#include "boot.h"
+#include <stdarg.h>
+#include <string.h>
+#include "sha1.h"
+#include "rc4.h"
+
+
+
+/* This is basically originally all speedbump's work
+
+		2002-06-27 andy@warmcat.com  Stitched it into crom, simplified out code that was for test, added munged key
+		2002-09-13 andy@warmcat.com  Stitched in Franz's excellent key removal work: his modest statement follows
+
+		   Updated now, with no use for MS$ RC4 key now.
+		   Please do not send emails to me and ask: how does it work ? / What happended ? / Where ist the key ? (the key has gone)
+		   I only would say: It's a structural problem of the combination of the HMAC and the SHA-1.
+		   This only happened, as the programmer only take "standard" algorithm, and not thinking, what happens there.
+		   Ok, Studying Numerical Mathematical Analysis also helps a little.
+		   Maybe, i will document how this happend one day (would take me about 4 days to type this) on the http://sha1.caos.at website
+		   Beside, it's about 30% faster, as using the "standard" programm. (hehehe, it's a optimazion)
+		   Sorry, for the "brutal" programming, i know, it could have done better, yes.
+		   This was the working ,testing and probing programm, and usually if something is working, you are not touching it anyway.
+		   I hope, it is working good, as i have no XBOX to test this.
+*/
+
+int HMAC1Reset(SHA1Context *context);
+int HMAC2Reset(SHA1Context *context);
+void SHA1ProcessMessageBlock(SHA1Context *context);
+
+void quick_SHA1( unsigned char *SHA1_result, ... )
+{
+	va_list args;
+	struct SHA1Context context;
+
+	va_start(args,SHA1_result);
+	SHA1Reset(&context);
+
+	while(1) {
+		unsigned char *buffer = va_arg(args,unsigned char *);
+		int length;
+
+		if (buffer == NULL) break;
+
+		length = va_arg(args,int);
+
+		SHA1Input(&context,buffer,length);
+	}
+
+	SHA1Result(&context,SHA1_result);
+
+	va_end(args);
+}
+
+void HMAC_SHA1(
+	BYTE * baResult,
+	BYTE *key,
+	int key_length,
+	BYTE *baText1,
+	int nLengthText1,
+	BYTE *baText2,
+	int nLengthText2
+) {
+	BYTE baState1[0x40];
+	BYTE baState2[0x40+0x14];
+	int n;
+
+	for(n=0x40-1; n>=key_length;--n) baState1[n] = 0x36;
+	for(;n>=0;--n) baState1[n] = key[n] ^ 0x36;
+
+	quick_SHA1 ( &baState2[0x40], baState1, 0x40, baText1, nLengthText1, baText2, nLengthText2, NULL );
+
+	for(n=0x40-1; n>=key_length;--n) baState2[n] = 0x5C;
+	for(;n>=0;--n) baState2[n] = key[n] ^ 0x5C;
+
+	quick_SHA1 ( baResult, baState2, 0x40+0x14, NULL );
+}
+
+void HMAC_SHA1_keycalculation(unsigned char *result,unsigned char *text1)
+{
+
+	struct SHA1Context context;
+	int i;
+
+	HMAC1Reset(&context);
+	for (i=20;i<64;i++) context.Message_Block[i]=0; // Also the content
+	for (i=0;i<20;i++) context.Message_Block[i]=text1[i];
+	context.Message_Block[20]=0x80; 
+	context.Message_Block[62]=0x02;
+	context.Message_Block[63]=0xA0;
+
+	SHA1ProcessMessageBlock(&context);
+
+	for(i = 0; i < 20; ++i)
+    	{
+        	context.Message_Block[i] = context.Intermediate_Hash[i>>2]
+                            >> 8 * ( 3 - ( i & 0x03 ) );
+    	}
+
+	// Reset SHA-1 Processor
+	HMAC2Reset(&context);
+	for (i=20;i<64;i++) context.Message_Block[i]=0; // Also the content
+	context.Message_Block[20]=0x80; 
+	context.Message_Block[62]=0x02;
+	context.Message_Block[63]=0xA0;
+
+	SHA1ProcessMessageBlock(&context);
+	for(i = 0; i < 20; ++i)
+    	{
+        	result[i] = context.Intermediate_Hash[i>>2]
+                            >> 8 * ( 3 - ( i & 0x03 ) );
+    	}
+}
+
+void HMAC_SHA1_keyvalidation(unsigned char *result,unsigned char *text1,unsigned char *text2)
+{
+	struct SHA1Context context;
+	int i;
+
+	HMAC1Reset(&context);
+	for (i=28;i<64;i++) context.Message_Block[i]=0; // Also the content
+	for (i=0;i<8;i++) context.Message_Block[i]=text1[i];
+	for (i=8;i<28;i++) context.Message_Block[i]=text2[i-8];
+	context.Message_Block[28]=0x80;
+	context.Message_Block[62]=0x02;
+	context.Message_Block[63]=0xE0;
+
+	SHA1ProcessMessageBlock(&context);
+
+	for(i = 0; i < 20; ++i)
+    	{
+        	context.Message_Block[i] = context.Intermediate_Hash[i>>2]
+                            >> 8 * ( 3 - ( i & 0x03 ) );
+    	}
+    	HMAC2Reset(&context);
+    	for (i=20;i<64;i++) context.Message_Block[i]=0; // Also the content
+	context.Message_Block[20]=0x80;
+	context.Message_Block[62]=0x02;
+	context.Message_Block[63]=0xA0;
+	SHA1ProcessMessageBlock(&context);
+
+	for(i = 0; i < 20; ++i)
+    	{
+        	result[i] = context.Intermediate_Hash[i>>2]
+                            >> 8 * ( 3 - ( i & 0x03 ) );
+    	}
+}
+
+
+
+DWORD BootHddKeyGenerateEepromKeyData(
+		BYTE *pbEeprom_data,
+		BYTE *pbResult
+) {
+	
+	BYTE baKeyHash[20];
+	BYTE baDataHashConfirm[20];
+	struct rc4_key RC4_key;
+
+	HMAC_SHA1_keycalculation(baKeyHash, pbEeprom_data);
+
+		//initialize RC4 key
+	rc4_prepare_key(baKeyHash,20,&RC4_key);
+
+		//decrypt data (from eeprom) with generated key
+	rc4_crypt(&pbEeprom_data[20],8,&RC4_key);		//confounder of some kind?
+	rc4_crypt(&pbEeprom_data[28],20,&RC4_key);		//"real" data
+
+
+        HMAC_SHA1_keyvalidation(baDataHashConfirm, &pbEeprom_data[20], &pbEeprom_data[28]);
+
+	{ int n; for(n=0;n<0x14;n++) if(pbEeprom_data[n]!=baDataHashConfirm[n]) return 0; }
+
+		//copy out HDKey
+	memcpy(pbResult,&pbEeprom_data[28],16);
+	return 1;
+}
+
+
+void genHDPass(
+		BYTE * pbEEPROMComputedKey,
+		BYTE * pbszHDSerial,
+		BYTE * pbHDModel,
+		BYTE * pbHDPass
+) {
+
+	HMAC_SHA1 ( pbHDPass, pbEEPROMComputedKey, 0x10, pbHDModel, strlen(pbHDModel), pbszHDSerial, strlen(pbszHDSerial) );
+}
+
