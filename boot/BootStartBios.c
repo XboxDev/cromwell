@@ -880,24 +880,6 @@ int BootMenue(CONFIGENTRY *config,int nDrive,int nActivePartition, int nFATXPres
 		int n;
 		USBGetEvents();
 		
-		HH = IoInputDword(0x8008);
-		temp = HH-COUNT_start;
-		if (temp>(0x369E99*30)) {
-			// Timeout 30 seconds, return nothing selected
-			RecoverMbrArea();
-			
-			BootVideoClearScreen(&jpegBackdrop, nTempCursorY, VIDEO_CURSOR_POSY+1);
-			BootVideoClearScreen(&jpegBackdrop, nTempCursorResumeY, nTempCursorResumeY+100);
-			BootVideoClearScreen(&jpegBackdrop, nTempStartMessageCursorY, nTempCursorY+16);
-		
-			VIDEO_CURSOR_POSX=nTempCursorResumeX;
-			VIDEO_CURSOR_POSY=nTempCursorResumeY;			
-			
-			I2CTransmitWord(0x10, 0x0c00); // eject DVD tray
-                        wait_ms(500);
-			return -1;       		// Returns -1
-		}
-		
         	// Rising Edge
 		if (((XPAD_current[0].pad&XPAD_PAD_LEFT) != 0) & (XPAD_PAD_LEFT_history == 0))
 		{
@@ -933,7 +915,10 @@ int BootMenue(CONFIGENTRY *config,int nDrive,int nActivePartition, int nFATXPres
                 // Falling Edge
                 if (((XPAD_current[0].pad&XPAD_PAD_RIGHT) == 0) & (XPAD_PAD_RIGHT_history == 1)) XPAD_PAD_RIGHT_history = 0;
                 
-		if (risefall_xpad_BUTTONA(XPAD_current[0].keys[0]) == 1) {
+		HH = IoInputDword(0x8008);
+		temp = HH-COUNT_start;
+		
+		if ((risefall_xpad_BUTTONA(XPAD_current[0].keys[0]) == 1) || (temp>(0x369E99*30))) {
 		
 			change=1; 
 			
