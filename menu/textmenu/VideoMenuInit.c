@@ -37,23 +37,26 @@ void VideoMenuInit(TEXTMENUITEM *parentItem) {
 	itemPtr->functionDataPtr = &itemPtr->szCaption;
 	TextMenuAddItem(menuPtr, itemPtr);
 	
-	{
-		xbox_tv_encoding  b = DetectVideoStd();
 	
-		itemPtr = (TEXTMENUITEM*)malloc(sizeof(TEXTMENUITEM));
-		memset(itemPtr,0x00,sizeof(TEXTMENUITEM));
-		itemPtr->szCaption = malloc(20);
-		switch (b) {
-			case TV_ENC_PALBDGHI:
-				strcpy(itemPtr->szCaption, "TV Standard: PAL");
-				break;
-			case TV_ENC_NTSC:
-			default:
-				strcpy(itemPtr->szCaption, "TV Standard: NTSC-USA");
-				break;
-		}
-		itemPtr->functionPtr=SetVideoStandard;
-		itemPtr->functionDataPtr = &itemPtr->szCaption;
-		TextMenuAddItem(menuPtr, itemPtr);
+	itemPtr = (TEXTMENUITEM*)malloc(sizeof(TEXTMENUITEM));
+	memset(itemPtr,0x00,sizeof(TEXTMENUITEM));
+	itemPtr->szCaption = malloc(20);
+	
+	switch(*((VIDEO_STANDARD *)&eeprom.VideoStandard)) {
+		case NTSC_M:
+			strcpy(itemPtr->szCaption, "TV Standard: NTSC-USA");
+			break;
+		case NTSC_J:
+			strcpy(itemPtr->szCaption, "TV Standard: NTSC-Japan");
+			break;
+		case PAL_I:
+			strcpy(itemPtr->szCaption, "TV Standard: PAL");
+			break;
+		default:
+			strcpy(itemPtr->szCaption, "TV Standard: Unknown");
+		break;
 	}
+	itemPtr->functionPtr=SetVideoStandard;
+	itemPtr->functionDataPtr = &itemPtr->szCaption;
+	TextMenuAddItem(menuPtr, itemPtr);
 }

@@ -11,6 +11,7 @@
 #include "video.h"
 #include "xbox.h"
 #include "VideoInitialization.h"
+#include "BootEEPROM.h"
 
 void SetWidescreen(void *menuItemText) {
 	char **text = (char **)menuItemText;
@@ -35,13 +36,20 @@ void SetVideoStandard(void *menuItemText) {
 		free(*text);
 		*text = malloc(30);
 		strcpy(*text, "TV Standard: NTSC-USA");
-		EepromSetVideoStandard(TV_ENC_NTSC);
+		EepromSetVideoStandard(NTSC_M);
 	}
 	else if (!strcmp(*text, "TV Standard: NTSC-USA")) {
 		free(*text);
 		*text = malloc(30);
-		strcpy(*text, "TV Standard: PAL");
-		EepromSetVideoStandard(TV_ENC_PALBDGHI);
+		strcpy(*text, "TV Standard: NTSC-Japan");
+		EepromSetVideoStandard(NTSC_J);
 	}
+	else if (!strcmp(*text, "TV Standard: NTSC-Japan")) {
+		free(*text);
+		*text = malloc(30);
+		strcpy(*text, "TV Standard: PAL");
+		EepromSetVideoStandard(PAL_I);
+	}
+
 }
 
