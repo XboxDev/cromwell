@@ -19,7 +19,7 @@ LDFLAGS-XBEBOOT = -s -S -T $(TOPDIR)/scripts/xbeboot.ld
 LDFLAGS-ROMBOOT = -s -S -T $(TOPDIR)/boot_rom/bootrom.ld
 LDFLAGS-VMLBOOT = -s -S -T $(TOPDIR)/boot_vml/vml_start.ld
 
-RESOURCES-ROMBOOT = $(TOPDIR)/obj/xcodes11.elf 
+
 
 OBJECTS-IMAGEBLD = $(TOPDIR)/bin/imagebld.o
 OBJECTS-IMAGEBLD += $(TOPDIR)/bin/sha1.o
@@ -123,8 +123,6 @@ $(patsubst %, _dir_%, $(SUBDIRS)) : dummy
 dummy:
 
 resources:
-	# X-Codes	
-	${LD} -r --oformat elf32-i386 -o $(TOPDIR)/obj/xcodes11.elf -T $(TOPDIR)/boot_rom/xcodes11.ld -b binary $(TOPDIR)/boot_rom/xcodes11.bin
 	# Background
 	${LD} -r --oformat elf32-i386 -o $(TOPDIR)/obj/backdrop.elf -T $(TOPDIR)/scripts/backdrop.ld -b binary $(TOPDIR)/pics/backdrop.jpg	
 
@@ -162,7 +160,7 @@ default.xbe: ${OBJECTS-XBE}
 	${OBJCOPY} --output-target=binary --strip-all $(TOPDIR)/obj/default.elf $(TOPDIR)/xbe/$@
 
 image.bin:
-	${LD} -o $(TOPDIR)/obj/2lbimage.elf ${OBJECTS-ROMBOOT} ${RESOURCES-ROMBOOT} ${LDFLAGS-ROMBOOT}
+	${LD} -o $(TOPDIR)/obj/2lbimage.elf ${OBJECTS-ROMBOOT} ${LDFLAGS-ROMBOOT}
 	${OBJCOPY} --output-target=binary --strip-all $(TOPDIR)/obj/2lbimage.elf $(TOPDIR)/image/$@
 	
 imagecompress:
