@@ -188,7 +188,7 @@ int focus_calc_mode(xbox_video_mode * mode, struct riva_regs * riva_out)
 		case TV_ENC_NTSC:
 			tv_vtotal=525;
 			tv_vactive=480;			
-			tv_hactive = 720;
+			tv_hactive = 710;
 			tv_htotal  = 858;
 			regs[0x0d] &= ~0x01;
 			regs[0x40] = 0x21;
@@ -216,14 +216,14 @@ int focus_calc_mode(xbox_video_mode * mode, struct riva_regs * riva_out)
 		case TV_ENC_PALBDGHI:
 			tv_vtotal = 625;
 			tv_vactive = 576;
-			tv_hactive = 720;
+			tv_hactive = 702;
 			tv_htotal = 864;
 			break;
 		default:
 			/* Default to PAL */
 			tv_vtotal = 625;
 			tv_vactive = 576;
-			tv_hactive = 720;
+			tv_hactive = 702;
 			tv_htotal = 864;
 			break;
 	}
