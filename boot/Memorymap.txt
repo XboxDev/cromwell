@@ -3,24 +3,27 @@ Memory Mapping C/X romwell
 	0x0000 0000 -> free ?
 	0x0009 0000 Kernel info header start
 	0x0009 05FF Kernel info header end
+	
 	0x0009 0800 Kernel command line start
 	0x0009 09ff Kernel command line end
- 	0x000a 0000 Kernel / cromwell GDT Table
+	
+	0x000a 0000 Kernel / cromwell GDT Table
 	0x000B 0000 Kernel / cromwell IDT Table
- 	
-	0x0010 0000 Compressed Kernel ( 0x200000 size = 2 MB)
- 	0x003F FFFF Compressed Kernel
+	
+	
+	0x0010 0000 Compressed Kernel ( max size = 8 MB)
+	0x008F FFFF Compressed Kernel end
+	
+	0x0090 0000 Linux Ramdisk Starting address (max size = 33 MB)
+	0x029F FFFF Linux Ramdisk End address
+	
+	0x02A0 0000 Memory manager for Cromwell (0x1000000 size = 16 MB)
+ 	0x039F FFFF Memory manager end
 
- 	0x0100 0000 Memory manager for Cromwell (0x1000000 size = 16 MB)
- 	0x01FF FFFF Memory manager
+ 	0x03A0 0000 c/x romwell Ramcopy Start (max size = 1MB) 
+ 	0x03AF FFFF c/x romwell Ramcopy End 
  	
-	0x0200 0000 Linux Ramdisk Starting address (0x1B00000 size = 27MB)
- 	0x03AF FFFF Linux Ramdisk End address
-
- 	0x03A0 0000 c/x romwell Ramcopy Start (0x200000 size = 2MB) 
- 	0x03BF FFFF c/x romwell Ramcopy End
- 	
-	0x03BF FFF0 c/x romwell Stackpointer upper limit (Needs to be moved)
+	0x03C0 0000 c/x romwell Stackpointer upper limit 
 
  	0x03C0 0000 Video Memory Start (4MB)
  	0x03FF FFFF Video Memory End

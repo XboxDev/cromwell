@@ -12,25 +12,29 @@
 /* place IDT at 0xB0000 */
 #define IDT_LOC 0xB0000
 /* the protected mode part of the kernel has to reside at 1 MB in RAM */
-#define PM_KERNEL_DEST 0x100000
+#define KERNEL_PM_CODE     0x00100000
+/* 8 MB ought to be enough kernel */
+#define KERNEL_PM_CODE_END 0x00900000
 
-/* let's reserve 4 MB at the top for the framebuffer */
-#define RAMSIZE_USE (RAMSIZE - FRAMEBUFFER_SIZE)
-/* the initrd resides at 1 MB from the top of RAM */
-#define INITRD_DEST (RAMSIZE_USE - 1024*1024)
+#define INITRD_START       KERNEL_PM_CODE_END
+#define INITRD_END         0x02A00000
 
-#define MEMORYMANAGERSTART 	0x01000000
-#define MEMORYMANAGERSIZE 	0x1000000 // 16 MB
-#define MEMORYMANAGEREND 	0x01FFFFFF
-
-#define INITRD_POS 0x02000000
+#define MEMORYMANAGERSTART INITRD_END
+#define MEMORYMANAGEREND   0x039FFFFF
 
 #define STACK_TOP 0x03C00000
+
+#define MAX_KERNEL_SIZE    (KERNEL_PM_CODE_END - KERNEL_PM_CODE)
+#define MEMORYMANAGERSIZE  (MEMORYMANAGEREND - MEMORYMANAGERSTART)
+#define MAX_INITRD_SIZE    (INITRD_END - INITRD_START)
 
 /* the size of the framebuffer (defaults to 4 MB) */
 #define FRAMEBUFFER_SIZE 0x00400000
 /* the start of the framebuffer */
 #define FRAMEBUFFER_START (0xf0000000 | (RAMSIZE - FRAMEBUFFER_SIZE))
+
+/* let's reserve 4 MB at the top for the framebuffer */
+#define RAMSIZE_USE (RAMSIZE - FRAMEBUFFER_SIZE)
 
 //#define LPCFlashadress 0xFFF00000
 #define LPCFlashadress 0xFF000000

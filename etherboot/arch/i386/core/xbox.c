@@ -2,8 +2,12 @@
 #include "pci.h"
 #include "nic.h"
 #include "xbox.h"
+#include "string.h"
+#include "../../../../include/memory_layout.h"
 
 #include <stdarg.h>
+
+#define MAX_APPEND_LINE_LENGTH 512
 
 extern struct pci_driver forcedeth_driver;
 extern uint8_t PciReadByte(unsigned int bus, unsigned int dev, unsigned int func, unsigned int reg_off);
@@ -234,8 +238,6 @@ void xstart16 (unsigned long a, unsigned long b, char * c)
 }
 
 extern void startLinux(void* initrdPos, unsigned long initrdSize, const char* appendLine);
-#define INITRD_POS 0x02000000
-#define MAX_APPEND_LINE_LENGTH 512
 
 int xstart32(unsigned long entry_point, ...)
 {
@@ -279,7 +281,7 @@ int xstart32(unsigned long entry_point, ...)
 			if (initrdSize != 0)
 			{
 				printf("Using ramdisk at 0x%X, size 0x%X\n", seg[S_RAMDISK]->p_paddr, initrdSize);
-				memcpy((void*)INITRD_POS, initrd, initrdSize);
+				memmove((void*)INITRD_START, initrd, initrdSize);
 			}
 		}
 		
@@ -312,7 +314,7 @@ int xstart32(unsigned long entry_point, ...)
 			*appendLinePtr= '\0';
 		}
 		printf("Using cmdline: %s\n", appendLine);
-		startLinux((void*)INITRD_POS, initrdSize, appendLine);
+		startLinux((void*)INITRD_START, initrdSize, appendLine);
 	}
 	else
 	{

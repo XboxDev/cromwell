@@ -97,7 +97,7 @@ void setup(void* KernelPos, void* PhysInitrdPos, unsigned long InitrdSize, const
     kernel_setup->loader = 0xff;		/* must be != 0 */
     kernel_setup->heap_end_ptr = 0xffff;	/* 64K heap */
     kernel_setup->flags = 0x81;			/* loaded high, heap existant */
-    kernel_setup->start = PM_KERNEL_DEST;
+    kernel_setup->start = KERNEL_PM_CODE;
     kernel_setup->ext_mem_k = (((xbox_ram-1) * 1024) - FRAMEBUFFER_SIZE / 1024) & 0xffff ; /* now replaced by e820 map */
 
     /* initrd */

@@ -43,10 +43,7 @@ void setup(void* KernelPos, void* PhysInitrdPos, unsigned long InitrdSize, const
 extern int etherboot(void);
 
 static int nRet;
-static DWORD dwKernelSize, dwInitrdSize;
-static int nSizeHeader;
-
-
+static DWORD dwKernelSize= 0, dwInitrdSize = 0;
   
 enum {
 	ICON_FATX = 0,
@@ -99,7 +96,12 @@ void BootPrintConfig(CONFIGENTRY *config) {
 	VIDEO_ATTR=0xffa8a8a8;
 }
 
-
+void memPlaceKernel(const BYTE* kernelOrg, DWORD kernelSize)
+{
+	unsigned int nSizeHeader=((*(kernelOrg + 0x01f1))+1)*512;
+	memcpy((BYTE *)KERNEL_SETUP, kernelOrg, nSizeHeader);
+	memcpy((BYTE *)KERNEL_PM_CODE,(kernelOrg+nSizeHeader),kernelSize-nSizeHeader);
+}
 
 // if fJustTestingForPossible is true, returns 0 if this kind of boot not possible, 1 if it is worth trying
 
@@ -109,7 +111,7 @@ int BootLoadConfigNative(int nActivePartition, CONFIGENTRY *config, bool fJustTe
         
         memset(szGrub,0,256+4);
         
-	memset((BYTE *)0x90000,0,4096);
+	memset((BYTE *)KERNEL_SETUP,0,4096);
 
 	szGrub[0]=0xff;
 	szGrub[1]=0xff;
@@ -147,9 +149,9 @@ int BootLoadConfigNative(int nActivePartition, CONFIGENTRY *config, bool fJustTe
 	} else {
 		if(fJustTestingForPossible) return 1; // if there's a linuxboot.cfg it must be worth trying to boot
 		int nLen;
-		nLen=grub_read((void *)0x90000, filemax);
-		if(nLen>0) { ((char *)0x90000)[nLen]='\0'; }  // needed to terminate incoming string, reboot in ParseConfig without it
-		ParseConfig((char *)0x90000,config,&eeprom, NULL);
+		nLen=grub_read((void *)KERNEL_SETUP, filemax);
+		if(nLen>0) { ((char *)KERNEL_SETUP)[nLen]='\0'; }  // needed to terminate incoming string, reboot in ParseConfig without it
+		ParseConfig((char *)KERNEL_SETUP,config,&eeprom, NULL);
 		BootPrintConfig(config);
 		printf("linuxboot.cfg is %d bytes long.\n", dwConfigSize);
 	}
@@ -166,19 +168,12 @@ int BootLoadConfigNative(int nActivePartition, CONFIGENTRY *config, bool fJustTe
 	}
 	if(fJustTestingForPossible) return 1; // if there's a default kernel it must be worth trying to boot
         
-        // We use the INITRD_POS as temporary location for the Loading of the Kernel into intermediate Ram
-	dwKernelSize=grub_read((BYTE*)INITRD_POS, filemax);
-	memcpy((BYTE *)0x90000,(BYTE*)INITRD_POS,0x400);
-	nSizeHeader=((*((BYTE *)0x901f1))+1)*512;
-	memcpy((BYTE *)0x90400,(BYTE*)(INITRD_POS+0x400),nSizeHeader-0x400);
-	memcpy((BYTE *)0x00100000,(BYTE*)(INITRD_POS+nSizeHeader),dwKernelSize-nSizeHeader);
-		
-	// Fillup
-	memset((BYTE *)(0x00100000+dwKernelSize-nSizeHeader),0xff,0x10000);
+	// Use tempBuf as temporary location for loading the Kernel 
+	BYTE* tempBuf = (BYTE*)(KERNEL_PM_CODE + MAX_KERNEL_SIZE);
+	dwKernelSize=grub_read(tempBuf, MAX_KERNEL_SIZE);
+	memPlaceKernel(tempBuf, dwKernelSize);
 	grub_close();
 	printk(" -  %d bytes...\n", dwKernelSize);
-
-
 
 	if( (_strncmp(config->szInitrd, "/no", strlen("/no")) != 0) && config->szInitrd[0]) {
 		VIDEO_ATTR=0xffd8d8d8;
@@ -194,10 +189,7 @@ int BootLoadConfigNative(int nActivePartition, CONFIGENTRY *config, bool fJustTe
 			while(1) ;
 		}
 		printk(" - %d bytes\n", filemax);
-		dwInitrdSize=grub_read((void *)INITRD_POS, filemax);
-		// Fillup
-		memset((void *)(INITRD_POS+dwInitrdSize),0xff,0x10000);
-		
+		dwInitrdSize=grub_read((void*)INITRD_START, MAX_INITRD_SIZE);
 		grub_close();
 	} else {
 		VIDEO_ATTR=0xffd8d8d8;
@@ -238,9 +230,9 @@ int BootTryLoadConfigFATX(CONFIGENTRY *config) {
 		return 0;
 	}
 
-	// We use the INITRD_POS as temporary location for the Loading of the Kernel into intermediate Ram
-	
-	if(! LoadFATXFilefixed(partition,config->szKernel,&infokernel,(BYTE*)INITRD_POS)) {
+	// Use tempBuf as temporary location for loading the Kernel 
+	BYTE* tempBuf = (BYTE*)(KERNEL_PM_CODE + MAX_KERNEL_SIZE);
+	if(! LoadFATXFilefixed(partition,config->szKernel,&infokernel,tempBuf)) {
 		CloseFATXPartition(partition);
 		return 0;
 	} else {
@@ -259,7 +251,7 @@ int BootLoadConfigFATX(CONFIGENTRY *config) {
 	static FATXFILEINFO infokernel;
 	static FATXFILEINFO infoinitrd;
 
-	memset((BYTE *)0x90000,0,4096);
+	memset((BYTE *)KERNEL_SETUP,0,4096);
 	memset(&fileinfo,0x00,sizeof(fileinfo));
 	memset(&infokernel,0x00,sizeof(infokernel));
 	memset(&infoinitrd,0x00,sizeof(infoinitrd));
@@ -291,37 +283,29 @@ int BootLoadConfigFATX(CONFIGENTRY *config) {
 
 	BootPrintConfig(config);
 	
-	// We use the INITRD_POS as temporary location for the Loading of the Kernel into intermediate Ram
-	
-	if(! LoadFATXFilefixed(partition,config->szKernel,&infokernel,(BYTE*)INITRD_POS)) {
+	// Use INITRD_START as temporary location for loading the Kernel 
+	BYTE* tempBuf = (BYTE*)INITRD_START;
+	if(! LoadFATXFilefixed(partition,config->szKernel,&infokernel,tempBuf)) {
 		printk("Error loading kernel %s\n",config->szKernel);
 		while(1);
 	} else {
 		dwKernelSize = infokernel.fileSize;
 		// moving the kernel to its final location
-		memcpy((BYTE *)0x90000,(BYTE*)INITRD_POS,0x400);
-		nSizeHeader=((*((BYTE *)0x901f1))+1)*512;
-		memcpy((BYTE *)0x90400,(BYTE*)(INITRD_POS+0x400),nSizeHeader-0x400);
-		memcpy((BYTE *)0x00100000,(BYTE*)(INITRD_POS+nSizeHeader),infokernel.fileSize-nSizeHeader);
-		
-		// Fillup
-		memset((BYTE *)(0x00100000+dwKernelSize-nSizeHeader),0xff,0x10000);
+		memPlaceKernel(tempBuf, dwKernelSize);
 		
 		printk(" -  %d %d bytes...\n", dwKernelSize, infokernel.fileRead);
 	}
 	
 	if( (_strncmp(config->szInitrd, "/no", strlen("/no")) != 0) && config->szInitrd[0]) {
+
 		VIDEO_ATTR=0xffd8d8d8;
 		printk("  Loading %s from FATX", config->szInitrd);
 		wait_ms(50);
-		if(! LoadFATXFilefixed(partition,config->szInitrd,&infoinitrd,(BYTE*)INITRD_POS)) {
+		if(! LoadFATXFilefixed(partition,config->szInitrd,&infoinitrd, (void*)INITRD_START)) {
 			printk("Error loading initrd %s\n",config->szInitrd);
 			while(1);
 		}
 		
-		// Fillup
-		memset((BYTE *)(INITRD_POS+infoinitrd.fileSize),0xff,0x10000);
-
 		dwInitrdSize = infoinitrd.fileSize;
 		printk(" - %d %d bytes\n", dwInitrdSize,infoinitrd.fileRead);
 	} else {
@@ -350,7 +334,7 @@ int BootLoadConfigCD(CONFIGENTRY *config) {
 	DWORD dwY=VIDEO_CURSOR_POSY;
 	DWORD dwX=VIDEO_CURSOR_POSX;
 
-	memset((BYTE *)0x90000,0,4096);
+	memset((BYTE *)KERNEL_SETUP,0,4096);
 
 	I2CTransmitWord(0x10, 0x0c00); // eject DVD tray
 	wait_ms(2000); // Wait for DVD to become responsive to inject command
@@ -472,32 +456,33 @@ selectinsert:
 
 	printk("  Loading linuxboot.cfg from CDROM... \n");
 	
-	dwConfigSize=BootIso9660GetFile("/linuxboot.cfg", (BYTE *)INITRD_POS, 0x800, 0x0);
+	dwConfigSize=BootIso9660GetFile("/linuxboot.cfg", (BYTE *)KERNEL_SETUP, 0x800, 0x0);
 
 	if(((int)dwConfigSize)<0) // not found, try mangled 8.3 version
-		dwConfigSize=BootIso9660GetFile("/LINUXBOO.CFG", (BYTE *)INITRD_POS, 0x800, 0x0);
+		dwConfigSize=BootIso9660GetFile("/LINUXBOO.CFG", (BYTE *)KERNEL_SETUP, 0x800, 0x0);
 		
 	if(((int)dwConfigSize)<0) { // has to be there on CDROM
-			printk("linuxboot.cfg not found on CDROM... Halting\n");
-			while(1) ;
+		printk("linuxboot.cfg not found on CDROM... Halting\n");
+		while(1) ;
 	}
         
         // LinuxBoot.cfg File Loaded
         
-        ((char *)INITRD_POS)[dwConfigSize]=0;
-	ParseConfig((char *)INITRD_POS,config,&eeprom, NULL);
+	((char *)KERNEL_SETUP)[dwConfigSize]=0;
+	ParseConfig((char *)KERNEL_SETUP,config,&eeprom, NULL);
 	BootPrintConfig(config);
 
-	// We use the INITRD_POS as temporary location for the Loading of the Kernel into intermediate Ram
-	dwKernelSize=BootIso9660GetFile(config->szKernel, (BYTE*)INITRD_POS, 4*1024*1024, 0);
+	// Use tempBuf as temporary location for loading the Kernel 
+	BYTE* tempBuf = (BYTE*)(KERNEL_PM_CODE + MAX_KERNEL_SIZE);	
+	dwKernelSize=BootIso9660GetFile(config->szKernel, tempBuf, MAX_KERNEL_SIZE, 0);
 
 	// If failed, lets look for an other name ...
 	if(((int)dwKernelSize)<0) { // not found, try 8.3
 		strcpy(config->szKernel, "/VMLINUZ.");
-		dwKernelSize=BootIso9660GetFile(config->szKernel, (BYTE*)INITRD_POS, 4*1024*1024, 0);
+		dwKernelSize=BootIso9660GetFile(config->szKernel, tempBuf, MAX_KERNEL_SIZE, 0);
 		if(((int)dwKernelSize)<0) { 
 			strcpy(config->szKernel, "/VMLINUZ_.");
-			dwKernelSize=BootIso9660GetFile(config->szKernel, (BYTE*)INITRD_POS, 4*1024*1024, 0);
+			dwKernelSize=BootIso9660GetFile(config->szKernel, tempBuf, MAX_KERNEL_SIZE, 0);
 			if(((int)dwKernelSize)<0) { 
 				printk("Not Found, error %d\nHalting\n", dwKernelSize); 
 				while(1);
@@ -507,13 +492,7 @@ selectinsert:
 	
 	if (dwKernelSize>0) 
 	{
-		memcpy((BYTE *)0x90000,(BYTE*)INITRD_POS,0x400);
-		nSizeHeader=((*((BYTE *)0x901f1))+1)*512;
-		memcpy((BYTE *)0x90400,(BYTE*)(INITRD_POS+0x400),nSizeHeader-0x400);
-		memcpy((BYTE *)0x00100000,(BYTE*)(INITRD_POS+nSizeHeader),dwKernelSize-nSizeHeader);
-		
-		// Fillup
-		memset((BYTE *)(0x00100000+dwKernelSize-nSizeHeader),0xff,0x10000);
+		memPlaceKernel(tempBuf, dwKernelSize);
 		printk(" -  %d bytes...\n", dwKernelSize);
 	} else {
 		printk("Not Found, error %d\nHalting\n", dwKernelSize); 
@@ -524,19 +503,17 @@ selectinsert:
 		VIDEO_ATTR=0xffd8d8d8;
 		printk("  Loading %s from CDROM", config->szInitrd);
 		VIDEO_ATTR=0xffa8a8a8;
-
-		dwInitrdSize=BootIso9660GetFile(config->szInitrd, (void *)INITRD_POS, 4096*1024, 0);
+		
+		dwInitrdSize=BootIso9660GetFile(config->szInitrd, (void*)INITRD_START, MAX_INITRD_SIZE, 0);
 		if((int)dwInitrdSize<0) { // not found, try 8.3
 			strcpy(config->szInitrd, "/INITRD.");
-			dwInitrdSize=BootIso9660GetFile(config->szInitrd, (void *)INITRD_POS, 4096*1024, 0);
+			dwInitrdSize=BootIso9660GetFile(config->szInitrd, (void*)INITRD_START, MAX_INITRD_SIZE, 0);
 			if((int)dwInitrdSize<0) { // not found, try 8.3
 				strcpy(config->szInitrd, "/INITRD_I.");
-				dwInitrdSize=BootIso9660GetFile(config->szInitrd, (void *)INITRD_POS, 4096*1024, 0);
+				dwInitrdSize=BootIso9660GetFile(config->szInitrd, (void*)INITRD_START, MAX_INITRD_SIZE, 0);
 				if((int)dwInitrdSize<0) { printk("Not Found, error %d\nHalting\n", dwInitrdSize); while(1) ; }
 			}
 		}
-		// Fillup
-		memset((BYTE *)(INITRD_POS+dwInitrdSize),0xff,0x10000);
 		
 		printk(" - %d bytes\n", dwInitrdSize);
 	} else {
@@ -555,7 +532,7 @@ selectinsert:
 
 int BootLoadFlashCD(CONFIGENTRY *config) {
 
-        DWORD dwConfigSize=0;
+	DWORD dwConfigSize=0;
 	BYTE ba[2048];
 	BYTE baBackground[640*64*4]; 
 	BYTE bCount=0, bCount1;
@@ -673,16 +650,16 @@ selectinsert:
 	printk("%s\n", sz);
     
 	dwConfigSize=0;
-        dwConfigSize=BootIso9660GetFile("/IMAGE.BIN", (BYTE *)0x100000, 256*1024, 0x0);   
+	dwConfigSize=BootIso9660GetFile("/IMAGE.BIN", (BYTE *)KERNEL_PM_CODE, 256*1024, 0x0);   
 	printk("Image size: %i\n", dwConfigSize);   
-        if (dwConfigSize!=256*1024) {
+	if (dwConfigSize!=256*1024) {
 		printk("Image != 256kbyte image\n");           	
 		return 0;
 	}
-        dwConfigSize = 256*1024;
+	dwConfigSize = 256*1024;
         
-      	SHA1Reset(&context);
-	SHA1Input(&context,(BYTE *)0x100000,dwConfigSize);
+	SHA1Reset(&context);
+	SHA1Input(&context,(BYTE *)KERNEL_PM_CODE,dwConfigSize);
 	SHA1Result(&context,SHA1_result);
 /*	
 	if (_memcmp(&checksum[0],&SHA1_result[0],20)!=0) {
@@ -690,15 +667,15 @@ selectinsert:
 		while(1);		
 	}
   */    
-  	memcpy(checksum,SHA1_result,20);
+	memcpy(checksum,SHA1_result,20);
   
 	//printk("Bios Disk Checksum Matching\n");
 	
-    	printk("Error code: $i\n", BootReflashAndReset((BYTE*) 0x100000, (DWORD) 0, (DWORD) dwConfigSize));   
+	printk("Error code: $i\n", BootReflashAndReset((BYTE*) KERNEL_PM_CODE, (DWORD) 0, (DWORD) dwConfigSize));   
 
 	//memcpy((void *) 0x100004,(void *)LPCFlashadress,0x100000);
-      	
-      	SHA1Reset(&context);
+	
+	SHA1Reset(&context);
 	SHA1Input(&context,(void *)LPCFlashadress,dwConfigSize);
 	SHA1Result(&context,SHA1_result);
         
@@ -711,7 +688,7 @@ selectinsert:
 		printk("Checksum in Flash Matching - Success\n");
 	} else {
 		printk("Checksum in Flash not matching - MISTAKE -Reflashing!\n"); 
-		printk("Error code: $i\n", BootReflashAndReset((BYTE*) 0x100000, (DWORD) 0, (DWORD) dwConfigSize));   
+		printk("Error code: $i\n", BootReflashAndReset((BYTE*) KERNEL_PM_CODE, (DWORD) 0, (DWORD) dwConfigSize));   
 	}		
 
 
@@ -1058,7 +1035,7 @@ int ExittoLinux(CONFIGENTRY *config) {
 	}
 	
 	I2cSetFrontpanelLed(I2C_LED_RED0 | I2C_LED_RED1 | I2C_LED_RED2 | I2C_LED_RED3 );
-	startLinux((void *)INITRD_POS, dwInitrdSize, config->szAppend);
+	startLinux((void*)INITRD_START, dwInitrdSize, config->szAppend);
 }
 	
 
@@ -1067,7 +1044,7 @@ void startLinux(void* initrdStart, unsigned long initrdSize, const char* appendL
 	int nAta=0;
 	// turn off USB
 	BootStopUSB();
-	setup( (void *)0x90000, initrdStart, initrdSize, appendLine);
+	setup( (void *)KERNEL_SETUP, initrdStart, initrdSize, appendLine);
         
 	if(tsaHarddiskInfo[0].m_bCableConductors == 80) {
 		if(tsaHarddiskInfo[0].m_wAtaRevisionSupported&2) nAta=1;
