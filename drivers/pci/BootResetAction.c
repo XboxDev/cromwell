@@ -28,7 +28,7 @@
 #include "BootFlash.h"
 #include "BootFATX.h"
 #include "xbox.h"
-
+#include "cpu.h"
 #include "config.h"
 #include "BootUsbOhci.h"
 
@@ -122,6 +122,16 @@ extern void BootResetAction ( void ) {
 	int nFATXPresent=false;
 	int nTempCursorX, nTempCursorY;
 
+
+        
+        // We disable The Cache
+        cache_disable();
+	// We Update the Microcode of the CPU
+	display_cpuid_update_microcode();
+        // We Enable The Cache
+        cache_enable();
+
+
         memcpy(&cromwell_config,(void*)(0x03A00000+20),4);
         memcpy(&cromwell_retryload,(void*)(0x03A00000+24),4);
 	memcpy(&cromwell_loadbank,(void*)(0x03A00000+28),4);
@@ -130,6 +140,7 @@ extern void BootResetAction ( void ) {
 	// Very cosmetic, but very secure
        	memset((void*)0x00090000,0x00,0x70000);  // Linux Kernel Info Space
       	memset((void*)0x00100000,0x00,0x200000);  // Kompressed Kernel
+
         
         nInteruptable = 0;	
         

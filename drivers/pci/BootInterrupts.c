@@ -15,6 +15,7 @@
 #include "boot.h"
 #include "config.h"
 #include "BootUsbOhci.h"
+#include "cpu.h"
 
 volatile int nCountI2cinterrupts, nCountUnusedInterrupts, nCountUnusedInterruptsPic2, nCountInterruptsSmc, nCountInterruptsIde;
 volatile bool fSeenPowerdown;
@@ -27,17 +28,6 @@ extern volatile AC97_DEVICE ac97device;
 extern volatile AUDIO_ELEMENT_SINE aesTux;
 extern volatile AUDIO_ELEMENT_NOISE aenTux;
 #endif
-
-
-#define rdmsr(msr,val1,val2) \
-       __asm__ __volatile__("rdmsr" \
-			    : "=a" (val1), "=d" (val2) \
-			    : "c" (msr))
-
-#define wrmsr(msr,val1,val2) \
-     __asm__ __volatile__("wrmsr" \
-			  : /* no outputs */ \
-			  : "c" (msr), "a" (val1), "d" (val2))
 
 
 DWORD dwaTitleArea[1024*64];
@@ -134,17 +124,6 @@ const ISR_PREP isrprep[] = {
 	{ 0, 0 }
 };
 
-void intel_interrupts_on()
-{
-    unsigned long low, high;
-
-    /* this is so interrupts work. This is very limited scope --
-     * linux will do better later, we hope ...
-     */
-    rdmsr(0x1b, low, high);
-    low &= ~0x800;
-    wrmsr(0x1b, low, high);
-}
 
 
 void BootInterruptsWriteIdt() {

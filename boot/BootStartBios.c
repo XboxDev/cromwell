@@ -27,6 +27,7 @@
 #include "BootFATX.h"
 #include "xbox.h"
 #include "BootFlash.h"
+#include "cpu.h"
  
 #include "config.h"
 
@@ -834,8 +835,8 @@ nDrive=0;
 
 		while(1);
 		*/
-
-		
+//		display_cpuid_update_microcode();
+//		while(1);
 		} 
 		
 		

@@ -13,6 +13,7 @@
  ***************************************************************************/
 #include "consts.h"
 
+
 	.code32
 
 .section .text, "ax"
@@ -109,14 +110,17 @@ start_linux:
 	xor	%edx, %edx
 	xor	%ecx, %ecx
 	
+	
 	// kill the cache
        	mov %cr0, %eax
 	orl	$0x60000000, %eax
 	mov	%eax, %cr0
 	wbinvd
 
-	mov	%cr3, %eax
-	mov	%eax, %cr3
+  
+  	// Sennles Task ?
+//	mov	%cr3, %eax
+//	mov	%eax, %cr3
 
 	// Clear Mmeory Type register
 	movl	$0x2ff, %ecx
