@@ -28,8 +28,10 @@ int LoadFATXFile(FATXPartition *partition,char *filename, FATXFILEINFO *fileinfo
 		printk("LoadFATXFile : no open FATX partition\n");
 	} else {
 		if(FATXFindFile(partition,filename,FATX_ROOT_FAT_CLUSTER,fileinfo)) {
-//		printk("ClusterID : %d\n",fileinfo->clusterId);
-//		printk("fileSize  : %d\n",fileinfo->fileSize);
+#ifdef FATX_DEBUG
+			printk("ClusterID : %d\n",fileinfo->clusterId);
+			printk("fileSize  : %d\n",fileinfo->fileSize);
+#endif
 			fileinfo->buffer = malloc(fileinfo->fileSize);
 			memset(fileinfo->buffer,0,fileinfo->fileSize);
 			if(FATXLoadFromDisk(partition, fileinfo)) {
@@ -94,6 +96,9 @@ FATXPartition *OpenFATXPartition(int nDriveIndex,
 	int readSize;
 	unsigned int chainTableSize;
 
+#ifdef FATX_DEBUG
+	printk("OpenFATXPartition : Read partition header\n");
+#endif
 	// load the partition header
 	readSize = FATXRawRead(nDriveIndex, partitionOffset, 0, 
 			FATX_PARTITION_HEADERSIZE, (char *)&partitionInfo);
@@ -111,13 +116,19 @@ FATXPartition *OpenFATXPartition(int nDriveIndex,
 		return NULL;
 	}
 	
+#ifdef FATX_DEBUG
+	printk("OpenFATXPartition : Allocating Partition struct\n");
+#endif
 	// make up new structure
 	partition = (FATXPartition*) malloc(sizeof(FATXPartition));
-	memset(partition,0,sizeof(FATXPartition));
 	if (partition == NULL) {
 		printk("OpenFATXPartition : Out of memory\n");
 		return NULL;
 	}  
+#ifdef FATX_DEBUG
+	printk("OpenFATXPartition : Allocating Partition struct done\n");
+#endif
+	memset(partition,0,sizeof(FATXPartition));
 	
 	// setup the easy bits
 	partition->nDriveIndex = nDriveIndex;
@@ -135,7 +146,10 @@ FATXPartition *OpenFATXPartition(int nDriveIndex,
 				* FATX_CHAINTABLE_BLOCKSIZE;
 	}
 	
-	// Load the cluster chain map table
+#ifdef FATX_DEBUG
+	printk("OpenFATXPartition : Allocating chaintable struct\n");
+#endif
+  	// Load the cluster chain map table
 	partition->clusterChainMap.words = (u_int16_t*) malloc(chainTableSize);
     	if (partition->clusterChainMap.words == NULL) {
 		VIDEO_ATTR=0xffe8e8e8;
@@ -143,13 +157,13 @@ FATXPartition *OpenFATXPartition(int nDriveIndex,
 		return NULL;
 	}
 
-/*
+#ifdef FATX_DEBUG
 	printk("Part stats : CL Count	%d \n", partition->clusterCount);
 	printk("Part stats : CL Size	%d \n", partition->clusterSize);
 	printk("Part stats : CM Size	%d \n", partition->chainMapEntrySize);
 	printk("Part stats : Table Size	%d \n", chainTableSize);
 	printk("Part stats : Part Size	%d \n", partition->partitionSize);
-*/
+#endif
 
 	readSize = FATXRawRead(nDriveIndex, partitionOffset, FATX_PARTITION_HEADERSIZE, 
 			chainTableSize, (char *)partition->clusterChainMap.words);

@@ -176,11 +176,12 @@ int BootLodaConfigFATX(CONFIGENTRY *config) {
 			STORE_SIZE);
 	if(partition != NULL) {
 		if(!LoadFATXFile(partition,"/linuxboot.cfg",&fileinfo) ) {
-			printk("Loading of linuxboot.cfg failed\n");
-			while(1);
+			printk("linuxboot.cfg not found, using defaults\n");
+		} else {
+			ParseConfig(fileinfo.buffer,config);
 		}
 	}
-	ParseConfig(fileinfo.buffer,config);
+
 	BootPrintConfig(config);
 	if(! LoadFATXFile(partition,config->szKernel,&infokernel)) {
 		printk("Error loading kernel %s\n",config->szKernel);
@@ -452,9 +453,6 @@ void StartBios(	int nDrive, int nActivePartition , int nFATXPresent) {
 	disk_read_func=NULL;
 
 
-	strcpy(config.szAppend, "root=/dev/hda2 devfs=mount kbd-reset"); // default
-	strcpy(config.szKernel, "/boot/vmlinuz");
-	strcpy(config.szInitrd, "/boot/initrd");
 
 #ifndef IS_XBE_CDLOADER
 #ifdef MENU
@@ -484,10 +482,10 @@ void StartBios(	int nDrive, int nActivePartition , int nFATXPresent) {
 		VIDEO_ATTR=0xffffffff;
 
 		BootIcons(nModeDependentOffset, nTempCursorY, nModeDependentOffset, nTempCursorY);
-		BootStartBiosDoIcon(&icon[ICON_FATX], TRANPARENTNESS);
-		BootStartBiosDoIcon(&icon[ICON_NATIVE], TRANPARENTNESS);
-		BootStartBiosDoIcon(&icon[ICON_CD], TRANPARENTNESS);
-		BootStartBiosDoIcon(&icon[ICON_SETUP], TRANPARENTNESS);
+
+		for(nIcon = 0; nIcon < ICONCOUNT;nIcon ++) {
+			BootStartBiosDoIcon(&icon[nIcon], TRANPARENTNESS);
+		}
 
 		{
 			int nShowSelect = false;
@@ -601,6 +599,16 @@ void StartBios(	int nDrive, int nActivePartition , int nFATXPresent) {
 			printk("Defaulting to CD boot\n");
 			nIcon = ICON_CD;
 		}
+	}
+	
+	if(nIcon == ICON_FATX) {
+	        strcpy(config.szAppend, "root=/dev/ram0 devfs=mount kbd-reset"); // default
+	        strcpy(config.szKernel, "/vmlinuz");
+	        strcpy(config.szInitrd, "/initrd");
+	} else {
+		strcpy(config.szAppend, "root=/dev/hda2 devfs=mount kbd-reset"); // default
+		strcpy(config.szKernel, "/boot/vmlinuz");
+		strcpy(config.szInitrd, "/boot/initrd");
 	}
 	
 	switch(nIcon) {
