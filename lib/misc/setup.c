@@ -1,8 +1,8 @@
 #include "boot.h"
 #include "xbox.h"
 
-
 /* parameters to be passed to the kernel */
+/* most parameters are documented in linux/Documentation/i386/zero-page.txt */
 struct kernel_setup_t {
 	unsigned char  orig_x;                  /* 0x00 */
 	unsigned char  orig_y;                  /* 0x01 */
@@ -175,11 +175,7 @@ void setup(void* KernelPos, void* PhysInitrdPos, unsigned long InitrdSize, const
 
     kernel_setup->cmd_offset = 0;
     kernel_setup->cmd_magic = 0xA33F;
-    kernel_setup->cmd_line_ptr = 0x00405000;
-    _strncpy((void*)0x00405000, kernel_cmdline, 512);
-
-
-
-
-
+    kernel_setup->cmd_line_ptr = (int)(KernelPos + 0x800); /* place cmd_line at 0x90800 */
+    _strncpy((void*)kernel_setup->cmd_line_ptr, kernel_cmdline, 512);
+    *((char*)(kernel_setup->cmd_line_ptr+511)) = 0x00; /* make sure string is terminated */
 }
