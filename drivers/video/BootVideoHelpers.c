@@ -468,6 +468,13 @@ void BootVideoChunkedPrint(const char * szBuffer) {
 			(DWORD *)((FRAMEBUFFER_START) + VIDEO_CURSOR_POSY * (currentvideomodedetails.m_dwWidthInPixels*4) + VIDEO_CURSOR_POSX),
 			currentvideomodedetails.m_dwWidthInPixels*4, VIDEO_ATTR, &szBuffer[nDone]
 		)<<2;
+		if (VIDEO_CURSOR_POSX > (currentvideomodedetails.m_dwWidthInPixels - 
+			currentvideomodedetails.m_dwMarginXInPixelsRecommended) <<2)
+		{
+			VIDEO_CURSOR_POSY+=16; 
+			VIDEO_CURSOR_POSX=currentvideomodedetails.m_dwMarginXInPixelsRecommended<<2;
+		}
+		
 	}
 
 }
