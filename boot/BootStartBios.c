@@ -30,7 +30,6 @@ unsigned long saved_partition;
 grub_error_t errnum;
 unsigned long boot_drive;
 
-extern unsigned int CACHE_VSYNC_WRITEBACK;
 extern int nTempCursorMbrX, nTempCursorMbrY;
 
 extern unsigned long current_drive;
@@ -139,7 +138,6 @@ int BootLoadConfigNative(int nActivePartition, CONFIGENTRY *config, bool fJustTe
 		if(fJustTestingForPossible) return 1; // if there's a linuxboot.cfg it must be worth trying to boot
 		{
 			int nLen;
-			CACHE_VSYNC_WRITEBACK=0;
 			nLen=grub_read((void *)0x90000, filemax);
 			if(nLen>0) { ((char *)0x90000)[nLen]='\0'; }  // needed to terminate incoming string, reboot in ParseConfig without it
 		}
@@ -148,7 +146,6 @@ int BootLoadConfigNative(int nActivePartition, CONFIGENTRY *config, bool fJustTe
 		printf("linuxboot.cfg is %d bytes long.\n", dwConfigSize);
 	}
 	grub_close();
-	CACHE_VSYNC_WRITEBACK=1;
 	
 	//strcpy(&szGrub[4], config->szKernel);
         _strncpy(&szGrub[4], config->szKernel,sizeof(config->szKernel));
@@ -1075,7 +1072,6 @@ void startLinux(void* initrdStart, unsigned long initrdSize, const char* appendL
 	int nAta=0;
 	// turn off USB
 	BootStopUSB();
-	CACHE_VSYNC_WRITEBACK = 0;
 	setup( (void *)0x90000, initrdStart, initrdSize, appendLine);
         
 	if(tsaHarddiskInfo[0].m_bCableConductors == 80) {
