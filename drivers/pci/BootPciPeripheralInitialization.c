@@ -190,14 +190,17 @@ void BootAGPBUSInitialization(void)
 
 void BootDetectMemorySize(void)
 {
+	xbox_ram = 64;
+	PciWriteDword(BUS_0, DEV_0, FUNC_0, 0x84, 0x3FFFFFF);  // 64 MB
+	/*
 	int i;
 	int result;
 	unsigned char *fillstring;
 	void *membasetop = (void*)((64*1024*1024));
 	void *membaselow = (void*)((0));
 	
-	//(*(unsigned int*)(0xFD000000 + 0x100200)) = 0x03070103 ;
-	//(*(unsigned int*)(0xFD000000 + 0x100204)) = 0x11448000 ;
+	(*(unsigned int*)(0xFD000000 + 0x100200)) = 0x03070103 ;
+	(*(unsigned int*)(0xFD000000 + 0x100204)) = 0x11448000 ;
         PciWriteDword(BUS_0, DEV_0, FUNC_0, 0x84, 0x7FFFFFF);  // 128 MB
         
 	xbox_ram = 64;	
@@ -235,6 +238,7 @@ void BootDetectMemorySize(void)
 		PciWriteDword(BUS_0, DEV_0, FUNC_0, 0x84, 0x3FFFFFF);  // 64 MB
 	}
         free(fillstring);
+        */
 }
 
 void BootPciPeripheralInitialization()
