@@ -843,8 +843,8 @@ void SetAutoParameter(const MODE_PARAMETER* mode, BYTE *pbRegs) {
 	*((DWORD *)&pbRegs[0x680808]) = yres - 1;
 	// NVVVALIDSTART
 	*((DWORD *)&pbRegs[0x680814]) = 0;
-	// NVVSYNCSTART = v_linesi - v_blanki
-	m = mode->v_linesi - v_blanki;
+	// NVVSYNCSTART = v_linesi - v_blanki + 1
+	m = mode->v_linesi - v_blanki + 1;
 	*((DWORD *)&pbRegs[0x68080c])=(m);
 	// NVVSYNCEND = NVVSYNCSTART + 3
 	*((DWORD *)&pbRegs[0x680810])=(m+3);
