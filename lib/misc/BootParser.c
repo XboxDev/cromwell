@@ -10,6 +10,7 @@ CONFIGENTRY *ParseConfig(char *szBuffer, unsigned int fileLen, char *szPath) {
 	
 	memset(rootEntry,0x00,sizeof(CONFIGENTRY));
 	//Null terminate the input data
+	//Caller should have allocated an extra byte at the end of the array to enable us to do this.
 	*(szBuffer+fileLen)=0;
 	
 	for (linePtr = (char *)strsep(&currentPos, "\n"); linePtr != NULL; linePtr = (char *)strsep(&currentPos, "\n")) {
