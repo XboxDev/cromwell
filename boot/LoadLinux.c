@@ -428,7 +428,7 @@ int BootLoadFlashCD(int cdromId) {
 	//Try for 4 seconds.
 	I2CTransmitWord(0x10, 0x0c01); // close DVD tray
 	for (n=0;n<16;++n) {
-		if((BootIso9660GetFile(cdromId,"/image.bin", (u8 *)KERNEL_PM_CODE, 256*1024)) >=0 ) {
+		if((BootIso9660GetFile(cdromId,"/image.bin", (u8 *)KERNEL_PM_CODE, 0x10)) >=0 ) {
 			cdPresent=1;
 			break;
 		}
@@ -459,7 +459,7 @@ int BootLoadFlashCD(int cdromId) {
 
 		// wait until the media is readable
 		while(1) {
-			if((BootIso9660GetFile(cdromId,"/image.bin", (u8 *)KERNEL_PM_CODE, 256*1024)) >=0 ) {
+			if((BootIso9660GetFile(cdromId,"/image.bin", (u8 *)KERNEL_PM_CODE, 0x10)) >=0 ) {
 				break;
 			}
 			wait_ms(200);
@@ -467,7 +467,7 @@ int BootLoadFlashCD(int cdromId) {
 	}
 	printk("CDROM: ");
 	printk("Loading bios image from CDROM:/image.bin. \n");
-	dwConfigSize=BootIso9660GetFile(cdromId, "/image.bin", (u8 *)KERNEL_PM_CODE, 256*1024);
+	dwConfigSize=BootIso9660GetFile(cdromId, "/image.bin", (u8 *)KERNEL_PM_CODE, 	256*1024);
 	
 	if( dwConfigSize < 0 ) { //It's not there
 		printk("image.bin not found on CDROM... Halting\n");

@@ -9,7 +9,7 @@
 
 //Uncomment to include BIOS flashing support from CD
 //Uncommenting for this release - it's broken for now.
-//#define FLASH
+#define FLASH
 
 //Uncomment to enable the 'advanced menu'
 #define ADVANCED_MENU
