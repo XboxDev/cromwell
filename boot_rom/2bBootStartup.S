@@ -41,6 +41,8 @@
 
 #define xcode_END(val1) .byte 0xEE; .long val1 ; .long 0x0;
 
+#define SMBUS 0x0000c000
+	
 .code32
 
 .section .low_rom, "ax"
@@ -82,14 +84,30 @@
 	// Here, the Bytecode interpretor starts
 	.org 0x80
 
+	// Enable IO Bar (this is for 1.1 Boxes);
 	xcode_pciout(0x80000884, 0x00008001);
+	// Enable IO Bar (this is for 1.0 Boxes);
+	xcode_pciout(0x80000810, 0x00008001);
+
+	// Enable APCI IO space
 	xcode_pciout(0x80000804, 0x00000003);
+	
+	// ?
 	xcode_outb(0x00008049, 0x00000008);
+	// ?
 	xcode_outb(0x000080d9, 0x00000000);
+	// ?
 	xcode_outb(0x00008026, 0x00000001);
+	
+	// Enable the Graphic Card
 	xcode_pciout(0x8000f04c, 0x00000001);
 	xcode_pciout(0x8000f018, 0x00010100);
+
+	// Map the PCI devices to a lower address to make them visible for XCodes
+	
+	// Set the maximum memory to 128MB
 	xcode_pciout(0x80000084, 0x07ffffff);
+	
 	xcode_pciout(0x8000f020, 0x0ff00f00);
 	xcode_pciout(0x8000f024, 0xf7f0f000);
 	xcode_pciout(0x80010010, 0x0f000000);
@@ -98,24 +116,18 @@
 	xcode_pciout(0x8000f004, 0x00000007);
 
 
-
+// until here
 	xcode_poke(0x0f0010b0, 0x07633461);
 	xcode_poke(0x0f0010cc, 0x66660000);
 	
-
 	xcode_peek(0x0f101000);
-	
 	xcode_bittoggle(0x000c0000,0x00000000);
-
 	xcode_ifgoto(0x00000000,6);
 	
 	
-
 	xcode_peek(0x0f101000);
-	
 	xcode_bittoggle(0xe1f3ffff,0x80000000);
 
-	
 	xcode_poke_a(0x0f101000);
 	xcode_poke(0x0f0010b8, 0xeeee0000);
 	xcode_goto(11);
@@ -134,6 +146,8 @@
 
 	xcode_bittoggle(0xe1f3ffff,0x820c0000);
 	xcode_poke_a(0x0f101000);
+	
+	// memory bus Trimm
 	xcode_poke(0x0f0010b8, 0xffff0000);
 	xcode_poke(0x0f0010d4, 0x00000009);
 	xcode_poke(0x0f0010b4, 0x00000000);
@@ -143,90 +157,120 @@
 	xcode_poke(0x0f0010d8, 0x00000000);
 	xcode_poke(0x0f0010dc, 0xa0423635);
 	xcode_poke(0x0f0010e8, 0x0c6558c6);
+
+
 	xcode_poke(0x0f100200, 0x03070103);
 	xcode_poke(0x0f100410, 0x11000016);
 	xcode_poke(0x0f100330, 0x84848888);
 	xcode_poke(0x0f10032c, 0xffffcfff);
 	xcode_poke(0x0f100328, 0x00000001);
 	xcode_poke(0x0f100338, 0x000000df);
+
+	// Set up the SM - bus controller
 	xcode_pciout(0x80000904, 0x00000001);
 	xcode_pciout(0x80000914, 0x0000c001);
 	xcode_pciout(0x80000918, 0x0000c201);
-	
 	xcode_outb(0x0000c200, 0x00000070);
-	xcode_outb(0x0000c004, 0x0000008a);
-	xcode_outb(0x0000c008, 0x000000ba);
-	xcode_outb(0x0000c006, 0x0000003f);
-	xcode_outb(0x0000c002, 0x0000000a);
-        
-        xcode_inb(0x0000c000);
-        xcode_ifgoto(0x00000010,-1)
 
-	xcode_outb(0x0000c000, 0x00000010);
-	xcode_outb(0x0000c008, 0x0000006c);
-	xcode_outb(0x0000c006, 0x00000046);
-	xcode_outb(0x0000c002, 0x0000000a);
-        
-        xcode_inb(0x0000c000);
-        xcode_ifgoto(0x00000010,-1)
- 
-	xcode_outb(0x0000c000, 0x00000010);
-	xcode_outb(0x0000c008, 0x000000b8);
-	xcode_outb(0x0000c006, 0x00000000);
-	xcode_outb(0x0000c002, 0x0000000a);
-	xcode_inb(0x0000c000);
-	xcode_ifgoto(0x00000010,-1);
 
-	xcode_outb(0x0000c000, 0x00000010);
-	xcode_outb(0x0000c008, 0x000000ce);
-	xcode_outb(0x0000c006, 0x00000019);
-	xcode_outb(0x0000c002, 0x0000000a);
-        xcode_inb(0x0000c000);
-        xcode_ifgoto(0x00000010,-1);
+	// Connexant 
+	/*
+	we have to send him the following:
+	I2Ctransmit(0x8a,0xba,0x3f);
+	I2Ctransmit(0x8a,0x6c,0x46);
+	I2Ctransmit(0x8a,0xb8,0x00);
+	I2Ctransmit(0x8a,0xce,0x19);
+	I2Ctransmit(0x8a,0xc6,0x9c);
+	I2Ctransmit(0x8a,0x32,0x8);
+	I2Ctransmit(0x8a,0xc4,0x1); 
+	*/
+	xcode_outb(SMBUS+4, 0x0000008a);
+	
+	// I2Ctransmit(0x8a,0xba,0x3f);
+	xcode_outb(SMBUS+8, 0x000000ba);
+	xcode_outb(SMBUS+6, 0x0000003f);
+	xcode_outb(SMBUS+2, 0x0000000a);
+        xcode_inb(SMBUS);
+        xcode_ifgoto(0x00000010,-1)
+	xcode_outb(SMBUS, 0x00000010);
         
-	xcode_outb(0x0000c000, 0x00000010);
-	xcode_outb(0x0000c008, 0x000000c6);
-	xcode_outb(0x0000c006, 0x0000009c);
-	xcode_outb(0x0000c002, 0x0000000a);
-        xcode_inb(0x0000c000);
-        xcode_ifgoto(0x00000010,-1);
+        // I2Ctransmit(0x8a,0x6c,0x46);
+	xcode_outb(SMBUS+8, 0x0000006c);
+	xcode_outb(SMBUS+6, 0x00000046);
+	xcode_outb(SMBUS+2, 0x0000000a);
+        xcode_inb(SMBUS);
+        xcode_ifgoto(0x00000010,-1)
+	xcode_outb(SMBUS, 0x00000010);
         
-	xcode_outb(0x0000c000, 0x00000010);
-	xcode_outb(0x0000c008, 0x00000032);
-	xcode_outb(0x0000c006, 0x00000008);
-	xcode_outb(0x0000c002, 0x0000000a);
-        xcode_inb(0x0000c000);
-        xcode_ifgoto(0x00000010,-1);
+        // I2Ctransmit(0x8a,0xb8,0x00);
+	xcode_outb(SMBUS+8, 0x000000b8);
+	xcode_outb(SMBUS+6, 0x00000000);
+	xcode_outb(SMBUS+2, 0x0000000a);
+        xcode_inb(SMBUS);
+        xcode_ifgoto(0x00000010,-1)
+	xcode_outb(SMBUS, 0x00000010);
         
-	xcode_outb(0x0000c000, 0x00000010);
-	xcode_outb(0x0000c008, 0x000000c4);
-	xcode_outb(0x0000c006, 0x00000001);
-	xcode_outb(0x0000c002, 0x0000000a);
-        xcode_inb(0x0000c000);
-        xcode_ifgoto(0x00000010,-1);
+        // I2Ctransmit(0x8a,0xce,0x19);
+	xcode_outb(SMBUS+8, 0x000000ce);
+	xcode_outb(SMBUS+6, 0x00000019);
+	xcode_outb(SMBUS+2, 0x0000000a);
+        xcode_inb(SMBUS);
+        xcode_ifgoto(0x00000010,-1)
+	xcode_outb(SMBUS, 0x00000010);
+
+	// I2Ctransmit(0x8a,0xc6,0x9c);
+	xcode_outb(SMBUS+8, 0x000000c6);
+	xcode_outb(SMBUS+6, 0x0000009c);
+	xcode_outb(SMBUS+2, 0x0000000a);
+        xcode_inb(SMBUS);
+        xcode_ifgoto(0x00000010,-1)
+	xcode_outb(SMBUS, 0x00000010);
+
+	// I2Ctransmit(0x8a,0x32,0x8);
+	xcode_outb(SMBUS+8, 0x00000032);
+	xcode_outb(SMBUS+6, 0x00000008);
+	xcode_outb(SMBUS+2, 0x0000000a);
+        xcode_inb(SMBUS);
+        xcode_ifgoto(0x00000010,-1)
+	xcode_outb(SMBUS, 0x00000010);
+
+	// I2Ctransmit(0x8a,0xc4,0x1);
+	xcode_outb(SMBUS+8, 0x000000c4);
+	xcode_outb(SMBUS+6, 0x00000001);
+	xcode_outb(SMBUS+2, 0x0000000a);
+        xcode_inb(SMBUS);
+        xcode_ifgoto(0x00000010,-1)
+	xcode_outb(SMBUS, 0x00000010);
         
-	xcode_outb(0x0000c000, 0x00000010);
-	xcode_outb(0x0000c004, 0x00000020);
-	xcode_outb(0x0000c008, 0x00000001);
-	xcode_outb(0x0000c006, 0x00000000);
-	xcode_outb(0x0000c002, 0x0000000a);
-        xcode_inb(0x0000c000);
-        xcode_ifgoto(0x00000010,-1);
         
-	xcode_outb(0x0000c000, 0x00000010);
-	xcode_outb(0x0000c004, 0x00000021);
-	xcode_outb(0x0000c008, 0x00000001);
-	xcode_outb(0x0000c002, 0x0000000a);
-        xcode_inb(0x0000c000);
-        xcode_ifgoto(0x00000010,-1);
+        // PIC SLAVE Address (Write)
+	xcode_outb(SMBUS+4, 0x00000020);
         
-	xcode_outb(0x0000c000, 0x00000010);
-	xcode_inb(0x0000c006);
+        // I2Ctransmit(0x8a,0x1,0x0);
+	xcode_outb(SMBUS+8, 0x00000001);
+	xcode_outb(SMBUS+6, 0x00000000);
+	xcode_outb(SMBUS+2, 0x0000000a);
+        xcode_inb(SMBUS);
+        xcode_ifgoto(0x00000010,-1)
+        xcode_outb(SMBUS, 0x00000010);
+	
+	// PIC SLAVE Address (Read)
+	xcode_outb(SMBUS+4, 0x00000021);
+	
+	// I2Cgetbyte(0x8a,0x1);
+	xcode_outb(SMBUS+8, 0x00000001);
+	xcode_outb(SMBUS+2, 0x0000000a);
+        xcode_inb(SMBUS);
+        xcode_ifgoto(0x00000010,-1)
+        xcode_outb(SMBUS, 0x00000010);
+	
+	// If SMC version does not match ... ?????
+	xcode_inb(SMBUS+6);
         xcode_ifgoto(0x00000050,2);
-        
         xcode_goto(2);
-
+        // this is only done, if the 0x50 does not match
 	xcode_pciout(0x8000036c, 0x01000000);
+
 	xcode_poke(0x0f680500, 0x00011c01);
 	xcode_poke(0x0f68050c, 0x000a0400);
 	xcode_poke(0x0f001220, 0x00000000);
@@ -293,111 +337,23 @@
 	xcode_poke(0x0f100200, 0x03070103);
 	xcode_poke(0x0f100204, 0x11448000);
 	xcode_pciout(0x8000103c, 0x00000000);
-	xcode_pciout(0x80000884, 0x00008001);
-	xcode_pciout(0x80000884, 0x00008001);
-	xcode_pciout(0x80000884, 0x00008001);
-	xcode_pciout(0x80000884, 0x00008001);
-	xcode_pciout(0x80000884, 0x00008001);
 
-	xcode_outb(0x0000c004, 0x0000008a);
-	xcode_outb(0x0000c008, 0x000000ba);
-	xcode_outb(0x0000c006, 0x0000003f);
-	xcode_outb(0x0000c002, 0x0000000a);
-        xcode_inb(0x0000c000);
-        xcode_ifgoto(0x00000010,-1);
-
-	xcode_outb(0x0000c000, 0x00000010);
-	xcode_outb(0x0000c008, 0x0000006c);
-	xcode_outb(0x0000c006, 0x00000046);
-	xcode_outb(0x0000c002, 0x0000000a);
-        xcode_inb(0x0000c000);
-        xcode_ifgoto(0x00000010,-1);
-
-	xcode_outb(0x0000c000, 0x00000010);
-	xcode_outb(0x0000c004, 0x0000008a);
-	xcode_outb(0x0000c008, 0x000000ba);
-	xcode_outb(0x0000c006, 0x0000003f);
-	xcode_outb(0x0000c002, 0x0000000a);
-        xcode_inb(0x0000c000);   
-        xcode_ifgoto(0x00000010,-1);
-
-	xcode_outb(0x0000c000, 0x00000010);
-	xcode_outb(0x0000c008, 0x0000006c);
-	xcode_outb(0x0000c006, 0x00000046);
-	xcode_outb(0x0000c002, 0x0000000a);
-        xcode_inb(0x0000c000);
-        xcode_ifgoto(0x00000010,-1);
-
-	xcode_outb(0x0000c000, 0x00000010);
-	xcode_outb(0x0000c004, 0x0000008a);
-	xcode_outb(0x0000c008, 0x000000ba);
-	xcode_outb(0x0000c006, 0x0000003f);
-	xcode_outb(0x0000c002, 0x0000000a);
-        xcode_inb(0x0000c000);
-        xcode_ifgoto(0x00000010,-1);
-
-	xcode_outb(0x0000c000, 0x00000010);
-	xcode_outb(0x0000c008, 0x0000006c);
-	xcode_outb(0x0000c006, 0x00000046);
-	xcode_outb(0x0000c002, 0x0000000a);
-        xcode_inb(0x0000c000);
-        xcode_ifgoto(0x00000010,-1);   
-
-        
-
-	xcode_outb(0x0000c000, 0x00000010);
-	xcode_pciout(0x80000884, 0x00008001);
-	xcode_pciout(0x80000884, 0x00008001);
-	xcode_pciout(0x80000884, 0x00008001);
-	xcode_pciout(0x80000884, 0x00008001);
-	xcode_pciout(0x80000884, 0x00008001);
-	xcode_pciout(0x80000884, 0x00008001);
-	xcode_pciout(0x80000884, 0x00008001);
-	xcode_pciout(0x80000884, 0x00008001);
-	xcode_pciout(0x80000884, 0x00008001);
-	xcode_pciout(0x80000884, 0x00008001);
-	xcode_pciout(0x80000884, 0x00008001);
-	xcode_pciout(0x80000884, 0x00008001);
-	xcode_pciout(0x80000884, 0x00008001);
-	xcode_pciout(0x80000884, 0x00008001);
-	xcode_pciout(0x80000884, 0x00008001);
-	xcode_pciout(0x80000884, 0x00008001);
-	xcode_pciout(0x80000884, 0x00008001);
-	xcode_pciout(0x80000884, 0x00008001);
-	xcode_pciout(0x80000884, 0x00008001);
-	xcode_pciout(0x80000884, 0x00008001);
-	xcode_pciout(0x80000884, 0x00008001);
-	xcode_pciout(0x80000884, 0x00008001);
-	xcode_pciout(0x80000884, 0x00008001);
-	xcode_pciout(0x80000884, 0x00008001);
-	xcode_pciout(0x80000884, 0x00008001);
-	xcode_pciout(0x80000884, 0x00008001);
-	xcode_pciout(0x80000884, 0x00008001);
-	xcode_pciout(0x80000884, 0x00008001);
-	xcode_pciout(0x80000884, 0x00008001);
-	xcode_pciout(0x80000884, 0x00008001);
-	xcode_pciout(0x80000884, 0x00008001);
-	xcode_pciout(0x80000884, 0x00008001);
-	xcode_pciout(0x80000884, 0x00008001);
-	xcode_pciout(0x80000884, 0x00008001);
-	xcode_pciout(0x80000884, 0x00008001);
-	xcode_pciout(0x80000884, 0x00008001);
-	xcode_pciout(0x80000884, 0x00008001);
-	xcode_pciout(0x80000884, 0x00008001);
-	xcode_pciout(0x80000884, 0x00008001);
-	xcode_outb(0x0000c000, 0x00000010);
+	xcode_outb(SMBUS, 0x00000010);
 	
 	xcode_pciin_a(0x8000183c);
 	xcode_bittoggle(0x000000ff,0x00000000);
 
-	xcode_outb_a(0x0000c006);
-	xcode_outb(0x0000c008, 0x00000012);
-	xcode_outb(0x0000c002, 0x0000000a);
-        xcode_inb(0x0000c000);
+	xcode_outb_a(SMBUS+6);
+	xcode_outb(SMBUS+8, 0x00000012);
+	xcode_outb(SMBUS+2, 0x0000000a);
+        xcode_inb(SMBUS);
         xcode_ifgoto(0x00000010,-1);
-	xcode_outb(0x0000c000, 0x00000010);
+	xcode_outb(SMBUS, 0x00000010);
+	
 	xcode_pciout(0x8000f020, 0xfdf0fd00);
 	xcode_pciout(0x80010010, 0xfd000000);
+	
+	// overflow trick
 	xcode_poke(0x00000000, 0xfc1000ea);
 	xcode_poke(0x00000004, 0x000008ff);
 
@@ -661,8 +617,6 @@ initaftermemcpy:
 	fninit
 	
 
-	mov $0x80000810, %eax ;	movw $0xcf8, %dx ; outl	%eax, %dx ;	movw $0xcfc, %dx ;	mov	$0x8001, %eax ;	outl	%eax, %dx  // v1.0 ACPI IO region enable
-	mov $0x80000884, %eax ;	movw $0xcf8, %dx ; outl	%eax, %dx ;	movw $0xcfc, %dx ;	mov	$0x8001, %eax ;	outl	%eax, %dx  // v1.1  "
 	movw $0x8026, %dx ;	movw $0x2201, %ax ;	outb %al, %dx // extsmi# able to control power (b0<-0 causes CPU powerdown after couple of seconds)
 
 	mov $0x80000804, %eax ;	movw $0xcf8, %dx ;	outl	%eax, %dx ;	movw $0xcfc, %dx ;	mov	$0x3, %eax ;	outl	%eax, %dx
@@ -746,7 +700,7 @@ nota1b:
 	mov $0x8000093c, %eax ;	movw $0xcf8, %dx ;	outl	%eax, %dx ;	movw $0xcfc, %dx ;	inl %dx, %eax ; orl	$0x7, %eax ;	outl	%eax, %dx // I2C int=7
 
 	movw $0xc200, %dx ;	movb $0x70, %al ;	outb %al, %dx
-//	movw $0xc002, %dx ;	movb $0x10, %al ;	outb %al, %dx // enable I2C interrupt
+
 
 	// skipped unnecessary conexant init
 
