@@ -53,6 +53,25 @@ TEXTMENUITEM *firstVisibleMenuItem=0l;
 TEXTMENUITEM *selectedMenuItem=0l;
 unsigned char *textmenusavepage;
 
+void TextMenuAddItem(TEXTMENU *menu, TEXTMENUITEM *newMenuItem) {
+	TEXTMENUITEM *menuItem = menu->firstMenuItem;
+	TEXTMENUITEM *currentMenuItem=0l;
+	
+	while (menuItem != 0l) {
+		currentMenuItem = menuItem;
+		menuItem = (TEXTMENUITEM*)menuItem->nextMenuItem;
+	}
+	
+	if (currentMenuItem==0l) { 
+		//This is the first icon in the chain
+		menu->firstMenuItem = newMenuItem;
+	}
+	//Append to the end of the chain
+	else currentMenuItem->nextMenuItem = (struct TEXTMENUITEM*)newMenuItem;
+	newMenuItem->nextMenuItem = 0l;
+	newMenuItem->previousMenuItem = (struct TEXTMENUITEM*)currentMenuItem; 
+}
+
 void TextMenuBack(void) {
 	currentMenu = (TEXTMENU*)currentMenu->parentMenu;
 	selectedMenuItem = currentMenu->firstMenuItem;
@@ -62,18 +81,22 @@ void TextMenuBack(void) {
 }
 
 void TextMenuDraw(void) {
-	VIDEO_CURSOR_POSX=25;
-	VIDEO_CURSOR_POSY=100;
-	if (currentMenu==0l) {
-		return;
-	}
-	//Draw the menu title.
-	VIDEO_ATTR=0xff00ff;
-	printk("\2%s\n",currentMenu->szCaption);
-	VIDEO_CURSOR_POSY+=30;
+	VIDEO_CURSOR_POSX=75;
+	VIDEO_CURSOR_POSY=125;
+	TEXTMENUITEM *item=0l;
 	int menucount;
-
-	TEXTMENUITEM *item=firstVisibleMenuItem;
+	if (currentMenu==0l) currentMenu = firstMenu;
+	if (selectedMenuItem==0l) selectedMenuItem = currentMenu->firstMenuItem;
+	if (firstVisibleMenuItem==0l) firstVisibleMenuItem = currentMenu->firstMenuItem;
+	
+	//Draw the menu title.
+	VIDEO_ATTR=0x000000;
+	printk("\2%s",currentMenu->szCaption);
+	VIDEO_CURSOR_POSY+=30;
+	
+	//Draw the menu items
+	VIDEO_CURSOR_POSX=150;
+	item=firstVisibleMenuItem;
 	for (menucount=0; menucount<8; menucount++) {
 		if (item==0l) {
 			//No more menu items to draw
@@ -83,141 +106,95 @@ void TextMenuDraw(void) {
 		if (item == selectedMenuItem) VIDEO_ATTR=0xff0000;
 		else VIDEO_ATTR=0xffffff;
 		//Font size 2=big.
-		printk("\2%s\n",item->szCaption);
-		VIDEO_CURSOR_POSY+=15;
+		printk("\n\2\t%s\n",item->szCaption);
 		item=(TEXTMENUITEM *)item->nextMenuItem;
 	}
 }
 
 int BootTextMenu(void) {
-
+	TEXTMENUITEM *itemPtr;
+	TEXTMENU *menuPtr;
+	
 	//Back up the current framebuffer contents
 	textmenusavepage = malloc(FB_SIZE);
 	memcpy(textmenusavepage,(void*)FB_START,FB_SIZE);
-	
-	TEXTMENUITEM *previousItemPtr, *newItemPtr;
 
+	//Create the root menu - MANDATORY
 	firstMenu = malloc(sizeof(TEXTMENU));
-	firstMenu->szCaption="Main Menu";
-	currentMenu = firstMenu;	
+	firstMenu->szCaption="Main Menu\n";
 	firstMenu->parentMenu=0l;
+	firstMenu->firstMenuItem=0l;
 	
-	newItemPtr = (TEXTMENUITEM*)malloc(sizeof(TEXTMENUITEM));
-	memset(newItemPtr,0x00,sizeof(TEXTMENUITEM));
-	newItemPtr->szCaption="Test 1";	
-	firstMenu->firstMenuItem = newItemPtr;
-	newItemPtr->previousMenuItem=0l;
-	newItemPtr->nextMenuItem=0l;
-	selectedMenuItem = newItemPtr;
-	firstVisibleMenuItem = newItemPtr;
-	previousItemPtr = newItemPtr;
+	//Add the first Item
+	itemPtr = (TEXTMENUITEM*)malloc(sizeof(TEXTMENUITEM));
+	memset(itemPtr,0x00,sizeof(TEXTMENUITEM));
+	itemPtr->szCaption="Test 1";	
+	TextMenuAddItem(firstMenu, itemPtr);
+
+	itemPtr = (TEXTMENUITEM*)malloc(sizeof(TEXTMENUITEM));
+	memset(itemPtr,0x00,sizeof(TEXTMENUITEM));
+	itemPtr->szCaption="Test 2";	
+	TextMenuAddItem(firstMenu, itemPtr);
+
+	itemPtr = (TEXTMENUITEM*)malloc(sizeof(TEXTMENUITEM));
+	memset(itemPtr,0x00,sizeof(TEXTMENUITEM));
+	itemPtr->szCaption="Test 3";	
+	TextMenuAddItem(firstMenu, itemPtr);
+
+	itemPtr = (TEXTMENUITEM*)malloc(sizeof(TEXTMENUITEM));
+	memset(itemPtr,0x00,sizeof(TEXTMENUITEM));
+	itemPtr->szCaption="Test 4";	
+	TextMenuAddItem(firstMenu, itemPtr);
+
+	itemPtr = (TEXTMENUITEM*)malloc(sizeof(TEXTMENUITEM));
+	memset(itemPtr,0x00,sizeof(TEXTMENUITEM));
+	itemPtr->szCaption="Test 5";	
+	TextMenuAddItem(firstMenu, itemPtr);
+
+	itemPtr = (TEXTMENUITEM*)malloc(sizeof(TEXTMENUITEM));
+	memset(itemPtr,0x00,sizeof(TEXTMENUITEM));
+	itemPtr->szCaption="Test 6";	
+	TextMenuAddItem(firstMenu, itemPtr);
+
+	itemPtr = (TEXTMENUITEM*)malloc(sizeof(TEXTMENUITEM));
+	memset(itemPtr,0x00,sizeof(TEXTMENUITEM));
+	itemPtr->szCaption="Test 7";	
+	TextMenuAddItem(firstMenu, itemPtr);
 	
-	newItemPtr = (TEXTMENUITEM*)malloc(sizeof(TEXTMENUITEM));
+	itemPtr = (TEXTMENUITEM*)malloc(sizeof(TEXTMENUITEM));
+	memset(itemPtr,0x00,sizeof(TEXTMENUITEM));
+	itemPtr->szCaption="Test 8";	
+	TextMenuAddItem(firstMenu, itemPtr);
 	
-	memset(newItemPtr,0x00,sizeof(TEXTMENUITEM));
-	previousItemPtr->nextMenuItem = (struct TEXTMENUITEM*)newItemPtr;
-	newItemPtr->szCaption="Test 2";	
-	newItemPtr->previousMenuItem=(struct TEXTMENUITEM*)previousItemPtr;
-	newItemPtr->nextMenuItem=0l;
-	previousItemPtr = newItemPtr;
-
-	newItemPtr = (TEXTMENUITEM*)malloc(sizeof(TEXTMENUITEM));
-	previousItemPtr->nextMenuItem = (struct TEXTMENUITEM*)newItemPtr;
-	memset(newItemPtr,0x00,sizeof(TEXTMENUITEM));
-	newItemPtr->szCaption="Test 3";	
-	newItemPtr->previousMenuItem=(struct TEXTMENUITEM*)previousItemPtr;
-	newItemPtr->nextMenuItem=0l;
-	previousItemPtr = newItemPtr;
-
-
-	newItemPtr = (TEXTMENUITEM*)malloc(sizeof(TEXTMENUITEM));
-	previousItemPtr->nextMenuItem = (struct TEXTMENUITEM*)newItemPtr;
-	memset(newItemPtr,0x00,sizeof(TEXTMENUITEM));
-	newItemPtr->szCaption="Test 4";	
-	newItemPtr->previousMenuItem=(struct TEXTMENUITEM*)previousItemPtr;
-	newItemPtr->nextMenuItem=0l;
-	previousItemPtr = newItemPtr;
-
-	newItemPtr = (TEXTMENUITEM*)malloc(sizeof(TEXTMENUITEM));
-	previousItemPtr->nextMenuItem = (struct TEXTMENUITEM*)newItemPtr;
-	memset(newItemPtr,0x00,sizeof(TEXTMENUITEM));
-	newItemPtr->szCaption="Test 5";	
-	newItemPtr->previousMenuItem=(struct TEXTMENUITEM*)previousItemPtr;
-	newItemPtr->nextMenuItem=0l;
-	previousItemPtr = newItemPtr;
-
-	newItemPtr = (TEXTMENUITEM*)malloc(sizeof(TEXTMENUITEM));
-	previousItemPtr->nextMenuItem = (struct TEXTMENUITEM*)newItemPtr;
-	memset(newItemPtr,0x00,sizeof(TEXTMENUITEM));
-	newItemPtr->szCaption="Test 6";	
-	newItemPtr->previousMenuItem=(struct TEXTMENUITEM*)previousItemPtr;
-	newItemPtr->nextMenuItem=0l;
-	previousItemPtr = newItemPtr;
-
-	newItemPtr = (TEXTMENUITEM*)malloc(sizeof(TEXTMENUITEM));
-	previousItemPtr->nextMenuItem = (struct TEXTMENUITEM*)newItemPtr;
-	memset(newItemPtr,0x00,sizeof(TEXTMENUITEM));
-	newItemPtr->szCaption="Test 7";	
-	newItemPtr->previousMenuItem=(struct TEXTMENUITEM*)previousItemPtr;
-	newItemPtr->nextMenuItem=0l;
-	previousItemPtr = newItemPtr;
-
-
-
-	TEXTMENU *testchildmenu = (TEXTMENU*)malloc(sizeof(TEXTMENU));
-	testchildmenu->szCaption="Test child menu";
-	testchildmenu->parentMenu = (struct TEXTMENU*)firstMenu;
-
-	newItemPtr = (TEXTMENUITEM*)malloc(sizeof(TEXTMENUITEM));
-	previousItemPtr->nextMenuItem = (struct TEXTMENUITEM*)newItemPtr;
-	memset(newItemPtr,0x00,sizeof(TEXTMENUITEM));
-	newItemPtr->szCaption="Test 8 - child";	
-	newItemPtr->previousMenuItem=(struct TEXTMENUITEM*)previousItemPtr;
-	newItemPtr->nextMenuItem=0l;
-	previousItemPtr = newItemPtr;
-	newItemPtr->childMenu = (struct TEXTMENU*)testchildmenu;
-
-
-	newItemPtr = (TEXTMENUITEM*)malloc(sizeof(TEXTMENUITEM));
-	previousItemPtr->nextMenuItem = (struct TEXTMENUITEM*)newItemPtr;
-	memset(newItemPtr,0x00,sizeof(TEXTMENUITEM));
-	newItemPtr->szCaption="Test 9";	
-	newItemPtr->previousMenuItem=(struct TEXTMENUITEM*)previousItemPtr;
-	newItemPtr->nextMenuItem=0l;
-	previousItemPtr = newItemPtr;
-
-
-
-	newItemPtr = (TEXTMENUITEM*)malloc(sizeof(TEXTMENUITEM));
-	previousItemPtr->nextMenuItem = (struct TEXTMENUITEM*)newItemPtr;
-	memset(newItemPtr,0x00,sizeof(TEXTMENUITEM));
-	newItemPtr->szCaption="Test 10";	
-	newItemPtr->previousMenuItem=(struct TEXTMENUITEM*)previousItemPtr;
-	newItemPtr->nextMenuItem=0l;
-	previousItemPtr = newItemPtr;
-
+	itemPtr = (TEXTMENUITEM*)malloc(sizeof(TEXTMENUITEM));
+	memset(itemPtr,0x00,sizeof(TEXTMENUITEM));
+	itemPtr->szCaption="Test 9";	
+	TextMenuAddItem(firstMenu, itemPtr);
 	
-	//TEST CHILD MENU
-	newItemPtr = (TEXTMENUITEM*)malloc(sizeof(TEXTMENUITEM));
-	memset(newItemPtr,0x00,sizeof(TEXTMENUITEM));
-	newItemPtr->szCaption="Test Child1";	
-	newItemPtr->previousMenuItem=0l;
-	newItemPtr->nextMenuItem=0l;
-	previousItemPtr = newItemPtr;
-	
-	testchildmenu->firstMenuItem = newItemPtr;
-	
-	
-	newItemPtr = (TEXTMENUITEM*)malloc(sizeof(TEXTMENUITEM));
-	previousItemPtr->nextMenuItem = (struct TEXTMENUITEM*)newItemPtr;
-	memset(newItemPtr,0x00,sizeof(TEXTMENUITEM));
-	newItemPtr->szCaption="Test child2";
-	newItemPtr->previousMenuItem=(struct TEXTMENUITEM*)previousItemPtr;
-	newItemPtr->nextMenuItem=0l;
-	previousItemPtr = newItemPtr;
+	itemPtr = (TEXTMENUITEM*)malloc(sizeof(TEXTMENUITEM));
+	memset(itemPtr,0x00,sizeof(TEXTMENUITEM));
+	itemPtr->szCaption="Child Menu";	
+	TextMenuAddItem(firstMenu, itemPtr);
 
-	//TEST CHILD MENU
+	//Child menu
+	menuPtr = (TEXTMENU*)malloc(sizeof(TEXTMENU));
+	memset(menuPtr,0x00,sizeof(TEXTMENU));
+	menuPtr->szCaption="Test Child Menu";
+	menuPtr->parentMenu=(struct TEXTMENU*)firstMenu;
+	//itemptr here points to "Test 10", so this child menu is
+	//attached to it.
+	itemPtr->childMenu = (struct TEXTMENU*)menuPtr;
 
+	itemPtr = (TEXTMENUITEM*)malloc(sizeof(TEXTMENUITEM));
+	memset(itemPtr,0x00,sizeof(TEXTMENUITEM));
+	itemPtr->szCaption="Child Menu Item 1";	
+	TextMenuAddItem(menuPtr, itemPtr);
+	
+	itemPtr = (TEXTMENUITEM*)malloc(sizeof(TEXTMENUITEM));
+	memset(itemPtr,0x00,sizeof(TEXTMENUITEM));
+	itemPtr->szCaption="Child Menu Item 2";	
+	TextMenuAddItem(menuPtr, itemPtr);
+	
 	TextMenuDraw();
 	
 	//Main menu event loop.
