@@ -5,7 +5,17 @@
 # free bios project.
 #
 # $Log$
-# Revision 1.7  2003/02/09 18:41:08  warmcat
+# Revision 1.15  2003/02/26 11:43:23  huceke
+# Reworked the bootmenu. The CVS is taged with CROMWELL_1_9_OLDMENU.
+# So we can switch back easily. Cromwell now can also boot from fatx
+# and Xromwell have the menu from cromwell working.
+#
+# Revision 1.14  2003/02/17 08:31:00  huceke
+# Initial checkin of FATX support. It is dissable by default.
+# Some logic for the handling of FATX must be done.
+# Also i have added a new config parsers.
+#
+# Revision 1.13  2003/02/09 18:41:08  warmcat
 # Merged Ed's WD drive fixes
 # Made a start on USB init
 #
@@ -117,7 +127,7 @@ clean	:
 	rm -rf *.o *~ core *.core ${OBJECTS} ${RESOURCES} image.elf image.bin
 #	mv nvn/nvnetlib.o.tmp nvn/nvnetlib.o
 	rm -f  *.a _rombios_.c _rombios_.s rombios.s rombios.bin rombios.txt
-	rm -f  backdrop.elf
+	rm -f  backdrop.elf image1m.bin
 
 image.elf : ${OBJECTS} ${RESOURCES}
 	${LD} -o $@ ${OBJECTS} ${RESOURCES} ${LDFLAGS}
@@ -150,6 +160,7 @@ BootPerformPicChallengeResponseAction.o: BootPerformPicChallengeResponseAction.c
 
 image.bin : image.elf
 	${OBJCOPY} --output-target=binary --strip-all $< $@
+	cat $@ $@ $@ $@ > image_1024.bin
 	@ls -l $@
 
 #     the following send the patched result to a Filtror and starts up the
@@ -165,6 +176,14 @@ install:
 
 1m:
 	cat image.bin image.bin image.bin image.bin > image1m.bin
+
+burn:
+	cp default.xbe cdr --reply=y
+	mkisofs -R -J -udf -o boot.iso cdr
+	cdrecord -dao -dev=0,0,0 -driveropts=burnfree speed=4 -eject boot.iso
+
+erase:
+	cdrecord -dao -dev=0,0,0 -driveropts=burnfree blank=fast
 
 bios: rombios.bin
 

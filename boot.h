@@ -124,6 +124,7 @@ typedef struct {  // this is the retained knowledge about an IDE device after in
     unsigned short m_wAtaRevisionSupported;
     unsigned char s_length;
     unsigned char m_length;
+		unsigned char m_fHasMbr;
 } tsHarddiskInfo;
 
 

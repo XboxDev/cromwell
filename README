@@ -11,6 +11,14 @@ using any MS code.  Cromwell cannot launch native games, it can only
 boot into Linux (or more correctly, a file vmlinuz which can
 contain anything, but is usually the Linux kernel).
 
+ - new Fixed having to reset time and date when going back to MS BIOS
+ - new Linux now aware that HDD and DVD are DMA compatible and uses
+    them in DMA mode automatically
+ - new CDROM boot now working from Xromwell mode
+ - new Most interrupts in Xromwell now, Tux does his little journey
+    removed several #ifndef XBEs which were unnecessary making it
+	  smoother
+
  - new automatic RGB AV cable support (1024x576 only so far)
  - new 1024x576 automatic widescreen support (when widesceen was
    selected in MS native BIOS settings)
@@ -163,6 +171,24 @@ at some point after the extsmi driver has started.  Then you will be
 immediately returned to the fully glory of RGB (which is massively
 superior for text than composite).  On a modern widescreen TV with
 RGB AV cable, the 1024x576 mode is just like a monitor.
+
+
+
+NOTE ON BUILDING CROMWELL AS XROMWELL
+
+XROMWELL is an alternative build of Cromwell which comes out as an
+unsigned XBE default.xbe.  Ed Hucek did the work to create this
+from Cromwell.
+
+There is a small script ./burnx which will make clean, then make the
+Xromwell build and use cdrecord to burn it to a cdr or cdrw.
+
+For cdrw, you can use make erase (does not need -f) to erase the cdrw
+in your writer drive.
+
+If you plan to develop with Xromwell, what works best is having two
+CDRWs on the go, as soon as you write one, erase the other one
+while you test it.
 
 
 

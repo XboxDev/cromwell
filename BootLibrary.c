@@ -15,15 +15,15 @@
 
 #include "boot.h"
 
-#ifndef XBE
+//#ifndef XBE
 void BootPciInterruptGlobalStackStateAndDisable(DWORD *dw) {	__asm__ __volatile__ (  "pushf; pop %%eax ; mov %%eax, (%%ebx); cli" : : "b" (dw)); }
 void BootPciInterruptGlobalPopState(DWORD dw)  {	__asm__ __volatile__  (  "push %%ebx; popf" : : "b" (dw)); }
 void BootPciInterruptEnable()  {	__asm__ __volatile__  (  "sti" ); }
-#else
-void BootPciInterruptGlobalStackStateAndDisable(DWORD *dw) {}
-void BootPciInterruptGlobalPopState(DWORD dw)  {}
-void BootPciInterruptEnable()  {}
-#endif
+//#else
+//void BootPciInterruptGlobalStackStateAndDisable(DWORD *dw) {}
+//void BootPciInterruptGlobalPopState(DWORD dw)  {}
+//void BootPciInterruptEnable()  {}
+//#endif
 
 void * memcpy(void *dest, const void *src,  size_t size) {
 //    bprintf("memcpy(0x%x,0x%x,0x%x);\n",dest,src,size);

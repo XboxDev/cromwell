@@ -131,7 +131,7 @@ void BootPciPeripheralInitialization()
 	IoInputByte(0x71);
 
 
-#ifndef XBE
+//#ifndef XBE
 			// configure ACPI hardware to generate interrupt on PIC-chip pin6 action (via EXTSMI#)
 
 	IoOutputByte(0x80ce, 0x08);  // from 2bl RI#
@@ -142,7 +142,7 @@ void BootPciPeripheralInitialization()
 	IoOutputByte(0x8002, IoInputByte(0x8002)|1);  // KERN: Enable SCI interrupt when timer status goes high
 	IoOutputWord(0x8028, IoInputByte(0x8028)|1);  // KERN: setting readonly trap event???
 
-#endif
+//#endif
 	/*
 			// Setup paging tables
 
@@ -250,13 +250,13 @@ void BootPciPeripheralInitialization()
 	IoOutputByte(0x80c8, 0x04); // Set CACHEZZ pin to low
 	IoOutputDword(0x80b4, 0xffff);  // any interrupt resets ACPI system inactivity timer
 */
-#ifndef XBE
+//#ifndef XBE
 	IoOutputDword(0x80b4, 0xffff);  // any interrupt resets ACPI system inactivity timer
 	IoOutputByte(0x80cc, 0x08); // Set EXTSMI# pin to be pin function
 	IoOutputByte(0x80cd, 0x08); // Set PRDY pin on ACPI to be PRDY function
 
 	IoOutputWord(0x8020, IoInputWord(0x8020)|0x200); // ack any preceding ACPI int
-#endif
+//#endif
 
 	bprintf("b\n");
 
@@ -271,20 +271,33 @@ void BootPciPeripheralInitialization()
 //
 	PciWriteDword(BUS_0, DEV_1e, FUNC_0, 4, PciReadDword(BUS_0, DEV_1e, FUNC_0, 4) | 7 );
 //	bprintf("Test Smb status3a =%x\n",IoInputWord(I2C_IO_BASE+0));
-	PciWriteWord(BUS_0, DEV_1e, FUNC_0, 0x118-0xf2, 0xf7f0); // was missing  0xf3f0 or 0xf7f0 depending on var
+////	PciWriteWord(BUS_0, DEV_1e, FUNC_0, 0x118-0xf2, 0xf7f0); // was missing  0xf3f0 or 0xf7f0 depending on var
 //	bprintf("Test Smb status3b =%x\n",IoInputWord(I2C_IO_BASE+0));
 	PciWriteDword(BUS_0, DEV_1e, FUNC_0, 0x18, (PciReadDword(BUS_0, DEV_1e, FUNC_0, 0x18) &0xffffff00));
 //	bprintf("Test Smb status3c =%x\n",IoInputWord(I2C_IO_BASE+0));
-	PciWriteDword(BUS_0, DEV_1e, FUNC_0, 0x14, (PciReadDword(BUS_0, DEV_1e, FUNC_0, 0x14) &0x0000ffff) | 0x01010000); // was missing
+////	PciWriteDword(BUS_0, DEV_1e, FUNC_0, 0x14, (PciReadDword(BUS_0, DEV_1e, FUNC_0, 0x14) &0x0000ffff) | 0x01010000); // was missing
 //	bprintf("Test Smb status3d =%x\n",IoInputWord(I2C_IO_BASE+0));
-	PciWriteWord(BUS_0, DEV_1e, FUNC_0, 0x20, 0xfd00);
 //	bprintf("Test Smb status3e =%x\n",IoInputWord(I2C_IO_BASE+0));
 //	PciWriteWord(BUS_0, DEV_1e, FUNC_0, 0x20, 0xfd00); // <-- copy of line above to maintain positioning!
 //	PciWriteWord(BUS_0, DEV_1e, FUNC_0, 0x1e, 0xfe70); // kills SMB controller sometimes!!!
 //	bprintf("Test Smb status3f =%x\n",IoInputWord(I2C_IO_BASE+0));
-	PciWriteWord(BUS_0, DEV_1e, FUNC_0, 0x24, 0xf000);
 //	bprintf("Test Smb status3g =%x\n",IoInputWord(I2C_IO_BASE+0));
 	PciWriteDword(BUS_0, DEV_1e, FUNC_0, 0x3c, 7);  // trying to get video irq
+
+		// frankenregister xbe load correction to match cromwell load
+		// controls requests for memory regions
+
+	PciWriteDword(BUS_0, DEV_1e, FUNC_0, 0x0c, 0xff019ee7);
+	PciWriteDword(BUS_0, DEV_1e, FUNC_0, 0x10, 0xbcfaf7e7);
+	PciWriteDword(BUS_0, DEV_1e, FUNC_0, 0x14, 0x0101fafa);
+	PciWriteDword(BUS_0, DEV_1e, FUNC_0, 0x1c, 0x02a000f0);
+	PciWriteDword(BUS_0, DEV_1e, FUNC_0, 0x20, 0xfdf0fd00);
+	PciWriteDword(BUS_0, DEV_1e, FUNC_0, 0x24, 0xf7f0f000);
+	PciWriteDword(BUS_0, DEV_1e, FUNC_0, 0x28, 0x8e7ffcff);
+	PciWriteDword(BUS_0, DEV_1e, FUNC_0, 0x2c, 0xf8bfef87);
+	PciWriteDword(BUS_0, DEV_1e, FUNC_0, 0x30, 0xdf758fa3);
+	PciWriteDword(BUS_0, DEV_1e, FUNC_0, 0x38, 0xb785fccc);
+
 
 //
 // Bus 0, Device 0, Function 0 = PCI Bridge Device - Host Bridge
@@ -304,6 +317,11 @@ void BootPciPeripheralInitialization()
 	PciWriteDword(BUS_1, DEV_0, FUNC_0, 0x4c, 0x00000114);
 
 	PciWriteByte(BUS_0, DEV_0, FUNC_0, 0x87, 3); // kern 8001FC21
+
+			// frankenregisters so Xromwell matches Cromwell
+
+		PciWriteDword(BUS_1, DEV_0, FUNC_0, 0x0c, 0x0);
+		PciWriteDword(BUS_1, DEV_0, FUNC_0, 0x18, 0x08);
 
 
 		__asm__ __volatile__(

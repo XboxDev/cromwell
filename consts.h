@@ -13,7 +13,7 @@
  *                                                                         *
  ***************************************************************************/
 
-#define VERSION "1.9dev"
+#define VERSION "1.20dev"
 
 #define PCI_CFG_ADDR 0x0CF8
 #define PCI_CFG_DATA 0x0CFC

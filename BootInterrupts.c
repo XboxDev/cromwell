@@ -169,7 +169,8 @@ void BootInterruptsWriteIdt(void) {
 	IoOutputByte(0xa1, 0x02);  // am slave, hooked to INT2 on master
 	IoOutputByte(0xa1, 0x01);  // x86 mode normal EOI
 #ifdef XBE
-	IoOutputByte(0xa1, 0xff);		// enable no ints
+//	IoOutputByte(0xa1, 0xff);		// enable no ints
+	IoOutputByte(0xa1, 0xaf);		// enable int14(IDE) int12(SMI)
 #else
 	IoOutputByte(0xa1, 0x00);		// enable all ints
 #endif

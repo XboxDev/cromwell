@@ -866,7 +866,7 @@ void BootVgaInitializationKernel(CURRENT_VIDEO_MODE_DETAILS * pcurrentvidemodede
 
 			// enable VSYNC interrupt action
 
-#ifndef XBE
+//#ifndef XBE
 	voutl(pcurrentvidemodedetails->m_pbBaseAddressVideo+0x600140, 0x1);  // enable VSYNC interrupts
 	voutl(pcurrentvidemodedetails->m_pbBaseAddressVideo+0x600100, 0x1);  // clear VSYNC int
 	voutl(pcurrentvidemodedetails->m_pbBaseAddressVideo+0x608000, 0x3c00000);  //
@@ -875,7 +875,7 @@ void BootVgaInitializationKernel(CURRENT_VIDEO_MODE_DETAILS * pcurrentvidemodede
 	voutl(pcurrentvidemodedetails->m_pbBaseAddressVideo+0x000100, 0x1);  // clear VSYNC int
 	voutl(pcurrentvidemodedetails->m_pbBaseAddressVideo+0x008000, 0x3c00000);  //
 	voutl(pcurrentvidemodedetails->m_pbBaseAddressVideo+0x000140, 1);  // enable VSYNC int
-#endif
+//#endif
 
 		// all these are necessary to bring up video through the conexant
 

@@ -5,6 +5,11 @@
 # free bios project.
 #
 # $Log$
+# Revision 1.15  2003/02/26 11:43:23  huceke
+# Reworked the bootmenu. The CVS is taged with CROMWELL_1_9_OLDMENU.
+# So we can switch back easily. Cromwell now can also boot from fatx
+# and Xromwell have the menu from cromwell working.
+#
 # Revision 1.14  2003/02/17 08:31:00  huceke
 # Initial checkin of FATX support. It is dissable by default.
 # Some logic for the handling of FATX must be done.
@@ -171,6 +176,14 @@ install:
 
 1m:
 	cat image.bin image.bin image.bin image.bin > image1m.bin
+
+burn:
+	cp default.xbe cdr --reply=y
+	mkisofs -R -J -udf -o boot.iso cdr
+	cdrecord -dao -dev=0,0,0 -driveropts=burnfree speed=4 -eject boot.iso
+
+erase:
+	cdrecord -dao -dev=0,0,0 -driveropts=burnfree blank=fast
 
 bios: rombios.bin
 

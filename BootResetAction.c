@@ -143,11 +143,11 @@ extern void BootResetAction ( void ) {
 
 
 	currentvideomodedetails.m_pbBaseAddressVideo=(BYTE *)0xfd000000;
-#ifdef XBE
-	currentvideomodedetails.m_fForceEncoderLumaAndChromaToZeroInitially=0;
-#else
+//#ifdef XBE
+//	currentvideomodedetails.m_fForceEncoderLumaAndChromaToZeroInitially=0;
+//#else
 	currentvideomodedetails.m_fForceEncoderLumaAndChromaToZeroInitially=1;
-#endif
+//#endif
 
 	BootVgaInitializationKernel((CURRENT_VIDEO_MODE_DETAILS *)&currentvideomodedetails);
 
@@ -168,7 +168,7 @@ extern void BootResetAction ( void ) {
 	bprintf("BOOT: done backdrop\n\r");
 
 
-#ifndef XBE
+//#ifndef XBE
 	// configure ACPI hardware to generate interrupt on PIC-chip pin6 action (via EXTSMI#)
 	{
 		DWORD dw;
@@ -185,7 +185,7 @@ extern void BootResetAction ( void ) {
 		I2CTransmitWord(0x10, 0x1b04); // unknown
 		BootPciInterruptGlobalPopState(dw);
 	}
-#endif
+//#endif
 
 	// init USB
 #ifdef DO_USB
@@ -371,7 +371,7 @@ extern void BootResetAction ( void ) {
 
 
 			// now do the main BIOS action
-
+#ifdef DO_CMOS_BIOS_DATA
 		{  			// standard BIOS settings
 			int n;
 			for(n=0x0e;n<0x40;n++) BiosCmosWrite(n, 0);
@@ -387,7 +387,7 @@ extern void BootResetAction ( void ) {
 			BiosCmosWrite(0x32, 20); // century
 //			BiosCmosWrite(0x3d, 0); // boot method: default=0=do not attempt boot (set in BootIde.c)
 		}
-
+#endif
 			// gggb while waiting for Ethernet & Hdd
 
 		I2cSetFrontpanelLed(I2C_LED_GREEN0 | I2C_LED_GREEN1 | I2C_LED_GREEN2);
@@ -444,7 +444,11 @@ extern void BootResetAction ( void ) {
 
 			// wait around for HDD to become ready
 
-		BootIdeWaitNotBusy(0x1f0);
+		{
+			DWORD dw=BIOS_TICK_COUNT;
+			BootIdeWaitNotBusy(0x1f0);
+			while((BIOS_TICK_COUNT-dw)<30) ;  // wait minimum ~1.8 second
+		}
 		printk("Ready\n");
 
 					// reuse BIOS status area

@@ -157,7 +157,7 @@ int BootPerformPicChallengeResponseAction()
 		I2CTransmitWord( 0x10, 0x2100 | (w>>8) );
 	}
 
-	n=I2CTransmitWord( 0x10, 0x0100 );
+//	n=I2CTransmitWord( 0x10, 0x0100 );
 
 /*
 		// the following traffic was observed during a normal boot
