@@ -20,7 +20,9 @@
 #include "xbox.h"
 #include "cpu.h"
 #include "config.h"
+/*
 #include "audio.h"
+*/
 #include "video.h"
 #include "memory_layout.h"
 
@@ -35,15 +37,16 @@ int nTempCursorMbrX, nTempCursorMbrY;
 extern volatile int nInteruptable;
 
 volatile CURRENT_VIDEO_MODE_DETAILS currentvideomodedetails;
+/*
 volatile AC97_DEVICE ac97device;
 
 volatile AUDIO_ELEMENT_SINE aesTux;
 volatile AUDIO_ELEMENT_SINE aesSong;
 volatile AUDIO_ELEMENT_NOISE aenTux;
-
+*/
 extern KNOWN_FLASH_TYPE aknownflashtypesDefault[];
 
-
+/*
 const SONG_NOTE songnoteaIntro[] = {
 	{  370, 200, 207 },
 	{  730, 200, 207 },
@@ -66,7 +69,7 @@ const SONG_NOTE songnoteaIntro[] = {
 	{ 5260, 200, 207 },
 	{ 6000, 0, 0 }
 };
-
+*/
 
 //////////////////////////////////////////////////////////////////////
 //
@@ -197,7 +200,7 @@ extern void BootResetAction ( void ) {
 	ConstructAUDIO_ELEMENT_NOISE(&aenTux);  // constructed silent, manipulated in video IRQ that moves tux
 	BootAudioAttachAudioElement(&ac97device, (AUDIO_ELEMENT *)&aenTux);
 	BootAudioPlayDescriptors(&ac97device);
-        */
+	*/
 
 	/* Here, the interrupts are Switched on now */
 	BootPciInterruptEnable();

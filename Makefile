@@ -114,7 +114,8 @@ OBJECTS-CROM += $(TOPDIR)/obj/jmemmgr.o
 OBJECTS-CROM += $(TOPDIR)/obj/jcomapi.o
 OBJECTS-CROM += $(TOPDIR)/obj/jutils.o
 OBJECTS-CROM += $(TOPDIR)/obj/jerror.o
-OBJECTS-CROM += $(TOPDIR)/obj/BootAudio.o
+#AUDIO
+#OBJECTS-CROM += $(TOPDIR)/obj/BootAudio.o
 OBJECTS-CROM += $(TOPDIR)/obj/BootFlash.o
 OBJECTS-CROM += $(TOPDIR)/obj/BootFlashUi.o
 OBJECTS-CROM += $(TOPDIR)/obj/BootEEPROM.o
@@ -153,7 +154,7 @@ OBJECTS-CROM += $(TOPDIR)/obj/elf.o
 endif
 
 RESOURCES = $(TOPDIR)/obj/backdrop.elf
-RESOURCES += $(TOPDIR)/obj/pcrombios.elf
+#RESOURCES += $(TOPDIR)/obj/pcrombios.elf
 
 export INCLUDE
 export TOPDIR

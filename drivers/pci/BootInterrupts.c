@@ -22,14 +22,16 @@ unsigned int wait_ms_time;
 volatile int nInteruptable = 0;
 
 #ifndef DEBUG_MODE
+/*
 extern volatile AC97_DEVICE ac97device;
 extern volatile AUDIO_ELEMENT_SINE aesTux;
 extern volatile AUDIO_ELEMENT_NOISE aenTux;
+*/
 #endif
 void BlinkTux(void);
 
 
-	// interrupt service stubs defined in BootStartup.S
+// interrupt service stubs defined in BootStartup.S
 
 extern void IntHandlerTimer0(void);
 extern void IntHandlerI2C(void);
@@ -69,7 +71,7 @@ extern void IntHandlerExceptionE(void);
 extern void IntHandlerExceptionF(void);
 extern void IntHandlerException10(void);
 
-	// structure defining our ISRs
+// structure defining our ISRs
 
 typedef struct {
 	BYTE m_bInterruptCpu;
@@ -473,7 +475,9 @@ void IntHandler6C(void)
 	
 	if(!nInteruptable) return;
 #ifndef DEBUG_MODE
+	/*
 	BootAudioInterrupt(&ac97device);
+	*/
 #endif
 }
 void IntHandler7C(void)
