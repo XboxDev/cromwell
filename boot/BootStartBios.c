@@ -354,6 +354,7 @@ int BootLodaConfigCD(CONFIGENTRY *config) {
 	{
 		ISO_PRIMARY_VOLUME_DESCRIPTOR * pipvd = (ISO_PRIMARY_VOLUME_DESCRIPTOR *)&ba[0];
 		char sz[64];
+		memset(&sz,0x00,sizeof(sz));
 		BootIso9660DescriptorToString(pipvd->m_szSystemIdentifier, sizeof(pipvd->m_szSystemIdentifier), sz);
 		VIDEO_ATTR=0xffeeeeee;
 		printk("Cdrom: ");

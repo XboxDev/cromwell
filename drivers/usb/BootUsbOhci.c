@@ -508,6 +508,7 @@ void BootUsbRootHubStatusChange(USB_DEVICE *pusbdeviceRootHub)
 
 void BootUsbInterrupt(USB_CONTROLLER_OBJECT * pusbcontroller)
 {
+
 	pusbcontroller->m_dwCountInterrupts++;
 
 	if(pusbcontroller->m_pusboperationalregisters->m_dwHcInterruptStatus&1) {
