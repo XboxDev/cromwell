@@ -1,94 +1,95 @@
 #include "../usb_wrapper.h"
 #include "config.h"
 
-// this is for the XPAD
+// This is for the Xpad
 extern unsigned char xpad_button_history[7];
 
-// This is for the IR Remote control
+// This is for the IR remote control
 extern unsigned int current_remote_key;
 extern unsigned int current_remote_keydir;
 
 
-// this is for the Keyboard
+// This is for the Keyboard
 extern unsigned int current_keyboard_key;
 
-
-unsigned char accepted_xremote [] = { 0x0b, 0xa6, 0xa7, 0xa9, 0xa8 ,0xd5,
-				     0xc6,0xc7,0xc8,0xc9,0xca,0xcb,0xcc,0xcd,0xce,0xcf};
-				     
 int risefall_xpad_BUTTON(unsigned char selected_Button) {
 	
-	int temp;
       	int xpad_id; 
+	int match;
 	extern int xpad_num;
-	// Section Keyboard	
 	
+	// USB keyboard section 
+	
+	match=0;
 	if (current_keyboard_key!=0) {
 		switch (selected_Button) {
 			case TRIGGER_XPAD_KEY_A :
-		   		if (current_keyboard_key == 0x28) {
-					current_keyboard_key=0;
-					return 1;
-				}
+		   		if (current_keyboard_key == 0x28) match=1;
+				break;
 			case TRIGGER_XPAD_KEY_B :
-		   		if (current_keyboard_key == 0x29) {
-					current_keyboard_key=0;
-					return 1;
-				}
+		   		if (current_keyboard_key == 0x29) match=1;
+				break;
 			case TRIGGER_XPAD_PAD_UP :
-		   		if (current_keyboard_key == 0x52) {
-					current_keyboard_key=0;
-					return 1;
-				}
+				if (current_keyboard_key == 0x52) match=1;
+				break;
 			case TRIGGER_XPAD_PAD_DOWN :
-		   		if (current_keyboard_key == 0x51) {
-					current_keyboard_key=0;
-					return 1;
-				}
+		   		if (current_keyboard_key == 0x51) match=1;
+				break;
 			case TRIGGER_XPAD_PAD_LEFT :
-		   		if (current_keyboard_key == 0x50) {
-					current_keyboard_key=0;
-					return 1;
-				}
+		   		if (current_keyboard_key == 0x50) match=1;
+				break;
 			case TRIGGER_XPAD_PAD_RIGHT :
-		   		if (current_keyboard_key == 0x4f) {
-					current_keyboard_key=0;
-					return 1;
-				}
+		   		if (current_keyboard_key == 0x4f) match=1;
+				break;
 		}
-	}
-	// Section for IR Driver   
 
-       temp = current_remote_keydir;
-        
-       if ((temp&0x100)==0x100) {
-       		int counter;
-		for (counter = 0; counter < (sizeof(accepted_xremote)) ; counter++) {
-			if (accepted_xremote[counter] == current_remote_key) {
-                		temp &= 0xff;
-	                       	current_remote_key &=0xff;
-				switch (selected_Button) {
-					case TRIGGER_XPAD_KEY_A :
-				   		if (current_remote_key ==  0xb) return 1; 
-					case TRIGGER_XPAD_PAD_UP :
-						if (current_remote_key == 0xa6) return 1; 
-					case TRIGGER_XPAD_PAD_DOWN :
-						if (current_remote_key == 0xa7) return 1; 
-					case TRIGGER_XPAD_PAD_LEFT :
-						if (current_remote_key == 0xa9) return 1; 
-					case TRIGGER_XPAD_PAD_RIGHT :
-						if (current_remote_key == 0xa8) return 1; 
-					case TRIGGER_XPAD_PAD_KEYSTROKE :
-						if (current_remote_key == 0xd5) return 0xd5; 
-						if ((current_remote_key>0xc5)&(current_remote_key<0xd0)) return current_remote_key;
-				}
-				return 0;
-			}
+		if (match) {
+			//A match occurred, so the event has now been processed
+			//Clear it, and return success
+			current_keyboard_key=0;
+			return 1;
 		}
 	}
-        
-       	// We continue with normal XPAD operations
-       	if (selected_Button < 6) {
+	
+	// Xbox IR remote section
+	
+	match=0;
+	if ((current_remote_keydir&0x100)) {
+	      	//This is a button release event - press events are ignored
+		//to avoid duplicates, as a new press event is sent
+		//as long as the button is held down.
+		
+		switch (selected_Button) {
+			case TRIGGER_XPAD_KEY_A:
+		   		if (current_remote_key == 0x0b) match=1;
+				break;
+			case TRIGGER_XPAD_PAD_UP:
+				if (current_remote_key == 0xa6) match=1;
+				break;
+			case TRIGGER_XPAD_PAD_DOWN:
+				if (current_remote_key == 0xa7) match=1;
+				break;
+			case TRIGGER_XPAD_PAD_LEFT:
+				if (current_remote_key == 0xa9) match=1;
+				break;
+			case TRIGGER_XPAD_PAD_RIGHT:
+				if (current_remote_key == 0xa8) match=1;
+				break;
+			case TRIGGER_XPAD_KEY_BACK:
+				if (current_remote_key == 0xd8) match=1;
+				break;
+		}
+		if (match) {
+			//A match occurred, so the event has now been processed
+			//Clear it, and return success
+			current_remote_key=0;
+			current_remote_keydir=0;
+			return 1;
+		}
+	}
+       	
+	// Xbox controller section
+	if (selected_Button < 6) {
        	
        		unsigned char Button;
        	
@@ -118,10 +119,10 @@ int risefall_xpad_BUTTON(unsigned char selected_Button) {
 			case TRIGGER_XPAD_PAD_DOWN :
 				   Buttonmask = XPAD_PAD_DOWN;
 				   break;
-				case TRIGGER_XPAD_PAD_LEFT :
+			case TRIGGER_XPAD_PAD_LEFT :
 				   Buttonmask = XPAD_PAD_LEFT;
 				   break;
-				case TRIGGER_XPAD_PAD_RIGHT :
+			case TRIGGER_XPAD_PAD_RIGHT :
 				   Buttonmask = XPAD_PAD_RIGHT;
 				   break;
 		}		
