@@ -152,16 +152,16 @@ void IconMenu(void) {
 	VIDEO_CURSOR_POSX=((252+nModeDependentOffset)<<2);
 	VIDEO_CURSOR_POSY=nTempCursorY-100;
 
-//#ifndef SILENT_MODE
+#ifndef SILENT_MODE
 	//In silent mode, don't draw the menu the first time.
 	//If we get a left/right xpad event, it will be registered,
 	//and the menu will 'appear'. Otherwise, it will proceed quietly
 	//and boot the default boot item
 	VIDEO_ATTR=0xffc8c8c8;
-	//printk("Select from Menu\n");
+	printk("Select from Menu\n");
 	VIDEO_ATTR=0xffffffff;
 	IconMenuDraw(nModeDependentOffset, nTempCursorY);
-//#endif
+#endif
 	COUNT_start = IoInputDword(0x8008);
 	//Main menu event loop.
 	while(1)
