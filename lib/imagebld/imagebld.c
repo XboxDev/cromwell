@@ -12,10 +12,26 @@
 #include <stdarg.h>
 #include <stdlib.h>
 #include "sha1.h"
+#include "md5.h"
+
+#include "../../include/config.h"
 #include "xbe-header.h"
+
 
 #define debug
 
+#define BiosID_Version10                0x01
+#define BiosID_Version11                0x02
+#define BiosID_Version12                0x04
+#define BiosID_Version13                0x08
+#define BiosID_Version14                0x10
+#define BiosID_Version15                0x20
+#define BiosID_Version16                0x40
+#define BiosID_Version17                0x80
+
+#define BiosID_VideoEncoder_Conexant    0x01
+#define BiosID_VideoEncoder_Focus       0x02
+#define BiosID_VideoEncoder_Xcalibur    0x04
 
 struct Checksumstruct {
 	unsigned char Checksum[20];	
@@ -24,6 +40,24 @@ struct Checksumstruct {
 	unsigned int compressed_image_size;  // 28
 	unsigned int Biossize_type;          //32
 }Checksumstruct;
+
+
+struct BiosIdentifier {
+	        
+	unsigned char   Magic[4];               // AUTO
+	unsigned char   HeaderVersion;          
+	unsigned char   XboxVersion;            // Which Xbox Version does it Work ? (Options)
+	unsigned char   VideoEncoder;
+	unsigned char   HeaderPatch;
+	unsigned char   Option1;
+	unsigned char   Option2;
+	unsigned char   Option3;
+	unsigned int    BiosSize;               // in Bytes
+	char Name[32];
+	unsigned char MD5Hash[16];
+};
+
+void showUsage();
 
 void shax(unsigned char *result, unsigned char *data, unsigned int len)
 {
@@ -35,8 +69,30 @@ void shax(unsigned char *result, unsigned char *data, unsigned int len)
 }
 
 
-void showUsage();
-
+void writeBiosIdentifier(unsigned char *cromimage, int biosSize) {
+	struct BiosIdentifier *BiosHeader = (struct BiosIdentifier *)&cromimage[biosSize-sizeof(struct BiosIdentifier)];
+	MD5_CTX hashcontext;
+       	unsigned char digest[16];
+	memcpy(BiosHeader->Magic,"AUTO",4);
+	BiosHeader->HeaderVersion=1;
+	BiosHeader->BiosSize= biosSize;
+	sprintf(BiosHeader->Name,"Cromwell %s",VERSION);
+						               
+	BiosHeader->XboxVersion =       BiosID_Version10 |
+	                                BiosID_Version11 |
+	                                BiosID_Version12 |
+	                                BiosID_Version13 |
+	                                BiosID_Version14 |
+	                                BiosID_Version15 |
+	                                BiosID_Version16 ;
+	                                 
+	BiosHeader->VideoEncoder =      BiosID_VideoEncoder_Conexant |
+	                                BiosID_VideoEncoder_Focus;
+	                                
+	MD5Init(&hashcontext);
+	MD5Update(&hashcontext, cromimage, biosSize-16);
+	MD5Final(BiosHeader->MD5Hash, &hashcontext);      
+}
 
 int xberepair (	unsigned char * xbeimage,
 		unsigned char * cromimage
@@ -57,8 +113,7 @@ int xberepair (	unsigned char * xbeimage,
         crom = malloc(1024*1024);
         xbe = malloc(1024*1024+0x3000);
 
-       	printf("ImageBLD Hasher by XBL Project (c) hamtitampti\n");
-       	printf("XBE Modus\n");
+       	printf("XBE Mode\n");
 
 	if (stat(cromimage, &fileinfo)) {
 		fprintf(stderr,"Unable to open cromwell image file %s : %s \nAborting\n",cromimage,strerror(errno)); 
@@ -67,7 +122,7 @@ int xberepair (	unsigned char * xbeimage,
 
 	romsize = fileinfo.st_size;
     	if (romsize>0x100000) {
-    		printf("Romsize too big, increase the static Variables everywhere");
+    		printf("Romsize too big, increase the static variables everywhere");
     		return 1;
     	}
    
@@ -161,8 +216,7 @@ int vmlbuild (	unsigned char * vmlimage,
 	crom = malloc(1024*1024);
         vml = malloc(1024*1024+0x3000);
          
-       	printf("ImageBLD Hasher by XBL Project (c) hamtitampti\n");
-       	printf("VML Modus\n");
+       	printf("VML Mode\n");
 	
 	if (stat(cromimage,&fileinfo)) {
 		fprintf(stderr,"Unable to open cromwell image file %s : %s \nAborting\n",cromimage,strerror(errno)); 
@@ -171,7 +225,7 @@ int vmlbuild (	unsigned char * vmlimage,
 	
 	romsize = fileinfo.st_size;
     	if (romsize>0x100000) {
-    		printf("Romsize too big, increase the static Variables everywhere");
+    		printf("Romsize too big, increase the static variables everywhere");
     		return 1;
     	}
 	
@@ -185,7 +239,6 @@ int vmlbuild (	unsigned char * vmlimage,
     	fread(crom, 1, romsize, f);
     	fclose(f);
     
-	
 	if (stat(vmlimage,&fileinfo)) {
 		fprintf(stderr,"Unable to open vml image file %s : %s \nAborting\n",vmlimage,strerror(errno)); 
 		return 1;
@@ -256,8 +309,7 @@ int romcopy (
        	memset(crom,0x00,1024*1024);
        	memset(loaderimage,0x00,256*1024);
 
-       	printf("ImageBLD Hasher by XBL Project (c) hamtitampti\n");
-       	printf("ROM Modus\n");
+       	printf("ROM Mode\n");
       	
 	f = fopen(blbinname, "rb");
 	if (f==NULL) {
@@ -414,8 +466,11 @@ int romcopy (
 	}
       	printf("\n");
 #endif
-      	
-      	// Write the 256 /1024 Kbyte Image Back
+     
+	//Apply the SmartXX bios identifier data
+      	writeBiosIdentifier(flash256, 256*1024);
+      	writeBiosIdentifier(flash256, 1024*1024);
+	// Write the 256 /1024 Kbyte Image Back
       	f = fopen(binname256, "wb");               
 	fwrite(flash256, 1, 256*1024, f);
        	fclose(f);	
@@ -436,6 +491,8 @@ int romcopy (
 
 int main (int argc, const char * argv[])
 {
+       	printf("ImageBLD Hasher by XBL Project (c) hamtitampti\n");
+	
 	if( argc < 3 ) {
 		showUsage(argv[0]);
 		exit(1);

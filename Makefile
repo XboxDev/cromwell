@@ -204,10 +204,11 @@ image.bin:
 	${OBJCOPY} --output-target=binary --strip-all $(TOPDIR)/obj/2lbimage.elf $(TOPDIR)/obj/2blimage.bin
 
 # This is a local executable, so don't use a cross compiler...
-bin/imagebld: lib/imagebld/imagebld.c lib/crypt/sha1.c
+bin/imagebld: lib/imagebld/imagebld.c lib/crypt/sha1.c lib/crypt/md5.c
 	gcc -Ilib/crypt -o bin/sha1.o -c lib/crypt/sha1.c
+	gcc -Ilib/crypt -o bin/md5.o -c lib/crypt/md5.c
 	gcc -Ilib/crypt -o bin/imagebld.o -c lib/imagebld/imagebld.c
-	gcc -o bin/imagebld bin/imagebld.o bin/sha1.o 
+	gcc -o bin/imagebld bin/imagebld.o bin/sha1.o bin/md5.o
 	
 imagecompress: obj/image-crom.bin bin/imagebld
 	cp obj/image-crom.bin obj/image-crom.bin.tmp
