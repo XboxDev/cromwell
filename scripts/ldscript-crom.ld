@@ -1,7 +1,5 @@
 /*
- * $Id$
  * loader script
-
  *
  *
  *

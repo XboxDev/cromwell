@@ -1,43 +1,9 @@
 /*
- * $Id$
- * loader script
+ * Loader Script for Loading from the .xbe system
  *
  * adapted from the Free Bios project
  * and work by Johan Rydberg and Daniel Kahlin.
  *
- * $Log$
- * Revision 1.3  2003/05/20 15:57:22  franz
- * SYNC with SF 20052003-1800
- *
- * Revision 1.5  2003/05/16 18:27:52  hamtitampti
- * Now better Inits of the CPU, more documenation and sync with my developer tree
- *
- * Revision 1.2  2003/05/07 07:47:34  franz
- * Syncing with my developer Tree now
- *
- * Revision 1.3  2003/05/02 12:22:06  huceke
- * *** empty log message ***
- *
- * Revision 1.1.1.1  2003/04/29 14:01:43  franz
- * Initial Import From Franz
- *
- * Revision 1.1  2003/03/18 18:08:48  huceke
- * *** empty log message ***
- *
- * Revision 1.1  2002/12/25 11:04:20  huceke
- * Cosmetic changes in the build procedure
- *
- * Revision 1.3  2002/09/18 19:49:35  mist
- * gcc 3.2 (Mdk 9) fixes
- *
- * Revision 1.2  2002/08/26 22:46:33  mist
- * configuration file support, README
- *
- * Revision 1.1  2002/08/21 17:35:46  meriac
- * Michael added generic boot screen
- *
- * Revision 1.2  2002/08/12 12:00:52  mist
- * compiler issues fixed by Andy
  *
  *
  *
