@@ -841,7 +841,9 @@ int BootMenue(CONFIGENTRY *config,int nDrive,int nActivePartition, int nFATXPres
 				break;
 		}
 	}	
-
+        
+        if (nSelected==-1) nSelected = ICON_CD;
+        
         // Initial Selected Icon
         menu = nSelected;
         old_nIcon = nSelected;
