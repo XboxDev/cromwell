@@ -286,7 +286,7 @@
 	xcode_poke(0x0f001220, 0x00000000);
 	xcode_poke(0x0f001228, 0x00000000);
 	xcode_poke(0x0f001264, 0x00000000);
-	xcode_poke(0x0f001210, 0x00000000);
+	xcode_poke(0x0f001210, 0x00000010);
 	xcode_peek(0x0f101000);
 	xcode_bittoggle(0x06000000,0x00000000);
 	xcode_ifgoto(0x00000000,4);
@@ -323,7 +323,7 @@
 	xcode_poke(0x0f001250, 0x0000aa8b);
 	xcode_poke(0x0f100228, 0x081205ff);
 
-	xcode_poke(0x0f001218, 0x00000000);
+	xcode_poke(0x0f001218, 0x00010000);
 
 
 	xcode_pciin_a(0x80000860);
