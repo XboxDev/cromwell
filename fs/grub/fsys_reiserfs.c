@@ -1050,7 +1050,7 @@ reiserfs_dir (char *dirname)
  	  
 	  /* Copy the remaining name to the end of the symlink data.
 	     Note that DIRNAME and LINKBUF may overlap! */
-	  grub_memmove (linkbuf + filemax, dirname, len+1);
+	  memcpy (linkbuf + filemax, dirname, len+1);
 
 	  INFO->fileinfo.k_dir_id = dir_id;
 	  INFO->fileinfo.k_objectid = objectid;
