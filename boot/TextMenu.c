@@ -18,6 +18,9 @@
 #include "MenuActions.h"
 #include "config.h"
 
+void TextMenuDraw(void);
+void TextMenuBack(void);
+
 struct TEXTMENUITEM;
 struct TEXTMENU;
 
@@ -48,6 +51,15 @@ TEXTMENU *firstMenu=0l;
 TEXTMENU *currentMenu=0l;
 TEXTMENUITEM *firstVisibleMenuItem=0l;
 TEXTMENUITEM *selectedMenuItem=0l;
+unsigned char *textmenusavepage;
+
+void TextMenuBack(void) {
+	currentMenu = (TEXTMENU*)currentMenu->parentMenu;
+	selectedMenuItem = currentMenu->firstMenuItem;
+	firstVisibleMenuItem = currentMenu->firstMenuItem;
+	memcpy((void*)FB_START,textmenusavepage,FB_SIZE);
+	TextMenuDraw();
+}
 
 void TextMenuDraw(void) {
 	VIDEO_CURSOR_POSX=25;
@@ -56,13 +68,13 @@ void TextMenuDraw(void) {
 		return;
 	}
 	//Draw the menu title.
-	VIDEO_ATTR=0x0000ff;
+	VIDEO_ATTR=0xff00ff;
 	printk("\2%s\n",currentMenu->szCaption);
 	VIDEO_CURSOR_POSY+=30;
-
 	int menucount;
+
 	TEXTMENUITEM *item=firstVisibleMenuItem;
-	for (menucount=0; menucount<7; menucount++) {
+	for (menucount=0; menucount<8; menucount++) {
 		if (item==0l) {
 			//No more menu items to draw
 			return;
@@ -78,14 +90,18 @@ void TextMenuDraw(void) {
 }
 
 int BootTextMenu(void) {
+
+	//Back up the current framebuffer contents
+	textmenusavepage = malloc(FB_SIZE);
+	memcpy(textmenusavepage,(void*)FB_START,FB_SIZE);
 	
-	unsigned char *textmenusavepage;
 	TEXTMENUITEM *previousItemPtr, *newItemPtr;
 
 	firstMenu = malloc(sizeof(TEXTMENU));
 	firstMenu->szCaption="Main Menu";
 	currentMenu = firstMenu;	
-
+	firstMenu->parentMenu=0l;
+	
 	newItemPtr = (TEXTMENUITEM*)malloc(sizeof(TEXTMENUITEM));
 	memset(newItemPtr,0x00,sizeof(TEXTMENUITEM));
 	newItemPtr->szCaption="Test 1";	
@@ -150,15 +166,36 @@ int BootTextMenu(void) {
 
 	TEXTMENU *testchildmenu = (TEXTMENU*)malloc(sizeof(TEXTMENU));
 	testchildmenu->szCaption="Test child menu";
-	
+	testchildmenu->parentMenu = (struct TEXTMENU*)firstMenu;
+
 	newItemPtr = (TEXTMENUITEM*)malloc(sizeof(TEXTMENUITEM));
 	previousItemPtr->nextMenuItem = (struct TEXTMENUITEM*)newItemPtr;
 	memset(newItemPtr,0x00,sizeof(TEXTMENUITEM));
-	newItemPtr->szCaption="Test 8";	
+	newItemPtr->szCaption="Test 8 - child";	
 	newItemPtr->previousMenuItem=(struct TEXTMENUITEM*)previousItemPtr;
 	newItemPtr->nextMenuItem=0l;
 	previousItemPtr = newItemPtr;
 	newItemPtr->childMenu = (struct TEXTMENU*)testchildmenu;
+
+
+	newItemPtr = (TEXTMENUITEM*)malloc(sizeof(TEXTMENUITEM));
+	previousItemPtr->nextMenuItem = (struct TEXTMENUITEM*)newItemPtr;
+	memset(newItemPtr,0x00,sizeof(TEXTMENUITEM));
+	newItemPtr->szCaption="Test 9";	
+	newItemPtr->previousMenuItem=(struct TEXTMENUITEM*)previousItemPtr;
+	newItemPtr->nextMenuItem=0l;
+	previousItemPtr = newItemPtr;
+
+
+
+	newItemPtr = (TEXTMENUITEM*)malloc(sizeof(TEXTMENUITEM));
+	previousItemPtr->nextMenuItem = (struct TEXTMENUITEM*)newItemPtr;
+	memset(newItemPtr,0x00,sizeof(TEXTMENUITEM));
+	newItemPtr->szCaption="Test 10";	
+	newItemPtr->previousMenuItem=(struct TEXTMENUITEM*)previousItemPtr;
+	newItemPtr->nextMenuItem=0l;
+	previousItemPtr = newItemPtr;
+
 	
 	//TEST CHILD MENU
 	newItemPtr = (TEXTMENUITEM*)malloc(sizeof(TEXTMENUITEM));
@@ -205,8 +242,8 @@ int BootTextMenu(void) {
 			if (selectedMenuItem->nextMenuItem!=0l) {
 				TEXTMENUITEM *lastVisibleMenuItem = firstVisibleMenuItem;
 				int i=0;
-				//6 menu items per page
-				for (i=0; i<6; i++) {
+				//8 menu items per page.
+				for (i=0; i<7; i++) {
 					if (lastVisibleMenuItem->nextMenuItem==0l) break;
 					lastVisibleMenuItem = (TEXTMENUITEM *)lastVisibleMenuItem->nextMenuItem;
 				}
@@ -220,6 +257,7 @@ int BootTextMenu(void) {
 		}
 			
 		else if ((risefall_xpad_BUTTON(TRIGGER_XPAD_KEY_A) == 1)) {
+			//Redraw the page as it was before the menu was displayed.
 			memcpy((void*)FB_START,textmenusavepage,FB_SIZE);
 			free(textmenusavepage);
 			//Menu item selected - invoke function pointer.
@@ -235,6 +273,17 @@ int BootTextMenu(void) {
 			}
 			changed=1;
 		}
+		else if ((risefall_xpad_BUTTON(TRIGGER_XPAD_KEY_B) == 1)) {
+			//B button takes us back up a menu
+			if (currentMenu->parentMenu==0l) {
+				//If this is the top level menu, save and quit the text menu.
+				memcpy((void*)FB_START,textmenusavepage,FB_SIZE);
+				free(textmenusavepage);
+				return;
+			}
+			TextMenuBack();
+		}
+		
 		if (changed) {
 			TextMenuDraw();
 			changed=0;
