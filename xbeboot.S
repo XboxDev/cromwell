@@ -126,32 +126,6 @@ entry:				// this should be 0x11100
 .intel_syntax noprefix
 _start:
 
-// draw a 256-color 80x80 pixel logo onto the upper right corner
-	mov esi, offset linux_logo
-	mov edi, FRAMEBUFFER		// Xbox screen RAM starts here
-	mov edx, 80
-	mov ebx, 0
-logo_l2:	
-	mov ecx, 80
-logo_l1:	
-	lodsb		//  encoded pixel
-	mov bl, al
-	sub bl, 0x20
-	mov al, linux_logo_blue[ebx]
-	stosb
-	mov al, linux_logo_green[ebx]
-	stosb
-	mov al, linux_logo_red[ebx]
-	stosb
-	mov al, 0xff
-	stosb
-	loop logo_l1
-	add edi, (640-80)*4
-	dec edx
-	jne logo_l2
-
-
-	
 // debug output
     mov ebx, 0		// x position
     mov ecx, 0		// y position
@@ -623,7 +597,6 @@ phys_bootloaderram:
 //	.long	0
 
 #include "font.S"
-#include "logo.S"
 
 .align 4096
 kernel:
