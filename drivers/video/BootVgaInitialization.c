@@ -34,7 +34,7 @@ void DetectVideoEncoder(void) {
 	else video_encoder = ENCODER_XCALIBUR;
 }
 
-char *EncoderName(void) {
+char *VideoEncoderName(void) {
 	char *focus_name="Focus";
 	char *conexant_name="Conexant";
 	char *xcalibur_name="XCalibur";

@@ -233,15 +233,13 @@ extern void BootResetAction ( void ) {
 	nTempCursorY=VIDEO_CURSOR_POSY;
 
 	VIDEO_ATTR=0xffc8c8c8;
-	printk("Xbox Rev: ");
+	printk("Encoder: ");
 	VIDEO_ATTR=0xffc8c800;
-	if((PciReadDword(BUS_0, DEV_1, 0, 0x08)&0xff)<=0xb2) {
-		printk("v1.0  ");
-	} else {
-		printk("v1.1  ");
-	}
-
-	
+	printk("%s  ", VideoEncoderName());
+	VIDEO_ATTR=0xffc8c8c8;
+	printk("Cable: ");
+	VIDEO_ATTR=0xffc8c800;
+	printk("%s  ", AvCableName());
         
 	{
 		int n, nx;
