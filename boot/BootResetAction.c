@@ -44,8 +44,6 @@ extern void BootResetAction ( void ) {
 	bool fSeenActive=false;
 	int nFATXPresent=false;
 	int nTempCursorX, nTempCursorY;
-        int temp;
-
  		
         memcpy(&cromwell_config,(void*)(0x03A00000+0x20),4);
         memcpy(&cromwell_retryload,(void*)(0x03A00000+0x24),4);
@@ -84,7 +82,6 @@ extern void BootResetAction ( void ) {
 	
 	BootEepromReadEntireEEPROM();
 	bprintf("BOOT: Read EEPROM\n\r");
-	//DumpAddressAndData(0, (BYTE *)&eeprom, 256);
         
         // Load and Init the Background image
         // clear the Video Ram
@@ -231,7 +228,8 @@ extern void BootResetAction ( void ) {
 #endif
 				(volatile BYTE *)pb=&ba[0x1be];
 				n=0; nPos=0;
-				while(n<4) {
+	
+				for (n=0; n<4; n++,pb+=16) {
 #ifdef DISPLAY_MBR_INFO
 					nPos=sprintf(sz, " hda%d: ", n+1);
 #endif
@@ -276,7 +274,6 @@ extern void BootResetAction ( void ) {
 					}
 					printk(sz);
 #endif
-					n++; pb+=16;
 				}
 
 				printk("\n");
@@ -297,13 +294,12 @@ extern void BootResetAction ( void ) {
 
 //	printk("i2C=%d SMC=%d, IDE=%d, tick=%d una=%d unb=%d\n", nCountI2cinterrupts, nCountInterruptsSmc, nCountInterruptsIde, BIOS_TICK_COUNT, nCountUnusedInterrupts, nCountUnusedInterruptsPic2);
 
-	temp = -1; // Nothing chosen
   	memset(&kernel_config,0,sizeof(CONFIGENTRY));
 
 	if(fMbrPresent && fSeenActive) {
-		temp = BootIconMenu(&kernel_config, 0,nActivePartitionIndex, nFATXPresent);
+		BootIconMenu(&kernel_config, 0,nActivePartitionIndex, nFATXPresent);
 	} else {
-		temp = BootIconMenu(&kernel_config, 1,0, nFATXPresent); 
+		BootIconMenu(&kernel_config, 1,0, nFATXPresent); 
 	}
 	while(1);   
 }
