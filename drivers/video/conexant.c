@@ -14,10 +14,8 @@
  *      none
  */
 
-//#include "encoder-i2c.h"
 #include "conexant.h"
 #include "focus.h"
-//#include <asm/io.h>
 
 #define ADR(x) (x / 2 - 0x17)
 
@@ -134,25 +132,29 @@ int conexant_calc_hdtv_mode(
 	switch (hdtv_mode) {
 		case HDTV_480p:
 			// use sync on green
-			regs[ADR(0x2e)] = 0xad; // HDTV_EN = 1, RPR_SYNC_DIS = 1, BPB_SYNC_DIS = 1, HD_SYNC_EDGE = 1, RASTER_SEL = 01
+			regs[ADR(0x2e)] = 0xed; // HDTV_EN = 1, RGB2PRPB = 1, RPR_SYNC_DIS = 1, BPB_SYNC_DIS = 1, HD_SYNC_EDGE = 1, RASTER_SEL = 01
 			regs[ADR(0x32)] = 0x48; // DRVS = 2, IN_MODE[3] = 1;
+			regs[ADR(0x3e)] = 0x45; // MCOMPU
+			regs[ADR(0x40)] = 0x51; // MCOMPV
 			break;
 		case HDTV_720p:
 			// use sync on green
-			regs[ADR(0x2e)] = 0xaa; // HDTV_EN = 1, RPR_SYNC_DIS = 1, BPB_SYNC_DIS = 1, HD_SYNC_EDGE = 1, RASTER_SEL = 01
+			regs[ADR(0x2e)] = 0xea; // HDTV_EN = 1, RGB2PRPB = 1, RPR_SYNC_DIS = 1, BPB_SYNC_DIS = 1, HD_SYNC_EDGE = 1, RASTER_SEL = 01
 			regs[ADR(0x32)] = 0x49; // DRVS = 2, IN_MODE[3] = 1, CSC_SEL=1;
+			regs[ADR(0x3e)] = 0x45; // MCOMPU
+			regs[ADR(0x40)] = 0x51; // MCOMPV
 			break;
 		case HDTV_1080i:
 			// use sync on green
-			regs[ADR(0x2e)] = 0xab; // HDTV_EN = 1, RPR_SYNC_DIS = 1, BPB_SYNC_DIS = 1, HD_SYNC_EDGE = 1, RASTER_SEL = 01
+			regs[ADR(0x2e)] = 0xeb; // HDTV_EN = 1, RGB2PRPB = 1, RPR_SYNC_DIS = 1, BPB_SYNC_DIS = 1, HD_SYNC_EDGE = 1, RASTER_SEL = 01
 			regs[ADR(0x32)] = 0x49; // DRVS = 2, IN_MODE[3] = 1, CSC_SEL=1;
+			regs[ADR(0x3e)] = 0x48; // MCOMPU
+			regs[ADR(0x40)] = 0x5b; // MCOMPV
 			break;
 	}
-	regs[ADR(0x3c)] = 0x90; // MCOMPY
-	regs[ADR(0x3e)] = 0x8c; // MCOMPU
-	regs[ADR(0x40)] = 0x8c; // MCOMPV
+	regs[ADR(0x3c)] = 0x80; // MCOMPY
 	regs[ADR(0xa0)] = pll_int; // PLL_INT
-	regs[ADR(0xc6)] = 0x9c; // IN_MODE = 24 bit YCrCb multiplexed
+	regs[ADR(0xc6)] = 0x98; // IN_MODE = 24 bit RGB multiplexed
 	regs[ADR(0x6c)] = 0x46; // FLD_MODE = 10, EACTIVE = 1, EN_SCART = 0, EN_REG_RD = 1
 	regs[ADR(0x9c)] = 0x00; // PLL_FRACT
 	regs[ADR(0x9e)] = 0x00; // PLL_FRACT
@@ -337,15 +339,24 @@ int conexant_calc_mode(xbox_video_mode * mode, struct riva_regs * riva_out)
 					break;
 		}
 		regs[ADR(0xa2)] = b;
+		regs[ADR(0xc6)] = 0x98; // IN_MODE = 24 bit RGB multiplexed
 		switch(mode->av_type) {
 			case AV_COMPOSITE:
-			case AV_SVIDEO:
 				regs[ADR(0x6c)] = 0x46; // FLD_MODE = 10, EACTIVE = 1, EN_SCART = 0, EN_REG_RD = 1
 				regs[ADR(0x5a)] = 0x00; // Y_OFF (Brightness)
 				regs[ADR(0xa4)] = 0xe5; // SYNC_AMP
 				regs[ADR(0xa6)] = 0x74; // BST_AMP
 				regs[ADR(0xba)] = 0x24; // SLAVER = 1, DACDISC = 1
-				regs[ADR(0xc6)] = 0x9c; // IN_MODE = 24 bit YCrCb multiplexed
+				regs[ADR(0xce)] = 0x19; // OUT_MUXA = 01, OUT_MUXB = 10, OUT_MUXC = 10, OUT_MUXD = 00
+				regs[ADR(0xd6)] = 0x00; // OUT_MODE = 00 (CVBS)
+				break;
+			case AV_SVIDEO:
+				regs[ADR(0x2e)] |= 0x40;
+				regs[ADR(0x6c)] = 0x46; // FLD_MODE = 10, EACTIVE = 1, EN_SCART = 0, EN_REG_RD = 1
+				regs[ADR(0x5a)] = 0x00; // Y_OFF (Brightness)
+				regs[ADR(0xa4)] = 0xe5; // SYNC_AMP
+				regs[ADR(0xa6)] = 0x74; // BST_AMP
+				regs[ADR(0xba)] = 0x24; // SLAVER = 1, DACDISC = 1
 				regs[ADR(0xce)] = 0x19; // OUT_MUXA = 01, OUT_MUXB = 10, OUT_MUXC = 10, OUT_MUXD = 00
 				regs[ADR(0xd6)] = 0x00; // OUT_MODE = 00 (CVBS)
 				break;
@@ -355,19 +366,8 @@ int conexant_calc_mode(xbox_video_mode * mode, struct riva_regs * riva_out)
 				regs[ADR(0xa4)] = 0xe7; // SYNC_AMP
 				regs[ADR(0xa6)] = 0x77; // BST_AMP
 				regs[ADR(0xba)] = 0x20; // SLAVER = 1, enable all DACs
-				regs[ADR(0xc6)] = 0x98; // IN_MODE = 24 bit RGB multiplexed
 				regs[ADR(0xce)] = 0xe1; // OUT_MUXA = 01, OUT_MUXB = 00, OUT_MUXC = 10, OUT_MUXD = 11
 				regs[ADR(0xd6)] = 0x0c; // OUT_MODE = 11 (RGB / SCART / HDTV)
-				break;
-			case AV_HDTV:
-				regs[ADR(0x6c)] = 0x46; // FLD_MODE = 10, EACTIVE = 1, EN_SCART = 0, EN_REG_RD = 1
-				regs[ADR(0x5a)] = 0x00; // Y_OFF (Brightness)
-				regs[ADR(0xa4)] = 0xe5; // SYNC_AMP
-				regs[ADR(0xa6)] = 0x74; // BST_AMP
-				regs[ADR(0xba)] = 0x20; // SLAVER = 1, enable all DACs
-				regs[ADR(0xc6)] = 0x9c; // IN_MODE = 24 bit YCrCb multiplexed
-				regs[ADR(0xce)] = 0x21; // OUT_MUXA = 01, OUT_MUXB = 00, OUT_MUXC = 10, OUT_MUXD = 00
-				regs[ADR(0xd6)] = 0x08; // OUT_MODE = 10 (VYU)
 				break;
 			default:
 				break;
