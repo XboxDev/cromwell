@@ -18,14 +18,10 @@
 #include <stdio.h>
 #include <math.h>
 #endif
+#include <boot.h>
 
 #include "VideoInitialization.h"
 
-typedef unsigned long DWORD;
-typedef unsigned long ULONG;
-typedef unsigned short WORD;
-typedef unsigned char BYTE;
-typedef int bool;
 #define FALSE 0
 #define TRUE 1
 
@@ -124,18 +120,6 @@ static inline DWORD CalcH_CLKO(const TV_MODE_PARAMETER* mode) {
 		+ 0.5
 	);
 }
-
-static inline double min (double a, double b)
-{
-	if (a < b) return a; else return b;
-}
-
-static inline double max (double a, double b)
-{
-	if (a > b) return a; else return b;
-}
-
-
 
 static void SetVGAConexantRegister(BYTE pll_int, BYTE* pbRegs)
 {
@@ -874,7 +858,7 @@ void SetTvModeParameter(const TV_MODE_PARAMETER* mode, BYTE *pbRegs) {
 	gpu.nvvtotal =  mode->v_linesi - 1;
 	gpu.pixelDepth = (mode->bpp+1) / 8;
 
-	SetTVConexantRegister(mode, &blanks, pbRegs);
+	if (VideoEncoder == VIDEO_CONEXANT) SetTVConexantRegister(mode, &blanks, pbRegs);
 	SetGPURegister(&gpu, pbRegs);
 }
 
