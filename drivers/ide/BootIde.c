@@ -74,8 +74,13 @@ typedef enum {
 	                                     IDE_CMD_STANDBY_IMMEDIATE2 */
 	IDE_CMD_SET_MULTIMODE = 0xC6,
 	IDE_CMD_STANDBY_IMMEDIATE2 = 0xE0,
-	IDE_CMD_GET_INFO = 0xEC,
-
+	
+	//Get info commands
+	IDE_CMD_IDENTIFY = 0xEC,
+	IDE_CMD_PACKET_IDENTIFY = 0xA1,
+		
+	ATAPI_SOFT_RESET = 0x08,
+	
 	IDE_CMD_SET_FEATURES = 0xEF,
 
 	IDE_CMD_ATAPI_PACKET = 0xA0,
@@ -360,10 +365,7 @@ int BootIdeIssueAtapiPacketCommandAndPacket(int nDriveIndex, BYTE *pAtapiCommand
 //  Called by BootIdeInit for each drive
 //  detects and inits each drive, and the structs containing info about them
 
-#define DRIVETYPE_HDD	0
-#define DRIVETYPE_ATAPI	1
-
-int BootIdeDriveInit(unsigned uIoBase, int nIndexDrive,int drivetype)
+int BootIdeDriveInit(unsigned uIoBase, int nIndexDrive)
 {
 	tsIdeCommandParams tsicp = IDE_DEFAULT_COMMAND;
 	unsigned short* drive_info;
@@ -396,75 +398,16 @@ int BootIdeDriveInit(unsigned uIoBase, int nIndexDrive,int drivetype)
 	}
 
 
-        // Basically, if (nIndexdrive==0) .....(this is for the MAster drive)
-        
 	
-	if (drivetype == DRIVETYPE_HDD)
-	{ 
-		// master... you have to send it IDE_CMD_GET_INFO
-		int nReturn=0;
-		tsaHarddiskInfo[nIndexDrive].m_fAtapi=false;
-		if(BootIdeIssueAtaCommand(uIoBase, IDE_CMD_GET_INFO, &tsicp)) {
-			nReturn=IoInputByte(IDE_REG_CYLINDER_MSB(uIoBase))<<8;
-			nReturn |=IoInputByte(IDE_REG_CYLINDER_LSB(uIoBase));
-			printk("nReturn = %x\n", nReturn);
-
-			if(nReturn!=0xeb14) {
-				printk("  Drive %d: detect FAILED, error=%02X\n", nIndexDrive, IoInputByte(IDE_REG_ERROR(uIoBase)));
-				return 1;
-			}
+	if(BootIdeIssueAtaCommand(uIoBase, IDE_CMD_IDENTIFY, &tsicp)) {
+		BootIdeIssueAtaCommand(uIoBase, ATAPI_SOFT_RESET, &tsicp);
+		if (BootIdeIssueAtaCommand(uIoBase,IDE_CMD_PACKET_IDENTIFY,&tsicp)) {
+			printk("Failed to init drive as IDE or ATAPI");
+			return 1;
 		}
-	
-	} 
-        
-        if (drivetype == DRIVETYPE_ATAPI)
-	{ 
-		// slave... death if you send it IDE_CMD_GET_INFO, it needs an ATAPI request
-
 		tsaHarddiskInfo[nIndexDrive].m_fAtapi=true;
-		if (cromwell_config==XROMWELL) 
-		{
-			// Is working as Xromwell
-                	
-			tsicp.m_bDrivehead = IDE_DH_DEFAULT | IDE_DH_HEAD(0) | IDE_DH_CHS | IDE_DH_DRIVE(nIndexDrive);
-/*              	
-			if(BootIdeIssueAtaCommand(uIoBase, 0x08, &tsicp)) {  // ATAPI soft reset
-				printk("  hd%c: set feature FAILED, error=%02X\n", 'a'+nIndexDrive, IoInputByte(IDE_REG_ERROR(uIoBase)));
-				return 1;
-			} else {
-				printk("  hd%c: set feature OKAY\n", 'a'+nIndexDrive);
-			}
-*/              	
-/*              	
-			IoOutputByte(IDE_REG_FEATURE(uIoBase), 0x03); // set transfer mode
-			tsicp.m_bCountSector=0; // PIO
-			tsicp.m_bDrivehead = IDE_DH_DEFAULT | IDE_DH_HEAD(0) | IDE_DH_CHS | IDE_DH_DRIVE(nIndexDrive);
-			IoOutputByte(IDE_REG_DRIVEHEAD(uIoBase), tsicp.m_bDrivehead);
-			if(BootIdeIssueAtaCommand(uIoBase, 0xef, &tsicp)) {  // set feature
-				printk("  hd%c: set feature FAILED, error=%02X\n", 'a'+nIndexDrive, IoInputByte(IDE_REG_ERROR(uIoBase)));
-				return 1;
-			} else {
-//				printk("  hd%c: set feature OKAY\n", 'a'+nIndexDrive);
-			}
-*/              	
-		}
-                	
-                	
-                	
-		if (BootIdeWaitNotBusy(uIoBase)) 
-		{
-			printk_debug("Error after ATAPI soft reset error %02X\n", IoInputByte(IDE_REG_ERROR(uIoBase)));
-			return 1;
-		}
-		
-		if(BootIdeIssueAtaCommand(uIoBase, 0xa1, &tsicp)) 
-		{
-			printk("  %d: detect FAILED, error=%02X\n", nIndexDrive, IoInputByte(IDE_REG_ERROR(uIoBase)));
-			return 1;
-		}
-	}
-        
-		
+	} 
+	else tsaHarddiskInfo[nIndexDrive].m_fAtapi=false;
 		
 	BootIdeWaitDataReady(uIoBase);
 	
@@ -512,8 +455,8 @@ int BootIdeDriveInit(unsigned uIoBase, int nIndexDrive,int drivetype)
 
 	tsaHarddiskInfo[nIndexDrive].m_fDriveExists = 1;
 
-	if (drivetype == DRIVETYPE_ATAPI)
-	{ // CDROM/DVD
+	if (tsaHarddiskInfo[nIndexDrive].m_fAtapi) {
+	 // CDROM/DVD
                 // We Detected a CD-DVD or so, as there are no Heads ...
 		tsaHarddiskInfo[nIndexDrive].m_fAtapi=true;
 
@@ -567,9 +510,7 @@ int BootIdeDriveInit(unsigned uIoBase, int nIndexDrive,int drivetype)
 	} 
         
         
-        if (drivetype == DRIVETYPE_HDD)
-        {
-
+	if (!tsaHarddiskInfo[nIndexDrive].m_fAtapi) {
 		unsigned long ulDriveCapacity1024=((tsaHarddiskInfo[nIndexDrive].m_dwCountSectorsTotal /1000)*512)/1000;
 /*
 		int nAta=0;
@@ -675,8 +616,7 @@ int BootIdeDriveInit(unsigned uIoBase, int nIndexDrive,int drivetype)
 			printk("      LBA Mode\n");
 	}
 */
-	if (drivetype == DRIVETYPE_HDD) 
-	{ 
+	if (!tsaHarddiskInfo[nIndexDrive].m_fAtapi) {
 
 		unsigned char ba[512];
 		int nError;
@@ -707,10 +647,7 @@ int BootIdeDriveInit(unsigned uIoBase, int nIndexDrive,int drivetype)
 			if( (ba[0x1fe]==0x55) && (ba[0x1ff]==0xaa) ) 
 			{
 				printk(" - MBR", nIndexDrive);
-				if (drivetype == DRIVETYPE_HDD) 
-				{
-					tsaHarddiskInfo[nIndexDrive].m_fHasMbr=1;
-				}
+				tsaHarddiskInfo[nIndexDrive].m_fHasMbr=1;
 			
 			} else {
 				tsaHarddiskInfo[nIndexDrive].m_fHasMbr=0;
@@ -720,8 +657,7 @@ int BootIdeDriveInit(unsigned uIoBase, int nIndexDrive,int drivetype)
 		printk("\n");
 	} 
 
-	if (drivetype == DRIVETYPE_ATAPI) 
-	{ 
+	if (tsaHarddiskInfo[nIndexDrive].m_fAtapi) {
 		// cd/dvd
 //		printk("BootIdeDriveInit() DVD completed ok\n");
 	}
@@ -767,7 +703,7 @@ int DriveSecurityChange(unsigned uIoBase, int driveId, ide_command_t ide_cmd, ch
 	}
 	// check that we are unlocked
 	tsicp.m_bDrivehead = IDE_DH_DEFAULT | IDE_DH_HEAD(0) | IDE_DH_CHS | IDE_DH_DRIVE(driveId);
-	if(BootIdeIssueAtaCommand(uIoBase, IDE_CMD_GET_INFO, &tsicp)) 
+	if(BootIdeIssueAtaCommand(uIoBase, IDE_CMD_IDENTIFY, &tsicp)) 
 	{
 		return 1;
 	}
@@ -802,18 +738,14 @@ int BootIdeInit(void)
 	
 	tsaHarddiskInfo[0].m_bCableConductors=40;
 	tsaHarddiskInfo[1].m_bCableConductors=40;
-
 	IoOutputByte(0xff60+0, 0x00); // stop bus mastering
 	IoOutputByte(0xff60+2, 0x62); // DMA possible for both drives
 
-	BootIdeDriveInit(IDE_BASE1, 0, DRIVETYPE_HDD);		// Master is a HDD
-	
-	// Maybe it is a HDD ?
-	//error = BootIdeDriveInit(IDE_BASE1, 1, DRIVETYPE_HDD);	// Slave is a HDD
-        //if (error != 0) 
-        BootIdeDriveInit(IDE_BASE1, 1, DRIVETYPE_ATAPI);        // Slave is a CD-Drive
-        
-        
+	//Init both master and slave
+	BootIdeDriveInit(IDE_BASE1, 0);
+	BootIdeDriveInit(IDE_BASE1, 1);
+       
+		
 	if(tsaHarddiskInfo[0].m_fDriveExists) 
 	{
 		unsigned int uIoBase = tsaHarddiskInfo[0].m_fwPortBase;
@@ -822,7 +754,7 @@ int BootIdeInit(void)
 		tsicp.m_bDrivehead = IDE_DH_DEFAULT | IDE_DH_HEAD(0) | IDE_DH_CHS | IDE_DH_DRIVE(0);
 		IoOutputByte(IDE_REG_DRIVEHEAD(uIoBase), tsicp.m_bDrivehead);
 
-		if(!BootIdeIssueAtaCommand(uIoBase, IDE_CMD_GET_INFO, &tsicp)) 
+		if(!BootIdeIssueAtaCommand(uIoBase, IDE_CMD_IDENTIFY, &tsicp)) 
 		{
 			WORD waBuffer[256];
 			BootIdeWaitDataReady(uIoBase);
