@@ -84,8 +84,8 @@ void BootStopUSB(void)
 	bus_unregister(&usb_bus_type);
 	
 
-	memset((void*)0x0,0x0,10);
-	memset((void*)0xfed00006,0x0,40);
-	memset((void*)0xfed08006,0x0,40);
+	//memset((void*)0x0,0x0,10);
+	//memset((void*)0xfed00006,0x0,40);
+	//memset((void*)0xfed08006,0x0,40);
 }	
 /*------------------------------------------------------------------------*/ 	
