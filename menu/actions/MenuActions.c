@@ -23,9 +23,8 @@
 CONFIGENTRY *LoadConfigCD(int);
 TEXTMENU *TextMenuInit(void);
 
-void MoveToTextMenu(void *nothing) {
-	TEXTMENU *parentMenu = TextMenuInit();
-	TextMenu(parentMenu, NULL);
+void AdvancedMenu(void *textmenu) {
+	TextMenu((TEXTMENU*)textmenu, NULL);
 }
 
 void BootFromCD(void *data) {

@@ -52,7 +52,8 @@ void IconMenuInit(void) {
 	iconPtr = (ICON *)malloc(sizeof(ICON));
 	iconPtr->iconSlot = ICON_SOURCE_SLOT0;
 	iconPtr->szCaption = "Advanced";
-	iconPtr->functionPtr = MoveToTextMenu;
+	iconPtr->functionPtr = AdvancedMenu;
+	iconPtr->functionDataPtr = (void *)TextMenuInit();
 	AddIcon(iconPtr);
 #endif
 	//Set this to point to the icon you want to be selected by default.

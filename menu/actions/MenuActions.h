@@ -10,7 +10,7 @@
  ***************************************************************************/
 
 //For the icon->text menu jump
-void MoveToTextMenu(void *nothing);
+void AdvancedMenu(void *menu);
 
 //Used to display child menus
 void DrawChildTextMenu(void *menu);
