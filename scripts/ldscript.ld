@@ -6,6 +6,12 @@
  * and work by Johan Rydberg and Daniel Kahlin.
  *
  * $Log$
+ * Revision 1.7  2003/04/27 06:41:06  huceke
+ * Now the video code is based on the autocalculation of xbv.
+ * So we call this version of cromwell :
+ * cromwell += xbv ( a nice hint from andy ).
+ * The xbe part seems borken at the moment.
+ *
  * Revision 1.5  2003/04/25 19:33:11  hamtitampti
  * Fixed Compiler/Linker Problems with gcc 3.2x
  * thx. Oliver
@@ -116,7 +122,7 @@ SECTIONS {
 			*(.rodata.str1.1);
 			*(.rodata.str1.32);
 			*(.rodata.cst4);
-/*			*(.rodata.cst8); */
+			*(.rodata.cst8); 
 	_start_backdrop = .;
 			*(.backdrop);
 	_end_backdrop = .;
