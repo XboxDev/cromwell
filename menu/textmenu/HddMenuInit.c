@@ -30,8 +30,8 @@ TEXTMENU *HddMenuInit(void) {
 				memset(itemPtr,0x00,sizeof(TEXTMENUITEM));
 				sprintf(itemPtr->szCaption,"Unlock HDD (hd%c)",i ? 'b':'a');
 				itemPtr->functionPtr= UnlockHdd;
-    				itemPtr->functionDataPtr = malloc(sizeof(int));
-                        	*(int*)itemPtr->functionDataPtr = i;
+				itemPtr->functionDataPtr = malloc(sizeof(int));
+				*(int*)itemPtr->functionDataPtr = i;
 				TextMenuAddItem(menuPtr, itemPtr);
 			}
 			else {
@@ -40,8 +40,8 @@ TEXTMENU *HddMenuInit(void) {
 				memset(itemPtr,0x00,sizeof(TEXTMENUITEM));
 				sprintf(itemPtr->szCaption,"Lock HDD (hd%c)",i ? 'b':'a');
 				itemPtr->functionPtr= LockHdd;
-    				itemPtr->functionDataPtr = malloc(sizeof(int));
-                        	*(int*)itemPtr->functionDataPtr = i;
+				itemPtr->functionDataPtr = malloc(sizeof(int));
+				*(int*)itemPtr->functionDataPtr = i;
 				TextMenuAddItem(menuPtr, itemPtr);
 			}
 	
@@ -50,8 +50,8 @@ TEXTMENU *HddMenuInit(void) {
 			memset(itemPtr,0x00,sizeof(TEXTMENUITEM));
 			sprintf(itemPtr->szCaption,"Display HDD password (hd%c)",i ? 'b':'a');
 			itemPtr->functionPtr= DisplayHddPassword;
-    			itemPtr->functionDataPtr = malloc(sizeof(int));
-                       	*(int*)itemPtr->functionDataPtr = i;
+			itemPtr->functionDataPtr = malloc(sizeof(int));
+			*(int*)itemPtr->functionDataPtr = i;
 			TextMenuAddItem(menuPtr, itemPtr);
 		
 		}
