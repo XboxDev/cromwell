@@ -31,6 +31,10 @@
 // default is to boot from HDD if MBR present, else CD
 //#define FORCE_CD_BOOT
 
+// uncomment the following if you use cromwell
+// as bootloader from CD
+//#define IS_XBE_BOOTLOADER
+
 // display a line like Composite 480 detected if uncommented
 //#define REPORT_VIDEO_MODE
 
@@ -165,7 +169,11 @@ extern void BootResetAction ( void ) {
 	BootPerformPicChallengeResponseAction();
 	WATCHDOG;
 
+#ifdef IS_XBE_BOOTLOADER
+	I2CTransmitWord( 0x10, 0x0c01, false );  // close tray
+#else
 	I2CTransmitWord( 0x10, 0x0c00, false );  // push out tray
+#endif
 
 	// bring up Video (2BL portion)
 #ifdef ROM
@@ -201,13 +209,18 @@ extern void BootResetAction ( void ) {
 
 	BootVideoEnableOutput(bAvPackType);
 	
-								// display solid red frontpanel LED while we start up
+	// display solid red frontpanel LED while we start up
 	I2cSetFrontpanelLed(I2C_LED_RED0 | I2C_LED_RED1 | I2C_LED_RED2 | I2C_LED_RED3 );
 
 	I2CTransmitWord(0x45, 0x0d04, false);  // fake int ack??
 	I2CTransmitWord(0x45, 0x1b04, false);  // native BIOS to go to dashboard next time
+#ifdef IS_XBE_BOOTLOADER
+	I2CTransmitWord(0x45, 0x1901, false); // no reset on eject
+	I2CTransmitWord(0x45, 0x0c01, false); // close DVD tray
+#else
 	I2CTransmitWord(0x45, 0x1901, false); // no reset on eject
 	I2CTransmitWord(0x45, 0x0c00, false); // eject DVD tray
+#endif
 
 
 	// then setup the interrupt table
