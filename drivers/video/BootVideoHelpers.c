@@ -316,7 +316,7 @@ void BootVideoClearScreen(JPEG *pJpeg, int nStartLine, int nEndLine)
 
 	{
 		if(pJpeg->pData!=NULL) {
-			DWORD *pdw=((DWORD *)FB_START)+vmode.width*nStartLine;
+			volatile DWORD *pdw=((DWORD *)FB_START)+vmode.width*nStartLine;
 			int n1=pJpeg->bpp * pJpeg->width * nStartLine;
 			BYTE *pbJpegBitmapAdjustedDatum=pJpeg->pBackdrop;
 
