@@ -14,6 +14,7 @@
 #include "BootFlash.h"
 #include "memory_layout.h"
 
+void DisplayFlashProgressBar(int, int, unsigned long);
 
 const KNOWN_FLASH_TYPE aknownflashtypesDefault[] = {
 	  // default flash types used if /etc/raincoat.conf not available
@@ -29,7 +30,6 @@ const KNOWN_FLASH_TYPE aknownflashtypesDefault[] = {
 	{ 0xda, 0x0b, "Winbond - W49F002U",0x40000 },
 	{ 0xc2, 0x36, "MACRONIX - MX29F022NTPC",0x40000 },
 	{ 0x20, 0xb0, "ST M29f002BT",0x40000 },
-
 	{ 0, 0, "", 0 } // terminator
 };
 
@@ -39,9 +39,50 @@ const KNOWN_FLASH_TYPE aknownflashtypesDefault[] = {
 
 
 bool BootFlashUserInterface(void * pvoidObjectFlash, ENUM_EVENTS ee, DWORD dwPos, DWORD dwExtent) {
+	if(ee==EE_ERASE_UPDATE){
+		DisplayFlashProgressBar(dwPos,dwExtent,0xffffff00);
+	}
+	else if(ee==EE_PROGRAM_UPDATE){
+		DisplayFlashProgressBar(dwPos,dwExtent,0xff00ff00);
+	}
 	return true;
 }
 
+void DisplayFlashProgressBar(int currentVal, int maxVal, unsigned long color) {
+        int x,y,l,w,h,m;
+        DWORD *fb=(DWORD*)FB_START;
+
+        if(maxVal<2){
+                return;
+        }
+
+        w=vmode.height;
+        h=vmode.width;
+        l=w-100;
+        y=h-100;
+        m=((w-150)>>2)*currentVal/maxVal;
+        m*=4;
+        m+=50;
+        for(x=50;x<l;x++){
+                fb[y*w+x]=0xffffffff;
+                fb[(y+1)*w+x]=0xffffffff;
+                if(x>55 && x<m){
+                        int z;
+                        for(z=5;z<45;z++){
+                                fb[(y+z)*w+x]=color;
+                        }
+
+                }
+                fb[(y+50)*w+x]=0xffffffff;
+                fb[(y+51)*w+x]=0xffffffff;
+        }
+        for(;y<h-50;y++){
+                fb[y*w+51]=0xffffffff;
+                fb[y*w+50]=0xffffffff;
+                fb[y*w+l-1]=0xffffffff;
+                fb[y*w+l-2]=0xffffffff;
+        }
+}
 	// if things go well, we won't be coming back from this
 	// note this is copied to RAM, and the flash will be changed during its operation
 	// therefore no library code nor interrupts can be had
