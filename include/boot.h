@@ -22,6 +22,7 @@
 #include "stdint.h"
 #include "cromwell_types.h"
 
+
 unsigned int cromwell_config;
 unsigned int cromwell_retryload;
 unsigned int cromwell_loadbank;
@@ -45,13 +46,10 @@ static inline double max (double a, double b)
 	if (a > b) return a; else return b;
 }
 
-#define ASSERT(exp) { if(!(exp)) { bprintf("Assert failed file " __FILE__ " line %d\n", __LINE__); } }
-
 #include "iso_fs.h"
-
-extern void WATCHDOG(void);
-
 #include "BootVideo.h"
+
+#define ASSERT(exp) { if(!(exp)) { bprintf("Assert failed file " __FILE__ " line %d\n", __LINE__); } }
 
 extern volatile CURRENT_VIDEO_MODE_DETAILS vmode;
 unsigned int video_encoder;
@@ -208,22 +206,13 @@ int BootPerformPicChallengeResponseAction(void);
 	// LED control (see associated enum above)
 int I2cSetFrontpanelLed(BYTE b);
 
+#define bprintf(...)
 
 #if PRINT_TRACE
 #define TRACE bprintf(__FILE__ " :%d\n\r",__LINE__);
 #else
 #define TRACE
 #endif
-
-#if INCLUDE_SERIAL
-	int serialprint(const char *szFormat, ...);
-#endif
-
-#if INCLUDE_SERIAL
-#define bprintf serialprint
-#else
-#define bprintf(...)
-#endif /* INCLUDE_SERIAL */
 
 #define SPAMI2C() 				__asm__ __volatile__ (\
 	"retry: ; "\

@@ -4,18 +4,6 @@
 #include "stdlib.h"
 
 // video helpers
-
-void BootVideoVignette(
-	DWORD * pdwaTopLeftDestination,
-	DWORD m_dwCountBytesPerLineDestination,
-	DWORD m_dwCountLines,
-	RGBA rgbaColour1,
-	RGBA rgbaColour2,
-	DWORD dwStartLine,
-	DWORD dwEndLine
-);
-
-
 typedef struct {
 	BYTE * pData;
 	BYTE * pBackdrop;

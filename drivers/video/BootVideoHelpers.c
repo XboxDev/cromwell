@@ -204,61 +204,6 @@ int BootVideoOverlayString(DWORD * pdwaTopLeftDestination, DWORD m_dwCountBytesP
 	return uiWidth;
 }
 
-void BootVideoVignette(
-	DWORD * pdwaTopLeftDestination,
-	DWORD m_dwCountBytesPerLineDestination,
-	DWORD m_dwCountLines,
-	RGBA rgbaColour1,
-	RGBA rgbaColour2,
-	DWORD dwStartLine,
-	DWORD dwEndLine
-) {
-	int x,y;
-	BYTE bDiffR, bDiffG, bDiffB;
-	bool fPlusR, fPlusG, fPlusB;
-
-	if((rgbaColour1 & 0xff0000) > (rgbaColour2 & 0xff0000) ) {
-		bDiffR=((rgbaColour1 & 0xff0000)-(rgbaColour2 & 0xff0000))>>16;
-		fPlusR=false;
-	} else {
-		bDiffR=((rgbaColour2 & 0xff0000)-(rgbaColour1 & 0xff0000))>>16;
-		fPlusR=true;
-	}
-	if((rgbaColour1 & 0xff00) > (rgbaColour2 & 0xff00) ) {
-		bDiffG=((rgbaColour1 & 0xff00)-(rgbaColour2 & 0xff00))>>8;
-		fPlusG=false;
-	} else {
-		bDiffG=((rgbaColour2 & 0xff00)-(rgbaColour1 & 0xff00))>>8;
-		fPlusG=true;
-	}
-	if((rgbaColour1 & 0xff) > (rgbaColour2 & 0xff) ) {
-		bDiffB=((rgbaColour1 & 0xff)-(rgbaColour2 & 0xff));
-		fPlusB=false;
-	} else {
-		bDiffB=((rgbaColour2 & 0xff)-(rgbaColour1 & 0xff));
-		fPlusB=true;
-	}
-	for(y=0;y<m_dwCountLines;y++) {
-		RGBA rgbaThisLine= 0xff000000;
-
-		if((y>=dwStartLine) && (y<dwEndLine)) {
-
-			if(fPlusR) rgbaThisLine|=((rgbaColour1&0xff0000)+(((((bDiffR)*y)/m_dwCountLines)<<16)&0xff0000))&0xff0000; else
-				rgbaThisLine|=((rgbaColour1&0xff0000)-(((((bDiffR)*y)/m_dwCountLines)<<16)&0xff0000))&0xff0000;
-			if(fPlusG) rgbaThisLine|=((rgbaColour1&0xff00)+(((((bDiffG)*y)/m_dwCountLines)<<8)&0xff00))&0xff00; else
-				rgbaThisLine|=((rgbaColour1&0xff00)-(((((bDiffG)*y)/m_dwCountLines)<<8)&0xff00))&0xff00;
-			if(fPlusB) rgbaThisLine|=((rgbaColour1&0xff)+(((((bDiffB)*y)/m_dwCountLines))&0xff))&0xff; else
-				rgbaThisLine|=((rgbaColour1&0xff)-(((((bDiffB)*y)/m_dwCountLines))&0xff))&0xff;
-
-			for(x=0;x<m_dwCountBytesPerLineDestination>>2;x++) *pdwaTopLeftDestination++=rgbaThisLine;
-
-		} else {
-			pdwaTopLeftDestination+=(m_dwCountBytesPerLineDestination>>2);
-		}
-	}
-}
-
-
 bool BootVideoJpegUnpackAsRgb(BYTE *pbaJpegFileImage, JPEG * pJpeg) {
   
 	struct jpeg_decdata *decdata;
@@ -365,7 +310,6 @@ int VideoDumpAddressAndData(DWORD dwAds, const BYTE * baData, DWORD dwCountBytes
 		}
 		n+=sprintf(&sz[n], "   ");
 		n+=sprintf(&sz[n], "%s", szAscii);
-//		sz[n++]='\r';
 		sz[n++]='\n';
 		sz[n++]='\0';
 
@@ -419,42 +363,13 @@ int printk(const char *szFormat, ...) {  // printk displays to video
 //	memcpy(szBuffer, szFormat, wLength);
 	va_end(argList);
 
-
 	szBuffer[sizeof(szBuffer)-1]=0;
         if (wLength>(sizeof(szBuffer)-1)) wLength = sizeof(szBuffer)-1;
 	szBuffer[wLength]='\0';
 	        
-	#if INCLUDE_SERIAL
-	serialprint(&szBuffer[0]);
-	#endif
-
 	BootVideoChunkedPrint(szBuffer);
-
 	return wLength;
 }
-
-#if INCLUDE_SERIAL
-int serialprint(const char *szFormat, ...) {
-	char szBuffer[512*2];
-	WORD wLength=0;
-	WORD wSerialLength=0;
-	va_list argList;
-	va_start(argList, szFormat);
-	wLength=(WORD) vsprintf(szBuffer, szFormat, argList);
-	va_end(argList);
-	
-	szBuffer[sizeof(szBuffer)-1]=0;
-        if (wLength>(sizeof(szBuffer)-1)) wLength = sizeof(szBuffer)-1;
-	szBuffer[wLength]='\0';
-        
-	while(wSerialLength < wLength) {
-		IoOutputByte(0x03f8, szBuffer[wSerialLength]);
-		wSerialLength++;
-	}
-
-	return wLength;
-}
-#endif
 
 int console_putchar(int c)
 {
@@ -465,11 +380,10 @@ int console_putchar(int c)
 	return (int)buf[0];	
 }
 
-// Fix for BSD
+//Fix for BSD
 #ifdef putchar
 #undef putchar
 #endif
-
 int putchar(int c)
 {
 	return console_putchar(c);
