@@ -375,8 +375,8 @@ int FATXLoadFromDisk(FATXPartition* partition, FATXFILEINFO *fileinfo) {
 #ifdef FATX_INFO
    	printk("Hit end of cluster chain before file size was zero\n");
 #endif
-		free(fileinfo->buffer);
-		fileinfo->buffer = NULL;
+		//free(fileinfo->buffer);
+		//fileinfo->buffer = NULL;
 		return false;
 	}
 	return true;
