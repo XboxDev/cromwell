@@ -149,10 +149,10 @@ clean:
 	rm -f $(TOPDIR)/image/*.bin
 	rm -f $(TOPDIR)/bin/imagebld*
 	rm -f $(TOPDIR)/boot_vml/disk/vmlboot
-	mkdir $(TOPDIR)/xbe -p
-	mkdir $(TOPDIR)/image -p
-	mkdir $(TOPDIR)/obj -p
-	mkdir $(TOPDIR)/bin -p
+	mkdir -p $(TOPDIR)/xbe 
+	mkdir -p $(TOPDIR)/image
+	mkdir -p $(TOPDIR)/obj 
+	mkdir -p $(TOPDIR)/bin
 
 #rombios.bin:
 #	${GCC295} -E $< > _rombios_.c
