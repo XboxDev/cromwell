@@ -1,7 +1,0 @@
-make  clean
-make 
-cd xbe
-ncftpput -u xbox -p xbox 235.caos.at /E/ default.xbe
-ncftpput -u xbox -p xbox 237.caos.at /E/ default.xbe
-#rm default.xbe -f
-cd ..
