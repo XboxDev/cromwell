@@ -26,82 +26,13 @@
 #include "BootVgaInitialization.h"
 #include "encoder.h"
 #include "xcalibur.h"
+#include "xcalibur-regs.h"
 
-/*
 void DetectVideoEncoder(void) {
-	if (I2CTransmitByteGetReturn(0x45,0x000) != ERR_I2C_ERROR_BUS) video_encoder = ENCODER_CONEXANT;
-	else video_encoder = ENCODER_FOCUS;
+	if (I2CTransmitByteGetReturn(0x45,0x00) != ERR_I2C_ERROR_BUS) video_encoder = ENCODER_CONEXANT;
+	else if (I2CTransmitByteGetReturn(0x6a,0x00) != ERR_I2C_ERROR_BUS) video_encoder = ENCODER_FOCUS;
+	else video_encoder = ENCODER_XCALIBUR;
 }
-*/
-void DetectVideoEncoder(void)
-{
-	unsigned int temp;
-
-	// Default Value	
-	video_encoder = ENCODER_CONEXANT;
-	
-	if (ReadfromSMBus(0x45,0x00,1,&temp) != ERR_I2C_ERROR_BUS) {
-		// We successful got Data from the CONNEXANT CHIP
-		video_encoder = ENCODER_CONEXANT;
-	
-	} else {
-		// We did not get Data from Connexant
-		
-		if (ReadfromSMBus(0x6a,0x00,1,&temp) == ERR_I2C_ERROR_BUS) {
-			// Focus Failed
-			// XCAL video encoder detected
-			video_encoder = ENCODER_XCALIBUR;
-				
-			
-		} else {
-			// Focus Detection OK
-			video_encoder = ENCODER_FOCUS;
-		}
-	}
-}
-
-void XCaliburDumpNormalSequence(unsigned int *I2C_Encoder_Values)
-{
-	
-	int i;
-	ReadfromSMBus(0x70,4,4,&i);
-	//wait_us(10);
-	WriteToSMBus(0x70,4,4,0x0F000000);
-	//wait_us(10);
-	ReadfromSMBus(0x70,0,4,&i);
-	//wait_us(10);
-	WriteToSMBus(0x70,0,4,0x00000000);
-	//wait_us(10);
-
-	// von Register 0x01 bis 0x41
-	for (i= 0; i< 64; i++) {
-		WriteToSMBus(0x70,xcal_videregister_sequence[i],4,I2C_Encoder_Values[i]);
-	//	wait_us(200);
-	}
-	
-	ReadfromSMBus(0x70,0,4,&i);
-	//wait_us(200);
-	
-	// von Register 0x00 bis 0x0e
-	for (i= 64; i< 68; i++) {
-		WriteToSMBus(0x70,xcal_videregister_sequence[i],4,I2C_Encoder_Values[i]);
-	//	wait_us(200);
-	}
-	
-	ReadfromSMBus(0x70,0x60,4,&i);
-	//wait_us(200);
-
-	// von Register 0x60 bis ende
-	for (i= 68; i<(sizeof(xcal_videregister_sequence)); i++) {
-		WriteToSMBus(0x70,xcal_videregister_sequence[i],4,I2C_Encoder_Values[i]);
-	//	wait_us(200);
-	}
-	
-	return ;
-}
-
-
-
 
 void BootVgaInitializationKernelNG(CURRENT_VIDEO_MODE_DETAILS * pvmode) {
 	xbox_tv_encoding tv_encoding; 
@@ -173,7 +104,17 @@ void BootVgaInitializationKernelNG(CURRENT_VIDEO_MODE_DETAILS * pvmode) {
 
 	IoOutputByte(0x80d3, 5);  // Kill all video out using an ACPI control pin
 
-	MMIO_H_OUT32(riva.PRAMDAC,0,0x880,0);
+	if (video_encoder==ENCODER_XCALIBUR) {
+        	MMIO_H_OUT32(riva.PRAMDAC,0,0x880,0x21101100);
+		//Leave GPU in YUV for Xcalibur
+		MMIO_H_OUT32(riva.PRAMDAC,0,0x630,0x2);
+		MMIO_H_OUT32(riva.PRAMDAC,0,0x84c,0x00801080);
+		MMIO_H_OUT32(riva.PRAMDAC,0,0x8c4,0x40801080);
+	}
+	else {
+		MMIO_H_OUT32(riva.PRAMDAC,0,0x880,0);
+	}
+	
 	MMIO_H_OUT32(riva.PRAMDAC,0,0x884,0x0);
 	MMIO_H_OUT32(riva.PRAMDAC,0,0x888,0x0);
 	MMIO_H_OUT32(riva.PRAMDAC,0,0x88c,0x10001000);
@@ -301,9 +242,11 @@ void BootVgaInitializationKernelNG(CURRENT_VIDEO_MODE_DETAILS * pvmode) {
 		else if (video_encoder == ENCODER_FOCUS) {
 			encoder_ok = focus_calc_mode(&encoder_mode, &newmode);
 		}
-		else printk("Error - unknown encoder type detected\n");
-		
-        	gpu.xres = pvmode->width;
+		else if (video_encoder == ENCODER_XCALIBUR) {
+			encoder_ok = xcalibur_calc_mode(&encoder_mode, &newmode, tv_encoding);
+		}
+        	
+		gpu.xres = pvmode->width;
 	       	gpu.nvhstart = newmode.ext.hsyncstart;
 		gpu.nvhtotal = newmode.ext.htotal;
 		gpu.yres = pvmode->height;
@@ -353,6 +296,29 @@ void BootVgaInitializationKernelNG(CURRENT_VIDEO_MODE_DETAILS * pvmode) {
 				wait_us(800);
                		}
 		}
+		else if (video_encoder == ENCODER_XCALIBUR) {
+			//Xlb init
+			ReadfromSMBus(0x70,4,4,&i);
+			WriteToSMBus(0x70,4,4,0x0F000000);
+			ReadfromSMBus(0x70,0,4,&i);
+			WriteToSMBus(0x70,0,4,0x00000000);
+			MMIO_H_OUT32(riva.PRAMDAC, 0, 0x630, 0x2);
+			if ( tv_encoding == TV_ENC_PALBDGHI) {
+				/* Encoder registers */
+				for (i=0; i<(sizeof(xcal_video_register_sequence)); i++) {
+					WriteToSMBus(0x70,xcal_video_register_sequence[i],4,xcal_composite_pal[i]);
+					wait_us(50);
+				}
+			}
+			else {
+				//NTSC
+				/* Encoder registers */
+				for (i=0; i<(sizeof(xcal_video_register_sequence)); i++) {
+					WriteToSMBus(0x70,xcal_video_register_sequence[i],4,xcal_composite_ntsc[i]);
+					wait_us(50);
+				}
+			}
+		}
 	}
 
         NVDisablePalette (&riva, 0);
@@ -384,37 +350,9 @@ void BootVgaInitializationKernelNG(CURRENT_VIDEO_MODE_DETAILS * pvmode) {
 		b = I2CTransmitByteGetReturn(0x6a,0x0d);
 		I2CWriteBytetoRegister(0x6a,0x0d,b);
 	}
-
-
-
-/*
-	XCALIBUR
-if PAL
-
-	XCaliburDumpNormalSequence(xcal_composite_pal);
-	RAMDACRegValues = nvRAMDACRegValues_xcal_composite_pal;
-	CRTRegsValues = nvCRTRegs_xcal_composite_pal;
-	
-if NTSC
-	XCaliburDumpNormalSequence(xcal_composite_ntsc);	
-	RAMDACRegValues = nvRAMDACRegValues_xcal_composite_ntsc;
-	CRTRegsValues = nvCRTRegs_xcal_composite_ntsc;
-	
-Dump Regions	
-	for(i = 0; i < (sizeof(nvMainRegs) / 4); i++) {
-		MMIO_H_OUT32(riva->PMC, 0, nvMainRegs[i], RAMDACRegValues[i]);
-	}	
-
-	// nVidia CRTC registers
-	for(i = 0; i < sizeof(nvCRTRegs_xcal_composite_ntsc); i++) {
-		writeCrtNv(riva, 0, i, CRTRegsValues[i]);
+	else if (video_encoder == ENCODER_XCALIBUR) {
+		//Video output is already on.
 	}
-	
-NOTE: 648*480	
-
-*/
-
-
 
 }
 
