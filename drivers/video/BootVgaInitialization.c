@@ -43,9 +43,9 @@ void BootVgaInitializationKernelNG(CURRENT_VIDEO_MODE_DETAILS * pcurrentvideomod
 	tv_encoding = DetectVideoStd();
 	DetectVideoEncoder();
 	
-	av_type = DetectAvType();
         // Dump to global variable
 	VIDEO_AV_MODE=I2CTransmitByteGetReturn(0x10, 0x04);
+	av_type = DetectAvType();
 	gpu.av_type = av_type;
 
    	memset((void *)pcurrentvideomodedetails,0,sizeof(CURRENT_VIDEO_MODE_DETAILS));
@@ -143,7 +143,7 @@ void BootVgaInitializationKernelNG(CURRENT_VIDEO_MODE_DETAILS * pcurrentvideomod
 			gpu.nvvtotal = 525;
 			gpu.pixelDepth = (32 + 1) / 8;
 			gpu.crtchdispend = pcurrentvideomodedetails->m_dwWidthInPixels;
-			gpu.crtcvstart = gpu.nvvstart;
+			gpu.crtcvstart = gpu.nvvtotal;
 			
 			pll_int = (unsigned char)((double)27027 * 6.0 / 13.5e3 + 0.5);
 			if (video_encoder == ENCODER_CONEXANT)
@@ -167,7 +167,7 @@ void BootVgaInitializationKernelNG(CURRENT_VIDEO_MODE_DETAILS * pcurrentvideomod
 			gpu.nvvtotal = 630;
 			gpu.pixelDepth = (32 + 1) / 8;
 			gpu.crtchdispend = pcurrentvideomodedetails->m_dwWidthInPixels;
-			gpu.crtcvstart = gpu.nvvstart;
+			gpu.crtcvstart = gpu.nvvtotal;
 			
 			pll_int = (unsigned char)((double)36000 * 6.0 / 13.5e3 + 0.5);
 			
