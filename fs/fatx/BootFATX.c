@@ -22,7 +22,7 @@ int checkForLastDirectoryEntry(unsigned char* entry) {
 	return 0;
 }
 
-int LoadFATXFilefixed(FATXPartition *partition,char *filename, FATXFILEINFO *fileinfo,BYTE* Position) {
+int LoadFATXFilefixed(FATXPartition *partition,char *filename, FATXFILEINFO *fileinfo,u8* Position) {
 
 	if(partition == NULL) {
 		VIDEO_ATTR=0xffe8e8e8;
@@ -88,7 +88,7 @@ int LoadFATXFile(FATXPartition *partition,char *filename, FATXFILEINFO *fileinfo
 
 void PrintFAXPartitionTable(int nDriveIndex) {
 
-	BYTE ba[512];
+	u8 ba[512];
 	FATXPartition *partition = NULL;
 	FATXFILEINFO fileinfo;
 
@@ -111,7 +111,7 @@ void PrintFAXPartitionTable(int nDriveIndex) {
 	VIDEO_ATTR=0xffc8c8c8;
 }
 
-int FATXSignature(int nDriveIndex,unsigned int block,BYTE *ba) {
+int FATXSignature(int nDriveIndex,unsigned int block,u8 *ba) {
 
 	if(BootIdeReadSector(0, &ba[0], block, 0, 512)) {
 		VIDEO_ATTR=0xffe8e8e8;
@@ -347,7 +347,7 @@ int FATXLoadFromDisk(FATXPartition* partition, FATXFILEINFO *fileinfo) {
 	int fileSize = fileinfo->fileSize;
 	int written;
 	int clusterId = fileinfo->clusterId;
-	BYTE *ptr;
+	u8 *ptr;
 
 	fileinfo->fileRead = 0;
 	ptr = fileinfo->buffer;
@@ -633,7 +633,7 @@ int FATXRawRead(int drive, int sector, unsigned long long byte_offset, int byte_
 		int nThisTime=512;
 		if(byte_len<512) nThisTime=byte_len;
                 if(byte_offset) {
-	                BYTE ba[512];
+	                u8 ba[512];
 			if(BootIdeReadSector(drive, buf, sector, 0, 512)) {
 				VIDEO_ATTR=0xffe8e8e8;
 				printk("Unable to get first sector\n");

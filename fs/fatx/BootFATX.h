@@ -95,13 +95,13 @@ typedef struct {
 	int clusterId;
 	u_int32_t fileSize;
 	u_int32_t fileRead;
-	BYTE *buffer;
+	u8 *buffer;
 } FATXFILEINFO;
 
-int LoadFATXFilefixed(FATXPartition *partition,char *filename, FATXFILEINFO *fileinfo,BYTE* Position);
+int LoadFATXFilefixed(FATXPartition *partition,char *filename, FATXFILEINFO *fileinfo,u8* Position);
 int LoadFATXFile(FATXPartition *partition,char *filename, FATXFILEINFO *fileinfo);
 void PrintFAXPartitionTable(int nDriveIndex);
-int FATXSignature(int nDriveIndex,unsigned int block,BYTE *ba);
+int FATXSignature(int nDriveIndex,unsigned int block,u8 *ba);
 FATXPartition *OpenFATXPartition(int nDriveIndex,unsigned int partitionOffset,
 		                u_int64_t partitionSize);
 int FATXRawRead (int drive, int sector, unsigned long long byte_offset, int byte_len, char *buf);

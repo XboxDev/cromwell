@@ -10,7 +10,7 @@
  *                                                                         *
  ***************************************************************************/
 
-BYTE PciReadByte(unsigned int bus, unsigned int dev, unsigned int func, unsigned int reg_off)
+u8 PciReadByte(unsigned int bus, unsigned int dev, unsigned int func, unsigned int reg_off)
 {
 	DWORD base_addr = 0x80000000;
 	base_addr |= ((bus & 0xFF) << 16);	// bus #
@@ -107,17 +107,17 @@ DWORD PciWriteDword(unsigned int bus, unsigned int dev, unsigned int func, unsig
 
 
 // access to RTC CMOS memory
-BYTE CMOS_READ(BYTE addr) { 
+u8 CMOS_READ(u8 addr) { 
 	IoOutputByte(0x70,addr); 
 	return IoInputByte(0x71); 
 }
 
-void CMOS_WRITE(BYTE val, BYTE addr) { 
+void CMOS_WRITE(u8 val, u8 addr) { 
 	IoOutputByte(0x70,addr);
 	IoOutputByte(0x71,val); 
 }
 
-void BiosCmosWrite(BYTE bAds, BYTE bData) {
+void BiosCmosWrite(u8 bAds, u8 bData) {
 	IoOutputByte(0x70, bAds);
 	IoOutputByte(0x71, bData);
 
@@ -125,7 +125,7 @@ void BiosCmosWrite(BYTE bAds, BYTE bData) {
 	IoOutputByte(0x73, bData);
 }
 
-BYTE BiosCmosRead(BYTE bAds)
+u8 BiosCmosRead(u8 bAds)
 {
 	IoOutputByte(0x72, bAds);
 	return IoInputByte(0x73);
@@ -350,7 +350,7 @@ void BootPciPeripheralInitialization()
 	PciWriteDword(BUS_0, DEV_3, FUNC_0, 4, PciReadDword(BUS_0, DEV_3, FUNC_0, 4) | 7 );
 	PciWriteDword(BUS_0, DEV_3, FUNC_0, 0x10, 0xfed08000);	// memory base address 0xfed08000
 	PciWriteDword(BUS_0, DEV_3, FUNC_0, 0x3c, (PciReadDword(BUS_0, DEV_3, FUNC_0, 0x3c) &0xffff0000) | 0x0009 );
-	PciWriteDword(BUS_0, DEV_3, FUNC_0, 0x50, 0x00000030);  // actually BYTE?
+	PciWriteDword(BUS_0, DEV_3, FUNC_0, 0x50, 0x00000030);  // actually u8?
 
 	// Bus 0, Device 6, Function 0 = nForce Audio Codec Interface - verified with kern1.1
 	PciWriteDword(BUS_0, DEV_6, FUNC_0, 4, PciReadDword(BUS_0, DEV_6, FUNC_0, 4) | 7 );

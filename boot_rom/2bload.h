@@ -47,7 +47,7 @@ enum {
 /* ----------------------------  IO primitives -----------------------------------------------------------
 */
 
-static __inline void IoOutputByte(WORD wAds, BYTE bValue) {
+static __inline void IoOutputByte(WORD wAds, u8 bValue) {
     __asm__ __volatile__ ("outb %b0,%w1": :"a" (bValue), "Nd" (wAds));
 }
 
@@ -59,7 +59,7 @@ static __inline void IoOutputDword(WORD wAds, DWORD dwValue) {
     __asm__ __volatile__ ("outl %0,%w1": :"a" (dwValue), "Nd" (wAds));
 }
 
-static __inline BYTE IoInputByte(WORD wAds) {
+static __inline u8 IoInputByte(WORD wAds) {
   unsigned char _v;
   __asm__ __volatile__ ("inb %w1,%0":"=a" (_v):"Nd" (wAds));
   return _v;
@@ -80,7 +80,7 @@ static __inline DWORD IoInputDword(WORD wAds) {
 // boot process
 int BootPerformPicChallengeResponseAction(void);
 // LED control (see associated enum above)
-int I2cSetFrontpanelLed(BYTE b);
+int I2cSetFrontpanelLed(u8 b);
 
 ////////// BootResetActions.c
 
@@ -88,8 +88,8 @@ void BootStartBiosLoader(void);
 
 ///////// BootPerformPicChallengeResponseAction.c
 
-int I2CTransmitWord(BYTE bPicAddressI2cFormat, WORD wDataToWrite);
-int I2CTransmitByteGetReturn(BYTE bPicAddressI2cFormat, BYTE bDataToWrite);
+int I2CTransmitWord(u8 bPicAddressI2cFormat, WORD wDataToWrite);
+int I2CTransmitByteGetReturn(u8 bPicAddressI2cFormat, u8 bDataToWrite);
 
 void *memcpy(void *dest, const void *src,  size_t size);
 void *memset(void *dest, int data,  size_t size);

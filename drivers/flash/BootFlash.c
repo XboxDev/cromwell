@@ -18,7 +18,7 @@
 bool BootFlashGetDescriptor( OBJECT_FLASH *pof, KNOWN_FLASH_TYPE * pkft )
 {
 	bool fSeen=false;
-	BYTE baNormalModeFirstTwoBytes[2];
+	u8 baNormalModeFirstTwoBytes[2];
 	int nTries=0;
 	int nPos=0;
 
@@ -166,7 +166,7 @@ bool BootFlashEraseMinimalRegion( OBJECT_FLASH *pof )
 
 		if(pof->m_pbMemoryMappedStartAddress[dw]!=0xff) { // something needs erasing
 
-			BYTE b;
+			u8 b;
 
 			if((dwLastEraseAddress & 0xfffff000)==(dw & 0xfffff000)) { // same 4K block?
 				nCountEraseRetryIn4KBlock--;
@@ -302,7 +302,7 @@ bool BootFlashEraseMinimalRegion( OBJECT_FLASH *pof )
 	// program the flash from the data in pba
 	// length of valid data in pba held in pof->m_dwLengthUsedArea
 
-bool BootFlashProgram( OBJECT_FLASH *pof, BYTE *pba )
+bool BootFlashProgram( OBJECT_FLASH *pof, u8 *pba )
 {
 	DWORD dw=pof->m_dwStartOffset;
 	DWORD dwLen=pof->m_dwLengthUsedArea;
@@ -340,7 +340,7 @@ bool BootFlashProgram( OBJECT_FLASH *pof, BYTE *pba )
 
 
 			if(pof->m_fDetectedUsing28xxxConventions) {
-				BYTE b=0x0;
+				u8 b=0x0;
 				DWORD dwTimeToLive=0xfffff;  // 1M times around, a few mS
 				int nCountMinSpin=2; // force wait for this long, suspect busy is not coming up immediately
 				pof->m_pbMemoryMappedStartAddress[dw]=0x40;
@@ -367,7 +367,7 @@ bool BootFlashProgram( OBJECT_FLASH *pof, BYTE *pba )
 					return false;
 				}
 			} else {
-				BYTE b;
+				u8 b;
 				pof->m_pbMemoryMappedStartAddress[0x5555]=0xaa;
 				pof->m_pbMemoryMappedStartAddress[0x2aaa]=0x55;
 				pof->m_pbMemoryMappedStartAddress[0x5555]=0xa0;

@@ -62,7 +62,7 @@ extern void IntHandlerException10(void);
 // structure defining our ISRs
 
 typedef struct {
-	BYTE m_bInterruptCpu;
+	u8 m_bInterruptCpu;
 	DWORD m_dwpVector;
 } ISR_PREP;
 
@@ -245,9 +245,9 @@ void BootInterruptsWriteIdt() {
 
 void IntHandlerCSmc(void)
 {
-	BYTE bStatus, nBit=0;
+	u8 bStatus, nBit=0;
         unsigned int temp;
-        BYTE temp_AV_mode;
+        u8 temp_AV_mode;
         
 	nCountInterruptsSmc++;
    
@@ -268,7 +268,7 @@ void IntHandlerCSmc(void)
 	
 	while(nBit<7) {
 		if(bStatus & 1) {
-			BYTE b=0x04;
+			u8 b=0x04;
 			       switch(nBit) {
 				case 0: // POWERDOWN EVENT
 					bprintf("SMC Interrupt %d: Powerdown\n", nCountInterruptsSmc);

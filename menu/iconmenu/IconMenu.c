@@ -64,7 +64,7 @@ static void IconMenuDraw(int nXOffset, int nYOffset) {
 	iconPtr = firstVisibleIcon;
 	//There are max four 'bays' for displaying icons in - we only draw the four.
 	for (iconcount=0; iconcount<4; iconcount++) {
-		BYTE opaqueness;
+		u8 opaqueness;
 		if (iconPtr==0l) {
 			//No more icons to draw
 			return;
@@ -81,12 +81,12 @@ static void IconMenuDraw(int nXOffset, int nYOffset) {
 		else opaqueness = TRANSPARENTNESS;
 		
 		BootVideoJpegBlitBlend(
-			(BYTE *)(FB_START+((vmode.width * (nYOffset-74))+nXOffset+(112*(iconcount+1))) * 4),
+			(u8 *)(FB_START+((vmode.width * (nYOffset-74))+nXOffset+(112*(iconcount+1))) * 4),
 			vmode.width, // dest bytes per line
 			&jpegBackdrop, // source jpeg object
-			(BYTE *)(jpegBackdrop.pData+(iconPtr->iconSlot * jpegBackdrop.bpp)),
+			(u8 *)(jpegBackdrop.pData+(iconPtr->iconSlot * jpegBackdrop.bpp)),
 			0xff00ff|(((DWORD)opaqueness)<<24),
-			(BYTE *)(jpegBackdrop.pBackdrop + ((jpegBackdrop.width * (nYOffset-74)) + nXOffset+(112*(iconcount+1))) * jpegBackdrop.bpp),
+			(u8 *)(jpegBackdrop.pBackdrop + ((jpegBackdrop.width * (nYOffset-74)) + nXOffset+(112*(iconcount+1))) * jpegBackdrop.bpp),
 			ICON_WIDTH, ICON_HEIGHT
 		);
 		iconPtr = (ICON *)iconPtr->nextIcon;

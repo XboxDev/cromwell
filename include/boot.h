@@ -65,7 +65,7 @@ volatile DWORD VIDEO_VSYNC_POSITION;
 volatile DWORD VIDEO_VSYNC_DIR;
 volatile DWORD DVD_TRAY_STATE;
 
-BYTE VIDEO_AV_MODE ;
+u8 VIDEO_AV_MODE ;
 
 #define DVD_CLOSED 		0
 #define DVD_CLOSING 		1
@@ -152,7 +152,7 @@ enum {
 /* ----------------------------  IO primitives -----------------------------------------------------------
 */
 
-static __inline void IoOutputByte(WORD wAds, BYTE bValue) {
+static __inline void IoOutputByte(WORD wAds, u8 bValue) {
 //	__asm__  ("			     out	%%al,%%dx" : : "edx" (dwAds), "al" (bValue)  );
     __asm__ __volatile__ ("outb %b0,%w1": :"a" (bValue), "Nd" (wAds));
 }
@@ -168,7 +168,7 @@ static __inline void IoOutputDword(WORD wAds, DWORD dwValue) {
 }
 
 
-static __inline BYTE IoInputByte(WORD wAds) {
+static __inline u8 IoInputByte(WORD wAds) {
   unsigned char _v;
 
   __asm__ __volatile__ ("inb %w1,%0":"=a" (_v):"Nd" (wAds));
@@ -205,7 +205,7 @@ void BootPciInterruptEnable(void);
 	// boot process
 int BootPerformPicChallengeResponseAction(void);
 	// LED control (see associated enum above)
-int I2cSetFrontpanelLed(BYTE b);
+int I2cSetFrontpanelLed(u8 b);
 
 #define bprintf(...)
 
@@ -274,8 +274,8 @@ void ClearIDT (void);
 void BootResetAction(void);
 void BootCpuCache(bool fEnable) ;
 int printk(const char *szFormat, ...);
-void BiosCmosWrite(BYTE bAds, BYTE bData);
-BYTE BiosCmosRead(BYTE bAds);
+void BiosCmosWrite(u8 bAds, u8 bData);
+u8 BiosCmosRead(u8 bAds);
 
 
 ///////// BootPciPeripheralInitialization.c
@@ -291,24 +291,24 @@ extern void	WritePCIBlock(unsigned int bus, unsigned int dev, unsigned int func,
 
 void PciWriteByte (unsigned int bus, unsigned int dev, unsigned int func,
 		unsigned int reg_off, unsigned char byteval);
-BYTE PciReadByte(unsigned int bus, unsigned int dev, unsigned int func, unsigned int reg_off);
+u8 PciReadByte(unsigned int bus, unsigned int dev, unsigned int func, unsigned int reg_off);
 DWORD PciWriteDword(unsigned int bus, unsigned int dev, unsigned int func, unsigned int reg_off, DWORD dw);
 DWORD PciReadDword(unsigned int bus, unsigned int dev, unsigned int func, unsigned int reg_off);
 
 ///////// BootPerformPicChallengeResponseAction.c
 
-int I2CTransmitWord(BYTE bPicAddressI2cFormat, WORD wDataToWrite);
-int I2CTransmitByteGetReturn(BYTE bPicAddressI2cFormat, BYTE bDataToWrite);
+int I2CTransmitWord(u8 bPicAddressI2cFormat, WORD wDataToWrite);
+int I2CTransmitByteGetReturn(u8 bPicAddressI2cFormat, u8 bDataToWrite);
 bool I2CGetTemperature(int *, int *);
-void I2CModifyBits(BYTE bAds, BYTE bReg, BYTE bData, BYTE bMask);
+void I2CModifyBits(u8 bAds, u8 bReg, u8 bData, u8 bMask);
 
 ///////// BootIde.c
 
 extern tsHarddiskInfo tsaHarddiskInfo[];  // static struct stores data about attached drives
 int BootIdeInit(void);
 int BootIdeReadSector(int nDriveIndex, void * pbBuffer, unsigned int block, int byte_offset, int n_bytes);
-int BootIdeBootSectorHddOrElTorito(int nDriveIndex, BYTE * pbaResult);
-int BootIdeAtapiAdditionalSenseCode(int nDrive, BYTE * pba, int nLengthMaxReturn);
+int BootIdeBootSectorHddOrElTorito(int nDriveIndex, u8 * pbaResult);
+int BootIdeAtapiAdditionalSenseCode(int nDrive, u8 * pba, int nLengthMaxReturn);
 int BootIdeSetTransferMode(int nIndexDrive, int nMode);
 int BootIdeWaitNotBusy(unsigned uIoBase);
 bool BootIdeAtapiReportFriendlyError(int nDriveIndex, char * szErrorReturn, int nMaxLengthError);

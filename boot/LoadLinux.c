@@ -55,11 +55,11 @@ void BootPrintConfig(CONFIGENTRY *config) {
 }
 
 
-void memPlaceKernel(const BYTE* kernelOrg, DWORD kernelSize)
+void memPlaceKernel(const u8* kernelOrg, DWORD kernelSize)
 {
 	unsigned int nSizeHeader=((*(kernelOrg + 0x01f1))+1)*512;
-	memcpy((BYTE *)KERNEL_SETUP, kernelOrg, nSizeHeader);
-	memcpy((BYTE *)KERNEL_PM_CODE,(kernelOrg+nSizeHeader),kernelSize-nSizeHeader);
+	memcpy((u8 *)KERNEL_SETUP, kernelOrg, nSizeHeader);
+	memcpy((u8 *)KERNEL_PM_CODE,(kernelOrg+nSizeHeader),kernelSize-nSizeHeader);
 }
 
 
@@ -68,12 +68,12 @@ void memPlaceKernel(const BYTE* kernelOrg, DWORD kernelSize)
 int BootLoadConfigNative(int nActivePartition, CONFIGENTRY *config, bool fJustTestingForPossible) {
 	DWORD dwConfigSize=0;
 	char *szGrub;
-	BYTE* tempBuf;
+	u8* tempBuf;
         
 	szGrub = (char *) malloc(265+4);
         memset(szGrub,0,256+4);
         
-	memset((BYTE *)KERNEL_SETUP,0,2048);
+	memset((u8 *)KERNEL_SETUP,0,2048);
 
 	szGrub[0]=0xff;
 	szGrub[1]=0xff;
@@ -131,7 +131,7 @@ int BootLoadConfigNative(int nActivePartition, CONFIGENTRY *config, bool fJustTe
 	if(fJustTestingForPossible) return 1; // if there's a default kernel it must be worth trying to boot
         
 	// Use INITRD_START as temporary location for loading the Kernel 
-	tempBuf = (BYTE*)INITRD_START;
+	tempBuf = (u8*)INITRD_START;
 	dwKernelSize=grub_read(tempBuf, MAX_KERNEL_SIZE);
 	memPlaceKernel(tempBuf, dwKernelSize);
 	grub_close();
@@ -169,7 +169,7 @@ int BootTryLoadConfigFATX(CONFIGENTRY *config) {
 	FATXFILEINFO fileinfo;
 	FATXFILEINFO infokernel;
 	int nConfig = 0;
-	BYTE *tempBuf;
+	u8 *tempBuf;
 
 	partition = OpenFATXPartition(0,SECTOR_STORE,STORE_SIZE);
 	
@@ -193,7 +193,7 @@ int BootTryLoadConfigFATX(CONFIGENTRY *config) {
 	}
 
 	// Use INITRD_START as temporary location for loading the Kernel 
-	tempBuf = (BYTE*)INITRD_START;
+	tempBuf = (u8*)INITRD_START;
 	if(! LoadFATXFilefixed(partition,config->szKernel,&infokernel,tempBuf)) {
 		CloseFATXPartition(partition);
 		return 0;
@@ -210,9 +210,9 @@ int BootLoadConfigFATX(CONFIGENTRY *config) {
 	static FATXFILEINFO fileinfo;
 	static FATXFILEINFO infokernel;
 	static FATXFILEINFO infoinitrd;
-	BYTE* tempBuf;
+	u8* tempBuf;
 
-	memset((BYTE *)KERNEL_SETUP,0,4096);
+	memset((u8 *)KERNEL_SETUP,0,4096);
 	memset(&fileinfo,0x00,sizeof(fileinfo));
 	memset(&infokernel,0x00,sizeof(infokernel));
 	memset(&infoinitrd,0x00,sizeof(infoinitrd));
@@ -245,7 +245,7 @@ int BootLoadConfigFATX(CONFIGENTRY *config) {
 	BootPrintConfig(config);
 	
 	// Use INITRD_START as temporary location for loading the Kernel 
-	tempBuf = (BYTE*)INITRD_START;
+	tempBuf = (u8*)INITRD_START;
 	if(! LoadFATXFilefixed(partition,config->szKernel,&infokernel,tempBuf)) {
 		printk("Error loading kernel %s\n",config->szKernel);
 		while(1);
@@ -288,15 +288,15 @@ int BootLoadConfigCD(int cdromId, CONFIGENTRY *config) {
 	int cdPresent=0;
 	DWORD dwY=VIDEO_CURSOR_POSY;
 	DWORD dwX=VIDEO_CURSOR_POSX;
-	BYTE* tempBuf;
+	u8* tempBuf;
 
-	memset((BYTE *)KERNEL_SETUP,0,4096);
+	memset((u8 *)KERNEL_SETUP,0,4096);
 
 	//See if we already have a CDROM in the drive
 	//Try for 8 seconds - takes a while to 'spin up'.
 	I2CTransmitWord(0x10, 0x0c01); // close DVD tray
 	for (n=0;n<32;++n) {
-		if((BootIso9660GetFile(cdromId,"/linuxboo.cfg", (BYTE *)KERNEL_SETUP, 0x800)) >=0 ) {
+		if((BootIso9660GetFile(cdromId,"/linuxboo.cfg", (u8 *)KERNEL_SETUP, 0x800)) >=0 ) {
 			cdPresent=1;
 			break;
 		}
@@ -329,7 +329,7 @@ int BootLoadConfigCD(int cdromId, CONFIGENTRY *config) {
 		// wait until the media is readable
 
 		while(1) {
-			if((BootIso9660GetFile(cdromId,"/linuxboo.cfg", (BYTE *)KERNEL_SETUP, 0x800)) >=0 ) {
+			if((BootIso9660GetFile(cdromId,"/linuxboo.cfg", (u8 *)KERNEL_SETUP, 0x800)) >=0 ) {
 				break;
 			}
 			wait_ms(200);
@@ -337,7 +337,7 @@ int BootLoadConfigCD(int cdromId, CONFIGENTRY *config) {
 	}
 	printk("CDROM: ");
 	printk("Loading linuxboot.cfg from CDROM... \n");
-	dwConfigSize=BootIso9660GetFile(cdromId,"/linuxboo.cfg", (BYTE *)KERNEL_SETUP, 0x800);
+	dwConfigSize=BootIso9660GetFile(cdromId,"/linuxboo.cfg", (u8 *)KERNEL_SETUP, 0x800);
 
 	if( dwConfigSize < 0 ) { // has to be there on CDROM
 		printk("linuxboot.cfg not found on CDROM... Halting\n");
@@ -349,7 +349,7 @@ int BootLoadConfigCD(int cdromId, CONFIGENTRY *config) {
 	BootPrintConfig(config);
 
 	// Use INITRD_START as temporary location for loading the Kernel 
-	tempBuf = (BYTE*)INITRD_START;
+	tempBuf = (u8*)INITRD_START;
 	dwKernelSize=BootIso9660GetFile(cdromId,config->szKernel, tempBuf, MAX_KERNEL_SIZE);
 
 	if( dwKernelSize < 0 ) {
@@ -388,18 +388,18 @@ int BootLoadFlashCD(int cdromId) {
 	DWORD dwConfigSize=0, dw;
 	int n;
 	int cdPresent=0;
-	BYTE* tempBuf;
+	u8* tempBuf;
 	struct SHA1Context context;
 	unsigned char SHA1_result[20];
 	unsigned char checksum[20];
 	 
-	memset((BYTE *)KERNEL_SETUP,0,4096);
+	memset((u8 *)KERNEL_SETUP,0,4096);
 
 	//See if we already have a CDROM in the drive
 	//Try for 4 seconds.
 	I2CTransmitWord(0x10, 0x0c01); // close DVD tray
 	for (n=0;n<16;++n) {
-		if((BootIso9660GetFile(cdromId,"/image.bin", (BYTE *)KERNEL_SETUP, 0x10)) >=0 ) {
+		if((BootIso9660GetFile(cdromId,"/image.bin", (u8 *)KERNEL_SETUP, 0x10)) >=0 ) {
 			cdPresent=1;
 			break;
 		}
@@ -430,7 +430,7 @@ int BootLoadFlashCD(int cdromId) {
 
 		// wait until the media is readable
 		while(1) {
-			if((BootIso9660GetFile(cdromId,"/image.bin", (BYTE *)KERNEL_SETUP, 0x10)) >=0 ) {
+			if((BootIso9660GetFile(cdromId,"/image.bin", (u8 *)KERNEL_SETUP, 0x10)) >=0 ) {
 				break;
 			}
 			wait_ms(200);
@@ -438,7 +438,7 @@ int BootLoadFlashCD(int cdromId) {
 	}
 	printk("CDROM: ");
 	printk("Loading bios image from CDROM:/image.bin. \n");
-	dwConfigSize=BootIso9660GetFile(cdromId, "/image.bin", (BYTE *)KERNEL_PM_CODE, 256*1024);
+	dwConfigSize=BootIso9660GetFile(cdromId, "/image.bin", (u8 *)KERNEL_PM_CODE, 256*1024);
 	
 	if( dwConfigSize < 0 ) { //It's not there
 		printk("image.bin not found on CDROM... Halting\n");
@@ -451,10 +451,10 @@ int BootLoadFlashCD(int cdromId) {
 		while (1);
 	}
 	SHA1Reset(&context);
-	SHA1Input(&context,(BYTE *)KERNEL_PM_CODE,dwConfigSize);
+	SHA1Input(&context,(u8 *)KERNEL_PM_CODE,dwConfigSize);
 	SHA1Result(&context,SHA1_result);
 	memcpy(checksum,SHA1_result,20);
-	printk("Result code: %d\n", BootReflashAndReset((BYTE*) KERNEL_PM_CODE, (DWORD) 0, (DWORD) dwConfigSize));
+	printk("Result code: %d\n", BootReflashAndReset((u8*) KERNEL_PM_CODE, (DWORD) 0, (DWORD) dwConfigSize));
 	SHA1Reset(&context);
 	SHA1Input(&context,(void *)LPCFlashadress,dwConfigSize);
 	SHA1Result(&context,SHA1_result);
@@ -464,7 +464,7 @@ int BootLoadFlashCD(int cdromId) {
 		I2CRebootSlow();	
 	} else {
 		printk("Checksum in Flash not matching - MISTAKE - Reflashing!\n");
-		printk("Result code: %d\n", BootReflashAndReset((BYTE*) KERNEL_PM_CODE, (DWORD) 0, (DWORD) dwConfigSize));
+		printk("Result code: %d\n", BootReflashAndReset((u8*) KERNEL_PM_CODE, (DWORD) 0, (DWORD) dwConfigSize));
 	}
 }
 #endif //Flash

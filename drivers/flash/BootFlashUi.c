@@ -85,13 +85,13 @@ void DisplayFlashProgressBar(int currentVal, int maxVal, unsigned long color) {
 	// note this is copied to RAM, and the flash will be changed during its operation
 	// therefore no library code nor interrupts can be had
 
-int BootReflashAndReset(BYTE *pbNewData, DWORD dwStartOffset, DWORD dwLength)
+int BootReflashAndReset(u8 *pbNewData, DWORD dwStartOffset, DWORD dwLength)
 {
 	OBJECT_FLASH of;
 	bool fMore=true;
 
 	// prep our flash object with start address and params
-	of.m_pbMemoryMappedStartAddress=(BYTE *)LPCFlashadress;
+	of.m_pbMemoryMappedStartAddress=(u8 *)LPCFlashadress;
 	of.m_dwStartOffset=dwStartOffset;
 	of.m_dwLengthUsedArea=dwLength;
 	of.m_pcallbackFlash=BootFlashUserInterface;

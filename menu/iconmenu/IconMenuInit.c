@@ -72,7 +72,7 @@ void IconMenuInit(void) {
 
 void InitFatXIcons(void) {
 	ICON *iconPtr=0l;
-	BYTE ba[512];
+	u8 ba[512];
 	int driveId=0;
 	
 	if (tsaHarddiskInfo[driveId].m_fDriveExists && !tsaHarddiskInfo[driveId].m_fAtapi) {
@@ -98,7 +98,7 @@ void InitFatXIcons(void) {
 
 void InitNativeIcons(void) {
 	ICON *iconPtr=0l;
-	BYTE ba[512];
+	u8 ba[512];
 	int driveId=0;	
 
 	if (tsaHarddiskInfo[driveId].m_fDriveExists && !tsaHarddiskInfo[driveId].m_fAtapi) {
@@ -109,9 +109,9 @@ void InitNativeIcons(void) {
 		        
 		//Is there an MBR here?
 		if( (ba[0x1fe]==0x55) && (ba[0x1ff]==0xaa) ) {
-			volatile BYTE * pb;
+			volatile u8 * pb;
 			int n=0, nPos=0;
-			(volatile BYTE *)pb=&ba[0x1be];
+			(volatile u8 *)pb=&ba[0x1be];
 			//Check the first four partitions (this isn't good enough!)
 			for (n=0; n<4; n++,pb+=16) {
 				//Is this partition bootable?

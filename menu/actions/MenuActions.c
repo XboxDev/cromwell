@@ -51,7 +51,7 @@ void BootFromFATX(void *configEntry) {
 }
 
 void SetLEDColor(void *color) {
-	I2cSetFrontpanelLed(*(BYTE*)color);
+	I2cSetFrontpanelLed(*(u8*)color);
 }
 
 //More grub bits

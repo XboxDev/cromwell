@@ -5,8 +5,8 @@
 
 // video helpers
 typedef struct {
-	BYTE * pData;
-	BYTE * pBackdrop;
+	u8 * pData;
+	u8 * pBackdrop;
 	int width;
 	int height;
 	int bpp;
@@ -14,30 +14,30 @@ typedef struct {
 
 int BootVideoOverlayString(DWORD * pdwaTopLeftDestination, DWORD m_dwCountBytesPerLineDestination, RGBA rgbaOpaqueness, const char * szString);
 void BootVideoChunkedPrint(const char * szBuffer);
-int VideoDumpAddressAndData(DWORD dwAds, const BYTE * baData, DWORD dwCountBytesUsable);
+int VideoDumpAddressAndData(DWORD dwAds, const u8 * baData, DWORD dwCountBytesUsable);
 unsigned int BootVideoGetStringTotalWidth(const char * szc);
 void BootVideoClearScreen(JPEG * pJpeg, int nStartLine, int nEndLine);
 
 void BootVideoJpegBlitBlend(
-	BYTE *pDst,
+	u8 *pDst,
 	DWORD dst_width,
 	JPEG * pJpeg,
-	BYTE *pFront,
+	u8 *pFront,
 	RGBA m_rgbaTransparent,
-	BYTE *pBack,
+	u8 *pBack,
 	int x,
 	int y
 );
 
 bool BootVideoJpegUnpackAsRgb(
-	BYTE *pbaJpegFileImage,
+	u8 *pbaJpegFileImage,
 	JPEG * pJpeg
 );
 
-void BootVideoEnableOutput(BYTE bAvPack);
-BYTE * BootVideoGetPointerToEffectiveJpegTopLeft(JPEG * pJpeg);
+void BootVideoEnableOutput(u8 bAvPack);
+u8 * BootVideoGetPointerToEffectiveJpegTopLeft(JPEG * pJpeg);
 
-extern BYTE baBackdrop[60*72*4];
+extern u8 baBackdrop[60*72*4];
 extern JPEG jpegBackdrop;
 
 #endif /* #ifndef video_h */

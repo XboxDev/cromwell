@@ -24,7 +24,7 @@ typedef __u32 u32;
 typedef unsigned short __u16;
 typedef __u16 u16;
 typedef unsigned char __u8;
-typedef __u8 u8;
+//typedef __u8 u8;
 
 typedef short s16;
 

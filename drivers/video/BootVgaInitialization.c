@@ -83,7 +83,7 @@ char *AvCableName(void) {
 void BootVgaInitializationKernelNG(CURRENT_VIDEO_MODE_DETAILS * pvmode) {
 	xbox_tv_encoding tv_encoding; 
 	xbox_av_type av_type;
-	BYTE b;
+	u8 b;
 	RIVA_HW_INST riva;
         struct riva_regs newmode;
 	int encoder_ok = 0;
@@ -102,13 +102,13 @@ void BootVgaInitializationKernelNG(CURRENT_VIDEO_MODE_DETAILS * pvmode) {
    	memset((void *)pvmode,0,sizeof(CURRENT_VIDEO_MODE_DETAILS));
 
 	//Focus driver (presumably XLB also) doesnt do widescreen yet - only blackscreens otherwise.
-	if(((BYTE *)&eeprom)[0x96]&0x01 && video_encoder == ENCODER_CONEXANT) { // 16:9 widescreen TV
+	if(((u8 *)&eeprom)[0x96]&0x01 && video_encoder == ENCODER_CONEXANT) { // 16:9 widescreen TV
 		pvmode->m_nVideoModeIndex=VIDEO_MODE_1024x576;
 	} else { // 4:3 TV
 		pvmode->m_nVideoModeIndex=VIDEO_PREFERRED_MODE;
 	}
 
-	pvmode->m_pbBaseAddressVideo=(BYTE *)0xfd000000;
+	pvmode->m_pbBaseAddressVideo=(u8 *)0xfd000000;
 	pvmode->m_fForceEncoderLumaAndChromaToZeroInitially=1;
 
         // If the client hasn't set the frame buffer start address, assume
@@ -119,7 +119,7 @@ void BootVgaInitializationKernelNG(CURRENT_VIDEO_MODE_DETAILS * pvmode) {
         (*(unsigned int*)0xFD600800) = (FB_START & 0x0fffffff);
 
 	pvmode->m_bAvPack=I2CTransmitByteGetReturn(0x10, 0x04);
-	pvmode->m_pbBaseAddressVideo=(BYTE *)0xfd000000;
+	pvmode->m_pbBaseAddressVideo=(u8 *)0xfd000000;
 	pvmode->m_fForceEncoderLumaAndChromaToZeroInitially=1;
 	pvmode->m_bBPP = 32;
 
@@ -465,13 +465,13 @@ static inline void lockCrtNv (RIVA_HW_INST *riva, int head)
 }
 
 
-static void writeCrtNv (RIVA_HW_INST *riva, int head, int reg, BYTE val)
+static void writeCrtNv (RIVA_HW_INST *riva, int head, int reg, u8 val)
 {
         VGA_WR08(riva->PCIO, CRT_INDEX(head), reg);
         VGA_WR08(riva->PCIO, CRT_DATA(head), val);
 }
 
-static void mapNvMem (RIVA_HW_INST *riva, BYTE *IOAddress)
+static void mapNvMem (RIVA_HW_INST *riva, u8 *IOAddress)
 {
 	riva->PMC     = IOAddress+0x000000;
 	riva->PFB     = IOAddress+0x100000;

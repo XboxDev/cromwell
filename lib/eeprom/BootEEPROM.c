@@ -4,7 +4,7 @@
 
 void BootEepromReadEntireEEPROM() {
 	int i;
-	BYTE *pb=(BYTE *)&eeprom;
+	u8 *pb=(u8 *)&eeprom;
 	for(i = 0; i < 256; i++) {
 		*pb++ = I2CTransmitByteGetReturn(0x54, i);
 	}

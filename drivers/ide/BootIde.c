@@ -72,7 +72,7 @@ const char * const szaSenseKeys[] = {
 
 int BootIdeWaitNotBusy(unsigned uIoBase)
 {
-	BYTE b = 0x80;
+	u8 b = 0x80;
 	while (b & 0x80) {
 		b=IoInputByte(IDE_REG_ALTSTATUS(uIoBase));
 	}
@@ -257,7 +257,7 @@ int BootIdeWriteAtapiData(unsigned uIoBase, void * buf, size_t size)
 
 /* -------------------------------------------------------------------------------- */
 
-int BootIdeIssueAtapiPacketCommandAndPacket(int nDriveIndex, BYTE *pAtapiCommandPacket12Bytes)
+int BootIdeIssueAtapiPacketCommandAndPacket(int nDriveIndex, u8 *pAtapiCommandPacket12Bytes)
 {
 	tsIdeCommandParams tsicp = IDE_DEFAULT_COMMAND;
 	unsigned 	uIoBase = tsaHarddiskInfo[nDriveIndex].m_fwPortBase;
@@ -316,7 +316,7 @@ int BootIdeDriveInit(unsigned uIoBase, int nIndexDrive)
 {
 	tsIdeCommandParams tsicp = IDE_DEFAULT_COMMAND;
 	unsigned short* drive_info;
-	BYTE baBuffer[512];
+	u8 baBuffer[512];
      
 	tsaHarddiskInfo[nIndexDrive].m_fwPortBase = uIoBase;
 	tsaHarddiskInfo[nIndexDrive].m_wCountHeads = 0u;
@@ -393,11 +393,11 @@ int BootIdeDriveInit(unsigned uIoBase, int nIndexDrive)
 	{ 
 		WORD * pw=(WORD *)&(drive_info[10]);
 		tsaHarddiskInfo[nIndexDrive].s_length =
-			copy_swap_trim(tsaHarddiskInfo[nIndexDrive].m_szSerial,(BYTE*)pw,20);
+			copy_swap_trim(tsaHarddiskInfo[nIndexDrive].m_szSerial,(u8*)pw,20);
 		pw=(WORD *)&(drive_info[27]);
 		tsaHarddiskInfo[nIndexDrive].m_length =
-			copy_swap_trim(tsaHarddiskInfo[nIndexDrive].m_szIdentityModelNumber,(BYTE *)pw,40);
-		copy_swap_trim(tsaHarddiskInfo[nIndexDrive].m_szFirmware,(BYTE *)&(drive_info[23]),8);
+			copy_swap_trim(tsaHarddiskInfo[nIndexDrive].m_szIdentityModelNumber,(u8 *)pw,40);
+		copy_swap_trim(tsaHarddiskInfo[nIndexDrive].m_szFirmware,(u8 *)&(drive_info[23]),8);
 
 	}
 
@@ -421,7 +421,7 @@ int BootIdeDriveInit(unsigned uIoBase, int nIndexDrive)
 		// IS working as Cromwell
 		
 		  // this is the only way to clear the ATAPI ''I have been reset'' error indication
-			BYTE ba[128];
+			u8 ba[128];
 			ba[2]=0x06;
 
 			while (ba[2]==0x06) 
@@ -619,10 +619,10 @@ int DriveSecurityChange(unsigned uIoBase, int driveId, ide_command_t ide_cmd, un
 
 int CalculateDrivePassword(int driveId, unsigned char *key) {
 
-	BYTE baMagic[0x200], baKeyFromEEPROM[0x10], baEeprom[0x30];
+	u8 baMagic[0x200], baKeyFromEEPROM[0x10], baEeprom[0x30];
 	int nVersionHashing=0;
 	//Ick - forward decl. Should remove this. 
-	DWORD BootHddKeyGenerateEepromKeyData(BYTE *eeprom_data,BYTE *HDKey);
+	DWORD BootHddKeyGenerateEepromKeyData(u8 *eeprom_data,u8 *HDKey);
 	
 	memcpy(&baEeprom[0], &eeprom, 0x30); // first 0x30 bytes from EEPROM image we picked up earlier
 
@@ -680,7 +680,7 @@ int BootIdeInit(void)
 		{
 			WORD waBuffer[256];
 			BootIdeWaitDataReady(uIoBase);
-			if(!BootIdeReadData(uIoBase, (BYTE *)&waBuffer[0], IDE_SECTOR_SIZE)) 
+			if(!BootIdeReadData(uIoBase, (u8 *)&waBuffer[0], IDE_SECTOR_SIZE)) 
 			{
 //				printk("%04X ", waBuffer[80]);
 				if( ((waBuffer[93]&0xc000)!=0) && ((waBuffer[93]&0x8000)==0) && ((waBuffer[93]&0xe000)!=0x6000)) 	
@@ -718,11 +718,11 @@ int BootIdeInit(void)
 //
 //  returns the ATAPI extra error info block
 
-int BootIdeAtapiModeSense(int nDriveIndex, BYTE bCodePage, BYTE * pba, int nLengthMaxReturn) 
+int BootIdeAtapiModeSense(int nDriveIndex, u8 bCodePage, u8 * pba, int nLengthMaxReturn) 
 {
 	unsigned uIoBase = tsaHarddiskInfo[nDriveIndex].m_fwPortBase;
 
-	BYTE ba[2048];
+	u8 ba[2048];
 	int nReturn;
 
 	if(!tsaHarddiskInfo[nDriveIndex].m_fDriveExists) return 4;
@@ -731,12 +731,12 @@ int BootIdeAtapiModeSense(int nDriveIndex, BYTE bCodePage, BYTE * pba, int nLeng
 	//memset(&ba[0], 0, 12);
 	ba[0]=0x5a;
 	ba[2]=bCodePage;
-	ba[7]=(BYTE)(sizeof(ba)>>8); 
-	ba[8]=(BYTE)sizeof(ba);
+	ba[7]=(u8)(sizeof(ba)>>8); 
+	ba[8]=(u8)sizeof(ba);
 
 	if(BootIdeIssueAtapiPacketCommandAndPacket(nDriveIndex, &ba[0])) 
 	{
-//			BYTE bStatus=IoInputByte(IDE_REG_ALTSTATUS(uIoBase)), bError=IoInputByte(IDE_REG_ERROR(uIoBase));
+//			u8 bStatus=IoInputByte(IDE_REG_ALTSTATUS(uIoBase)), bError=IoInputByte(IDE_REG_ERROR(uIoBase));
 //			printk("  Drive %d: BootIdeAtapiAdditionalSenseCode FAILED, status=%02X, error=0x%02X, ASC unavailable\n", nDriveIndex, bStatus, bError);
 			return 1;
 	}
@@ -756,11 +756,11 @@ int BootIdeAtapiModeSense(int nDriveIndex, BYTE bCodePage, BYTE * pba, int nLeng
 //
 //  returns the ATAPI extra error info block
 
-int BootIdeAtapiAdditionalSenseCode(int nDriveIndex, BYTE * pba, int nLengthMaxReturn) 
+int BootIdeAtapiAdditionalSenseCode(int nDriveIndex, u8 * pba, int nLengthMaxReturn) 
 {
 	unsigned uIoBase = tsaHarddiskInfo[nDriveIndex].m_fwPortBase;
 
-	BYTE ba[2048];
+	u8 ba[2048];
 	int nReturn;
 
 	if(!tsaHarddiskInfo[nDriveIndex].m_fDriveExists) return 4;
@@ -772,7 +772,7 @@ int BootIdeAtapiAdditionalSenseCode(int nDriveIndex, BYTE * pba, int nLengthMaxR
 
 	if(BootIdeIssueAtapiPacketCommandAndPacket(nDriveIndex, &ba[0])) 
 	{
-//			BYTE bStatus=IoInputByte(IDE_REG_ALTSTATUS(uIoBase)), bError=IoInputByte(IDE_REG_ERROR(uIoBase));
+//			u8 bStatus=IoInputByte(IDE_REG_ALTSTATUS(uIoBase)), bError=IoInputByte(IDE_REG_ERROR(uIoBase));
 //			printk("  Drive %d: BootIdeAtapiAdditionalSenseCode 3 Atapi Wait for data ready FAILED, status=%02X, error=0x%02X, ASC unavailable\n", nDriveIndex, bStatus, bError);
 			return 1;
 	}
@@ -788,7 +788,7 @@ int BootIdeAtapiAdditionalSenseCode(int nDriveIndex, BYTE * pba, int nLengthMaxR
 
 bool BootIdeAtapiReportFriendlyError(int nDriveIndex, char * szErrorReturn, int nMaxLengthError)
 {
-	BYTE ba[2048];
+	u8 ba[2048];
 	char szError[512];
 	int nReturn;
 	bool f=true;
@@ -853,7 +853,7 @@ int BootIdeReadSector(int nDriveIndex, void * pbBuffer, unsigned int block, int 
 	if(tsaHarddiskInfo[nDriveIndex].m_fAtapi) 
 	{
                	// CD - DVD ROM
-		BYTE ba[12];
+		u8 ba[12];
 		int nReturn;
 
 		IoInputByte(IDE_REG_STATUS(uIoBase));
@@ -1105,9 +1105,9 @@ int BootIdeWriteSector(int nDriveIndex, void * pbBuffer, unsigned int block)
 // returns 0 if *pbaResult loaded with (512-byte/Hdd, 2048-byte/Cdrom) boot sector
 //  otherwise nonzero return indicates error type
 
-int BootIdeBootSectorHddOrElTorito(int nDriveIndex, BYTE * pbaResult)
+int BootIdeBootSectorHddOrElTorito(int nDriveIndex, u8 * pbaResult)
 {
-	static const BYTE baCheck11hFormat[] = {
+	static const u8 baCheck11hFormat[] = {
 			0x00,0x43,0x44,0x30,0x30,0x31,0x01,0x45,
 			0x4C,0x20,0x54,0x4F,0x52,0x49,0x54,0x4F,
 			0x20,0x53,0x50,0x45,0x43,0x49,0x46,0x49,
@@ -1247,7 +1247,7 @@ int BootIdeSetTransferMode(int nIndexDrive, int nMode)
 	}
 	{
 		int nReturn=0;
-		tsicp.m_bCountSector = (BYTE)nMode;
+		tsicp.m_bCountSector = (u8)nMode;
 		IoOutputByte(IDE_REG_FEATURE(uIoBase), 3); // set transfer mode subcmd
 		nReturn=BootIdeIssueAtaCommand(uIoBase, IDE_CMD_SET_FEATURES, &tsicp);
 		return nReturn;

@@ -24,7 +24,7 @@
 
 // returns number of x pixels taken up by ascii character bCharacter
 
-unsigned int BootVideoGetCharacterWidth(BYTE bCharacter, bool fDouble)
+unsigned int BootVideoGetCharacterWidth(u8 bCharacter, bool fDouble)
 {
 	unsigned int nStart, nWidth;
 	int nSpace=WIDTH_SPACE_PIXELS;
@@ -66,12 +66,12 @@ unsigned int BootVideoFontWidthToBitmapBytecount(unsigned int uiWidth)
 }
 
 void BootVideoJpegBlitBlend(
-	BYTE *pDst,
+	u8 *pDst,
 	DWORD dst_width,
 	JPEG * pJpeg,
-	BYTE *pFront,
+	u8 *pFront,
 	RGBA m_rgbaTransparent,
-	BYTE *pBack,
+	u8 *pBack,
 	int x,
 	int y
 ) {
@@ -113,7 +113,7 @@ int BootVideoOverlayCharacter(
 	DWORD * pdwaTopLeftDestination,
 	DWORD m_dwCountBytesPerLineDestination,
 	RGBA rgbaColourAndOpaqueness,
-	BYTE bCharacter,
+	u8 bCharacter,
 	bool fDouble
 ) {
 	int nSpace;
@@ -121,8 +121,8 @@ int BootVideoOverlayCharacter(
 //		nOpaquenessMultiplied,
 //		nTransparentnessMultiplied
 	;
-	BYTE b=0, b1; // *pbColour=(BYTE *)&rgbaColourAndOpaqueness;
-	BYTE * pbaDestStart;
+	u8 b=0, b1; // *pbColour=(u8 *)&rgbaColourAndOpaqueness;
+	u8 * pbaDestStart;
 
 		// we only have glyphs for 0x21 through 0x7e inclusive
 
@@ -145,10 +145,10 @@ int BootVideoOverlayCharacter(
 //	nStart=0;
 //	nWidth=300;
 
-	pbaDestStart=((BYTE *)pdwaTopLeftDestination);
+	pbaDestStart=((u8 *)pdwaTopLeftDestination);
 
 	for(y=0;y<nHeight;y++) {
-		BYTE * pbaDest=pbaDestStart;
+		u8 * pbaDest=pbaDestStart;
 		int n1=nStart;
 
 		for(n=0;n<nWidth;n++) {
@@ -165,9 +165,9 @@ int BootVideoOverlayCharacter(
 			}
 
 		if(b1) {
-				*pbaDest=(BYTE)((b1*(rgbaColourAndOpaqueness&0xff))>>4); pbaDest++;
-				*pbaDest=(BYTE)((b1*((rgbaColourAndOpaqueness>>8)&0xff))>>4); pbaDest++;
-				*pbaDest=(BYTE)((b1*((rgbaColourAndOpaqueness>>16)&0xff))>>4); pbaDest++;
+				*pbaDest=(u8)((b1*(rgbaColourAndOpaqueness&0xff))>>4); pbaDest++;
+				*pbaDest=(u8)((b1*((rgbaColourAndOpaqueness>>8)&0xff))>>4); pbaDest++;
+				*pbaDest=(u8)((b1*((rgbaColourAndOpaqueness>>16)&0xff))>>4); pbaDest++;
 				*pbaDest++=0xff;
 			} else {
 				pbaDest+=4;
@@ -204,7 +204,7 @@ int BootVideoOverlayString(DWORD * pdwaTopLeftDestination, DWORD m_dwCountBytesP
 	return uiWidth;
 }
 
-bool BootVideoJpegUnpackAsRgb(BYTE *pbaJpegFileImage, JPEG * pJpeg) {
+bool BootVideoJpegUnpackAsRgb(u8 *pbaJpegFileImage, JPEG * pJpeg) {
   
 	struct jpeg_decdata *decdata;
 	int size, width, height, depth;
@@ -231,7 +231,7 @@ bool BootVideoJpegUnpackAsRgb(BYTE *pbaJpegFileImage, JPEG * pJpeg) {
 	pJpeg->pBackdrop = BootVideoGetPointerToEffectiveJpegTopLeft(pJpeg);
 	/*
 	BootVideoJpegBlitBlend(
-		(BYTE *)FB_START,
+		(u8 *)FB_START,
 		640,
 		pJpeg,
 		pJpeg->pData,
@@ -247,9 +247,9 @@ bool BootVideoJpegUnpackAsRgb(BYTE *pbaJpegFileImage, JPEG * pJpeg) {
 	return false;
 }
 
-BYTE * BootVideoGetPointerToEffectiveJpegTopLeft(JPEG * pJpeg)
+u8 * BootVideoGetPointerToEffectiveJpegTopLeft(JPEG * pJpeg)
 {
-	return ((BYTE *)(pJpeg->pData + pJpeg->width * ICON_HEIGHT * pJpeg->bpp));
+	return ((u8 *)(pJpeg->pData + pJpeg->width * ICON_HEIGHT * pJpeg->bpp));
 }
 
 void BootVideoClearScreen(JPEG *pJpeg, int nStartLine, int nEndLine)
@@ -263,7 +263,7 @@ void BootVideoClearScreen(JPEG *pJpeg, int nStartLine, int nEndLine)
 		if(pJpeg->pData!=NULL) {
 			volatile DWORD *pdw=((DWORD *)FB_START)+vmode.width*nStartLine;
 			int n1=pJpeg->bpp * pJpeg->width * nStartLine;
-			BYTE *pbJpegBitmapAdjustedDatum=pJpeg->pBackdrop;
+			u8 *pbJpegBitmapAdjustedDatum=pJpeg->pBackdrop;
 
 			while(nStartLine++<nEndLine) {
 				int n;
@@ -282,7 +282,7 @@ void BootVideoClearScreen(JPEG *pJpeg, int nStartLine, int nEndLine)
 	}
 }
 
-int VideoDumpAddressAndData(DWORD dwAds, const BYTE * baData, DWORD dwCountBytesUsable) { // returns bytes used
+int VideoDumpAddressAndData(DWORD dwAds, const u8 * baData, DWORD dwCountBytesUsable) { // returns bytes used
 	int nCountUsed=0;
 	while(dwCountBytesUsable) {
 
@@ -298,7 +298,7 @@ int VideoDumpAddressAndData(DWORD dwAds, const BYTE * baData, DWORD dwCountBytes
 				n+=sprintf(&sz[n], "   ");
 				szAscii[nBytes]=' ';
 			} else {
-				BYTE b=*baData++;
+				u8 b=*baData++;
 				n+=sprintf(&sz[n], "%02X ", b);
 				if((b<32) || (b>126)) szAscii[nBytes]='.'; else szAscii[nBytes]=b;
 				nCountUsed++;

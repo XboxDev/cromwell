@@ -164,14 +164,14 @@ void HMAC_hdd_calculation(int version,unsigned char *HMAC_result, ... )
 
 
 DWORD BootHddKeyGenerateEepromKeyData(
-		BYTE *pbEeprom_data,
-		BYTE *pbResult
+		u8 *pbEeprom_data,
+		u8 *pbResult
 		
 ) {
 
-	BYTE baKeyHash[20];
-	BYTE baDataHashConfirm[20];
-	BYTE baEepromDataLocalCopy[0x30];
+	u8 baKeyHash[20];
+	u8 baDataHashConfirm[20];
+	u8 baEepromDataLocalCopy[0x30];
 	struct rc4_key RC4_key;
        	int version = 0; 
        	int counter;

@@ -22,10 +22,10 @@
 
 #include "VideoInitialization.h"
 
-extern BYTE VIDEO_AV_MODE;
+extern u8 VIDEO_AV_MODE;
 // functions defined elsewhere
-int I2CTransmitByteGetReturn(BYTE bPicAddressI2cFormat, BYTE bDataToWrite);
-int I2CTransmitWord(BYTE bPicAddressI2cFormat, WORD wDataToWrite);
+int I2CTransmitByteGetReturn(u8 bPicAddressI2cFormat, u8 bDataToWrite);
+int I2CTransmitWord(u8 bPicAddressI2cFormat, WORD wDataToWrite);
 
 // internally used structures
 
@@ -44,19 +44,19 @@ static double fabs(double d) {
 }
 #endif
 
-static BYTE NvGetCrtc(BYTE * pbRegs, int nIndex) {
+static u8 NvGetCrtc(u8 * pbRegs, int nIndex) {
 	pbRegs[0x6013d4]=nIndex;
 	return pbRegs[0x6013d5];
 }
 
-static void NvSetCrtc(BYTE * pbRegs, int nIndex, BYTE b) {
+static void NvSetCrtc(u8 * pbRegs, int nIndex, u8 b) {
 	pbRegs[0x6013d4]=nIndex;
 	pbRegs[0x6013d5]=b;
 }
 
 xbox_tv_encoding DetectVideoStd(void) {
 	xbox_tv_encoding videoStd;
-	BYTE b=I2CTransmitByteGetReturn(0x54, 0x5A); // the eeprom defines the TV standard for the box
+	u8 b=I2CTransmitByteGetReturn(0x54, 0x5A); // the eeprom defines the TV standard for the box
 
 	if(b == 0x40) {
 		videoStd = TV_ENC_NTSC;
@@ -82,8 +82,8 @@ xbox_av_type DetectAvType(void) {
 	return avType;
 }
 
-void SetGPURegister(const GPU_PARAMETER* gpu, BYTE *pbRegs) {
-	BYTE b;
+void SetGPURegister(const GPU_PARAMETER* gpu, u8 *pbRegs) {
+	u8 b;
 	DWORD m = 0;
 	// NVHDISPEND
 	*((DWORD *)&pbRegs[0x680820]) = gpu->crtchdispend - 1;

@@ -27,7 +27,7 @@ void VideoMenuInit(TEXTMENUITEM *parentItem) {
 	itemPtr = (TEXTMENUITEM*)malloc(sizeof(TEXTMENUITEM));
 	memset(itemPtr,0x00,sizeof(TEXTMENUITEM));
 	itemPtr->szCaption = malloc(20);
-	if(((BYTE *)&eeprom)[0x96]&0x01) {
+	if(((u8 *)&eeprom)[0x96]&0x01) {
 		strcpy(itemPtr->szCaption, "Display Size: Widescreen");
 	}
 	else {

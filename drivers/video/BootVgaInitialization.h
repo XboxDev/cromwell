@@ -51,7 +51,7 @@
 
 #define HEAD 0x2000
 
-#define CARD8 BYTE
+#define CARD8 u8
 #define CARD32 DWORD
 
 #define MMIO_IN8(base, offset) \
@@ -111,29 +111,29 @@ typedef struct _riva_hw_inst
 	/*
 	* Non-FIFO registers.
 	*/
-	volatile BYTE *PCRTC;
-	volatile BYTE *PRAMDAC;
-	volatile BYTE *PFB;
-	volatile BYTE *PFIFO;
-	volatile BYTE *PGRAPH;
-	volatile BYTE *PEXTDEV;
-	volatile BYTE *PTIMER;
-	volatile BYTE *PMC;
-	volatile BYTE *PRAMIN;
-	volatile BYTE *FIFO;
-	volatile BYTE *CURSOR;
-	volatile BYTE *CURSORPOS;
-	volatile BYTE *VBLANKENABLE;
-	volatile BYTE *VBLANK;
+	volatile u8 *PCRTC;
+	volatile u8 *PRAMDAC;
+	volatile u8 *PFB;
+	volatile u8 *PFIFO;
+	volatile u8 *PGRAPH;
+	volatile u8 *PEXTDEV;
+	volatile u8 *PTIMER;
+	volatile u8 *PMC;
+	volatile u8 *PRAMIN;
+	volatile u8 *FIFO;
+	volatile u8 *CURSOR;
+	volatile u8 *CURSORPOS;
+	volatile u8 *VBLANKENABLE;
+	volatile u8 *VBLANK;
 
-	volatile BYTE *PCIO;
-	volatile BYTE *PVIO;
-	volatile BYTE *PDIO;
-	volatile BYTE *PVIDEO;
+	volatile u8 *PCIO;
+	volatile u8 *PVIO;
+	volatile u8 *PDIO;
+	volatile u8 *PVIDEO;
 } RIVA_HW_INST;
 
 // function prototypes, not to be called from outside BootVgaInitialization
-static void mapNvMem (RIVA_HW_INST *riva, BYTE *IOAddress);
+static void mapNvMem (RIVA_HW_INST *riva, u8 *IOAddress);
 static void NVDisablePalette (RIVA_HW_INST *riva, int head);
 static void NVWriteSeq(RIVA_HW_INST *riva, CARD8 index, CARD8 value);
 static void NVWriteGr(RIVA_HW_INST *riva, CARD8 index, CARD8 value);
@@ -141,7 +141,7 @@ static void NVInitGrSeq (RIVA_HW_INST *riva);
 static void NVInitAttr (RIVA_HW_INST *riva, int head);
 static inline void unlockCrtNv (RIVA_HW_INST *riva, int head);
 static inline void lockCrtNv (RIVA_HW_INST *riva, int head);
-static void writeCrtNv (RIVA_HW_INST *riva, int head, int reg, BYTE val);
+static void writeCrtNv (RIVA_HW_INST *riva, int head, int reg, u8 val);
 static void NVVertIntrEnabled (RIVA_HW_INST *riva, int head);
 static void NVSetFBStart (RIVA_HW_INST *riva, int head, DWORD dwFBStart);
 

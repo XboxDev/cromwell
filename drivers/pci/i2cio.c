@@ -14,7 +14,7 @@
 	ReadfromSMBus() by Lehner Franz (franz@caos.at)
 */
 
-int WriteToSMBus(BYTE Address,BYTE bRegister,BYTE Size,DWORD Data_to_smbus)
+int WriteToSMBus(u8 Address,u8 bRegister,u8 Size,DWORD Data_to_smbus)
 {
 	int nRetriesToLive=50;
 
@@ -22,7 +22,7 @@ int WriteToSMBus(BYTE Address,BYTE bRegister,BYTE Size,DWORD Data_to_smbus)
 
 	while(nRetriesToLive--) {
 		
-		BYTE b;
+		u8 b;
 		unsigned int temp;
 		
 		IoOutputByte(I2C_IO_BASE+4, (Address<<1)|0);
@@ -56,7 +56,7 @@ int WriteToSMBus(BYTE Address,BYTE bRegister,BYTE Size,DWORD Data_to_smbus)
 				IoOutputByte(I2C_IO_BASE+2, 0x1b);	// WORD modus
 				break;
 			default:	// 1
-				IoOutputByte(I2C_IO_BASE+2, 0x1a);	// BYTE modus
+				IoOutputByte(I2C_IO_BASE+2, 0x1a);	// u8 modus
 				break;
 		}
 
@@ -78,14 +78,14 @@ int WriteToSMBus(BYTE Address,BYTE bRegister,BYTE Size,DWORD Data_to_smbus)
 
 
 
-int ReadfromSMBus(BYTE Address,BYTE bRegister,BYTE Size,DWORD *Data_to_smbus)
+int ReadfromSMBus(u8 Address,u8 bRegister,u8 Size,DWORD *Data_to_smbus)
 {
 	int nRetriesToLive=50;
 	
 	while(IoInputWord(I2C_IO_BASE+0)&0x0800) ;  // Franz's spin while bus busy with any master traffic
 
 	while(nRetriesToLive--) {
-		BYTE b;
+		u8 b;
 		int temp;
 		
 		IoOutputByte(I2C_IO_BASE+4, (Address<<1)|1);
@@ -102,7 +102,7 @@ int ReadfromSMBus(BYTE Address,BYTE bRegister,BYTE Size,DWORD *Data_to_smbus)
 				IoOutputByte(I2C_IO_BASE+2, 0x0b);	// WORD modus
 				break;
 			default:
-				IoOutputByte(I2C_IO_BASE+2, 0x0a);	// BYTE
+				IoOutputByte(I2C_IO_BASE+2, 0x0a);	// u8
 				break;
 		}
 
@@ -148,9 +148,9 @@ int ReadfromSMBus(BYTE Address,BYTE bRegister,BYTE Size,DWORD *Data_to_smbus)
 
 
 
-int I2CWriteWordtoRegister(BYTE bPicAddressI2cFormat,BYTE bRegister ,WORD wDataToWrite)
+int I2CWriteWordtoRegister(u8 bPicAddressI2cFormat,u8 bRegister ,WORD wDataToWrite)
 {
-	// int WriteToSMBus(BYTE Address,BYTE bRegister,BYTE Size,DWORD Data_to_smbus)
+	// int WriteToSMBus(u8 Address,u8 bRegister,u8 Size,DWORD Data_to_smbus)
 	return WriteToSMBus(bPicAddressI2cFormat,bRegister,2,wDataToWrite);	
 }
 
@@ -158,7 +158,7 @@ int I2CWriteWordtoRegister(BYTE bPicAddressI2cFormat,BYTE bRegister ,WORD wDataT
 /* --------------------- Normal 8 bit operations -------------------------- */
 
 
-int I2CTransmitByteGetReturn(BYTE bPicAddressI2cFormat, BYTE bDataToWrite)
+int I2CTransmitByteGetReturn(u8 bPicAddressI2cFormat, u8 bDataToWrite)
 {
 	unsigned int temp;
 	if (ReadfromSMBus(bPicAddressI2cFormat,bDataToWrite,1,&temp) != ERR_SUCCESS) return ERR_I2C_ERROR_BUS;
@@ -168,28 +168,28 @@ int I2CTransmitByteGetReturn(BYTE bPicAddressI2cFormat, BYTE bDataToWrite)
 
 // transmit a word, no returned data from I2C device
 
-int I2CTransmitWord(BYTE bPicAddressI2cFormat, WORD wDataToWrite)
+int I2CTransmitWord(u8 bPicAddressI2cFormat, WORD wDataToWrite)
 {
 	return WriteToSMBus(bPicAddressI2cFormat,(wDataToWrite>>8)&0xff,1,(wDataToWrite&0xff));
 }
 
 
-int I2CWriteBytetoRegister(BYTE bPicAddressI2cFormat, BYTE bRegister, BYTE wDataToWrite)
+int I2CWriteBytetoRegister(u8 bPicAddressI2cFormat, u8 bRegister, u8 wDataToWrite)
 {
 	return WriteToSMBus(bPicAddressI2cFormat,bRegister,1,(wDataToWrite&0xff));
 	
 }
 
 
-void I2CModifyBits(BYTE bAds, BYTE bReg, BYTE bData, BYTE bMask)
+void I2CModifyBits(u8 bAds, u8 bReg, u8 bData, u8 bMask)
 {
-	BYTE b=I2CTransmitByteGetReturn(0x45, bReg)&(~bMask);
+	u8 b=I2CTransmitByteGetReturn(0x45, bReg)&(~bMask);
 	I2CTransmitWord(0x45, (bReg<<8)|((bData)&bMask)|b);
 }
 
 // ----------------------------  PIC challenge/response -----------------------------------------------------------
 
-extern int I2cSetFrontpanelLed(BYTE b)
+extern int I2cSetFrontpanelLed(u8 b)
 {
 	I2CTransmitWord( 0x10, 0x800 | b);  // sequencing thanks to Jarin the Penguin!
 	I2CTransmitWord( 0x10, 0x701);

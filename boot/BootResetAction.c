@@ -89,7 +89,7 @@ extern void BootResetAction ( void ) {
 	{ // decode and malloc backdrop bitmap
 		extern int _start_backdrop;
 		BootVideoJpegUnpackAsRgb(
-			(BYTE *)&_start_backdrop,
+			(u8 *)&_start_backdrop,
 			&jpegBackdrop
 		);
 	}
@@ -157,7 +157,7 @@ extern void BootResetAction ( void ) {
 
 	// set Ethernet MAC address from EEPROM
         {
-	volatile BYTE * pb=(BYTE *)0xfef000a8;  // Ethernet MMIO base + MAC register offset (<--thanks to Anders Gustafsson)
+	volatile u8 * pb=(u8 *)0xfef000a8;  // Ethernet MMIO base + MAC register offset (<--thanks to Anders Gustafsson)
 	int n;
 	for(n=5;n>=0;n--) { *pb++=	eeprom.MACAddress[n]; } // send it in backwards, its reversed by the driver
         }
@@ -167,7 +167,7 @@ extern void BootResetAction ( void ) {
 	{
 		OBJECT_FLASH of;
 		memset(&of,0x00,sizeof(of));
-		of.m_pbMemoryMappedStartAddress=(BYTE *)LPCFlashadress;
+		of.m_pbMemoryMappedStartAddress=(u8 *)LPCFlashadress;
 		BootFlashGetDescriptor(&of, (KNOWN_FLASH_TYPE *)&aknownflashtypesDefault[0]);
 		VIDEO_ATTR=0xffc8c8c8;
 		printk("Flash type: ");

@@ -132,7 +132,7 @@ rawread (int drive, int sector, int byte_offset, int byte_len, char *buf)
 	                if(byte_len<512) nThisTime=byte_len;
 
 				                if(byte_offset) {
-						                        BYTE ba[512];
+						                        u8 ba[512];
 
                       if(BootIdeReadSector(drive, buf, sector, 0, 512)) {
                             bprintf("Unable to get first sector\n");

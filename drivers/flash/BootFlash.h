@@ -33,9 +33,9 @@
 typedef bool (*CALLBACK_FLASH)(void * pvoidObjectFlash, ENUM_EVENTS ee, DWORD dwPos, DWORD dwExtent);
 
 typedef struct {
- 	volatile BYTE * volatile m_pbMemoryMappedStartAddress; // fill on entry
-	BYTE m_bManufacturerId;
-	BYTE m_bDeviceId;
+ 	volatile u8 * volatile m_pbMemoryMappedStartAddress; // fill on entry
+	u8 m_bManufacturerId;
+	u8 m_bDeviceId;
 	char m_szFlashDescription[256];
  	char m_szAdditionalErrorInfo[256];
 	DWORD m_dwLengthInBytes;
@@ -48,18 +48,18 @@ typedef struct {
 
 
 typedef struct {
-	BYTE m_bManufacturerId;
-	BYTE m_bDeviceId;
+	u8 m_bManufacturerId;
+	u8 m_bDeviceId;
  	char m_szFlashDescription[32];
 	DWORD m_dwLengthInBytes;
 } KNOWN_FLASH_TYPE;
 
 // requires pof->m_pbMemoryMappedStartAddress set to start address of flash in memory on entry
 
-int BootReflashAndReset(BYTE *pbNewData, DWORD dwStartOffset, DWORD dwLength);
-void BootReflashAndReset_RAM(BYTE *pbNewData, DWORD dwStartOffset, DWORD dwLength);
+int BootReflashAndReset(u8 *pbNewData, DWORD dwStartOffset, DWORD dwLength);
+void BootReflashAndReset_RAM(u8 *pbNewData, DWORD dwStartOffset, DWORD dwLength);
 
 bool BootFlashGetDescriptor( OBJECT_FLASH *pof, KNOWN_FLASH_TYPE * pkft );
 bool BootFlashEraseMinimalRegion( OBJECT_FLASH *pof);
-bool BootFlashProgram( OBJECT_FLASH *pof, BYTE *pba );
+bool BootFlashProgram( OBJECT_FLASH *pof, u8 *pba );
 

@@ -7,7 +7,7 @@
 typedef unsigned long ULONG;
 typedef unsigned int DWORD;
 typedef unsigned short WORD;
-typedef unsigned char BYTE;
+typedef unsigned char u8;
 #ifndef bool_already_defined_
 	typedef int bool;
 #endif
