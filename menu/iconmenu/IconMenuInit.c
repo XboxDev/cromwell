@@ -69,13 +69,17 @@ void InitFatXIcons(void) {
 		BootIdeReadSector(driveId, ba, 3, 0, 512);
 		if (!strncmp("BRFR",ba,4)) {
 			//Got a FATX formatted HDD
-			CONFIGENTRY dummyconfig;
-			if (BootTryLoadConfigFATX(&dummyconfig)) {
-				//We can load the config, so it's bootable.
+			CONFIGENTRY *entry;
+			
+			for (entry = (CONFIGENTRY*)LoadConfigFatX(); entry; entry=(CONFIGENTRY*)entry->nextConfigEntry) {
 				iconPtr = (ICON *)malloc(sizeof(ICON));
 		   		iconPtr->iconSlot = ICON_SOURCE_SLOT4;
-		   		iconPtr->szCaption = "FatX (E:)";
+		   		if (strlen(entry->title)==0) {
+					iconPtr->szCaption="FatX (E:)";
+				}
+				else iconPtr->szCaption=entry->title;
 		   		iconPtr->functionPtr = BootFromFATX;
+				iconPtr->functionDataPtr = (void *)entry;
 		   		AddIcon(iconPtr);
 				//If we have fatx, mark it as default.
 				//If there are natives, they'll take over shortly

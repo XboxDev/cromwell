@@ -112,8 +112,9 @@ int BootLoadConfigNative(int nActivePartition, CONFIGENTRY *config, bool fJustTe
 		int nLen;
 		if(fJustTestingForPossible) return 1; // if there's a linuxboot.cfg it must be worth trying to boot
 		nLen=grub_read((void *)KERNEL_SETUP, filemax);
-		if(nLen>0) { ((char *)KERNEL_SETUP)[nLen]='\0'; }  // needed to terminate incoming string, reboot in ParseConfig without it
-		ParseConfig((char *)KERNEL_SETUP,config, NULL);
+		
+		config = ParseConfig((char *)KERNEL_SETUP, nLen, NULL);
+		
 		BootPrintConfig(config);
 		printf("linuxboot.cfg is %d bytes long.\n", dwConfigSize);
 	}
@@ -163,8 +164,7 @@ int BootLoadConfigNative(int nActivePartition, CONFIGENTRY *config, bool fJustTe
 	return true;
 }
 
-int BootTryLoadConfigFATX(CONFIGENTRY *config) {
-
+CONFIGENTRY* LoadConfigFatX(void) {
 	FATXPartition *partition = NULL;
 	FATXFILEINFO fileinfo;
 	FATXFILEINFO infokernel;
@@ -175,33 +175,26 @@ int BootTryLoadConfigFATX(CONFIGENTRY *config) {
 	
 	if(partition != NULL) {
 
-		if(!LoadFATXFile(partition,"/linuxboot.cfg",&fileinfo)) {
-			if(LoadFATXFile(partition,"/debian/linuxboot.cfg",&fileinfo) ) {
-				fileinfo.buffer[fileinfo.fileSize]=0;
-				ParseConfig(fileinfo.buffer,config,"/debian");
-				free(fileinfo.buffer);
-				CloseFATXPartition(partition);
-			}
-		} else {
-			fileinfo.buffer[fileinfo.fileSize]=0;
-			ParseConfig(fileinfo.buffer,config,NULL);
+		if(LoadFATXFile(partition,"/linuxboot.cfg",&fileinfo)) {
+			//Root of E has a linuxboot.cfg in
+			CONFIGENTRY *entry = (CONFIGENTRY*)malloc(sizeof(CONFIGENTRY));	
+			memset(entry,0x00,sizeof(CONFIGENTRY));
+			entry = ParseConfig(fileinfo.buffer, fileinfo.fileSize, NULL);
 			free(fileinfo.buffer);
+			return entry;
 		}
-	} else {
-		CloseFATXPartition(partition);
-		return 0;
-	}
-
-	// Use INITRD_START as temporary location for loading the Kernel 
-	tempBuf = (u8*)INITRD_START;
-	if(! LoadFATXFilefixed(partition,config->szKernel,&infokernel,tempBuf)) {
-		CloseFATXPartition(partition);
-		return 0;
-	} else {
-		CloseFATXPartition(partition);
-		return 1; // worth trying, since the filesystem and kernel exists
-	}
-	
+		
+		if(LoadFATXFile(partition,"/debian/linuxboot.cfg",&fileinfo) ) {
+			//Try in /debian on E
+			CONFIGENTRY *entry = (CONFIGENTRY*)malloc(sizeof(CONFIGENTRY));	
+			entry = ParseConfig(fileinfo.buffer, fileinfo.fileSize, "/debian");
+			free(fileinfo.buffer);
+			CloseFATXPartition(partition);
+			return entry;
+		}
+	} 
+	//Failed
+	return NULL;
 }
 
 int BootLoadConfigFATX(CONFIGENTRY *config) {
@@ -219,28 +212,11 @@ int BootLoadConfigFATX(CONFIGENTRY *config) {
 
 	I2CTransmitWord(0x10, 0x0c01); // Close DVD tray
 	
-	printk("Loading linuxboot.cfg from FATX\n");
 	partition = OpenFATXPartition(0,
 			SECTOR_STORE,
 			STORE_SIZE);
 	
 	if(partition == NULL) return 0;
-
-	if(LoadFATXFile(partition,"/linuxboot.cfg",&fileinfo) ) {
-		wait_ms(50);
-		fileinfo.buffer[fileinfo.fileSize]=0;
-		ParseConfig(fileinfo.buffer,config, NULL);
-		free(fileinfo.buffer);
-	} 
-	else if(LoadFATXFile(partition,"/debian/linuxboot.cfg",&fileinfo) ) {
-		wait_ms(50);
-		fileinfo.buffer[fileinfo.fileSize]=0;
-		ParseConfig(fileinfo.buffer,config,"/debian");
-		free(fileinfo.buffer);
-	} else {
-		wait_ms(50);
-		printk("linuxboot.cfg not found, using defaults\n");
-	}
 
 	BootPrintConfig(config);
 	
@@ -281,7 +257,7 @@ int BootLoadConfigFATX(CONFIGENTRY *config) {
 
 
 
-int BootLoadConfigCD(int cdromId, CONFIGENTRY *config) {
+CONFIGENTRY *BootLoadConfigCD(int cdromId) {
 
 	u32 dwConfigSize=0, dw;
 	int n;
@@ -289,7 +265,8 @@ int BootLoadConfigCD(int cdromId, CONFIGENTRY *config) {
 	u32 dwY=VIDEO_CURSOR_POSY;
 	u32 dwX=VIDEO_CURSOR_POSX;
 	u8* tempBuf;
-
+	CONFIGENTRY *config;
+	
 	memset((u8 *)KERNEL_SETUP,0,4096);
 
 	//See if we already have a CDROM in the drive
@@ -344,8 +321,7 @@ int BootLoadConfigCD(int cdromId, CONFIGENTRY *config) {
 		while(1) ;
 	}
         // LinuxBoot.cfg File Loaded
-	((char *)KERNEL_SETUP)[dwConfigSize]=0;
-	ParseConfig((char *)KERNEL_SETUP,config,NULL);
+	config = ParseConfig((char *)KERNEL_SETUP, dwConfigSize, NULL);
 	BootPrintConfig(config);
 
 	// Use INITRD_START as temporary location for loading the Kernel 
@@ -365,7 +341,7 @@ int BootLoadConfigCD(int cdromId, CONFIGENTRY *config) {
 		printk("  Loading %s from CDROM", config->szInitrd);
 		VIDEO_ATTR=0xffa8a8a8;
 		
-		dwInitrdSize=BootIso9660GetFile(cdromId,config->szInitrd, (void*)INITRD_START, MAX_INITRD_SIZE);
+		dwInitrdSize=BootIso9660GetFile(cdromId, config->szInitrd, (void*)INITRD_START, MAX_INITRD_SIZE);
 		if( dwInitrdSize < 0 ) {
 			printk("Not Found, error %d\nHalting\n", dwInitrdSize); 
 			while(1);
@@ -379,7 +355,7 @@ int BootLoadConfigCD(int cdromId, CONFIGENTRY *config) {
 		dwInitrdSize=0;
 		printk("");
 	}
-	return true;
+	return config;
 }
 
 #ifdef FLASH 
@@ -474,7 +450,8 @@ int ExittoLinux(CONFIGENTRY *config) {
 	VIDEO_ATTR=0xff8888a8;
 	printk("     Kernel:  %s\n", (char *)(0x00090200+(*((u16 *)0x9020e)) ));
 	printk("\n");
-
+	printk("     Append:  %s\n", config->szAppend);
+	
 	{
 		char *sz="\2Starting Linux\2";
 		VIDEO_CURSOR_POSX=((vmode.width-BootVideoGetStringTotalWidth(sz))/2)*4;

@@ -65,6 +65,6 @@ SECTIONS {
 		_heap = . ;
 	}
 	
-	_end_compleate_rom = SIZEOF(.text) + SIZEOF(.rodata) + SIZEOF(.data) + SIZEOF(.bss);
+	_end_complete_rom = SIZEOF(.text) + SIZEOF(.rodata) + SIZEOF(.data) + SIZEOF(.bss);
 
 }

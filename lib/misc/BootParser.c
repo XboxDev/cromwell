@@ -1,58 +1,79 @@
 #include "boot.h"
-//#include <string.h>
 
-int ParseConfig(char *szBuffer, CONFIGENTRY *entry, char *szPath) {
-	static char szLine[MAX_LINE];
-	static char szTmp[MAX_LINE];
-	char *ptr;
-
-	memset(entry,0,sizeof(CONFIGENTRY));
-	ptr = szBuffer;
-	ptr = HelpGetLine(szBuffer);
-	entry->nValid = 1;
-
-	while(1) {
-		memset(szLine,0x00,MAX_LINE);
-		memset(szTmp,0x00,MAX_LINE);
-		strncpy(szLine,ptr,MAX_LINE);
-		szLine[MAX_LINE-1]=0; 	// Make sure string is terminated
-                
-		if(strlen(ptr) < MAX_LINE) {
-			if(strncmp(ptr,"kernel ",strlen("kernel ")) == 0)  {
-				HelpGetParm(szTmp, ptr);
-				
-				if (szPath!= NULL) 	sprintf(entry->szKernel,"%s",szPath);
-				
-				if (szTmp[0] != '/') sprintf(entry->szKernel,"%s%s",entry->szKernel,"/");
-				
-				sprintf(entry->szKernel,"%s%s",entry->szKernel,szTmp);
-			}
-			
-			if(strncmp(ptr,"initrd ",strlen("initrd ")) == 0) {
-				HelpGetParm(szTmp, ptr);
-				
-				if (( szPath!= NULL) &&
-					(strncmp(szTmp, "no", strlen("no")) != 0))
-					sprintf(entry->szInitrd,"%s",szPath);
-				
-				if (szTmp[0] != '/')
-					sprintf(entry->szInitrd,"%s%s",entry->szInitrd,"/");
-				
-				sprintf(entry->szInitrd,"%s%s",entry->szInitrd,szTmp);
-			}
-			
-			if(strncmp(ptr,"append ",strlen("append ")) == 0)
-				HelpGetParm(entry->szAppend, ptr);
-		} else {
-			entry->nValid = 0;
-		}
-		ptr = HelpGetLine(0);
-		if(*ptr == 0) break;
+CONFIGENTRY *ParseConfig(char *szBuffer, unsigned int fileLen, char *szPath) {
+	char *linePtr;
+	char *currentPos = szBuffer;
+	CONFIGENTRY *rootEntry = (CONFIGENTRY*)malloc(sizeof(CONFIGENTRY));
+	CONFIGENTRY *currentEntry = rootEntry;
+	
+	memset(rootEntry,0x00,sizeof(CONFIGENTRY));
+	//Null terminate the input data
+	*(szBuffer+fileLen)=0;
+	
+	for (linePtr = (char *)strsep(&currentPos, "\n"); linePtr != NULL; linePtr = (char *)strsep(&currentPos, "\n")) {
+		char *param, *paramdata;
+		char *p;
 		
+		param = (char *)strsep(&linePtr," \t");
+	
+		if (linePtr==NULL) {
+			continue;
+		}
+		p=param+strlen(param)+1;
+		//Strip off leading whitespace
+		while (isspace(*p)) p++;
+		
+		paramdata = p;
+	
+		//Strip off trailing whitespace
+		p=paramdata+strlen(paramdata)-1;
+		while (p!=paramdata && isspace(*p)) p--;
+		*(p+1)=0;
+		
+		if (!strncmp(param,"title",5)) {
+			//Do we already have a title in this entry?
+			//If so, this is the start of a new 'bootitem'.  
+			//Otherwise, it begins a whole new entry
+			if (strlen(currentEntry->title)==0) {
+				strncpy(currentEntry->title, paramdata, strlen(paramdata));
+			}
+			else {	
+				currentEntry->nextConfigEntry = (struct CONFIGENTRY*)malloc(sizeof(CONFIGENTRY));
+				memset(currentEntry->nextConfigEntry, 0x00, sizeof(CONFIGENTRY));
+				currentEntry = (CONFIGENTRY*)currentEntry->nextConfigEntry;
+				strncpy(currentEntry->title, paramdata, strlen(paramdata));
+			}
+			
+		}
+		else if (!strncmp(param,"kernel",6)) {
+			//Handle 'xbox-os' naming conventions
+			chrreplace(paramdata, '\\', '/');
+
+			if (szPath!=NULL) { 
+				sprintf(currentEntry->szKernel,"%s/%s",szPath, paramdata);
+			}
+			else {
+				//Add a leading slash, if the path name does not already contain one
+				if (*paramdata=='/') sprintf(currentEntry->szKernel,"%s", paramdata);
+				else sprintf(currentEntry->szKernel,"/%s", paramdata);
+			}
+		}
+		else if (!strncmp(param,"initrd",6)) {
+			//Handle 'xbox-os' naming conventions
+			chrreplace(paramdata, '\\', '/');
+
+			if (szPath!=NULL) { 
+				sprintf(currentEntry->szInitrd,"%s/%s",szPath, paramdata);
+			}
+			else {
+				//Add a leading slash, if the path name does not already contain one
+				if (*paramdata=='/') sprintf(currentEntry->szInitrd,"%s", paramdata);
+				else sprintf(currentEntry->szInitrd,"/%s", paramdata);
+			}
+		}
+		else if (!strncmp(param,"append",6)) {
+			strncpy(currentEntry->szAppend, paramdata, strlen(paramdata));
+		}
 	}
-	chrreplace(entry->szInitrd, '\\', '/');
-	chrreplace(entry->szKernel, '\\', '/');
-
-	return entry->nValid;
+	return rootEntry;
 }
-

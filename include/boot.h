@@ -215,40 +215,6 @@ int I2cSetFrontpanelLed(u8 b);
 #define TRACE
 #endif
 
-#define SPAMI2C() 				__asm__ __volatile__ (\
-	"retry: ; "\
-	"movb $0x55, %al ;"\
-	"movl $0xc004, %edx ;"\
-	"shl	$1, %al ;"\
-	"out %al, %dx ;"\
-\
-	"movb $0xaa, %al ;"\
-	"add $4, %edx ;"\
-	"out %al, %dx ;"\
-\
-	"movb $0xbb, %al ;"\
-	"sub $0x2, %edx ;"\
-	"out %al, %dx ;"\
-\
-	"sub $6, %edx ;"\
-	"in %dx, %ax ;"\
-	"out %ax, %dx ;"\
-	"add $2, %edx ;"\
-	"movb $0xa, %al ;"\
-	"out %al, %dx ;"\
-	"sub $0x2, %dx ;"\
-"spin: ;"\
-	"in %dx, %al ;"\
-	"test $8, %al ;"\
-	"jnz spin ;"\
-	"test $8, %al ;"\
-	"jnz retry ;"\
-	"test $0x24, %al ;"\
-\
-	"jmp retry"\
-);
-
-
 typedef struct _LIST_ENTRY {
 	struct _LIST_ENTRY *m_plistentryNext;
 	struct _LIST_ENTRY *m_plistentryPrevious;

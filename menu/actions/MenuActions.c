@@ -26,9 +26,8 @@ void MoveToTextMenu(void *nothing) {
 }
 
 void BootFromCD(void *data) {
-	CONFIGENTRY config;
-	BootLoadConfigCD(*(int*)data, &config);
-	ExittoLinux(&config);
+	CONFIGENTRY *config = (CONFIGENTRY*)BootLoadConfigCD(*(int*)data);
+	ExittoLinux(config);
 }
 
 #ifdef ETHERBOOT 
@@ -45,9 +44,8 @@ void FlashBios(void *data) {
 #endif
 
 void BootFromFATX(void *configEntry) {
-	CONFIGENTRY config;
-	BootLoadConfigFATX(&config);
-	ExittoLinux(&config);
+	BootLoadConfigFATX((CONFIGENTRY*)configEntry);
+	ExittoLinux((CONFIGENTRY*)configEntry);
 }
 
 void SetLEDColor(void *color) {

@@ -27,13 +27,13 @@ Cromwellconfig:
 		// Space for the SHA1 checksum
         .org 0x20   
 
-        // The Value positions are fixed, do never change them, used everywhere
+        // The Value positions are fixed, do not change them, used everywhere
         .long 0x0	// 0x20 if XBE, then this bit is 0, if Cromwell mode, the bit is set to 1 by the Startuploader
         .long 0x0	// 0x24 ImageRetryLoads
         .long 0x0	// 0x28 Bank, from where Loaded
         .long 0x0	// 0x2C 0 .. Bios = 256 k, 1 .. Bios = 1MB 
         .long 0x0	// 0x30 free
-        .long _end_compleate_rom       // 0x34 free
+        .long _end_complete_rom       // 0x34 free
         .long 0x0       // 0x38 free
         .long 0x0	// free
 	
@@ -58,17 +58,16 @@ tableIdtDescriptor:
 
 	.word 2048
 	.long IDT_LOC                      // IDT located at 0xB0000
-	.word 0     // fill Word, so we get alliged again
+	.word 0     // fill Word, so we get aligned again
         
-        // We are again Dword Alligated now
+        // We are dword aligned now
 
 .align 16        
 	.globl start_linux
 start_linux:
        	
-       	// i am sure, the irq's are turned off, but who knows this for sure
-       	// never trust anybody
-       	cli
+       	//Make SURE the IRQs are turned off
+	cli
   	
 	// kill the cache  = Disable bit 30 + 29 = CD + NW 
 	// CD = Cache Disable (disable = 1)
@@ -266,63 +265,6 @@ reload_cs:
 //	wbinvd
 
 	jmp BootResetAction
-
-#if 0	
-        // something for Video ?
-	mov 	$0x80000854, %eax
-	movw 	$0xcf8, %dx
-	outl 	%eax, %dx
-	movw 	$0xcfc, %dx
-	inl 	%dx, %eax 
-	orl 	$0x88000000, %eax
-	outl 	%eax, %dx 
-        wbinvd
-	
-	// Important
-	mov 	$0x80000064, %eax 
-	movw 	$0xcf8, %dx 
-	outl	%eax, %dx 
-	movw 	$0xcfc, %dx
-	inl 	%dx, %eax 
-	orl 	$0x88000000, %eax 
-	outl	%eax, %dx 
-	wbinvd
-	
-	// Important
-	mov 	$0x8000006c, %eax 
-	movw 	$0xcf8, %dx
-	outl	%eax, %dx 
-	movw 	$0xcfc, %dx 
-	inl 	%dx, %eax
-	push 	%eax 
-	andl 	$0xfffffffe, %eax 
-	outl	%eax, %dx 
-	pop 	%eax
-	outl	%eax, %dx 
-      	wbinvd
-      	
-/*      	
-	// CPU Whoami   ? sesless ?
-	mov 	$0x80000080, %eax 
-	movw 	$0xcf8, %dx 
-	outl	%eax, %dx 
-	movw 	$0xcfc, %dx 
-	movl 	$0x100, %eax 
-	outl	%eax, %dx 
-        wbinvd
-*/	
-	mov 	$0x8000088C, %eax 
-	movw 	$0xcf8, %dx 
-	outl	%eax, %dx 
-	movw 	$0xcfc, %dx 
-	movl 	$0x40000000, %eax 
-	outl	%eax, %dx
-	wbinvd
-	
-	jmp BootResetAction
-#endif
-       
-
 
 ///////////////////////////////////////////
 //
