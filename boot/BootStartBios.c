@@ -110,6 +110,8 @@ int BootLodaConfigNative(int nActivePartition, CONFIGENTRY *config, bool fJustTe
 	DWORD dwConfigSize=0;
 	char szGrub[256+4];
 
+	memset((BYTE *)0x90000,0,4096);
+
 	szGrub[0]=0xff; szGrub[1]=0xff; szGrub[2]=nActivePartition; szGrub[3]=0x00;
 
 	errnum=0; boot_drive=0; saved_drive=0; saved_partition=0x0001ffff; buf_drive=-1;
@@ -194,6 +196,8 @@ int BootLodaConfigFATX(CONFIGENTRY *config, bool fJustTestingForPossible) {
 	static FATXFILEINFO infokernel;
 	static FATXFILEINFO infoinitrd;
 
+	memset((BYTE *)0x90000,0,4096);
+
 	if(!fJustTestingForPossible) printk("Loading linuxboot.cfg form FATX\n");
 	partition = OpenFATXPartition(0,
 			SECTOR_STORE,
@@ -257,6 +261,8 @@ int BootLodaConfigCD(CONFIGENTRY *config) {
 	DWORD dwY=VIDEO_CURSOR_POSY;
 	DWORD dwX=VIDEO_CURSOR_POSX;
 
+	memset((BYTE *)0x90000,0,4096);
+	
 	BootVideoBlit(
 		(DWORD *)&baBackground[0], 640*4,
 		(DWORD *)(FRAMEBUFFER_START+(VIDEO_CURSOR_POSY*currentvideomodedetails.m_dwWidthInPixels*4)+VIDEO_CURSOR_POSX),
@@ -415,6 +421,7 @@ int BootLodaConfigCD(CONFIGENTRY *config) {
 }
 
 
+#ifdef FLASH
 void BootFlashConfirm()
 {
 	I2CTransmitWord(0x10, 0x0c00); // eject DVD tray
@@ -422,7 +429,7 @@ void BootFlashConfirm()
 	printk("Close the DVD tray to confirm flash\n");
 	while(1) ;
 }
-
+#endif
 
 void BootIcons(int nXOffset, int nYOffset, int nTextOffsetX, int nTextOffsetY) {
 	icon[ICON_FATX].nDestX = nXOffset + 120;
@@ -692,10 +699,12 @@ void StartBios(	int nDrive, int nActivePartition , int nFATXPresent) {
 			break;
 		case ICON_SETUP:
 #ifndef XBE
+#ifdef FLASH
 			BootVideoClearScreen(&jpegBackdrop, nTempStartMessageCursorY, nTempCursorResumeY+100);
 			VIDEO_CURSOR_POSY=nTempStartMessageCursorY;
 			VIDEO_CURSOR_POSX=0;
 			BootFlashConfirm();
+#endif
 #endif
 			break;
 		default:
