@@ -309,26 +309,12 @@ void IntHandlerCSmc(void)
 					break;
 
 				case 3: // AV CABLE HAS BEEN PLUGGED IN
-					{
-						bprintf("SMC Interrupt %d: AV cable plugged in\n", nCountInterruptsSmc);
-if (cromwell_config==CROMWELL) {
-						if(nInteruptable) {
-							{
-								BYTE b=I2CTransmitByteGetReturn(0x10, 0x04);
-								bprintf("Detected new AV type %d, cf %d\n", b, currentvideomodedetails.m_bAvPack);
-								if(b!=currentvideomodedetails.m_bAvPack ) {
-									VIDEO_LUMASCALING=VIDEO_RSCALING=VIDEO_BSCALING=0;
-	BootVgaInitializationKernelNG((CURRENT_VIDEO_MODE_DETAILS *)&currentvideomodedetails);
-								}
-							}
-						}
-} // End of IF cromwell
-					}
+					BootVgaInitializationKernelNG((CURRENT_VIDEO_MODE_DETAILS *)&currentvideomodedetails);
 					break;
 
 				case 4: // AV CABLE HAS BEEN UNPLUGGED
 					bprintf("SMC Interrupt %d: AV cable unplugged\n", nCountInterruptsSmc);
-					currentvideomodedetails.m_bAvPack=0xff;
+					//currentvideomodedetails.m_bAvPack=0xff;
 					break;
 
 				case 5: // BUTTON PRESSED REQUESTING TRAY OPEN

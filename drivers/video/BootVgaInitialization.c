@@ -33,9 +33,7 @@ void BootVgaInitializationKernelNG(CURRENT_VIDEO_MODE_DETAILS * pcurrentvideomod
 	videoStd = DetectVideoStd();
 
    	memset((void *)pcurrentvideomodedetails,0,sizeof(CURRENT_VIDEO_MODE_DETAILS));
-	// clear the Video Ram
-	memset((void *)FRAMEBUFFER_START,0x00,0x400000);
-     	pcurrentvideomodedetails->m_nVideoModeIndex =VIDEO_MODE_800x600;
+	pcurrentvideomodedetails->m_nVideoModeIndex =VIDEO_MODE_800x600;
 
 
 	if(((BYTE *)&eeprom)[0x96]&0x01) { // 16:9 widescreen TV

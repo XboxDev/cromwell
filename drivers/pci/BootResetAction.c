@@ -156,6 +156,9 @@ extern void BootResetAction ( void ) {
         
         // Load and Init the Background image
         
+        // clear the Video Ram
+	memset((void *)FRAMEBUFFER_START,0x00,0x400000);
+	
 	BootVgaInitializationKernelNG((CURRENT_VIDEO_MODE_DETAILS *)&currentvideomodedetails);
 
 	bprintf("BOOT: kern VGA init done\n\r");
@@ -218,7 +221,6 @@ extern void BootResetAction ( void ) {
 	
 	if (cromwell_config==XROMWELL) 	printk("\2Xbox Linux XROMWELL  " VERSION "\2\n" );
 	if (cromwell_config==CROMWELL)	printk("\2Xbox Linux Clean BIOS  " VERSION "\2\n" );
-	
 
 	VIDEO_CURSOR_POSY=currentvideomodedetails.m_dwMarginYInLinesRecommended+32;
 	VIDEO_CURSOR_POSX=(currentvideomodedetails.m_dwMarginXInPixelsRecommended/*+64*/)*4;
