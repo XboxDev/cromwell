@@ -117,7 +117,7 @@ void BootVgaInitializationKernelNG(CURRENT_VIDEO_MODE_DETAILS * pcurrentvideomod
 	writeCrtNv (&riva, 0, 0x33, 0x11); // ?
 	
 	if((av_type == AV_VGA) || (av_type == AV_VGA_SOG) || (av_type == AV_HDTV)) {
-		unsigned char pll_int = (unsigned char)((double)dotClock * 6.0 / 13.5e3 + 0.5);
+		unsigned char pll_int;
 		if (av_type == AV_HDTV) {
 			xbox_hdtv_mode hdtv_mode = HDTV_480p;
 			//Only 480p supported at present
@@ -145,15 +145,16 @@ void BootVgaInitializationKernelNG(CURRENT_VIDEO_MODE_DETAILS * pcurrentvideomod
 			gpu.pixelDepth = (32 + 1) / 8;
 			gpu.crtchdispend = pcurrentvideomodedetails->m_dwWidthInPixels;
 			gpu.crtcvstart = gpu.nvvstart;
-			pll_int = (unsigned char)27027000;
 			
+			dotClock = 27027000;
+			pll_int = (unsigned char)((double)dotClock * 6.0 / 13.5e3 + 0.5);
 			if (video_encoder == ENCODER_CONEXANT)
 				encoder_ok = conexant_calc_hdtv_mode(hdtv_mode, pll_int, newmode.encoder_mode);
 			else if (video_encoder == ENCODER_FOCUS)
 				encoder_ok = focus_calc_hdtv_mode(hdtv_mode, pll_int, newmode.encoder_mode);
 		}
 		else {
-
+			//VGA or VGA_SOG
 			// Settings for 800x600@56Hz, 35 kHz HSync
 			pcurrentvideomodedetails->m_dwWidthInPixels=800;
 			pcurrentvideomodedetails->m_dwHeightInLines=600;
@@ -169,7 +170,9 @@ void BootVgaInitializationKernelNG(CURRENT_VIDEO_MODE_DETAILS * pcurrentvideomod
 			gpu.pixelDepth = (32 + 1) / 8;
 			gpu.crtchdispend = pcurrentvideomodedetails->m_dwWidthInPixels;
 			gpu.crtcvstart = gpu.nvvstart;
-			pll_int = (unsigned char)36000000;
+			
+			dotClock = 36000000;
+			pll_int = (unsigned char)((double)dotClock * 6.0 / 13.5e3 + 0.5);
 			
 			if (video_encoder == ENCODER_CONEXANT)
 				encoder_ok = conexant_calc_vga_mode(av_type, pll_int, newmode.encoder_mode);
