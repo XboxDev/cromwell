@@ -47,31 +47,31 @@ enum {
 /* ----------------------------  IO primitives -----------------------------------------------------------
 */
 
-static __inline void IoOutputByte(WORD wAds, u8 bValue) {
+static __inline void IoOutputByte(u16 wAds, u8 bValue) {
     __asm__ __volatile__ ("outb %b0,%w1": :"a" (bValue), "Nd" (wAds));
 }
 
-static __inline void IoOutputWord(WORD wAds, WORD wValue) {
+static __inline void IoOutputWord(u16 wAds, u16 wValue) {
     __asm__ __volatile__ ("outw %0,%w1": :"a" (wValue), "Nd" (wAds));
 	}
 
-static __inline void IoOutputDword(WORD wAds, u32 dwValue) {
+static __inline void IoOutputDword(u16 wAds, u32 dwValue) {
     __asm__ __volatile__ ("outl %0,%w1": :"a" (dwValue), "Nd" (wAds));
 }
 
-static __inline u8 IoInputByte(WORD wAds) {
+static __inline u8 IoInputByte(u16 wAds) {
   unsigned char _v;
   __asm__ __volatile__ ("inb %w1,%0":"=a" (_v):"Nd" (wAds));
   return _v;
 }
 
-static __inline WORD IoInputWord(WORD wAds) {
-  WORD _v;
+static __inline u16 IoInputWord(u16 wAds) {
+  u16 _v;
   __asm__ __volatile__ ("inw %w1,%0":"=a" (_v):"Nd" (wAds));
   return _v;
 }
 
-static __inline u32 IoInputDword(WORD wAds) {
+static __inline u32 IoInputDword(u16 wAds) {
   u32 _v;
   __asm__ __volatile__ ("inl %w1,%0":"=a" (_v):"Nd" (wAds));
   return _v;
@@ -88,7 +88,7 @@ void BootStartBiosLoader(void);
 
 ///////// BootPerformPicChallengeResponseAction.c
 
-int I2CTransmitWord(u8 bPicAddressI2cFormat, WORD wDataToWrite);
+int I2CTransmitWord(u8 bPicAddressI2cFormat, u16 wDataToWrite);
 int I2CTransmitByteGetReturn(u8 bPicAddressI2cFormat, u8 bDataToWrite);
 
 void *memcpy(void *dest, const void *src,  size_t size);

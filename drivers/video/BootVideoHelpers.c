@@ -355,10 +355,10 @@ void BootVideoChunkedPrint(const char * szBuffer) {
 
 int printk(const char *szFormat, ...) {  // printk displays to video
 	char szBuffer[512*2];
-	WORD wLength=0;
+	u16 wLength=0;
 	va_list argList;
 	va_start(argList, szFormat);
-	wLength=(WORD) vsprintf(szBuffer, szFormat, argList);
+	wLength=(u16) vsprintf(szBuffer, szFormat, argList);
 //	wLength=strlen(szFormat); // temp!
 //	memcpy(szBuffer, szFormat, wLength);
 	va_end(argList);

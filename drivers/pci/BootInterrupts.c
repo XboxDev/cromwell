@@ -207,12 +207,12 @@ void BootInterruptsWriteIdt() {
 		ptspmi[n].m_wSelector=0x10;
 		ptspmi[n].m_wType=0x8e00;  // interrupt gate, 32-bit
 		if(n==isrprep[n1].m_bInterruptCpu) {  // is it next on our prep list?  If so, stick it in
-			ptspmi[n].m_wHandlerHighAddressLow16=(WORD)isrprep[n1].m_dwpVector;
-			ptspmi[n].m_wHandlerLinearAddressHigh16=(WORD)(((u32)isrprep[n1].m_dwpVector)>>16);
+			ptspmi[n].m_wHandlerHighAddressLow16=(u16)isrprep[n1].m_dwpVector;
+			ptspmi[n].m_wHandlerLinearAddressHigh16=(u16)(((u32)isrprep[n1].m_dwpVector)>>16);
 			n1++;
 		} else { // otherwise default handler (pretty useless, but will catch it)
-			ptspmi[n].m_wHandlerHighAddressLow16=(WORD)IntHandlerUnused;
-			ptspmi[n].m_wHandlerLinearAddressHigh16=(WORD)(((u32)IntHandlerUnused)>>16);
+			ptspmi[n].m_wHandlerHighAddressLow16=(u16)IntHandlerUnused;
+			ptspmi[n].m_wHandlerLinearAddressHigh16=(u16)(((u32)IntHandlerUnused)>>16);
 		}
 	}
 

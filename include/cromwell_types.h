@@ -6,7 +6,7 @@
 
 //typedef unsigned long ULONG;
 typedef unsigned int u32;
-typedef unsigned short WORD;
+typedef unsigned short u16;
 typedef unsigned char u8;
 #ifndef bool_already_defined_
 	typedef int bool;

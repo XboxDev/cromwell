@@ -34,7 +34,7 @@ void PciWriteByte (unsigned int bus, unsigned int dev, unsigned int func,
 }
 
 
-WORD PciReadWord(unsigned int bus, unsigned int dev, unsigned int func, unsigned int reg_off)
+u16 PciReadWord(unsigned int bus, unsigned int dev, unsigned int func, unsigned int reg_off)
 {
 	u32 base_addr = 0x80000000;
 	base_addr |= ((bus & 0xFF) << 16);	// bus #
@@ -46,7 +46,7 @@ WORD PciReadWord(unsigned int bus, unsigned int dev, unsigned int func, unsigned
 }
 
 
-void PciWriteWord(unsigned int bus, unsigned int dev, unsigned int func, unsigned int reg_off, WORD w)
+void PciWriteWord(unsigned int bus, unsigned int dev, unsigned int func, unsigned int reg_off, u16 w)
 {
 	u32 base_addr = 0x80000000;
 	base_addr |= ((bus & 0xFF) << 16);	// bus #

@@ -145,7 +145,7 @@ int BootIdeIssueAtaCommand(
 
 int BootIdeReadData(unsigned uIoBase, void * buf, size_t size)
 {
-	WORD * ptr = (WORD *) buf;
+	u16 * ptr = (u16 *) buf;
 
 	if (BootIdeWaitDataReady(uIoBase)) {
 		printk("BootIdeReadData data not ready...\n");
@@ -209,8 +209,8 @@ int BootIdeWriteData(unsigned uIoBase, void * buf, size_t size)
 
 int BootIdeWriteAtapiData(unsigned uIoBase, void * buf, size_t size)
 {
-	WORD * ptr = (unsigned short *) buf;
-	WORD w;
+	u16 * ptr = (unsigned short *) buf;
+	u16 w;
 	int n;
 
 	n=BootIdeWaitDataReady(uIoBase);
@@ -391,10 +391,10 @@ int BootIdeDriveInit(unsigned uIoBase, int nIndexDrive)
 	/* End 48-bit LBA */   
 	
 	{ 
-		WORD * pw=(WORD *)&(drive_info[10]);
+		u16 * pw=(u16 *)&(drive_info[10]);
 		tsaHarddiskInfo[nIndexDrive].s_length =
 			copy_swap_trim(tsaHarddiskInfo[nIndexDrive].m_szSerial,(u8*)pw,20);
-		pw=(WORD *)&(drive_info[27]);
+		pw=(u16 *)&(drive_info[27]);
 		tsaHarddiskInfo[nIndexDrive].m_length =
 			copy_swap_trim(tsaHarddiskInfo[nIndexDrive].m_szIdentityModelNumber,(u8 *)pw,40);
 		copy_swap_trim(tsaHarddiskInfo[nIndexDrive].m_szFirmware,(u8 *)&(drive_info[23]),8);
@@ -678,7 +678,7 @@ int BootIdeInit(void)
 
 		if(!BootIdeIssueAtaCommand(uIoBase, IDE_CMD_IDENTIFY, &tsicp)) 
 		{
-			WORD waBuffer[256];
+			u16 waBuffer[256];
 			BootIdeWaitDataReady(uIoBase);
 			if(!BootIdeReadData(uIoBase, (u8 *)&waBuffer[0], IDE_SECTOR_SIZE)) 
 			{

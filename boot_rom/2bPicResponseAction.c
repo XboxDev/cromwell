@@ -54,7 +54,7 @@ int I2CTransmitByteGetReturn(u8 bPicAddressI2cFormat, u8 bDataToWrite)
 
 // transmit a word, no returned data from I2C device
 
-int I2CTransmitWord(u8 bPicAddressI2cFormat, WORD wDataToWrite)
+int I2CTransmitWord(u8 bPicAddressI2cFormat, u16 wDataToWrite)
 {
 	int nRetriesToLive=400;
 
@@ -87,10 +87,10 @@ int I2CTransmitWord(u8 bPicAddressI2cFormat, WORD wDataToWrite)
 
 // ----------------------------  PIC challenge/response -----------------------------------------------------------
 //
-// given four bytes, returns a WORD
+// given four bytes, returns a u16
 // LSB of return is the 'first' byte, MSB is the 'second' response byte
 
-WORD BootPicManipulation(
+u16 BootPicManipulation(
 	u8 bC,
 	u8  bD,
 	u8  bE,
@@ -109,7 +109,7 @@ WORD BootPicManipulation(
 		b2 += b1 ^ b4;
 	}
 
-	return (WORD) ((((WORD)b2)<<8) | b1);
+	return (u16) ((((u16)b2)<<8) | b1);
 }
 
 // actual business of getting I2C data from PIC and reissuing munged version
@@ -134,7 +134,7 @@ int BootPerformPicChallengeResponseAction()
 	bF=n;
 
 	{
-		WORD w=BootPicManipulation(bC, bD, bE, bF);
+		u16 w=BootPicManipulation(bC, bD, bE, bF);
 
 		I2CTransmitWord( 0x10, 0x2000 | (w&0xff));
 		I2CTransmitWord( 0x10, 0x2100 | (w>>8) );

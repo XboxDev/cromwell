@@ -25,7 +25,7 @@
 extern u8 VIDEO_AV_MODE;
 // functions defined elsewhere
 int I2CTransmitByteGetReturn(u8 bPicAddressI2cFormat, u8 bDataToWrite);
-int I2CTransmitWord(u8 bPicAddressI2cFormat, WORD wDataToWrite);
+int I2CTransmitWord(u8 bPicAddressI2cFormat, u16 wDataToWrite);
 
 // internally used structures
 

@@ -82,10 +82,10 @@ typedef struct gdt_t {
 } ts_descriptor_pointer;
 
 typedef struct {  // inside an 8-byte protected mode interrupt vector
-	WORD m_wHandlerHighAddressLow16;
-	WORD m_wSelector;
-	WORD m_wType;
-	WORD m_wHandlerLinearAddressHigh16;
+	u16 m_wHandlerHighAddressLow16;
+	u16 m_wSelector;
+	u16 m_wType;
+	u16 m_wHandlerLinearAddressHigh16;
 } ts_pm_interrupt;
 
 typedef enum {
@@ -152,37 +152,37 @@ enum {
 /* ----------------------------  IO primitives -----------------------------------------------------------
 */
 
-static __inline void IoOutputByte(WORD wAds, u8 bValue) {
+static __inline void IoOutputByte(u16 wAds, u8 bValue) {
 //	__asm__  ("			     out	%%al,%%dx" : : "edx" (dwAds), "al" (bValue)  );
     __asm__ __volatile__ ("outb %b0,%w1": :"a" (bValue), "Nd" (wAds));
 }
 
-static __inline void IoOutputWord(WORD wAds, WORD wValue) {
+static __inline void IoOutputWord(u16 wAds, u16 wValue) {
 //	__asm__  ("	 out	%%ax,%%dx	" : : "edx" (dwAds), "ax" (wValue)  );
     __asm__ __volatile__ ("outw %0,%w1": :"a" (wValue), "Nd" (wAds));
 	}
 
-static __inline void IoOutputDword(WORD wAds, u32 dwValue) {
+static __inline void IoOutputDword(u16 wAds, u32 dwValue) {
 //	__asm__  ("	 out	%%eax,%%dx	" : : "edx" (dwAds), "ax" (wValue)  );
     __asm__ __volatile__ ("outl %0,%w1": :"a" (dwValue), "Nd" (wAds));
 }
 
 
-static __inline u8 IoInputByte(WORD wAds) {
+static __inline u8 IoInputByte(u16 wAds) {
   unsigned char _v;
 
   __asm__ __volatile__ ("inb %w1,%0":"=a" (_v):"Nd" (wAds));
   return _v;
 }
 
-static __inline WORD IoInputWord(WORD wAds) {
-  WORD _v;
+static __inline u16 IoInputWord(u16 wAds) {
+  u16 _v;
 
   __asm__ __volatile__ ("inw %w1,%0":"=a" (_v):"Nd" (wAds));
   return _v;
 }
 
-static __inline u32 IoInputDword(WORD wAds) {
+static __inline u32 IoInputDword(u16 wAds) {
   u32 _v;
 
   __asm__ __volatile__ ("inl %w1,%0":"=a" (_v):"Nd" (wAds));
@@ -297,7 +297,7 @@ u32 PciReadDword(unsigned int bus, unsigned int dev, unsigned int func, unsigned
 
 ///////// BootPerformPicChallengeResponseAction.c
 
-int I2CTransmitWord(u8 bPicAddressI2cFormat, WORD wDataToWrite);
+int I2CTransmitWord(u8 bPicAddressI2cFormat, u16 wDataToWrite);
 int I2CTransmitByteGetReturn(u8 bPicAddressI2cFormat, u8 bDataToWrite);
 bool I2CGetTemperature(int *, int *);
 void I2CModifyBits(u8 bAds, u8 bReg, u8 bData, u8 bMask);

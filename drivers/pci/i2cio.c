@@ -53,7 +53,7 @@ int WriteToSMBus(u8 Address,u8 bRegister,u8 Size,u32 Data_to_smbus)
 				IoOutputByte(I2C_IO_BASE+2, 0x1d);	// u32 modus
 				break;
 			case 2:
-				IoOutputByte(I2C_IO_BASE+2, 0x1b);	// WORD modus
+				IoOutputByte(I2C_IO_BASE+2, 0x1b);	// u16 modus
 				break;
 			default:	// 1
 				IoOutputByte(I2C_IO_BASE+2, 0x1a);	// u8 modus
@@ -99,7 +99,7 @@ int ReadfromSMBus(u8 Address,u8 bRegister,u8 Size,u32 *Data_to_smbus)
 				IoOutputByte(I2C_IO_BASE+2, 0x0d);	// u32 modus ?
 				break;
 			case 2:
-				IoOutputByte(I2C_IO_BASE+2, 0x0b);	// WORD modus
+				IoOutputByte(I2C_IO_BASE+2, 0x0b);	// u16 modus
 				break;
 			default:
 				IoOutputByte(I2C_IO_BASE+2, 0x0a);	// u8
@@ -148,7 +148,7 @@ int ReadfromSMBus(u8 Address,u8 bRegister,u8 Size,u32 *Data_to_smbus)
 
 
 
-int I2CWriteWordtoRegister(u8 bPicAddressI2cFormat,u8 bRegister ,WORD wDataToWrite)
+int I2CWriteWordtoRegister(u8 bPicAddressI2cFormat,u8 bRegister ,u16 wDataToWrite)
 {
 	// int WriteToSMBus(u8 Address,u8 bRegister,u8 Size,u32 Data_to_smbus)
 	return WriteToSMBus(bPicAddressI2cFormat,bRegister,2,wDataToWrite);	
@@ -168,7 +168,7 @@ int I2CTransmitByteGetReturn(u8 bPicAddressI2cFormat, u8 bDataToWrite)
 
 // transmit a word, no returned data from I2C device
 
-int I2CTransmitWord(u8 bPicAddressI2cFormat, WORD wDataToWrite)
+int I2CTransmitWord(u8 bPicAddressI2cFormat, u16 wDataToWrite)
 {
 	return WriteToSMBus(bPicAddressI2cFormat,(wDataToWrite>>8)&0xff,1,(wDataToWrite&0xff));
 }

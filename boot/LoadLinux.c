@@ -472,7 +472,7 @@ int BootLoadFlashCD(int cdromId) {
 
 int ExittoLinux(CONFIGENTRY *config) {
 	VIDEO_ATTR=0xff8888a8;
-	printk("     Kernel:  %s\n", (char *)(0x00090200+(*((WORD *)0x9020e)) ));
+	printk("     Kernel:  %s\n", (char *)(0x00090200+(*((u16 *)0x9020e)) ));
 	printk("\n");
 
 	{
