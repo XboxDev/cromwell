@@ -122,16 +122,16 @@ extern void BootResetAction ( void ) {
 
 
 	BootInterruptsWriteIdt();	
-	bprintf("BOOT: done interrupts\n\r");
+	//bprintf("BOOT: done interrupts\n\r");
 
 
 	// initialize the PCI devices
-	bprintf("BOOT: starting PCI init\n\r");
+	//bprintf("BOOT: starting PCI init\n\r");
 	BootPciPeripheralInitialization();
 	// Reset the AGP bus and start with good condition
 	BootAGPBUSInitialization();
 	
-	bprintf("BOOT: done with PCI initialization\n\r");
+	//bprintf("BOOT: done with PCI initialization\n\r");
 
 	// We disable The CPU Cache
        	cache_disable();
@@ -156,7 +156,7 @@ extern void BootResetAction ( void ) {
 	
 	BootVgaInitializationKernelNG((CURRENT_VIDEO_MODE_DETAILS *)&currentvideomodedetails);
 
-	bprintf("BOOT: kern VGA init done\n\r");
+	//bprintf("BOOT: kern VGA init done\n\r");
         
 	{ // decode and malloc backdrop bitmap
 		extern int _start_backdrop, _end_backdrop;
@@ -166,7 +166,7 @@ extern void BootResetAction ( void ) {
 			&jpegBackdrop
 		);
 	}
-	bprintf("BOOT: backdrop unpacked\n\r");
+	//bprintf("BOOT: backdrop unpacked\n\r");
         
 	// display solid red frontpanel LED while we start up
 	I2cSetFrontpanelLed(I2C_LED_RED0 | I2C_LED_RED1 | I2C_LED_RED2 | I2C_LED_RED3 );
@@ -177,7 +177,7 @@ extern void BootResetAction ( void ) {
 #ifndef DEBUG_MODE
 	BootVideoClearScreen(&jpegBackdrop, 0, 0xffff);
 #endif
-	bprintf("BOOT: done backdrop\n\r");
+	//bprintf("BOOT: done backdrop\n\r");
 
 	nInteruptable = 1;	      
        
@@ -374,7 +374,7 @@ extern void BootResetAction ( void ) {
 
 		{
 			BYTE ba[512];
-			memset(&ba,0x00,sizeof(ba));
+			memset(ba,0x00,sizeof(ba));
 			if(BootIdeReadSector(0, &ba[0], 0, 0, 512)) {
 				printk("Unable to read HDD first sector getting partition table\n");
 			} else {
@@ -386,7 +386,7 @@ extern void BootResetAction ( void ) {
 					int n=0, nPos=0;
 #ifdef DISPLAY_MBR_INFO
 					char sz[512];
-					memset(&sz,0x00,sizeof(sz));
+					memset(sz,0x00,sizeof(sz));
 
 					VIDEO_ATTR=0xffe8e8e8;
 					printk("MBR Partition Table:\n");
