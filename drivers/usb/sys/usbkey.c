@@ -1,6 +1,13 @@
 #include "../usb_wrapper.h"
 
+#define keyboarddebug  0
 
+#if keyboarddebug
+extern int printe(const char *szFormat, ...);
+int ycoffset = 0;
+#endif
+
+unsigned int current_keyboard_key;
 
 struct usb_kbd_info {
 	struct urb *urb;
@@ -26,6 +33,17 @@ static void usb_kbd_irq(struct urb *urb, struct pt_regs *regs)
 	if (urb->status) return;
 	
 	memcpy(kbd->kbd_pkt, urb->transfer_buffer, 8);
+	
+	current_keyboard_key = kbd->kbd_pkt[2];
+	
+	
+	#if keyboarddebug
+	ycoffset += 15;
+	ycoffset = ycoffset % 600;
+	VIDEO_CURSOR_POSX=20;
+	VIDEO_CURSOR_POSY=ycoffset;	
+	printe(" -%02x %02x %02x %02x %02x %02x\n",kbd->kbd_pkt[0],kbd->kbd_pkt[1],kbd->kbd_pkt[2],kbd->kbd_pkt[3],kbd->kbd_pkt[4],kbd->kbd_pkt[5]);
+	#endif
 	
 	usb_submit_urb(urb,GFP_ATOMIC);
 		
@@ -58,14 +76,19 @@ static int usb_kbd_probe(struct usb_interface *intf, const struct usb_device_id 
 
 	usb_submit_urb(urb,GFP_ATOMIC);
 	usb_set_intfdata(intf,usbk);
-
-	usbprintk("USB Keyboard Connected\n");	
+	#if keyboarddebug
+	printe("USB Keyboard Connected\n");	
+	#endif
 }
 
 
 static void usb_kbd_disconnect(struct usb_interface *intf)
 {
-
+	struct usb_kbd_info *usbk = usb_get_intfdata (intf);
+	usbprintk("Keyboard disconnected\n ");
+	usb_unlink_urb(usbk->urb);
+	usb_free_urb(usbk->urb);
+	kfree(usbk);
 }
 
 static struct usb_device_id usb_kbd_id_table [] = {
@@ -88,7 +111,9 @@ void UsbKeyBoardInit(void)
 	//current_remote_key=0;
 	//sbprintk("Keyboard probe %p ",xremote_probe);
 	if (usb_register(&usb_kbd_driver) < 0) {
-		err("Unable to register Keyboard driver");
+		#if keyboarddebug
+		printe("Unable to register Keyboard driver");
+		#endif
 		return;
 	}       
 }

@@ -15,6 +15,8 @@ int usb_hcd_pci_probe (struct pci_dev *dev, const struct pci_device_id *id);
 
 void XPADInit(void);
 void XPADRemove(void);
+void XRemoteInit(void);
+void XRemoteRemove(void);
 
 extern int (*thread_handler)(void*);
 int (*hub_thread_handler)(void*);
@@ -46,7 +48,6 @@ void BootStartUSB(void)
         hub_thread_handler=thread_handler;
 	usb_hcd_pci_probe(&xx_ohci_dev,
 			  module_table_pci_ids);	
-	
 	XPADInit();
 	
 	XRemoteInit();
@@ -58,8 +59,9 @@ void BootStartUSB(void)
 	{
 		USBGetEvents();
 		wait_ms(1);
-		if (xpad_num!=0)  // Houston, we have a XPAD!
-			break;
+		if (xpad_num!=0) {  // Houston, we have a XPAD!
+			if (n>200) break;
+		}
 	}
 	
 	USB_init_ani=0; // No more animation
@@ -83,6 +85,9 @@ void BootStopUSB(void)
 	//ohci_stop (&xx_ohci_dev);
         
         XPADRemove();
+	XRemoteRemove();
+	UsbKeyBoardRemove();
+	
 	driver_unregister(&usb_generic_driver);
 //	usb_major_cleanup();
 	//usbfs_cleanup();

@@ -55,10 +55,6 @@ struct xremote_info
  *  Key position is byte[4] bit0 (7-0 format) 0=down, 1=up
  *  All other bits are unknown / now required.
  */
-#if 0
-extern int printe(const char *szFormat, ...);
-int ycoffset = 0;
-#endif
 
 static void xremote_irq(struct urb *urb, struct pt_regs *regs)
 {
@@ -82,15 +78,7 @@ static void xremote_irq(struct urb *urb, struct pt_regs *regs)
 	Last_remote_keystroke += (xri->irpkt[5] & 0xff ) << 8;
 	
 	if (Last_remote_keystroke > 0x41) current_remote_keydir |= 0x100;
-	
-	#if 0
-	ycoffset += 15;
-	ycoffset = ycoffset % 600;
-	VIDEO_CURSOR_POSX=20;
-	VIDEO_CURSOR_POSY=ycoffset;	
-	printe(" -%02x %02x %02x %02x %02x %02x\n",xri->irpkt[0],xri->irpkt[1],xri->irpkt[2],xri->irpkt[3],xri->irpkt[4],xri->irpkt[5]);
-	#endif
-	
+
 	usb_submit_urb(urb,GFP_ATOMIC);
 }
 
