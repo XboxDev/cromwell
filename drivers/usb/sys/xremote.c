@@ -35,12 +35,8 @@
 #include "../usb_wrapper.h"
 
 
-unsigned int last_remote_key;
-unsigned int last_remote_keydir;
-unsigned int current_remote_key;
-unsigned int current_remote_keydir;
-unsigned int Last_remote_keystroke;
-
+u16 current_remote_key;
+u8 remotekeyIsRepeat;
 
 struct xremote_info 
 {
@@ -66,19 +62,14 @@ static void xremote_irq(struct urb *urb, struct pt_regs *regs)
 	/* Messy/unnecessary, fix this */
 	memcpy(xri->irpkt, urb->transfer_buffer, 6);
 
-	last_remote_key = current_remote_key;
-	last_remote_keydir = current_remote_keydir;
-
 	/* Set the key action based in the sent action */
-	current_remote_key = (xri->irpkt[2] & 0xff);
-	current_remote_keydir =  (xri->irpkt[4] & 0xff);
-	
+	current_remote_key = ((xri->irpkt[2] & 0xff)<<8) | (xri->irpkt[3] & 0xff);
 
-	Last_remote_keystroke = (xri->irpkt[4] & 0xff);
-	Last_remote_keystroke += (xri->irpkt[5] & 0xff ) << 8;
-	
-	if (Last_remote_keystroke > 0x41) current_remote_keydir |= 0x100;
-
+	if (((xri->irpkt[4] & 0xff) + ((xri->irpkt[5] & 0xff ) << 8))>0x41) {
+		remotekeyIsRepeat=0;
+	}
+	else remotekeyIsRepeat=1;
+		             
 	usb_submit_urb(urb,GFP_ATOMIC);
 }
 
@@ -89,9 +80,6 @@ static int xremote_probe(struct usb_interface *intf, const struct usb_device_id 
 	struct usb_endpoint_descriptor *ep_irq_in;
 	struct usb_endpoint_descriptor *ep_irq_out;
 	struct xremote_info *xri;
-
-	int i, pipe, maxp;
-	char *buf;
 
 	xri=(struct xremote_info *)kmalloc(sizeof(struct xremote_info),0);
 	if (!xri) return -1;
@@ -151,16 +139,4 @@ void XRemoteInit(void)
 
 void XRemoteRemove(void) {
 	usb_deregister(&xremote_driver);
-}
-
-int isRemoteKeyEvent(unsigned int button)
-{
-	int rv = 0;
-	if ( current_remote_key == button )
-	{
-		rv = current_remote_keydir;
-		// got the event, so disable the key
-		current_remote_key = 0;
-	}
-	return rv;
 }

@@ -1,13 +1,9 @@
 #include "../usb_wrapper.h"
 #include "config.h"
+#include "xremote.h"
 
 // This is for the Xpad
 extern unsigned char xpad_button_history[7];
-
-// This is for the IR remote control
-extern unsigned int current_remote_key;
-extern unsigned int current_remote_keydir;
-
 
 // This is for the Keyboard
 extern unsigned int current_keyboard_key;
@@ -54,36 +50,36 @@ int risefall_xpad_BUTTON(unsigned char selected_Button) {
 	// Xbox IR remote section
 	
 	match=0;
-	if ((current_remote_keydir&0x100)) {
-	      	//This is a button release event - press events are ignored
-		//to avoid duplicates, as a new press event is sent
-		//as long as the button is held down.
+	if (!remotekeyIsRepeat) {
+		/* We only grab the key event when the button is first pressed.
+		 * If it's being held down, we ignore the multiple events this 
+		 * generates */
 		
 		switch (selected_Button) {
 			case TRIGGER_XPAD_KEY_A:
-		   		if (current_remote_key == 0x0b) match=1;
+		   		if (current_remote_key == RC_KEY_SELECT) match=1;
 				break;
 			case TRIGGER_XPAD_PAD_UP:
-				if (current_remote_key == 0xa6) match=1;
+				if (current_remote_key == RC_KEY_UP) match=1;
 				break;
 			case TRIGGER_XPAD_PAD_DOWN:
-				if (current_remote_key == 0xa7) match=1;
+				if (current_remote_key == RC_KEY_DOWN) match=1;
 				break;
 			case TRIGGER_XPAD_PAD_LEFT:
-				if (current_remote_key == 0xa9) match=1;
+				if (current_remote_key == RC_KEY_LEFT) match=1;
 				break;
 			case TRIGGER_XPAD_PAD_RIGHT:
-				if (current_remote_key == 0xa8) match=1;
+				if (current_remote_key == RC_KEY_RIGHT) match=1;
 				break;
 			case TRIGGER_XPAD_KEY_BACK:
-				if (current_remote_key == 0xd8) match=1;
+				if (current_remote_key == RC_KEY_BACK) match=1;
 				break;
 		}
 		if (match) {
 			//A match occurred, so the event has now been processed
 			//Clear it, and return success
 			current_remote_key=0;
-			current_remote_keydir=0;
+			remotekeyIsRepeat=0;
 			return 1;
 		}
 	}
