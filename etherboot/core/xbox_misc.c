@@ -136,10 +136,10 @@ void twiddle(void)
 		return;
 	lastticks = ticks;
 
-	printf(tiddles[(count++)&3]);
-	printf('\b');
+	putchar(tiddles[(count++)&3]);
+	putchar('\b');
 #else
-	printf('.');
+	putchar('.');
 #endif	/* BAR_PROGRESS */
 }
 
