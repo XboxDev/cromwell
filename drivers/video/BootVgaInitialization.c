@@ -182,89 +182,86 @@ void BootVgaInitializationKernelNG(CURRENT_VIDEO_MODE_DETAILS * pvmode) {
 	writeCrtNv (&riva, 0, 0x22, 0xff); // ?
 	writeCrtNv (&riva, 0, 0x33, 0x11); // ?
 	
-	if((av_type == AV_VGA) || (av_type == AV_VGA_SOG) || (av_type == AV_HDTV)) {
+	if (av_type == AV_HDTV) {
 		unsigned char pll_int;
-		if (av_type == AV_HDTV) {
-			xbox_hdtv_mode hdtv_mode = HDTV_480p;
-			//Only 480p supported at present
-			/*if (video_mode->yres > 800) {
-				hdtv_mode = HDTV_1080i;
-			}
-			else if (video_mode->yres > 600) {
-				hdtv_mode = HDTV_720p;
-			}*/
-			
-			// Settings for 720x480@60Hz (480p)
-			pvmode->width=720;
-			pvmode->height=480;
-			pvmode->xmargin=0;
-		 	pvmode->ymargin=0;
-
-			if (video_encoder==ENCODER_XCALIBUR) {
-				/* This info should be in the xcalibur.c file, but
-				*  the HDTV api doesn't allow for it right now. */
-				gpu.nvhtotal = 779;
-				gpu.nvvtotal = 524;
-			}
-			else {	
-				/* HDTV uses hardcoded settings for these - these are the
-				 * correct ones for 480p */
-				gpu.nvhtotal = 858;
-				gpu.nvvtotal = 525;
-			}
-
-			gpu.xres = pvmode->width;
-			gpu.yres = pvmode->height;
-	       		gpu.nvhstart = 738;
-			gpu.nvvstart = 489;
-			gpu.pixelDepth = (32 + 1) / 8;
-			gpu.crtchdispend = pvmode->width;
-			gpu.crtcvstart = gpu.nvvstart;
-			gpu.crtcvtotal = gpu.nvvtotal;
-			
-			pll_int = (unsigned char)((double)27027 * 6.0 / 13.5e3 + 0.5);
-			switch (video_encoder) {
-				case ENCODER_CONEXANT:
-					encoder_ok = conexant_calc_hdtv_mode(hdtv_mode, pll_int, &(newmode.encoder_regs));
-					break;
-				case ENCODER_FOCUS:
-					encoder_ok = focus_calc_hdtv_mode(hdtv_mode, pll_int, &(newmode.encoder_regs));
-					break;
-				case ENCODER_XCALIBUR:
-					encoder_ok = xcalibur_calc_hdtv_mode(hdtv_mode, pll_int, &(newmode.encoder_regs));
-					break;
-			}
+		xbox_hdtv_mode hdtv_mode = HDTV_480p;
+		//Only 480p supported at present
+		/*if (video_mode->yres > 800) {
+			hdtv_mode = HDTV_1080i;
 		}
-		else {
-			//VGA or VGA_SOG
-			// Settings for 800x600@56Hz, 35 kHz HSync
-			pvmode->width=800;
-			pvmode->height=600;
-			pvmode->xmargin=20;
-			pvmode->ymargin=20;
+		else if (video_mode->yres > 600) {
+			hdtv_mode = HDTV_720p;
+		}*/
 		
-			gpu.xres = pvmode->width;
-	       		gpu.nvhstart = 900;
-			gpu.nvhtotal = 1028;
-			gpu.yres = pvmode->height;
-			gpu.nvvstart = 614;
-			gpu.nvvtotal = 630;
-			gpu.pixelDepth = (32 + 1) / 8;
-			gpu.crtchdispend = pvmode->width;
-			gpu.crtcvstart = gpu.nvvstart;
-			gpu.crtcvtotal = gpu.nvvtotal;
-			pll_int = (unsigned char)((double)36000 * 6.0 / 13.5e3 + 0.5);
+		// Settings for 720x480@60Hz (480p)
+		pvmode->width=720;
+		pvmode->height=480;
+		pvmode->xmargin=0;
+	 	pvmode->ymargin=0;
+
+		if (video_encoder==ENCODER_XCALIBUR) {
+			/* This info should be in the xcalibur.c file, but
+			*  the HDTV api doesn't allow for it right now. */
+			gpu.nvhtotal = 779;
+			gpu.nvvtotal = 524;
+		}
+		else {	
+			/* HDTV uses hardcoded settings for these - these are the
+			 * correct ones for 480p */
+			gpu.nvhtotal = 858;
+			gpu.nvvtotal = 525;
+		}
+
+		gpu.xres = pvmode->width;
+		gpu.yres = pvmode->height;
+       		gpu.nvhstart = 738;
+		gpu.nvvstart = 489;
+		gpu.pixelDepth = (32 + 1) / 8;
+		gpu.crtchdispend = pvmode->width;
+		gpu.crtcvstart = gpu.nvvstart;
+		gpu.crtcvtotal = gpu.nvvtotal;
 		
-			switch (video_encoder) {
-				case ENCODER_CONEXANT:
-					encoder_ok = conexant_calc_vga_mode(av_type, pll_int, &(newmode.encoder_regs));
-					break;
-				case ENCODER_FOCUS:
-				case ENCODER_XCALIBUR:
-					//No support for these yet
-					break;
-		
-			}
+		pll_int = (unsigned char)((double)27027 * 6.0 / 13.5e3 + 0.5);
+		switch (video_encoder) {
+			case ENCODER_CONEXANT:
+				encoder_ok = conexant_calc_hdtv_mode(hdtv_mode, pll_int, &(newmode.encoder_regs));
+				break;
+			case ENCODER_FOCUS:
+				encoder_ok = focus_calc_hdtv_mode(hdtv_mode, pll_int, &(newmode.encoder_regs));
+				break;
+			case ENCODER_XCALIBUR:
+				encoder_ok = xcalibur_calc_hdtv_mode(hdtv_mode, pll_int, &(newmode.encoder_regs));
+				break;
+		}
+	}
+	else if ((av_type == AV_VGA_SOG) || (av_type == AV_HDTV)) {
+		unsigned char pll_int;
+		// Settings for 800x600@56Hz, 35 kHz HSync
+		pvmode->width=800;
+		pvmode->height=600;
+		pvmode->xmargin=20;
+		pvmode->ymargin=20;
+	
+		gpu.xres = pvmode->width;
+       		gpu.nvhstart = 900;
+		gpu.nvhtotal = 1028;
+		gpu.yres = pvmode->height;
+		gpu.nvvstart = 614;
+		gpu.nvvtotal = 630;
+		gpu.pixelDepth = (32 + 1) / 8;
+		gpu.crtchdispend = pvmode->width;
+		gpu.crtcvstart = gpu.nvvstart;
+		gpu.crtcvtotal = gpu.nvvtotal;
+		pll_int = (unsigned char)((double)36000 * 6.0 / 13.5e3 + 0.5);
+	
+		switch (video_encoder) {
+			case ENCODER_CONEXANT:
+				encoder_ok = conexant_calc_vga_mode(av_type, pll_int, &(newmode.encoder_regs));
+				break;
+			case ENCODER_FOCUS:
+			case ENCODER_XCALIBUR:
+				//No support for these yet
+				break;
 		}
 	}
 	else {	
@@ -338,67 +335,67 @@ void BootVgaInitializationKernelNG(CURRENT_VIDEO_MODE_DETAILS * pvmode) {
 		//Set up the GPU 
 		SetGPURegister(&gpu, pvmode->m_pbBaseAddressVideo);
 		//Load registers into chip
-		if (video_encoder == ENCODER_CONEXANT) {
-			int n1=0;
-			unsigned char *regs;
-			I2CWriteBytetoRegister(0x45,0xc4, 0x00); // EN_OUT = 1
-		        // Conexant init (starts at register 0x2e)
-		        n1=0;
-			regs = (unsigned char*)newmode.encoder_regs;
-		        for(i=0x2e;i<0x100;i+=2) {
-		        	switch(i) {
-		        		case 0x6c: // reset
-		          			I2CWriteBytetoRegister(0x45,i, regs[n1] & 0x7f);
-	                          		break;
-	                    		case 0xc4: // EN_OUT
-						I2CWriteBytetoRegister(0x45,i, regs[n1] & 0xfe);
-				 		break;
-					case 0xb8: // autoconfig
-						break;
-					default:
-						I2CWriteBytetoRegister(0x45,i, regs[n1]);
-						break;
+		unsigned char *regs;
+		unsigned long *XCal_Reg;
+		int n1=0;
+		switch (video_encoder) {
+			case ENCODER_CONEXANT:
+				I2CWriteBytetoRegister(0x45,0xc4, 0x00); // EN_OUT = 1
+		        	// Conexant init (starts at register 0x2e)
+				regs = (unsigned char*)newmode.encoder_regs;
+		        	for(i=0x2e,n1=0;i<0x100;i+=2,n1++) {
+		        		switch(i) {
+		        			case 0x6c: // reset
+		        	  			I2CWriteBytetoRegister(0x45,i, regs[n1] & 0x7f);
+	                	          		break;
+	                	    		case 0xc4: // EN_OUT
+							I2CWriteBytetoRegister(0x45,i, regs[n1] & 0xfe);
+					 		break;
+						case 0xb8: // autoconfig
+							break;
+						default:
+							I2CWriteBytetoRegister(0x45,i, regs[n1]);
+							break;
+					}
+					wait_us(500);	
 				}
-				n1++;
-				wait_us(500);	
-			}
-                	// Timing Reset
-			b=I2CTransmitByteGetReturn(0x45,0x6c) & (0x7f);
-			I2CWriteBytetoRegister(0x45, 0x6c, 0x80|b);
-			b=I2CTransmitByteGetReturn(0x45,0xc4) & (0xfe);
-			I2CWriteBytetoRegister(0x45, 0xc4, 0x01|b); // EN_OUT = 1
-		}
-		else if (video_encoder == ENCODER_FOCUS) {
-			unsigned char *regs;
-			regs = (unsigned char*)newmode.encoder_regs;
-	             	for (i=0; i<0xc4; ++i) {
-                        	I2CWriteBytetoRegister(0x6a, i, regs[i]);
-				wait_us(500);
-               		}
-		}
-		else if (video_encoder == ENCODER_XCALIBUR) {
-			//Xlb init
-			unsigned long *XCal_Reg = (unsigned long*)newmode.encoder_regs;
-			unsigned char mode[4];	
-			
-			ReadfromSMBus(0x70,4,4,&i);
-			WriteToSMBus(0x70,4,4,0x0F000000);
-			ReadfromSMBus(0x70,0,4,&i);
-			WriteToSMBus(0x70,0,4,0x00000000);
+                		// Timing Reset
+				b=I2CTransmitByteGetReturn(0x45,0x6c) & (0x7f);
+				I2CWriteBytetoRegister(0x45, 0x6c, 0x80|b);
+				b=I2CTransmitByteGetReturn(0x45,0xc4) & (0xfe);
+				I2CWriteBytetoRegister(0x45, 0xc4, 0x01|b); // EN_OUT = 1
+				break;
+			case ENCODER_FOCUS:
+				regs = (unsigned char*)newmode.encoder_regs;
+	             		for (i=0; i<0xc4; ++i) {
+                        		I2CWriteBytetoRegister(0x6a, i, regs[i]);
+					wait_us(500);
+				}
+				break;
+			case ENCODER_XCALIBUR:
+				//Xlb init
+				XCal_Reg = (unsigned long*)newmode.encoder_regs;
+				regs = malloc(4);
+				
+				ReadfromSMBus(0x70,4,4,&i);
+				WriteToSMBus(0x70,4,4,0x0F000000);
+				ReadfromSMBus(0x70,0,4,&i);
+				WriteToSMBus(0x70,0,4,0x00000000);
 			               
-			for(i = 0; i < 0x90; i++) {
-				//Endianness.
-				memcpy(&mode[0],(unsigned char*)(&XCal_Reg[i])+3,0x01);
-				memcpy(&mode[1],(unsigned char*)(&XCal_Reg[i])+2,0x01);
-				memcpy(&mode[2],(unsigned char*)(&XCal_Reg[i])+1,0x01);
-				memcpy(&mode[3],(unsigned char*)(&XCal_Reg[i]),0x01);
-			
-				WriteToSMBus(0x70, i, 4, *(unsigned long*)&mode[0]);
-				wait_us(500);
-			}
-		}
+				for(i = 0; i < 0x90; i++) {
+					//Endianness.
+					memcpy(regs,(unsigned char*)(&XCal_Reg[i])+3,0x01);
+					memcpy(regs+1,(unsigned char*)(&XCal_Reg[i])+2,0x01);
+					memcpy(regs+2,(unsigned char*)(&XCal_Reg[i])+1,0x01);
+					memcpy(regs+3,(unsigned char*)(&XCal_Reg[i]),0x01);
+				
+					WriteToSMBus(0x70, i, 4, *(unsigned long*)regs);
+					wait_us(500);
+				}
+				free(regs);
+				break;
+		}	
 	}
-
 	//Free the malloc'd registers
 	free((char *)newmode.encoder_regs);
         
