@@ -647,12 +647,12 @@ int BootIdeDriveInit(unsigned uIoBase, int nIndexDrive,int drivetype)
 				
 				//Uncomment this if you want cromwell to automatically disable the password
 				//on locked harddisks
-				
+				/*	
 				if (DriveSecurityChange(uIoBase, nIndexDrive, IDE_CMD_SECURITY_DISABLE, &baMagic[2])) {
 					printk("Disable failed");
 				}
 				else printk("Disable successful!");
-				
+				*/
 			}
 		}  
 	}
