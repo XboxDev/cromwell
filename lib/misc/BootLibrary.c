@@ -396,10 +396,10 @@ char *HelpGetLine(char *ptr) {
 	mark = old;
 	for(;*old != 0;old++) {
 		//The terminating characters are \r and \n
-		if(*old == 13 || *old == 10) {
+		if(*old == '\r' || *old == '\n') {
 			//If this was a \r, the next char should be
 			//a \n, so we need to eat it.
-			if (*old==13) {
+			if (*old=='\r') {
 				*old=0;
 				old++;
 			}
