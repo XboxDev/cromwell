@@ -85,9 +85,11 @@ int conexant_calc_vga_mode(
 	void **reg_ptr
 ){
 	unsigned char *regs;
-	*reg_ptr = malloc(sizeof(char) * NUM_CONEXANT_REGS);
-	regs = *reg_ptr;
+	
+	*reg_ptr = (void *)malloc(sizeof(char) * NUM_CONEXANT_REGS);
+	regs = (unsigned char *)*reg_ptr;
 	memset(regs, 0, NUM_CONEXANT_REGS);
+	
 	// Protect against overclocking
 	if (pll_int > 36) {
 		pll_int = 36; // 36 / 6 * 13.5 MHz = 81 MHz, just above the limit.
@@ -125,9 +127,11 @@ int conexant_calc_hdtv_mode(
 	void **reg_ptr
 ){
 	unsigned char *regs;
-	*reg_ptr = malloc(sizeof(char) * NUM_CONEXANT_REGS);
-	regs = *reg_ptr;
+
+	*reg_ptr = (void *)malloc(sizeof(char) * NUM_CONEXANT_REGS);
+	regs = (unsigned char *)*reg_ptr;
 	memset(regs, 0, NUM_CONEXANT_REGS);
+	
 	// Protect against overclocking
 	if (pll_int > 36) {
 		pll_int = 36; // 36 / 6 * 13.5 MHz = 81 MHz, just above the limit.
