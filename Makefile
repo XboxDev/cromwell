@@ -78,6 +78,7 @@ OBJECTS-CROM += $(TOPDIR)/obj/vsprintf.o
 OBJECTS-CROM += $(TOPDIR)/obj/IconMenu.o
 OBJECTS-CROM += $(TOPDIR)/obj/IconMenuInit.o
 OBJECTS-CROM += $(TOPDIR)/obj/TextMenu.o
+OBJECTS-CROM += $(TOPDIR)/obj/TextMenuInit.o
 OBJECTS-CROM += $(TOPDIR)/obj/MenuActions.o
 OBJECTS-CROM += $(TOPDIR)/obj/LoadLinux.o
 OBJECTS-CROM += $(TOPDIR)/obj/setup.o
