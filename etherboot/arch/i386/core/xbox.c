@@ -103,7 +103,6 @@ static __inline uint32_t IoInputDword(uint16_t wAds) {
   __asm__ __volatile__ ("inl %w1,%0":"=a" (_v):"Nd" (wAds));
   return _v;
 }
-
 unsigned long currticks(void)
 {
 	return IoInputDword(0x8008);
@@ -119,12 +118,14 @@ void udelay(unsigned int usecs)
 	wait_us(usecs);
 }
 
+extern void sleep(int);
+
 void restart_etherboot(int status)
 {
 	eth_disable();
 	nic.dev.state.pci.dev.driver = 0;
 	BootStopUSB();
-	wait_us(5 * 1000*1000);
+	sleep(5);
 	BootResetAction();
 }
 
@@ -136,9 +137,4 @@ void xstart16 (unsigned long a, unsigned long b, char * c)
 int xstart32(unsigned long entry_point, ...)
 {
 	while (1);
-}
-
-int load_block(unsigned char *data, unsigned int block, unsigned int len, int eof)
-{
-	return 0;
 }
