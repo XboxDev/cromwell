@@ -46,12 +46,16 @@ int xberepair (	unsigned char * xbeimage,
 	unsigned int xbesize;
         int a;
 	unsigned char sha_Message_Digest[SHA1HashSize];
-        unsigned char crom[1024*1024];
-        unsigned char xbe[1024*1024+0x3000];
+        unsigned char *crom;
+        unsigned char *xbe;
         unsigned int romsize=0;
          
 	XBE_HEADER *header;
  	XBE_SECTION *sechdr;
+
+        crom = malloc(1024*1024);
+        xbe = malloc(1024*1024+0x3000);
+
 
        	printf("ImageBLD Hasher by XBL Project (c) hamtitampti\n");
        	printf("XBE Modus\n");
@@ -150,9 +154,12 @@ int vmlbuild (	unsigned char * vmlimage,
 	unsigned int vmlsize;
         int a;
 
-        unsigned char crom[1024*1024];
-        unsigned char vml[1024*1024+0x3000];
+        unsigned char *crom;
+        unsigned char *vml;
         unsigned int romsize=0;
+	
+	crom = malloc(1024*1024);
+        vml = malloc(1024*1024+0x3000);
          
        	printf("ImageBLD Hasher by XBL Project (c) hamtitampti\n");
        	printf("VML Modus\n");
@@ -214,12 +221,13 @@ int romcopy (
 	static unsigned char SHA1_result[SHA1HashSize];
 	struct SHA1Context context;
 	FILE *f;
-	static unsigned char loaderimage[256*1024];
-	static unsigned char flash256[256*1024];
-	static unsigned char flash1024[1024*1024];
-	static unsigned char crom[1024*1024];
-	static unsigned char compressedcrom[1024*1024];
+	unsigned char *loaderimage;
+	unsigned char *flash256;
+	unsigned char *flash1024;
+	unsigned char *crom;
+	unsigned char *compressedcrom;
 	
+		
 	unsigned int freeflashspace = 256*1024;
 	
        	unsigned int romsize=0;
@@ -230,18 +238,23 @@ int romcopy (
 //       	unsigned int compressedimagestart;
        	unsigned int temp;
        	
-
-
+	loaderimage = malloc(256*1024);
+	flash256 = malloc(256*1024);
+	flash1024 = malloc(1024*1024);
+	crom = malloc(1024*1024);
+	compressedcrom = malloc(1024*1024);
+       	
+       	memset(flash256,0x00,256*1024);
+	memset(flash1024,0x00,1024*1024);
+       	memset(crom,0x00,1024*1024);
+       	memset(compressedcrom,0x00,1024*1024);
+       	memset(loaderimage,0x00,256*1024);
+       	
 
        	printf("ImageBLD Hasher by XBL Project (c) hamtitampti\n");
        	printf("ROM Modus\n");
        	
-       	memset(flash256,0x00,sizeof(flash256));
-	memset(flash1024,0x00,sizeof(flash1024));
-       	memset(crom,0x00,sizeof(crom));
-       	memset(compressedcrom,0x00,sizeof(compressedcrom));
-       	memset(loaderimage,0x00,sizeof(loaderimage));
-       	
+      	
        	a=1;
 	f = fopen(blbinname, "rb");
     	if (f!=NULL) 
