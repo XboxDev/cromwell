@@ -115,7 +115,8 @@ struct riva_regs {
 
 typedef enum enumEncoderType {
 	        ENCODER_CONEXANT,
-	        ENCODER_FOCUS
+	        ENCODER_FOCUS,
+	        ENCODER_XCALIBUR
 } xbox_encoder_type;
 
 /*static const conexant_video_parameter vidstda[];

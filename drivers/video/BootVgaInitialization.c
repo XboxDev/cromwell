@@ -26,10 +26,81 @@
 #include "BootVgaInitialization.h"
 #include "encoder.h"
 
+/*
 void DetectVideoEncoder(void) {
 	if (I2CTransmitByteGetReturn(0x45,0x000) != ERR_I2C_ERROR_BUS) video_encoder = ENCODER_CONEXANT;
 	else video_encoder = ENCODER_FOCUS;
 }
+*/
+void DetectVideoEncoder(void)
+{
+	unsigned int temp;
+
+	// Default Value	
+	video_encoder = ENCODER_CONEXANT;
+	
+	if (ReadfromSMBus(0x45,0x00,1,&temp) != ERR_I2C_ERROR_BUS) {
+		// We successful got Data from the CONNEXANT CHIP
+		video_encoder = ENCODER_CONEXANT;
+	
+	} else {
+		// We did not get Data from Connexant
+		
+		if (ReadfromSMBus(0x6a,0x00,1,&temp) == ERR_I2C_ERROR_BUS) {
+			// Focus Failed
+			// XCAL video encoder detected
+			video_encoder = ENCODER_XCALIBUR;
+				
+			
+		} else {
+			// Focus Detection OK
+			video_encoder = ENCODER_FOCUS;
+		}
+	}
+}
+
+void XCaliburDumpNormalSequence(unsigned int *I2C_Encoder_Values)
+{
+	
+	int i;
+	ReadfromSMBus(0x70,4,4,&i);
+	//wait_us(10);
+	WriteToSMBus(0x70,4,4,0x0F000000);
+	//wait_us(10);
+	ReadfromSMBus(0x70,0,4,&i);
+	//wait_us(10);
+	WriteToSMBus(0x70,0,4,0x00000000);
+	//wait_us(10);
+
+	// von Register 0x01 bis 0x41
+	for (i= 0; i< 64; i++) {
+		WriteToSMBus(0x70,xcal_videregister_sequence[i],4,I2C_Encoder_Values[i]);
+	//	wait_us(200);
+	}
+	
+	ReadfromSMBus(0x70,0,4,&i);
+	//wait_us(200);
+	
+	// von Register 0x00 bis 0x0e
+	for (i= 64; i< 68; i++) {
+		WriteToSMBus(0x70,xcal_videregister_sequence[i],4,I2C_Encoder_Values[i]);
+	//	wait_us(200);
+	}
+	
+	ReadfromSMBus(0x70,0x60,4,&i);
+	//wait_us(200);
+
+	// von Register 0x60 bis ende
+	for (i= 68; i<(sizeof(xcal_videregister_sequence)); i++) {
+		WriteToSMBus(0x70,xcal_videregister_sequence[i],4,I2C_Encoder_Values[i]);
+	//	wait_us(200);
+	}
+	
+	return ;
+}
+
+
+
 
 void BootVgaInitializationKernelNG(CURRENT_VIDEO_MODE_DETAILS * pcurrentvideomodedetails) {
 	xbox_tv_encoding tv_encoding; 
@@ -311,6 +382,38 @@ void BootVgaInitializationKernelNG(CURRENT_VIDEO_MODE_DETAILS * pcurrentvideomod
 		b = I2CTransmitByteGetReturn(0x6a,0x0d);
 		I2CWriteBytetoRegister(0x6a,0x0d,b);
 	}
+
+
+
+/*
+	XCALIBUR
+if PAL
+
+	XCaliburDumpNormalSequence(xcal_composite_pal);
+	RAMDACRegValues = nvRAMDACRegValues_xcal_composite_pal;
+	CRTRegsValues = nvCRTRegs_xcal_composite_pal;
+	
+if NTSC
+	XCaliburDumpNormalSequence(xcal_composite_ntsc);	
+	RAMDACRegValues = nvRAMDACRegValues_xcal_composite_ntsc;
+	CRTRegsValues = nvCRTRegs_xcal_composite_ntsc;
+	
+Dump Regions	
+	for(i = 0; i < (sizeof(nvMainRegs) / 4); i++) {
+		MMIO_H_OUT32(riva->PMC, 0, nvMainRegs[i], RAMDACRegValues[i]);
+	}	
+
+	// nVidia CRTC registers
+	for(i = 0; i < sizeof(nvCRTRegs_xcal_composite_ntsc); i++) {
+		writeCrtNv(riva, 0, i, CRTRegsValues[i]);
+	}
+	
+NOTE: 648*480	
+
+*/
+
+
+
 }
 
 

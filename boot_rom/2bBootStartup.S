@@ -1,24 +1,9 @@
 /*
- *
- *  BIOS ROM Startup Assembler
- *  (C)2002 Andy, Michael, Paul, Steve
- * Original top and bottom ROM code by Steve from an idea by Michael
- *
- *  This contains the magic values read by the MCPX before the CPU gets started,
- *  as well as a minimal Xcode program which exits the Xcode interpreter immediately
- *  by turning off the MCPX ROM while the interpreter is running.
- *  The CPU will start executing *our* ROM instructions at location 0xFFFFFE62.
- *  See label jmp_code in this file for where execution picks up
+ 	Written by Lehner Franz (franz@caos.at)
  */
-
- /***************************************************************************
- *                                                                         *
- *   This program is free software; you can redistribute it and/or modify  *
- *   it under the terms of the GNU General Public License as published by  *
- *   the Free Software Foundation; either version 2 of the License, or     *
- *   (at your option) any later version.                                   *
- *                                                                         *
- ***************************************************************************/
+ 
+ 
+ 
 #include "2bconsts.h"
  
 #define xcode_peek(val1) .byte 0x2; .long val1 ; .long 0x0 ;
@@ -44,6 +29,13 @@
 #define SMBUS 		0x0000c000
 
 
+#define SMB_xcode_Write(val1,val2); 	xcode_outb(SMBUS+8, val1); \
+					xcode_outb(SMBUS+6, val2); \
+					xcode_outb(SMBUS+2, 0x0000000a); \
+        				xcode_inb(SMBUS); \
+        				xcode_ifgoto(0x00000010,-1); \
+					xcode_outb(SMBUS, 0x00000010); 
+
 .code32
 
 .section .low_rom, "ax"
@@ -58,12 +50,19 @@
 	.long 0x01010101
 	.long 0x08080808
 	.long 0x00000801
-	.long 0xc8fc7c8a
-	
+
+	#ifndef MCPXREVD5
+	.long 0xc8fc7c8a	// MCPX =< D5
 	.long 0x44290213
 	.long 0x90004998		
-	
 	.long 0x0
+	#else
+	.long 0xc8b4588a	// MCPX 1.6 > D5
+	.long 0x00100000
+	.long 0x00050aa7
+	.long 0xf0000000
+	#endif
+
 	.long 0xffffffff
 	.long 0xffffffff
 	
@@ -78,7 +77,12 @@
 	.long 0x0000000f
 	.long 0x40004400
 	
+	#ifndef MCPXREVD5
 	.long 0x12d10070
+	#else
+	.long 0x16ce0090
+	#endif
+	
 	.long 0x00000c90
 		
 	
@@ -135,7 +139,7 @@
 
 	xcode_bittoggle(0xe1f3ffff,0x820c0000);
 	xcode_poke_a(0x0f101000);
-	xcode_poke(0x0f0010b8, 0xffff0000);
+	xcode_poke(0x0f0010b8, 0x11110000);
 	xcode_poke(0x0f0010d4, 0x00000009);
 	xcode_poke(0x0f0010b4, 0x00000000);
 	xcode_poke(0x0f0010bc, 0x00005866);
@@ -150,14 +154,15 @@
 	xcode_poke(0x0f10032c, 0xffffcfff);
 	xcode_poke(0x0f100328, 0x00000001);
 	xcode_poke(0x0f100338, 0x000000df);
-
+	
 	// Set up the SM - bus controller
 	xcode_pciout(0x80000904, 0x00000001);
 	xcode_pciout(0x80000914, 0x0000c001);
 	xcode_pciout(0x80000918, 0x0000c201);
 	xcode_outb(0x0000c200, 0x00000070);
-
-#if 1 // focus hack
+	
+	
+/* ---------- focus Starts here ------------------------- */
 	
 	xcode_outb(0x0000c004, 0x000000d4);
 	
@@ -167,36 +172,29 @@
 	xcode_outb(SMBUS+2, 0x0000000a);
         xcode_inb(SMBUS);
         xcode_ifgoto(0x00000010,2)
-	xcode_goto(5);
+	xcode_goto(5);				// I2C write Succeed, we make the Next Focus write
 	xcode_bittoggle(0x00000008,0x00000000);
 	xcode_ifgoto(0x00000000,-4)	
 	xcode_outb(SMBUS, 0x000000ff);
-	xcode_goto(9);    			// Jump to beginning of Connexant codes
+	xcode_goto(9);    			// I2C Write Failed, we go to conexant
 	xcode_outb(SMBUS, 0x00000010);
 	
 	//I2CTransmitWord(0x6a,0x0d20);
-	xcode_outb(SMBUS+8, 0x0000000d);
-	xcode_outb(SMBUS+6, 0x00000020);
-	xcode_outb(SMBUS+2, 0x0000000a);
-        xcode_inb(SMBUS);
-        xcode_ifgoto(0x00000010,-1)
+	SMB_xcode_Write(0x0d,0x20);		// +6
+	
+	// Focus Code finished, we jump over the conexant / crystal code
+	xcode_goto(64);	// Jump to end of Connexant inits
+       
+/* ---------- focus Over ------------------------- */       
+
+
+
+/* ---------- Conexant Starts here ------------------------- */              
+	
+	// Last Cycle ok
 	xcode_outb(SMBUS, 0x00000010);
 	
-	xcode_goto(44);	// Jump to end of Connexant inits
-#endif         
-
-	// Connexant 
-	/*
-	we have to send him the following:
-	I2CTransmitWord(0x45,0xba3f);
-	I2CTransmitWord(0x45,0x6c46);
-	I2CTransmitWord(0x45,0xb800);
-	I2CTransmitWord(0x45,0xce19);
-	I2CTransmitWord(0x45,0xc69c);
-	I2CTransmitWord(0x45,0x3208);
-	I2CTransmitWord(0x45,0xc401);
-	*/
-
+	// Connexant Slave Address
 	xcode_outb(0x0000c004, 0x0000008a);
 	
 	//I2CTransmitWord(0x45,0xba3f);
@@ -205,73 +203,51 @@
 	xcode_outb(SMBUS+6, 0x0000003f);
 	xcode_outb(SMBUS+2, 0x0000000a);
         xcode_inb(SMBUS);
-        xcode_ifgoto(0x00000010,-1)
+ 	xcode_ifgoto(0x00000010,2)
+	xcode_goto(19);				// I2C write Succeed, we continue with conexant
+	xcode_bittoggle(0x00000008,0x00000000);
+	xcode_ifgoto(0x00000000,-4)	
+	xcode_outb(SMBUS, 0x000000ff);
+	xcode_outb(SMBUS, 0x00000010);		// I2C Write Failed, I think we have a Xcalibur box
+
+	// Xcalibur Slave Address
+	xcode_outb(0x0000c004, 0x000000E0);
+	//I2CTransmitWord(0x70,0x00);
+	SMB_xcode_Write(0x0,0x0);		// +6
+
+	//I2CTransmitWord(0x70,0x00);
+	SMB_xcode_Write(0xb8,0x00);		// +6	
+	
+	xcode_goto(38);				// jump to conexant end
+	// Xcalibur over, now Conexant again	
+	
 	xcode_outb(SMBUS, 0x00000010);
 
 	
 	//I2CTransmitWord(0x45,0x6c46);
-	xcode_outb(SMBUS+8, 0x0000006c);
-	xcode_outb(SMBUS+6, 0x00000046);
-	xcode_outb(SMBUS+2, 0x0000000a);
-        xcode_inb(SMBUS);
-        xcode_ifgoto(0x00000010,-1)
-	xcode_outb(SMBUS, 0x00000010);
-
+	SMB_xcode_Write(0x6c,0x46);		// +6
 
 	//I2CTransmitWord(0x45,0xb800);
-	xcode_outb(SMBUS+8, 0x000000b8);
-	xcode_outb(SMBUS+6, 0x00000000);
-	xcode_outb(SMBUS+2, 0x0000000a);
-        xcode_inb(SMBUS);
-        xcode_ifgoto(0x00000010,-1)
-	xcode_outb(SMBUS, 0x00000010);
-
+	SMB_xcode_Write(0xb8,0x00);		// +6
 
 	//I2CTransmitWord(0x45,0xce19);
-	xcode_outb(SMBUS+8, 0x000000ce);
-	xcode_outb(SMBUS+6, 0x00000019);
-	xcode_outb(SMBUS+2, 0x0000000a);
-        xcode_inb(SMBUS);
-        xcode_ifgoto(0x00000010,-1)
-	xcode_outb(SMBUS, 0x00000010);
-
+	SMB_xcode_Write(0xce,0x19);		// +6
 
 	//I2CTransmitWord(0x45,0xc69c);
-	xcode_outb(SMBUS+8, 0x000000c6);
-	xcode_outb(SMBUS+6, 0x0000009c);
-	xcode_outb(SMBUS+2, 0x0000000a);
-        xcode_inb(SMBUS);
-        xcode_ifgoto(0x00000010,-1)
-	xcode_outb(SMBUS, 0x00000010);
-
+	SMB_xcode_Write(0xc6,0x9c);		// +6
 
 	//I2CTransmitWord(0x45,0x3208);
-	xcode_outb(SMBUS+8, 0x00000032);
-	xcode_outb(SMBUS+6, 0x00000008);
-	xcode_outb(SMBUS+2, 0x0000000a);
-        xcode_inb(SMBUS);
-        xcode_ifgoto(0x00000010,-1)
-	xcode_outb(SMBUS, 0x00000010);
-
+	SMB_xcode_Write(0x32,0x08);		// +6
 	
 	//I2CTransmitWord(0x45,0xc401);
-	xcode_outb(SMBUS+8, 0x000000c4);
-	xcode_outb(SMBUS+6, 0x00000001);
-	xcode_outb(SMBUS+2, 0x0000000a);
-        xcode_inb(SMBUS);
-        xcode_ifgoto(0x00000010,-1)
-	xcode_outb(SMBUS, 0x00000010);
+	SMB_xcode_Write(0xc4,0x01);		// +6
+	
+/* ---------- Conexant Over ------------------------- */        
 
         // PIC SLAVE Address (Write)
 	xcode_outb(SMBUS+4, 0x00000020);
-
         // I2Ctransmit(0x20,0x1,0x0);
-	xcode_outb(SMBUS+8, 0x00000001);
-	xcode_outb(SMBUS+6, 0x00000000);
-	xcode_outb(SMBUS+2, 0x0000000a);
-        xcode_inb(SMBUS);
-        xcode_ifgoto(0x00000010,-1)
-        xcode_outb(SMBUS, 0x00000010);
+	SMB_xcode_Write(0x01,0x00);		// +6
 
 	// PIC SLAVE Address (Read)
 	xcode_outb(SMBUS+4, 0x00000021);
@@ -367,20 +343,19 @@
 	//xcode_pciin_a(0x8000183c);
 	//xcode_bittoggle(0x000000ff,0x00000000);
 	//xcode_outb_a(SMBUS+6);
-	
+
+
 	xcode_outb(SMBUS+4, 0x00000020);
-	xcode_outb(SMBUS+6, 0x000000f0);	
-	xcode_outb(SMBUS+8, 0x00000012);
-	xcode_outb(SMBUS+2, 0x0000000a);
-        xcode_inb(SMBUS);
-        xcode_ifgoto(0x00000010,-1);
-	xcode_outb(SMBUS, 0x00000010);
-	
+
+	SMB_xcode_Write(0x13,0x0f);		// +6
+	SMB_xcode_Write(0x12,0xf0);		// +6		
+
 	/* ---- Reload Nvidia Registers  ------------------------*/
 	
 	xcode_pciout(0x8000f020, 0xfdf0fd00);
 	xcode_pciout(0x80010010, 0xfd000000);
-
+	
+	
 	// overflow trick
 	xcode_poke(0x00000000, 0xfc1000ea);
 	xcode_poke(0x00000004, 0x000008ff);
