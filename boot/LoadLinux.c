@@ -155,6 +155,10 @@ int LoadKernelNative(CONFIGENTRY *config) {
 	fsys_type = NUM_FSYS;
 	disk_read_hook=NULL;
 	disk_read_func=NULL;
+	
+	I2CTransmitWord(0x10, 0x0c01); // Close DVD tray
+	
+	BootPrintConfig(config);
 
         strncpy(&szGrub[4], config->szKernel,strlen(config->szKernel));
 
@@ -246,14 +250,14 @@ int LoadKernelFatX(CONFIGENTRY *config) {
 
 	I2CTransmitWord(0x10, 0x0c01); // Close DVD tray
 	
+	BootPrintConfig(config);
+	
 	partition = OpenFATXPartition(0,
 			SECTOR_STORE,
 			STORE_SIZE);
 	
 	if(partition == NULL) return 0;
 
-	BootPrintConfig(config);
-	
 	// Use INITRD_START as temporary location for loading the Kernel 
 	tempBuf = (u8*)INITRD_START;
 	if(! LoadFATXFilefixed(partition,config->szKernel,&infokernel,tempBuf)) {
