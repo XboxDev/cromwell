@@ -1,7 +1,7 @@
 /* shared.h - definitions used in all GRUB-specific code */
 /*
  *  GRUB  --  GRand Unified Bootloader
- *  Copyright (C) 1999,2000,2001,2002  Free Software Foundation, Inc.
+ *  Copyright (C) 1999,2000,2001,2002,2003,2004  Free Software Foundation, Inc.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -281,8 +281,8 @@ extern char *grub_scratch_mem;
 # define KEY_BACKSPACE   0x0008
 # define KEY_HOME        0x4700
 # define KEY_END         0x4F00
-# define KEY_NPAGE       0x4900
-# define KEY_PPAGE       0x5100
+# define KEY_NPAGE       0x5100
+# define KEY_PPAGE       0x4900
 # define A_NORMAL        0x7
 # define A_REVERSE       0x70
 #elif defined(HAVE_NCURSES_CURSES_H)
@@ -345,7 +345,21 @@ extern char *grub_scratch_mem;
 /* Remap some libc-API-compatible function names so that we prevent
    circularararity. */
 #ifndef WITHOUT_LIBC_STUBS
+#define memmove grub_memmove
+#define memcpy grub_memmove	/* we don't need a separate memcpy */
+#define memset grub_memset
+#define isspace grub_isspace
+//#define printf grub_printf
+#define sprintf grub_sprintf
 #undef putchar
+#define putchar grub_putchar
+#define strncat grub_strncat
+#define strstr grub_strstr
+#define memcmp grub_memcmp
+#define strcmp grub_strcmp
+#define tolower grub_tolower
+#define strlen grub_strlen
+#define strcpy grub_strcpy
 #endif /* WITHOUT_LIBC_STUBS */
 
 
@@ -389,6 +403,7 @@ struct linux_kernel_header
   unsigned short heap_end_ptr;		/* Free memory after setup end */
   unsigned short pad1;			/* Unused */
   char *cmd_line_ptr;			/* Points to the kernel command line */
+  unsigned long initrd_addr_max;	/* The highest address of initrd */
 } __attribute__ ((packed));
 
 /* Memory map address range descriptor used by GET_MMAP_ENTRY. */
@@ -398,7 +413,7 @@ struct mmar_desc
   unsigned long long addr;	/* Base address. */
   unsigned long long length;	/* Length in bytes. */
   unsigned long type;		/* Type of address range. */
-};
+} __attribute__ ((packed));
 
 /* VBE controller information.  */
 struct vbe_controller
@@ -493,7 +508,7 @@ typedef enum
   ERR_BELOW_1MB,
   ERR_BOOT_COMMAND,
   ERR_BOOT_FAILURE,
-  ERR_BOOT_FEATURES, //10
+  ERR_BOOT_FEATURES,
   ERR_DEV_FORMAT,
   ERR_DEV_VALUES,
   ERR_EXEC_FORMAT,
@@ -503,7 +518,7 @@ typedef enum
   ERR_FSYS_MOUNT,
   ERR_GEOM,
   ERR_NEED_LX_KERNEL,
-  ERR_NEED_MB_KERNEL, // 20
+  ERR_NEED_MB_KERNEL,
   ERR_NO_DISK,
   ERR_NO_PART,
   ERR_NUMBER_PARSING,
@@ -623,8 +638,8 @@ struct geometry
   unsigned long flags;
 };
 
-extern long part_start;
-extern long part_length;
+extern unsigned long part_start;
+extern unsigned long part_length;
 
 extern int current_slice;
 
@@ -750,8 +765,8 @@ int currticks (void);
 /* Clear the screen. */
 void cls (void);
 
-/* Turn off cursor. */
-void nocursor (void);
+/* Turn on/off cursor. */
+int setcursor (int on);
 
 /* Get the current cursor position (where 0,0 is the top left hand
    corner of the screen).  Returns packed values, (RET >> 8) is x,
@@ -763,7 +778,8 @@ void gotoxy (int x, int y);
 
 /* Displays an ASCII character.  IBM displays will translate some
    characters to special graphical ones (see the DISP_* constants). */
-int grub_putchar (int __c) ;
+void grub_putchar (int c);
+
 /* Wait for a keypress, and return its packed BIOS/ASCII key code.
    Use ASCII_CHAR(ret) to extract the ASCII code. */
 int getkey (void);
@@ -834,8 +850,8 @@ int run_script (char *script, char *heap);
 #endif
 
 /* C library replacement functions with identical semantics. */
-int grub_printf (__const char *__restrict __format, ...) ;
-int grub_sprintf (char *__restrict __s,  __const char *__restrict __format, ...) ;
+void grub_printf (const char *format,...);
+int grub_sprintf (char *buffer, const char *format, ...);
 int grub_tolower (int c);
 int grub_isspace (int c);
 int grub_strncat (char *s1, const char *s2, int n);
@@ -843,6 +859,7 @@ void *grub_memmove (void *to, const void *from, int len);
 void *grub_memset (void *start, int c, int len);
 int grub_strncat (char *s1, const char *s2, int n);
 char *grub_strstr (const char *s1, const char *s2);
+int grub_memcmp (const char *s1, const char *s2, int n);
 int grub_strcmp (const char *s1, const char *s2);
 int grub_strlen (const char *str);
 char *grub_strcpy (char *dest, const char *src);
@@ -874,11 +891,12 @@ void print_error (void);
 char *convert_to_ascii (char *buf, int c, ...);
 int get_cmdline (char *prompt, char *cmdline, int maxlen,
 		 int echo_char, int history);
-int substring (char *s1, char *s2);
+int substring (const char *s1, const char *s2);
 int nul_terminate (char *str);
 int get_based_digit (int c, int base);
 int safe_parse_maxint (char **str_ptr, int *myint_ptr);
 int memcheck (int start, int len);
+void grub_putstr (const char *str);
 
 #ifndef NO_DECOMPRESSION
 /* Compression support. */

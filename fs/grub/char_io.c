@@ -20,7 +20,6 @@
 
 #include <shared.h>
 #include <term.h>
-#include "boot.h"
 
 #ifdef SUPPORT_HERCULES
 # include <hercules.h>
@@ -44,7 +43,7 @@ struct term_entry term_table[] =
       console_cls,
       console_setcolorstate,
       console_setcolor,
-      console_nocursor
+      console_setcursor
     },
 #ifdef SUPPORT_SERIAL
     {
@@ -74,13 +73,12 @@ struct term_entry term_table[] =
       hercules_cls,
       hercules_setcolorstate,
       hercules_setcolor,
-      hercules_nocursor
-    },
+      hercules_setcursor
+    },      
 #endif /* SUPPORT_HERCULES */
     /* This must be the last entry.  */
     { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }
   };
-
 
 /* This must be console.  */
 struct term_entry *current_term = term_table;
@@ -96,9 +94,9 @@ print_error (void)
   if (errnum > ERR_NONE && errnum < MAX_ERR_NUM)
 #ifndef STAGE1_5
     /* printf("\7\n %s\n", err_list[errnum]); */
-    printf ("\nError %u: %s\n", errnum, err_list[errnum]);
+    grub_printf ("\nError %u: %s\n", errnum, err_list[errnum]);
 #else /* STAGE1_5 */
-    printf ("Error %u\n", errnum);
+    grub_printf ("Error %u\n", errnum);
 #endif /* STAGE1_5 */
 }
 
@@ -144,13 +142,20 @@ convert_to_ascii (char *buf, int c,...)
   return ptr;
 }
 
-int grub_printf (const char *format,...)
+void
+grub_putstr (const char *str)
 {
-/*
-  int *dataptr = (int *) &format;
-  char c, *ptr, str[16];
-  unsigned long mask = 0xFFFFFFFF;
+  while (*str)
+    grub_putchar (*str++);
+}
 
+void
+grub_printf (const char *format,...)
+{
+/*  int *dataptr = (int *) &format;
+  char c, str[16];
+  unsigned long mask = 0xFFFFFFFF;
+  
   dataptr++;
 
   while ((c = *(format++)) != 0)
@@ -163,7 +168,6 @@ int grub_printf (const char *format,...)
 #ifndef STAGE1_5
 	  case 'b':
 	    mask = 0xFF;
-	   // Fall down intentionally!
 	  case 'd':
 	  case 'x':
 	  case 'X':
@@ -171,11 +175,7 @@ int grub_printf (const char *format,...)
 	  case 'u':
 	    *convert_to_ascii (str, c, *((unsigned long *) dataptr++) & mask)
 	      = 0;
-
-	    ptr = str;
-
-	    while (*ptr)
-	      grub_putchar (*(ptr++));
+	    grub_putstr (str);
 	    break;
 
 #ifndef STAGE1_5
@@ -184,18 +184,13 @@ int grub_printf (const char *format,...)
 	    break;
 
 	  case 's':
-	    ptr = (char *) (*(dataptr++));
-
-	    while ((c = *(ptr++)) != 0)
-	      grub_putchar (c);
+	    grub_putstr ((char *) *(dataptr++));
 	    break;
 #endif
 	  }
     }
 */
-		return 1;
 }
-
 
 #ifndef STAGE1_5
 int
@@ -246,10 +241,10 @@ grub_sprintf (char *buffer, const char *format, ...)
 void
 init_page (void)
 {
-//  cls ();
+  //cls ();
 
-//  printf ("\n    GRUB  version %s  (%dK lower / %dK upper memory)\n\n",
-//	  version_string, mbi.mem_lower, mbi.mem_upper);
+  //grub_printf ("\n    GNU GRUB  version %s  (%dK lower / %dK upper memory)\n\n",
+	  version_string, mbi.mem_lower, mbi.mem_upper);
 }
 
 /* The number of the history entries.  */
@@ -490,7 +485,7 @@ real_get_cmdline (char *prompt, char *cmdline, int maxlen,
 	  
 	  pos++;
 	}
-
+      
       /* Back to XPOS.  */
       if (current_term->flags & TERM_DUMB)
 	{
@@ -795,6 +790,11 @@ int
 get_cmdline (char *prompt, char *cmdline, int maxlen,
 	     int echo_char, int readline)
 {
+  int old_cursor;
+  int ret;
+
+  old_cursor = setcursor (1);
+  
   /* Because it is hard to deal with different conditions simultaneously,
      less functional cases are handled here. Assume that TERM_NO_ECHO
      implies TERM_NO_EDIT.  */
@@ -816,7 +816,10 @@ get_cmdline (char *prompt, char *cmdline, int maxlen,
 	{
 	  /* Return immediately if ESC is pressed.  */
 	  if (c == 27)
-	    return 1;
+	    {
+	      setcursor (old_cursor);
+	      return 1;
+	    }
 
 	  /* Printable characters are added into CMDLINE.  */
 	  if (c >= ' ' && c <= '~')
@@ -834,12 +837,15 @@ get_cmdline (char *prompt, char *cmdline, int maxlen,
 
       if (! (current_term->flags & TERM_NO_ECHO))
 	grub_putchar ('\n');
-      
+
+      setcursor (old_cursor);
       return 0;
     }
 
   /* Complicated features are left to real_get_cmdline.  */
-  return real_get_cmdline (prompt, cmdline, maxlen, echo_char, readline);
+  ret = real_get_cmdline (prompt, cmdline, maxlen, echo_char, readline);
+  setcursor (old_cursor);
+  return ret;
 }
 #endif /* STAGE1_5 */
 
@@ -994,7 +1000,7 @@ checkkey (void)
 #endif /* ! STAGE1_5 */
 
 /* Display an ASCII character.  */
-int
+void
 grub_putchar (int c)
 {
   if (c == '\n')
@@ -1003,20 +1009,20 @@ grub_putchar (int c)
   else if (c == '\t' && current_term->getxy)
     {
       int n;
-
+      
       n = 8 - ((current_term->getxy () >> 8) & 3);
       while (n--)
 	grub_putchar (' ');
-
-      return 1;
+      
+      return;
     }
 #endif /* ! STAGE1_5 */
-
+  
 #ifdef STAGE1_5
-
+  
   /* In Stage 1.5, only the normal console is supported.  */
   console_putchar (c);
-
+  
 #else /* ! STAGE1_5 */
 
   if (c == '\n')
@@ -1028,37 +1034,36 @@ grub_putchar (int c)
 	  if (count_lines >= max_lines - 2)
 	    {
 	      int tmp;
-
+	      
 	      /* It's important to disable the feature temporarily, because
 		 the following grub_printf call will print newlines.  */
 	      count_lines = -1;
 
 	      if (current_term->setcolorstate)
 		current_term->setcolorstate (COLOR_STATE_HIGHLIGHT);
-
+	      
 	      grub_printf ("\n[Hit return to continue]");
 
 	      if (current_term->setcolorstate)
 		current_term->setcolorstate (COLOR_STATE_NORMAL);
-
+	      
 	      do
 		{
 		  tmp = ASCII_CHAR (getkey ());
 		}
 	      while (tmp != '\n' && tmp != '\r');
 	      grub_printf ("\r                        \r");
-
+	      
 	      /* Restart to count lines.  */
 	      count_lines = 0;
-	      return 1;
+	      return;
 	    }
 	}
     }
 
   current_term->putchar (c);
-
+  
 #endif /* ! STAGE1_5 */
-	return 1;
 }
 
 #ifndef STAGE1_5
@@ -1084,16 +1089,18 @@ cls (void)
     current_term->cls ();
 }
 
-void
-nocursor (void)
+int
+setcursor (int on)
 {
-  if (current_term->nocursor)
-    current_term->nocursor ();
+  if (current_term->setcursor)
+    return current_term->setcursor (on);
+
+  return 1;
 }
 #endif /* ! STAGE1_5 */
 
 int
-substring (char *s1, char *s2)
+substring (const char *s1, const char *s2)
 {
   while (*s1 == *s2)
     {
@@ -1111,7 +1118,7 @@ substring (char *s1, char *s2)
   return 1;
 }
 
-#ifndef STAGE1_5
+//#ifndef STAGE1_5
 /* Terminate the string STR with NUL.  */
 int
 nul_terminate (char *str)
@@ -1158,7 +1165,7 @@ grub_strlen (const char *str)
 
   return len;
 }
-#endif /* ! STAGE1_5 */
+//#endif /* ! STAGE1_5 */
 
 int
 memcheck (int addr, int len)

@@ -143,4 +143,4 @@ extern int print_possibilities;
 #endif
 
 extern int fsmax;
-extern const struct fsys_entry fsys_table[NUM_FSYS + 1];
+extern struct fsys_entry fsys_table[NUM_FSYS + 1];
