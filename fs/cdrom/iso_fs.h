@@ -17,6 +17,7 @@ struct iso_volume_descriptor {
 };
 
 /* volume descriptor types */
+#define ISO_VD_BOOT 0
 #define ISO_VD_PRIMARY 1
 #define ISO_VD_SUPPLEMENTARY 2
 #define ISO_VD_END 255
@@ -154,6 +155,24 @@ struct iso_directory_record {
 	char name			[0];
 } __attribute__((packed));
 
+struct tag {
+	unsigned short		id;		// Tag Identifier
+	unsigned short		version;	// Descriptor Version
+	unsigned char		tcrc;		// Tag Checksum
+	char			reserved;
+	unsigned short		serial;		// Tag Serial Number
+	unsigned short		dcrc;		// Deskriptor Checksum
+	unsigned short		dcrc_length;	// Descriptor Checksum Length
+	unsigned short		location;	// Tag Location
+} __attribute__((packed));
+
+struct udf_anchor_volume_descriptor {
+	struct tag		dtag;	// DescriptorTag
+	//struct extend_ad	mvdse;	// MainVolumeDescriptorExtent
+	//struct extend_ad	rvdse;	// ReservedVolumeDescriptorExtent
+	unsigned char		reserved[480];	// Reserved
+} __attribute__((packed));
+
 #define ISOFS_BLOCK_BITS 11
 #define ISOFS_BLOCK_SIZE 2048
 
@@ -161,7 +180,5 @@ struct iso_directory_record {
 #define ISOFS_BUFFER_BITS(INODE) ((INODE)->i_sb->s_blocksize_bits)
 
 #define ISOFS_SUPER_MAGIC 0x9660
-
-int BootIso9660GetFile(int driveId, char *szcPath, BYTE *pbaFile, DWORD dwFileLengthMax);
 
 #endif

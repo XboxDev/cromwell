@@ -65,7 +65,7 @@ unsigned long read_dir(int driveId, struct iso_directory_record *dir_read, char 
 	unsigned long read_size;
 	unsigned long offset;
 	unsigned char dir_length;
-	static unsigned long sect = 0;
+	unsigned long sect = 0;
 	char *newfilename;
 	int i;
 
@@ -76,7 +76,7 @@ unsigned long read_dir(int driveId, struct iso_directory_record *dir_read, char 
 		return 0;
 	}
 	
-	for(i = 0; i < (read_size >> 11); i++) {
+	for(i = 0; i < (read_size >> ISOFS_BLOCK_BITS); i++) {
 		BootIdeReadSector(driveId, &buffer[i * ISOFS_BLOCK_SIZE], offset , 0, ISOFS_BLOCK_SIZE);
 		offset++;
 	}
@@ -92,29 +92,26 @@ unsigned long read_dir(int driveId, struct iso_directory_record *dir_read, char 
 			offset++;
 			continue;
 		}
-		/*
-		printf("dir->length			%d\n", (unsigned char)dir->length[0]);
-		printf("dir->extent			%d\n", *((unsigned long *)(dir->extent)));
-		printf("dir->size			%d\n", *((unsigned long *)(dir->size)));
-		printf("dir->name_len			%d\n", *((unsigned char *)(dir->name_len)));
-		printf("dir->interleave			%d\n", *((char *)(dir->interleave)));
-		printf("dir->flags			%d\n", *((char *)(dir->flags)) & IS_DIR);
-		*/
-		if(dir->name[0] != 0 && dir->name[0] != '1') {
+		if(dir->name[0] != 0 && dir->name[0] != 1) {
 			dir->name[(unsigned char)dir->name_len[0]] = 0;
 			iso9660_name_translate(dir->name);
 			sprintf(newfilename,"%s/%s",filename, dir->name);
-//			printk("Directory %s Filename %s  %d %d \n", newfilename, search, 
-//				strlen(newfilename), strlen(search));
+//			printk("Read : Sector %d Filename %s %d\n", 
+//					*((unsigned long *)(dir->extent)),  newfilename,
+//					(unsigned char)dir->ext_attr_length[0]);
 		}
-		if(memcmp(newfilename, search, strlen(search)) == 0) {
-			sect = *((unsigned long *)(dir->extent));
-			memcpy(dir_found, dir, sizeof(struct iso_directory_record));
-//			printk("Directory %s Filename %s  %d %d \n", newfilename, search, 
-//				strlen(newfilename), strlen(search));
-			free(newfilename);
-			free(buffer);
-			return sect;
+		
+		if(strlen(newfilename) <= strlen(search)) {
+			if(memcmp(newfilename, search, strlen(search)) == 0) {
+				sect = *((unsigned long *)(dir->extent));
+				memcpy(dir_found, dir, sizeof(struct iso_directory_record));
+//				printk("Found : Sector %d Directory %s Filename %s  %d %d \n", 
+//					sect, newfilename, search, 
+//					strlen(newfilename), strlen(search));
+//				free(newfilename);
+//				free(buffer);
+				return sect;
+			}
 		}
 		if((*((char *)(dir->flags)) & IS_DIR) && (*((unsigned char *)(dir->name_len)) > 1)) {
 			if((strlen(newfilename) + strlen(dir->name)) > 1024) {
@@ -125,8 +122,10 @@ unsigned long read_dir(int driveId, struct iso_directory_record *dir_read, char 
 			sprintf(newfilename,"%s/%s",filename, dir->name);
 //			printk("Directory %s Filename %s\n", newfilename, search);
 			sect = read_dir(driveId, dir, search, newfilename, dir_found);
+			if(sect != 0) return sect;
 		}
 		offset+=dir_length;
+		sect = 0;
 	}
 	
 	free(buffer);
@@ -153,7 +152,7 @@ void read_file(int driveId, struct iso_directory_record *dir_read, char *buffer)
 	
 //	printk("         read_file sector %d %d\n", offset, read_size);
 	
-	for(i = 0; i < (read_size >> 11) ; i++) {
+	for(i = 0; i < (read_size >> ISOFS_BLOCK_BITS) ; i++) {
 		BootIdeReadSector(driveId, tmpbuff, offset , 0, ISO_BLOCKSIZE);
 		offset++;
 		if(((i+1) * ISO_BLOCKSIZE) > read_size) {
@@ -165,7 +164,7 @@ void read_file(int driveId, struct iso_directory_record *dir_read, char *buffer)
 	free(tmpbuff);
 }
 
-int BootIso9660GetFile(int driveId, char *szcPath, BYTE *pbaFile, DWORD dwFileLengthMax) {
+int BootIso9660GetFile(int driveId, char *szcPath, unsigned char *pbaFile, unsigned int dwFileLengthMax) {
 	struct iso_primary_descriptor *pvd;
 	struct iso_directory_record *rootd;
 	unsigned long read_size;
@@ -180,6 +179,7 @@ int BootIso9660GetFile(int driveId, char *szcPath, BYTE *pbaFile, DWORD dwFileLe
 	memset(dir,0x0,sizeof(struct iso_directory_record));
 	
 	if(BootIdeReadSector(driveId, pvd, 16 , 0, ISO_BLOCKSIZE)) {
+//		printk("BootIso9660GetFile : Error read Sector\n");
 		free(pvd);
 		free(dir);
 		return -1;
