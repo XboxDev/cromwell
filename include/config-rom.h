@@ -23,3 +23,4 @@
 // uncomment to do Ethernet init
 //#define DO_ETHERNET 1
 
+//#define FLASH
