@@ -72,16 +72,19 @@ void setup(void* KernelPos, void* PhysInitrdPos, void* InitrdSize, char* kernel_
     struct kernel_setup_t *kernel_setup = (struct kernel_setup_t*)KernelPos;
     DWORD dwInterrupt;
 
-    //memset(kernel_setup,0x00,sizeof(struct kernel_setup_t));
+    memset(kernel_setup->__pad2,0x00,sizeof(kernel_setup->__pad2));
+    memset(kernel_setup->__pad3,0x00,sizeof(kernel_setup->__pad3));
+    kernel_setup->unused2=0; 
+    kernel_setup->unused3=0;
+    
     BootPciInterruptGlobalStackStateAndDisable(&dwInterrupt);
 
-
-		/* init kernel parameters */
+    /* init kernel parameters */
     kernel_setup->loader = 0xff;		/* must be != 0 */
     kernel_setup->heap_end_ptr = 0xffff;	/* 64K heap */
     kernel_setup->flags = 0x81;			/* loaded high, heap existant */
     kernel_setup->start = PM_KERNEL_DEST;
-		kernel_setup->ext_mem_k = ((60-1) * 1024); /* *extended* (minus first MB) memory in kilobytes */
+    kernel_setup->ext_mem_k = ((60-1) * 1024); /* *extended* (minus first MB) memory in kilobytes */
 
     /* initrd */
     /* ED : only if initrd */
@@ -109,12 +112,12 @@ void setup(void* KernelPos, void* PhysInitrdPos, void* InitrdSize, char* kernel_
     kernel_setup->lfb_depth = 32;
     kernel_setup->lfb_width = currentvideomodedetails.m_dwWidthInPixels;
 
-		kernel_setup->lfb_height = currentvideomodedetails.m_dwHeightInLines; // SCREEN_HEIGHT_480;
-		memcpy((void *)(60 * 1024 * 1024), (void *)((*(unsigned int*)0xFD600800)&0x7fffffff), currentvideomodedetails.m_dwWidthInPixels*currentvideomodedetails.m_dwHeightInLines*4);
-		(*(unsigned int*)0xFD600800)= (60 * 1024 * 1024);
-	  kernel_setup->lfb_base = (0xf0000000|*(unsigned int*)0xFD600800); // 0xF0000000+NEW_FRAMEBUFFER_480;
+    kernel_setup->lfb_height = currentvideomodedetails.m_dwHeightInLines; // SCREEN_HEIGHT_480;
+    memcpy((void *)(60 * 1024 * 1024), (void *)((*(unsigned int*)0xFD600800)&0x7fffffff), currentvideomodedetails.m_dwWidthInPixels*currentvideomodedetails.m_dwHeightInLines*4);
+    (*(unsigned int*)0xFD600800)= (60 * 1024 * 1024);
+    kernel_setup->lfb_base = (0xf0000000|*(unsigned int*)0xFD600800); // 0xF0000000+NEW_FRAMEBUFFER_480;
 //	printk("kernel_setup->lfb_base=0x%08X\n", kernel_setup->lfb_base);
-		kernel_setup->lfb_size = (4 * 1024 * 1024)/0x10000; // (FRAMEBUFFER_SIZE_480+0xFFFF)/0x10000;
+    kernel_setup->lfb_size = (4 * 1024 * 1024)/0x10000; // (FRAMEBUFFER_SIZE_480+0xFFFF)/0x10000;
 
     kernel_setup->lfb_linelength = currentvideomodedetails.m_dwWidthInPixels*4;
     kernel_setup->pages=1;
