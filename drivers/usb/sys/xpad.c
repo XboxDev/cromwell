@@ -27,7 +27,7 @@ struct xpad_info
 	unsigned char data[32];
 };
 
-int xpad_num=0;
+int xpad_num;
 /*------------------------------------------------------------------------*/ 
 static void xpad_irq(struct urb *urb, struct pt_regs *regs)
 {
@@ -143,6 +143,7 @@ static struct usb_driver xpad_driver = {
 /*------------------------------------------------------------------------*/ 
 void XPADInit(void)
 {
+	xpad_num=0;
 	int n;
 	for(n=0;n<4;n++)
 	{
