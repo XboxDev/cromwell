@@ -4,18 +4,12 @@
 void BootEepromReadEntireEEPROM() {
 	int i;
 	BYTE *pb=(BYTE *)&eeprom;
-
-	bprintf("Starting EEPROM read\n");
-	
 	for(i = 0; i < 256; i++) {
 		*pb++ = I2CTransmitByteGetReturn(0x54, i);
-//		bprintf("%d\n", i);
 	}
-	
 }
 
 void BootEepromPrintInfo() {
-
 	VIDEO_ATTR=0xffc8c8c8;
 	printk("MAC : ");
 	VIDEO_ATTR=0xffc8c800;

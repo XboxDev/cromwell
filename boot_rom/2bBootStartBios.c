@@ -121,43 +121,32 @@ extern void BootStartBiosLoader ( void ) {
 	// we are quite happy now
 	
         validimage=0;
-        cromloadtry=0;
         flashbank=3;
 	for (loadretry=0;loadretry<100;loadretry++) {
-                
-               
-                if (Biossize_type==0) {
+		cromloadtry=0;
+		if (Biossize_type==0) {
                 	// Means we have a 256 kbyte image
                 	 flashbank=3;
-                	 cromloadtry=0;
-                	}                                 
-                
-                if (Biossize_type==1) {
+                }                                 
+               	else if (Biossize_type==1) {
                 	// Means we have a 1MB image
-                	// If 20 Try's are failing, we switch to the next bank
-                	
-                	if (loadretry==0) {
-                		flashbank=1;
-                		cromloadtry=0;
-                		}
-
-               		if (loadretry==20) {
-               			flashbank=2;
-               			cromloadtry=0;
-               			}
-      
-	                if (loadretry==40) {
-        	        	flashbank=0;
-                		cromloadtry=0;
-                		}
-
-	                if (loadretry==80) {
-        	        	flashbank=3;
-                		cromloadtry=0;
-                		}
+                	// If 25 load attempts failed, we switch to the next bank
+			switch (loadretry) {
+				case 0:
+					flashbank=1;
+					break;	
+				case 25:
+     	          			flashbank=2;
+      					break;
+        	        	case 50:
+					flashbank=0;
+                			break;
+	                	case 75:
+        	        		flashbank=3;
+                			break;	
+			}
                 }
-                
-                cromloadtry++;	
+		cromloadtry++;	
                 
         	// Copy From Flash To RAM
       		memcpy(&bootloaderChecksum[0],(void*)(Buildinflash_Flash[flashbank]+compressed_image_start),20);

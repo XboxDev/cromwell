@@ -1,6 +1,4 @@
 Memory Mapping 2BLoader for Cromwell Loading
-
-
 	0x0008 0000 Stack pointer TOP
 
 	0x0040 0000 IDT for the CPU
@@ -19,7 +17,7 @@ Memory Mapping 2BLoader for Cromwell Loading
  	0x03AF FFFF 2bLoader Dynamic Memory End
  	
  	0x03A0 0000 c/x romwell Ramcopy Start (0x200000 size = 2MB) 
- 	0x03BF FFFF c/x romwell Ramcopy End
+ 	0x03BF FFFF c/x romwell Ramcopy End
  	0x03C0 0000 Video Memory Start (4MB)
  	0x03FF FFFF Video Memory End
  	
@@ -37,5 +35,4 @@ Memory Mapping 2BLoader for Cromwell Loading
 	0xFFFC 0000 Flash Copy(3) Start
 	
 	0xFFFF FFFF Flash Copy(3) End 
-
 hamtitampti & ed

@@ -52,19 +52,15 @@ int I2CTransmitByteGetReturn(BYTE bPicAddressI2cFormat, BYTE bDataToWrite)
 	return ERR_I2C_ERROR_BUS;
 }
 
-
-
 // transmit a word, no returned data from I2C device
 
 int I2CTransmitWord(BYTE bPicAddressI2cFormat, WORD wDataToWrite)
 {
 	int nRetriesToLive=400;
 
-	//if(IoInputWord(I2C_IO_BASE+0)&0x8000) { bprintf("Smb status=%x\n",IoInputWord(I2C_IO_BASE+0)); }
 	while(IoInputWord(I2C_IO_BASE+0)&0x0800) ;  // Franz's spin while bus busy with any master traffic
 
 	while(nRetriesToLive--) {
-
 		IoOutputByte(I2C_IO_BASE+4, (bPicAddressI2cFormat<<1)|0);
 
 		IoOutputByte(I2C_IO_BASE+8, (BYTE)(wDataToWrite>>8));
@@ -86,7 +82,6 @@ int I2CTransmitWord(BYTE bPicAddressI2cFormat, WORD wDataToWrite)
 			}
 		}
 	}
-
 	return ERR_I2C_ERROR_BUS;
 }
 
@@ -117,8 +112,6 @@ WORD BootPicManipulation(
 	return (WORD) ((((WORD)b2)<<8) | b1);
 }
 
-
-
 // actual business of getting I2C data from PIC and reissuing munged version
 // returns zero if all okay, else error code
 
@@ -148,14 +141,11 @@ int BootPerformPicChallengeResponseAction()
 	}
 
 	// continues as part of video setup....
-
-
 	return ERR_SUCCESS;
 }
 
 extern int I2cSetFrontpanelLed(BYTE b)
 {
-
 	I2CTransmitWord( 0x10, 0x800 | b);  // sequencing thanks to Jarin the Penguin!
 	I2CTransmitWord( 0x10, 0x701);
 	return ERR_SUCCESS;

@@ -69,10 +69,6 @@ typedef struct {
 
 ICON icon[ICONCOUNT];
 
-const int naChimeFrequencies[] = {
-	329, 349, 392, 440
-};
-
 void BootPrintConfig(CONFIGENTRY *config) {
 	int CharsProcessed=0, CharsSinceNewline=0, Length=0;
 	char c;
@@ -105,7 +101,6 @@ void memPlaceKernel(const BYTE* kernelOrg, DWORD kernelSize)
 }
 
 // if fJustTestingForPossible is true, returns 0 if this kind of boot not possible, 1 if it is worth trying
-
 int BootLoadConfigNative(int nActivePartition, CONFIGENTRY *config, bool fJustTestingForPossible) {
 	DWORD dwConfigSize=0;
 	char szGrub[256+4];
@@ -199,7 +194,6 @@ int BootLoadConfigNative(int nActivePartition, CONFIGENTRY *config, bool fJustTe
 		VIDEO_ATTR=0xffa8a8a8;
 		dwInitrdSize=0;
 	}
-
 	return true;
 }
 
@@ -322,7 +316,6 @@ int BootLoadConfigFATX(CONFIGENTRY *config) {
 	return true;
 }
 
-
 /* -------------------------------------------------------------------------------- */
 
 int BootLoadConfigCD(CONFIGENTRY *config) {
@@ -420,7 +413,6 @@ int BootLoadConfigCD(CONFIGENTRY *config) {
 	return true;
 }
 
-
 #ifdef FLASH 
 
 /*****************************************
@@ -512,7 +504,6 @@ selectinsert:
 
 				VIDEO_ATTR=0xff000000|(((bCount1)+64)<<16)|(((bCount1>>1)+128)<<8)|(((bCount1)+128)) ;
 
-				printk("\2Waiting for drive - Mode Flashing\2\n");
 	
 			} else {  // read it successfully
 				fMore=false;

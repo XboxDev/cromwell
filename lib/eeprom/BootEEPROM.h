@@ -6,9 +6,7 @@
 #ifndef _BootEEPROM_H_
 #define _BootEEPROM_H_
 
-
 //Defines for Data structure sizes..
-
 #define EEPROM_SIZE		0x100
 #define CONFOUNDER_SIZE		0x008
 #define HDDKEY_SIZE		0x010
@@ -20,12 +18,6 @@
 #define VIDEOSTANDARD_SIZE	0x004
 
 //EEPROM Data structe value enums
-typedef enum {
-	V_NONE = 0x00,
-	V1_0 = 0x0A,
-	V1_1 = 0x0B
-} XBOX_VERSION;
-
 typedef enum { 
 	ZONE_NONE = 0x00,
 	ZONE1 = 0x01,
@@ -43,10 +35,10 @@ typedef enum {
 } VIDEO_STANDARD;
 
 typedef enum {
-	XBE_INVALID		= 0x00,
-	NORTH_AMERICA	= 0x01,
-	JAPAN			= 0x02,
-	EURO_AUSTRALIA	= 0x04
+	XBE_INVALID = 0x00,
+	NORTH_AMERICA = 0x01,
+	JAPAN = 0x02,
+	EURO_AUSTRALIA = 0x04
 } XBE_REGION;
 
 
@@ -67,7 +59,6 @@ typedef struct _EEPROMDATA {
    BYTE		VideoStandard[4];			// 0x58 - 0x5B  ** 0x00014000 = NTSC, 0x00038000 = PAL
    
    BYTE		UNKNOWN3[4];			    // 0x5C - 0x5F  Unknown Padding ?
-   
   
    //Comes configured up to here from factory..  everything after this can be zero'd out...
    //To reset XBOX to Factory settings, Make checksum3 0xFFFFFFFF and zero all data below (0x64-0xFF)
