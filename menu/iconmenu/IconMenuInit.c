@@ -73,21 +73,25 @@ void IconMenuInit(void) {
 void InitFatXIcons(void) {
 	ICON *iconPtr=0l;
 	BYTE ba[512];
-	memset(ba,0x00,512);
-	BootIdeReadSector(0, &ba[0], 3, 0, 512);
-	if (!strncmp("BRFR",&ba[0],4)) {
-		//Got a FATX formatted HDD
-		CONFIGENTRY dummyconfig;
-		if (BootTryLoadConfigFATX(&dummyconfig)) {
-			//We can load the config, so it's bootable.
-			iconPtr = (ICON *)malloc(sizeof(ICON));
-	   		iconPtr->iconSlot = ICON_SOURCE_SLOT4;
-	   		iconPtr->szCaption = "FatX (E:)";
-	   		iconPtr->functionPtr = BootFromFATX;
-	   		AddIcon(iconPtr);
-			//If we have fatx, mark it as default.
-			//If there are natives, they'll take over shortly
-			selectedIcon = iconPtr;
+	int driveId=0;
+	
+	if (tsaHarddiskInfo[driveId].m_fDriveExists && !tsaHarddiskInfo[driveId].m_fAtapi) {
+		memset(ba,0x00,512);
+		BootIdeReadSector(driveId, &ba[0], 3, 0, 512);
+		if (!strncmp("BRFR",&ba[0],4)) {
+			//Got a FATX formatted HDD
+			CONFIGENTRY dummyconfig;
+			if (BootTryLoadConfigFATX(&dummyconfig)) {
+				//We can load the config, so it's bootable.
+				iconPtr = (ICON *)malloc(sizeof(ICON));
+		   		iconPtr->iconSlot = ICON_SOURCE_SLOT4;
+		   		iconPtr->szCaption = "FatX (E:)";
+		   		iconPtr->functionPtr = BootFromFATX;
+		   		AddIcon(iconPtr);
+				//If we have fatx, mark it as default.
+				//If there are natives, they'll take over shortly
+				selectedIcon = iconPtr;
+			}
 		}
 	}
 }
@@ -95,34 +99,37 @@ void InitFatXIcons(void) {
 void InitNativeIcons(void) {
 	ICON *iconPtr=0l;
 	BYTE ba[512];
-	memset(ba,0x00,512);
+	int driveId=0;	
 
-	//This needs enhancing to check multiple HDDs, and support multiple
-	//boot entries.
-	BootIdeReadSector(0, &ba[0], 0, 0, 512);
-	        
-	//Is there an MBR here?
-	if( (ba[0x1fe]==0x55) && (ba[0x1ff]==0xaa) ) {
-		volatile BYTE * pb;
-		int n=0, nPos=0;
-		(volatile BYTE *)pb=&ba[0x1be];
-		//Check the first four partitions (this isn't good enough!)
-		for (n=0; n<4; n++,pb+=16) {
-			//Is this partition bootable?
-			if(pb[0]&0x80) {
-				CONFIGENTRY config;
-				if (BootLoadConfigNative(n, &config, true)) {
-					//Got a partition with a linuxboot.cfg on - lets add an icon for it
-					iconPtr = (ICON *)malloc(sizeof(ICON));
-					iconPtr->iconSlot = ICON_SOURCE_SLOT1;
-					iconPtr->szCaption = "HDD";
-					iconPtr->functionPtr = BootFromNative;
-					iconPtr->functionDataPtr=malloc(sizeof(int));
-					*(int*)(iconPtr->functionDataPtr)=n;
-					//At the moment, the *LAST* native partition on disk will
-					//be the one selected as bootable by default.
-					selectedIcon = iconPtr;
-					AddIcon(iconPtr);
+	if (tsaHarddiskInfo[driveId].m_fDriveExists && !tsaHarddiskInfo[driveId].m_fAtapi) {
+		//This needs enhancing to check multiple HDDs, and support multiple
+		//boot entries.
+		memset(ba,0x00,512);
+		BootIdeReadSector(driveId, &ba[0], 0, 0, 512);
+		        
+		//Is there an MBR here?
+		if( (ba[0x1fe]==0x55) && (ba[0x1ff]==0xaa) ) {
+			volatile BYTE * pb;
+			int n=0, nPos=0;
+			(volatile BYTE *)pb=&ba[0x1be];
+			//Check the first four partitions (this isn't good enough!)
+			for (n=0; n<4; n++,pb+=16) {
+				//Is this partition bootable?
+				if(pb[0]&0x80) {
+					CONFIGENTRY config;
+					if (BootLoadConfigNative(n, &config, true)) {
+						//Got a partition with a linuxboot.cfg on - lets add an icon for it
+						iconPtr = (ICON *)malloc(sizeof(ICON));
+						iconPtr->iconSlot = ICON_SOURCE_SLOT1;
+						iconPtr->szCaption = "HDD";
+						iconPtr->functionPtr = BootFromNative;
+						iconPtr->functionDataPtr=malloc(sizeof(int));
+						*(int*)(iconPtr->functionDataPtr)=n;
+						//At the moment, the *LAST* native partition on disk will
+						//be the one selected as bootable by default.
+						selectedIcon = iconPtr;
+						AddIcon(iconPtr);
+					}
 				}
 			}
 		}
