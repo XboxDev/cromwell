@@ -220,8 +220,6 @@ extern void BootResetAction ( void ) {
 
 	/* Here, the interrupts are Switched on now */
 	BootPciInterruptEnable();
-	/* We configure the timers now , as we need to calibrate them */
-        wait_ms_trigger();
         /* We allow interrupts */
 	nInteruptable = 1;	
 	

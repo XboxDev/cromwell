@@ -141,28 +141,37 @@ void wait_smalldelay(void) {
 }
 
 void wait_ms(DWORD ticks) {
-	unsigned int a;
-	unsigned int b;
-	for (a=0; a<wait_ms_time;a++) {
-		for (b=0; b<ticks;b++) {;}
-	}
+        
+	/*
+	  	32 Bit range = 1200 sec ! => 20 min
+		1. sec = 0x369E99
+		1 ms =  3579,545
+					
+	*/
+	
+	DWORD COUNT_start;
+	DWORD temp;
+	DWORD COUNT_TO;
+	DWORD HH;
+	
+	// Maximum Input range
+	if (ticks>(1200*1000)) ticks = 1200*1000;
+	
+	COUNT_TO = (DWORD) ((float)(ticks*3579.545));
+	COUNT_start = IoInputDword(0x8008);	
+
+	while(1) {
+
+		// Reads out the System timer
+		HH = IoInputDword(0x8008);		
+		temp = HH-COUNT_start;
+		// We reached the counter
+		if (temp>COUNT_TO) break;
+	
+	};
+	
 }
 
-void wait_ms_trigger(void) {
-	
-	unsigned int start;
-
-	start=BIOS_TICK_COUNT;
-	// We wait for the first Trigger
-	start++;
-	while(start!=BIOS_TICK_COUNT);
-	start=start+2;
-	for (wait_ms_time=0;wait_ms_time<0xffffff;wait_ms_time++) {
-		if (BIOS_TICK_COUNT==start) break;
-	}
-	wait_ms_time= (unsigned int)wait_ms_time/40;
-	
-}
 
 
 void BootInterruptsWriteIdt() {

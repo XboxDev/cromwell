@@ -496,7 +496,6 @@ typedef struct {
 } AC97_DEVICE  __attribute__ ((aligned (8))) ;
 
 void wait_tick(DWORD ticks);
-void wait_ms_trigger(void);
 void wait_ms(DWORD ticks);
 void wait_smalldelay(void);
 void BootAudioInit(volatile AC97_DEVICE * pac97device);
