@@ -714,7 +714,12 @@ void BootIcons(int nXOffset, int nYOffset, int nTextOffsetX, int nTextOffsetY) {
 	icon[ICON_FLASH].nSrcHeight = ICON_HEIGH;
 	icon[ICON_FLASH].nTextX = (nTextOffsetX+440)<<2;
 	icon[ICON_FLASH].nTextY = nTextOffsetY;
+	#ifdef FLASH
 	icon[ICON_FLASH].szCaption = "Flash";
+	#endif
+	#ifndef FLASH
+	icon[ICON_FLASH].szCaption = "BIOS";	
+	#endif
 }
 
 void BootStartBiosDoIcon(ICON *icon, BYTE bOpaqueness)
@@ -816,10 +821,10 @@ int BootMenue(CONFIGENTRY *config,int nDrive,int nActivePartition, int nFATXPres
 				break;
 	
 			case ICON_FLASH:
-				#ifdef FLASH
+				//#ifdef FLASH
 				icon[menu].nEnabled = 1;
 				if(nSelected == -1) nSelected = menu;
-				#endif
+				//#endif
 				break;
 		}
 	}	
@@ -928,6 +933,10 @@ int hddclone(void) {
 }
 */
 
+int ExittoLinux(CONFIGENTRY *config);
+int ExittoRomBios(void);
+
+
 void StartBios(CONFIGENTRY *config, int nActivePartition , int nFATXPresent,int bootfrom) {
 
 	char szGrub[256+4];
@@ -985,22 +994,29 @@ void StartBios(CONFIGENTRY *config, int nActivePartition , int nFATXPresent,int 
 		strcpy(config->szKernel, "/boot/vmlinuz");
 		strcpy(config->szInitrd, "/boot/initrd");
 	}
-
+        
+        
 	switch(bootfrom) {
 		case ICON_FATX:
 			BootLodaConfigFATX(config);
+			ExittoLinux(config);
 			break;
 		case ICON_NATIVE:
 			BootLodaConfigNative(nActivePartition, config, false);
+			ExittoLinux(config);
 			break;
 		case ICON_CD:
 			//hddclone();
 			BootLodaConfigCD(config);
+			ExittoLinux(config);
 			break;
 		case ICON_FLASH:
 #ifdef FLASH
 			BootLoadFlashCD(config);
 
+#endif                  
+#ifndef FLASH
+			ExittoRomBios();
 #endif
 			break;
 		default:
@@ -1009,6 +1025,11 @@ void StartBios(CONFIGENTRY *config, int nActivePartition , int nFATXPresent,int 
 	}
 
 
+}
+
+
+int ExittoLinux(CONFIGENTRY *config) {
+	
 	// turn off USB
 	BootStopUSB();
 
@@ -1136,14 +1157,19 @@ void StartBios(CONFIGENTRY *config, int nActivePartition , int nFATXPresent,int 
 }
 
 
-/*
-#if 0
+
+int ExittoRomBios(void) {
+	
+	
+
+
+
 //		int n=0;
 //		DWORD dwCsum1=0, dwCsum2=0;
 //		BYTE *pb1=(BYTE *)0xf0000, *pb2=(BYTE*)&rombios;
   //  printk("  Copying BIOS into RAM...\n");
-extern char rombios[1];
-void * memcpy(void *dest, const void *src,  size_t size);
+	
+	//extern char rombios[1];
 
 	//	I2cSetFrontpanelLed(0x77);
 
@@ -1151,7 +1177,8 @@ void * memcpy(void *dest, const void *src,  size_t size);
 			// normally appears in 16-bit mode
 
 
-	memcpy((void *)0xf0000, ((BYTE *)&rombios), 0x10000);
+	// here we should copy .. disabled for the moment
+//D1	memcpy((void *)0xf0000, ((BYTE *)&rombios), 0x10000);
 
 
 	// LEDs to yellow
@@ -1159,7 +1186,8 @@ void * memcpy(void *dest, const void *src,  size_t size);
 			// copy a 16-bit LJMP stub into a safe place that is visible in 16-bit mode
 			// (the BIOS isn't visible in 1MByte address space)
 
-			__asm __volatile__ (
+	__asm __volatile__ (
+		
 		"mov  $code_start, %esi \n"
 		"mov  $0x600, %edi       \n"
 		"mov  $0x100, %ecx   \n"
@@ -1237,6 +1265,8 @@ void * memcpy(void *dest, const void *src,  size_t size);
 		".word 0xF000 \n"
 		".code32 \n"
 		);
-#endif
-	}
-*/
+
+       	// See you again in Windows ??? hihih
+	while(1);
+
+}
