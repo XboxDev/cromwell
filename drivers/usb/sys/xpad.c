@@ -67,9 +67,8 @@ static int xpad_probe(struct usb_interface *intf, const struct usb_device_id *id
 	struct usb_endpoint_descriptor *ep_irq_in;
 	struct usb_endpoint_descriptor *ep_irq_out;
 	struct xpad_info *xpi;
-	
 
-	xpi=kmalloc(sizeof(struct xpad_data),0);
+	xpi=kmalloc(sizeof(struct xpad_info),GFP_KERNEL);
 	if (!xpi) return -1;
 
 	urb=usb_alloc_urb(0,0);
