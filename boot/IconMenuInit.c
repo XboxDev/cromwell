@@ -30,7 +30,7 @@ void IconMenuInit(void) {
 			iconPtr->szCaption = driveName;
 			iconPtr->functionPtr = BootFromCD;
 			iconPtr->functionDataPtr = malloc(sizeof(int));
-			memcpy(iconPtr->functionDataPtr,&i,sizeof(int));
+			*(int*)iconPtr->functionDataPtr = i;
 			AddIcon(iconPtr);
 		}
 	}
@@ -65,19 +65,20 @@ void InitFatXIcons(void) {
 	memset(ba,0x00,512);
 	BootIdeReadSector(0, &ba[0], 3, 0, 512);
 	if (!strncmp("BRFR",&ba[0],4)) {
-           //FATX icon - this is inadequate.
-	   //a) Needs to check linuxboot.cfg or whatever exists
-	   //b) Should add more icons per entry.
-	   iconPtr = (ICON *)malloc(sizeof(ICON));
-	   iconPtr->iconSlot = ICON_SOURCE_SLOT4;
-	   iconPtr->szCaption = "FatX (E:)";
-	   iconPtr->functionPtr = BootFromFATX;
-	   AddIcon(iconPtr);
+		//Got a FATX formatted HDD
+		CONFIGENTRY dummyconfig;
+		if (BootTryLoadConfigFATX(&dummyconfig)) {
+			//We can load the config, so it's bootable.
+			iconPtr = (ICON *)malloc(sizeof(ICON));
+	   		iconPtr->iconSlot = ICON_SOURCE_SLOT4;
+	   		iconPtr->szCaption = "FatX (E:)";
+	   		iconPtr->functionPtr = BootFromFATX;
+	   		AddIcon(iconPtr);
+		}
 	}
 }
 
 void InitNativeIcons(void) {
-	extern int nActivePartitionIndex;
 	ICON *iconPtr=0l;
 	BYTE ba[512];
 	memset(ba,0x00,512);
@@ -95,12 +96,17 @@ void InitNativeIcons(void) {
 		for (n=0; n<4; n++,pb+=16) {
 			//Is this partition bootable?
 			if(pb[0]&0x80) {
-				nActivePartitionIndex=n;
-				iconPtr = (ICON *)malloc(sizeof(ICON));
-				iconPtr->iconSlot = ICON_SOURCE_SLOT1;
-				iconPtr->szCaption = "HDD";
-				iconPtr->functionPtr = BootFromNative;
-				AddIcon(iconPtr);
+				CONFIGENTRY config;
+				if (BootLoadConfigNative(n, &config, true)) {
+					//Got a partition with a linuxboot.cfg on - lets add an icon for it
+					iconPtr = (ICON *)malloc(sizeof(ICON));
+					iconPtr->iconSlot = ICON_SOURCE_SLOT1;
+					iconPtr->szCaption = "HDD";
+					iconPtr->functionPtr = BootFromNative;
+					iconPtr->functionDataPtr=malloc(sizeof(int));
+					*(int*)(iconPtr->functionDataPtr)=n;
+					AddIcon(iconPtr);
+				}
 			}
 		}
 	}

@@ -55,20 +55,16 @@ unsigned long boot_drive;
 
 extern unsigned long current_drive;
 
-void BootFromNative(void *configEntry) {
+void BootFromNative(void *partitionId) {
 	CONFIGENTRY config;
 	//This stuff is needed to keep the grub FS code happy.
 	char szGrub[256+4];
 	int menu=0,selected=0;
 	
-	//Making this another global isn't brilliant, but until I pass member data sensibly
-	//to these functions, it will do.
-	extern int nActivePartitionIndex;
-
 	memset(szGrub,0x00,sizeof(szGrub));
 	szGrub[0]=0xff;
 	szGrub[1]=0xff;
-	szGrub[2]=nActivePartitionIndex;
+	szGrub[2]=*(int*)partitionId;
 	szGrub[3]=0x00;
 	errnum=0;
 	boot_drive=0;
@@ -81,6 +77,6 @@ void BootFromNative(void *configEntry) {
 	fsys_type = NUM_FSYS;
 	disk_read_hook=NULL;
 	disk_read_func=NULL;
-	BootLoadConfigNative(nActivePartitionIndex,&config,false);
+	BootLoadConfigNative(*(int*)partitionId,&config,false);
 	ExittoLinux(&config);
 }

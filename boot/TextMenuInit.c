@@ -24,52 +24,17 @@ void TextMenuInit(void) {
 	//Add the first Item
 	itemPtr = (TEXTMENUITEM*)malloc(sizeof(TEXTMENUITEM));
 	memset(itemPtr,0x00,sizeof(TEXTMENUITEM));
-	itemPtr->szCaption="Test 1";	
+	itemPtr->szCaption="HDD Tools";	
 	TextMenuAddItem(firstMenu, itemPtr);
 
 	itemPtr = (TEXTMENUITEM*)malloc(sizeof(TEXTMENUITEM));
 	memset(itemPtr,0x00,sizeof(TEXTMENUITEM));
-	itemPtr->szCaption="Test 2";	
+	itemPtr->szCaption="Bios Flashing";	
 	TextMenuAddItem(firstMenu, itemPtr);
 
 	itemPtr = (TEXTMENUITEM*)malloc(sizeof(TEXTMENUITEM));
 	memset(itemPtr,0x00,sizeof(TEXTMENUITEM));
-	itemPtr->szCaption="Test 3";	
-	TextMenuAddItem(firstMenu, itemPtr);
-
-	itemPtr = (TEXTMENUITEM*)malloc(sizeof(TEXTMENUITEM));
-	memset(itemPtr,0x00,sizeof(TEXTMENUITEM));
-	itemPtr->szCaption="Test 4";	
-	TextMenuAddItem(firstMenu, itemPtr);
-
-	itemPtr = (TEXTMENUITEM*)malloc(sizeof(TEXTMENUITEM));
-	memset(itemPtr,0x00,sizeof(TEXTMENUITEM));
-	itemPtr->szCaption="Test 5";	
-	TextMenuAddItem(firstMenu, itemPtr);
-
-	itemPtr = (TEXTMENUITEM*)malloc(sizeof(TEXTMENUITEM));
-	memset(itemPtr,0x00,sizeof(TEXTMENUITEM));
-	itemPtr->szCaption="Test 6";	
-	TextMenuAddItem(firstMenu, itemPtr);
-
-	itemPtr = (TEXTMENUITEM*)malloc(sizeof(TEXTMENUITEM));
-	memset(itemPtr,0x00,sizeof(TEXTMENUITEM));
-	itemPtr->szCaption="Test 7";	
-	TextMenuAddItem(firstMenu, itemPtr);
-	
-	itemPtr = (TEXTMENUITEM*)malloc(sizeof(TEXTMENUITEM));
-	memset(itemPtr,0x00,sizeof(TEXTMENUITEM));
-	itemPtr->szCaption="Test 8";	
-	TextMenuAddItem(firstMenu, itemPtr);
-	
-	itemPtr = (TEXTMENUITEM*)malloc(sizeof(TEXTMENUITEM));
-	memset(itemPtr,0x00,sizeof(TEXTMENUITEM));
-	itemPtr->szCaption="Test 9";	
-	TextMenuAddItem(firstMenu, itemPtr);
-	
-	itemPtr = (TEXTMENUITEM*)malloc(sizeof(TEXTMENUITEM));
-	memset(itemPtr,0x00,sizeof(TEXTMENUITEM));
-	itemPtr->szCaption="LED colors menu";	
+	itemPtr->szCaption="LED Colors";	
 	TextMenuAddItem(firstMenu, itemPtr);
 
 	//Child menu
@@ -77,8 +42,8 @@ void TextMenuInit(void) {
 	memset(menuPtr,0x00,sizeof(TEXTMENU));
 	menuPtr->szCaption="LED colors menu";
 	menuPtr->parentMenu=(struct TEXTMENU*)firstMenu;
-	//itemptr here points to "Test 10", so this child menu is
-	//attached to it.
+	//itemptr here points to the "LED Colors" menuitem of the parentmenu, so this child menu is
+	//attached to that.
 	itemPtr->childMenu = (struct TEXTMENU*)menuPtr;
 
 	itemPtr = (TEXTMENUITEM*)malloc(sizeof(TEXTMENUITEM));

@@ -26,8 +26,6 @@ JPEG jpegBackdrop;
 
 int nTempCursorMbrX, nTempCursorMbrY;
 
-int nActivePartitionIndex=0;
-
 extern volatile int nInteruptable;
 
 volatile CURRENT_VIDEO_MODE_DETAILS vmode;
