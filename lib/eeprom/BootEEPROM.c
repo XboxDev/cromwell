@@ -30,6 +30,9 @@ void BootEepromPrintInfo() {
 		case NTSC_M:
 			printk("NTSC-M  ");
 			break;
+		case NTSC_J:
+			printk("NTSC-J  ");
+			break;
 		case PAL_I:
 			printk("PAL-I  ");
 			break;
@@ -98,40 +101,27 @@ void EepromSetWidescreen(int enable) {
 		eeprom.VideoFlags[2] = 0x00;
 	}
 
-	EepromCRC(&sum[0],&eeprom.TimeZoneBias[0],0x5b);
+	EepromCRC(sum,eeprom.TimeZoneBias,0x5b);
 	WriteToSMBus(0x54, 0x60, 0, sum[0]);
 	WriteToSMBus(0x54, 0x61, 0, sum[1]);
 	WriteToSMBus(0x54, 0x62, 0, sum[2]);
 	WriteToSMBus(0x54, 0x63, 0, sum[3]);
 }
 
-void EepromSetVideoStandard(xbox_tv_encoding standard) {
+void EepromSetVideoStandard(VIDEO_STANDARD standard) {
 	//Changing this setting requires that Checksum2
 	//be recalculated.
 	unsigned char sum[4]; 
-   	switch (standard) {
-		case TV_ENC_NTSC:
-			WriteToSMBus(0x54, 0x58, 0, 0x00);
-			WriteToSMBus(0x54, 0x59, 0, 0x01);
-			WriteToSMBus(0x54, 0x5a, 0, 0x40);
-			WriteToSMBus(0x54, 0x5b, 0, 0x00);
-			eeprom.VideoStandard[0]=0x00;
-			eeprom.VideoStandard[1]=0x01;
-			eeprom.VideoStandard[2]=0x40;
-			eeprom.VideoStandard[3]=0x00;
-			break;
-		case TV_ENC_PALBDGHI:
-			WriteToSMBus(0x54, 0x58, 0, 0x00);
-			WriteToSMBus(0x54, 0x59, 0, 0x03);
-			WriteToSMBus(0x54, 0x5a, 0, 0x80);
-			WriteToSMBus(0x54, 0x5b, 0, 0x00);
-			eeprom.VideoStandard[0]=0x00;
-			eeprom.VideoStandard[1]=0x03;
-			eeprom.VideoStandard[2]=0x80;
-			eeprom.VideoStandard[3]=0x00;
-			break;
+	unsigned int i;
+
+	//Write the four bytes to the EEPROM
+	for (i=0; i<4; ++i) {
+		WriteToSMBus(0x54,0x58+i, 0, (standard>>(8*i))&0xff);
 	}
-	EepromCRC(&sum[0],&eeprom.SerialNumber[0],0x28);
+
+	memcpy(eeprom.VideoStandard, &standard, 0x04);
+	
+	EepromCRC(sum,eeprom.SerialNumber,0x28);
 	WriteToSMBus(0x54, 0x30, 0, sum[0]);
 	WriteToSMBus(0x54, 0x31, 0, sum[1]);
 	WriteToSMBus(0x54, 0x32, 0, sum[2]);
