@@ -77,13 +77,26 @@ const int naChimeFrequencies[] = {
 };
 
 void BootPrintConfig(CONFIGENTRY *config) {
-	//int i;
-	
+	int CharsProcessed=0, CharsSinceNewline=0, Length=0;
+	char c;
 	printk("  Bootconfig : Kernel  %s \n", config->szKernel);
 	VIDEO_ATTR=0xffa8a8a8;
 	printk("  Bootconfig : Initrd  %s \n", config->szInitrd);
 	VIDEO_ATTR=0xffa8a8a8;
-	printk("  Bootconfig :\n %s \n", config->szAppend);
+	printk("  Bootconfig : Appended arguments :\n");
+	Length=strlen(config->szAppend);
+	while (CharsProcessed<Length) {
+		c = config->szAppend[CharsProcessed];
+		CharsProcessed++;
+		CharsSinceNewline++;
+		if ((CharsSinceNewline>50 && c==' ') || CharsSinceNewline>65) {
+			printk("\n");
+			if (CharsSinceNewline>25) printk("%c",c);
+			CharsSinceNewline = 0;
+		} 
+		else printk("%c",c);
+	}
+	printk("\n");
 	VIDEO_ATTR=0xffa8a8a8;
 }
 
