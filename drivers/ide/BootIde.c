@@ -610,7 +610,6 @@ int BootIdeDriveInit(unsigned uIoBase, int nIndexDrive,int drivetype)
 				DWORD BootHddKeyGenerateEepromKeyData(BYTE *eeprom_data,BYTE *HDKey);
 				
 				int nVersionSuccessfulDecrypt=0;
-				int i;
 
 				printk(" Lck[%x]", drive_info[128]);
 
@@ -619,11 +618,6 @@ int BootIdeDriveInit(unsigned uIoBase, int nIndexDrive,int drivetype)
 				dwMagicFromEEPROM=0;
 
 	 			nVersionHashing = 0;
-				
-				printk( "\nEEPROM");
-				for (i=0; i<8; ++i)
-				    printk(" %02x", *(&eeprom + i));
-				printk("\n");
 	
 				memcpy(&baEeprom[0], &eeprom, 0x30); // first 0x30 bytes from EEPROM image we picked up earlier
 
