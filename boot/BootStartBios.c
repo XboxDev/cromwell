@@ -341,6 +341,12 @@ selectinsert:
 	
 	while(1) {
                 int n;
+		
+		if (DVD_TRAY_STATE == DVD_CLOSING) {
+			wait_ms(500);
+			break;
+		}
+		
 		if (risefall_xpad_BUTTONA(XPAD_current[0].keys[0])==1) {
 			I2CTransmitWord(0x10, 0x0c01); // close DVD tray
 			wait_ms(500);
