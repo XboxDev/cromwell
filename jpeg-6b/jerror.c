@@ -19,12 +19,13 @@
  */
 
 /* this is not a core library module, so it doesn't define JPEG_INTERNALS */
+#define SIZE_T_EXISTS
+#include "../boot.h"
 #include "jinclude.h"
 #include "jpeglib.h"
 #include "jversion.h"
 #include "jerror.h"
-#define SIZE_T_EXISTS
-#include "../boot.h"
+
 
 #ifdef USE_WINDOWS_MESSAGEBOX
 #include <windows.h>

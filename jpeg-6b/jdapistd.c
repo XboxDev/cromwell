@@ -13,12 +13,15 @@
  * We thus must separate this file from jdapimin.c to avoid linking the
  * whole decompression library into a transcoder.
  */
-
-#define JPEG_INTERNALS
-#include "jinclude.h"
-#include "jpeglib.h"
 #define SIZE_T_EXISTS
 #include "../boot.h"
+#define JPEG_INTERNALS
+#include "jpeglib.h"
+#include "jinclude.h"
+
+#include "jpegint.h"
+#include "jerror.h"
+
 
 /* Forward declarations */
 LOCAL(boolean) output_pass_setup JPP((j_decompress_ptr cinfo));

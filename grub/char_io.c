@@ -75,11 +75,12 @@ struct term_entry term_table[] =
       hercules_setcolorstate,
       hercules_setcolor,
       hercules_nocursor
-    },      
+    },
 #endif /* SUPPORT_HERCULES */
     /* This must be the last entry.  */
     { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }
   };
+
 
 /* This must be console.  */
 struct term_entry *current_term = term_table;
@@ -145,6 +146,7 @@ convert_to_ascii (char *buf, int c,...)
 
 int grub_printf (const char *format,...)
 {
+/*
   int *dataptr = (int *) &format;
   char c, *ptr, str[16];
   unsigned long mask = 0xFFFFFFFF;
@@ -161,7 +163,7 @@ int grub_printf (const char *format,...)
 #ifndef STAGE1_5
 	  case 'b':
 	    mask = 0xFF;
-	    /* Fall down intentionally!  */
+	   // Fall down intentionally!
 	  case 'd':
 	  case 'x':
 	  case 'X':
@@ -190,6 +192,7 @@ int grub_printf (const char *format,...)
 #endif
 	  }
     }
+*/
 		return 1;
 }
 
