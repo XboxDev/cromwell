@@ -97,13 +97,13 @@ int risefall_xpad_BUTTON(unsigned char selected_Button) {
 		
 			if ((Button>0x30)&&(xpad_button_history[selected_Button]==0)) {
 				// Button Rising Edge
-				xpad_button_history[selected_Button] = (Button>0x30);		
+				xpad_button_history[selected_Button] = 1;		
 				return 1;
 			}	
 			
 			if ((Button==0x00)&&(xpad_button_history[selected_Button]==1)) {
 				// Button Falling Edge
-				xpad_button_history[selected_Button] = (Button==0x00);		
+				xpad_button_history[selected_Button] = 0;		
 				return -1;
 			}	
 		}
