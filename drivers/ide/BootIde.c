@@ -648,11 +648,11 @@ int BootIdeDriveInit(unsigned uIoBase, int nIndexDrive,int drivetype)
 				//Uncomment this if you want cromwell to automatically disable the password
 				//on locked harddisks
 				
-				/*if (DriveSecurityChange(uIoBase, nIndexDrive, IDE_CMD_SECURITY_DISABLE, &baMagic[2])) {
+				if (DriveSecurityChange(uIoBase, nIndexDrive, IDE_CMD_SECURITY_DISABLE, &baMagic[2])) {
 					printk("Disable failed");
 				}
 				else printk("Disable successful!");
-				*/
+				
 			}
 		}  
 	}
@@ -747,7 +747,7 @@ int DriveSecurityChange(unsigned uIoBase, int driveId, ide_command_t ide_cmd, ch
 	memcpy(&ide_cmd_data[2],password,20);
 
 	//If we're locking, use high security mode, as this is what the MS bios expects
-	if (ide_cmd == IDE_CMD_SECURITY_T_PASSWORD) ide_cmd_data[1]|=0x01;
+	if (ide_cmd == IDE_CMD_SECURITY_SET_PASSWORD) ide_cmd_data[1]|=0x01;
 
 	if(BootIdeWaitNotBusy(uIoBase)) 
 	{
