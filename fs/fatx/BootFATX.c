@@ -506,7 +506,7 @@ int _FATXFindFile(FATXPartition* partition,
 			fileSize = *((u_int32_t*) (curEntry + 0x30));
 
 			// is it what we're looking for...
-			if (strlen(seekFilename)==strlen(foundFilename) && _strncmp(foundFilename, seekFilename,strlen(seekFilename)) == 0) {
+			if (strlen(seekFilename)==strlen(foundFilename) && strncmp(foundFilename, seekFilename,strlen(seekFilename)) == 0) {
 				// if we're looking for a directory and found a directory
 				if (lookForDirectory) {
 					if (flags & FATX_FILEATTR_DIRECTORY) {

@@ -176,6 +176,6 @@ void setup(void* KernelPos, void* PhysInitrdPos, unsigned long InitrdSize, const
     kernel_setup->cmd_offset = 0;
     kernel_setup->cmd_magic = 0xA33F;
     kernel_setup->cmd_line_ptr = (int)(CMD_LINE_LOC); /* place cmd_line at 0x90800 */
-    _strncpy((void*)kernel_setup->cmd_line_ptr, kernel_cmdline, 512);
+    strncpy((void*)kernel_setup->cmd_line_ptr, kernel_cmdline, 512);
     *((char*)(kernel_setup->cmd_line_ptr+511)) = 0x00; /* make sure string is terminated */
 }

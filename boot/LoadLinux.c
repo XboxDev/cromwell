@@ -118,7 +118,7 @@ int BootLoadConfigNative(int nActivePartition, CONFIGENTRY *config, bool fJustTe
 	}
 	grub_close();
 	
-        _strncpy(&szGrub[4], config->szKernel,sizeof(config->szKernel));
+        strncpy(&szGrub[4], config->szKernel,sizeof(config->szKernel));
 
 	nRet=grub_open(szGrub);
 
@@ -136,11 +136,11 @@ int BootLoadConfigNative(int nActivePartition, CONFIGENTRY *config, bool fJustTe
 	grub_close();
 	printk(" -  %d bytes...\n", dwKernelSize);
 
-	if( (_strncmp(config->szInitrd, "/no", strlen("/no")) != 0) && config->szInitrd[0]) {
+	if( (strncmp(config->szInitrd, "/no", strlen("/no")) != 0) && config->szInitrd[0]) {
 		VIDEO_ATTR=0xffd8d8d8;
 		printk("  Loading %s ", config->szInitrd);
 		VIDEO_ATTR=0xffa8a8a8;
- 		_strncpy(&szGrub[4], config->szInitrd,sizeof(config->szInitrd));
+ 		strncpy(&szGrub[4], config->szInitrd,sizeof(config->szInitrd));
 		nRet=grub_open(szGrub);
 		if(filemax==0) {
 			printf("Empty file\n"); while(1);
@@ -255,7 +255,7 @@ int BootLoadConfigFATX(CONFIGENTRY *config) {
 		printk(" -  %d %d bytes...\n", dwKernelSize, infokernel.fileRead);
 	}
 	
-	if( (_strncmp(config->szInitrd, "/no", strlen("/no")) != 0) && config->szInitrd[0]) {
+	if( (strncmp(config->szInitrd, "/no", strlen("/no")) != 0) && config->szInitrd[0]) {
 
 		VIDEO_ATTR=0xffd8d8d8;
 		printk("  Loading %s from FATX", config->szInitrd);
@@ -348,7 +348,7 @@ int BootLoadConfigCD(CONFIGENTRY *config) {
 		printk(" -  %d bytes...\n", dwKernelSize);
 	}
 
-	if( (_strncmp(config->szInitrd, "/no", strlen("/no")) != 0) && config->szInitrd) {
+	if( (strncmp(config->szInitrd, "/no", strlen("/no")) != 0) && config->szInitrd) {
 		VIDEO_ATTR=0xffd8d8d8;
 		printk("  Loading %s from CDROM", config->szInitrd);
 		VIDEO_ATTR=0xffa8a8a8;

@@ -823,7 +823,7 @@ bool BootIdeAtapiReportFriendlyError(int nDriveIndex, char * szErrorReturn, int 
 		VideoDumpAddressAndData(0, &ba[0], nReturn);
 	}
 
-	_strncpy(szErrorReturn, szError, nMaxLengthError);
+	strncpy(szErrorReturn, szError, nMaxLengthError);
 	return f;
 }
 
