@@ -41,9 +41,9 @@ void setup(void* KernelPos, void* PhysInitrdPos, unsigned long InitrdSize, const
 
 extern int etherboot(void);
 
-int nRet;
-DWORD dwKernelSize, dwInitrdSize;
-int nSizeHeader;
+static int nRet;
+static DWORD dwKernelSize, dwInitrdSize;
+static int nSizeHeader;
 
 
   
@@ -1052,9 +1052,6 @@ void StartBios(CONFIGENTRY *config, int nActivePartition , int nFATXPresent,int 
 
 int ExittoLinux(CONFIGENTRY *config) {
 	
-	// turn off USB
-	BootStopUSB();
-
 	VIDEO_ATTR=0xff8888a8;
 	printk("     Kernel:  %s\n", (char *)(0x00090200+(*((WORD *)0x9020e)) ));
 	printk("\n");
@@ -1067,7 +1064,6 @@ int ExittoLinux(CONFIGENTRY *config) {
 		VIDEO_ATTR=0xff9f9fbf;
 		printk(sz);
 	}
-	CACHE_VSYNC_WRITEBACK = 0;
 	
 	I2cSetFrontpanelLed(I2C_LED_RED0 | I2C_LED_RED1 | I2C_LED_RED2 | I2C_LED_RED3 );
 	startLinux((void *)INITRD_POS, dwInitrdSize, config->szAppend);
@@ -1077,6 +1073,9 @@ int ExittoLinux(CONFIGENTRY *config) {
 void startLinux(void* initrdStart, unsigned long initrdSize, const char* appendLine)
 {
 	int nAta=0;
+	// turn off USB
+	BootStopUSB();
+	CACHE_VSYNC_WRITEBACK = 0;
 	setup( (void *)0x90000, initrdStart, initrdSize, appendLine);
         
 	if(tsaHarddiskInfo[0].m_bCableConductors == 80) {
