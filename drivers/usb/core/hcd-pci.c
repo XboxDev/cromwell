@@ -66,7 +66,8 @@ int usb_hcd_pci_probe (struct pci_dev *dev, const struct pci_device_id *id)
 	void			*base;
 	struct usb_hcd		*hcd;
 	int			retval, region;
-	char			buf [8], *bufp = buf;
+	char			buf [8];
+	//char			*bufp = buf;
 
 	if (usb_disabled())
 		return -ENODEV;

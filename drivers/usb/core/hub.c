@@ -1370,7 +1370,7 @@ int usb_physical_reset_device(struct usb_device *dev)
 
 int usb_reset_device(struct usb_device *udev)
 {
-	struct device *gdev = &udev->dev;
+	//struct device *gdev = &udev->dev;
 	int r;
 	
 	down_read(&gdev->bus->subsys.rwsem);

@@ -99,7 +99,7 @@ bool BootFlashGetDescriptor( OBJECT_FLASH *pof, KNOWN_FLASH_TYPE * pkft )
 			) {
 				fSeen=true;
 				fMore=false;
-				nPos+=sprintf(&pof->m_szFlashDescription[nPos], "%s (%ldK)", pkft->m_szFlashDescription, pkft->m_dwLengthInBytes/1024);
+				nPos+=sprintf(&pof->m_szFlashDescription[nPos], "%s (%dK)", pkft->m_szFlashDescription, pkft->m_dwLengthInBytes/1024);
 				pof->m_dwLengthInBytes = pkft->m_dwLengthInBytes;
 
 				if(pof->m_fDetectedUsing28xxxConventions) {
@@ -178,7 +178,7 @@ bool BootFlashEraseMinimalRegion( OBJECT_FLASH *pof )
 						(pof->m_pcallbackFlash)(pof, EE_ERASE_ERROR, dw-pof->m_dwStartOffset, pof->m_pbMemoryMappedStartAddress[dw]);
 						(pof->m_pcallbackFlash)(pof, EE_ERASE_END, 0, 0);
 					}
-					sprintf(pof->m_szAdditionalErrorInfo, "Erase failed for block at +0x%lx, reads as 0x%02X", dw, pof->m_pbMemoryMappedStartAddress[dw]);
+					sprintf(pof->m_szAdditionalErrorInfo, "Erase failed for block at +0x%x, reads as 0x%02X", dw, pof->m_pbMemoryMappedStartAddress[dw]);
 					return false; // failure
 				}
 			} else {
@@ -335,7 +335,7 @@ bool BootFlashProgram( OBJECT_FLASH *pof, BYTE *pba )
 						(pof->m_pcallbackFlash)(pof, EE_PROGRAM_ERROR, dw, (((DWORD)pba[dwSrc])<<8) |pof->m_pbMemoryMappedStartAddress[dw] );
 						(pof->m_pcallbackFlash)(pof, EE_PROGRAM_END, 0, 0);
 					}
-					sprintf(pof->m_szAdditionalErrorInfo, "Program failed for byte at +0x%lx; wrote 0x%02X, read 0x%02X", dw, pba[dwSrc], pof->m_pbMemoryMappedStartAddress[dw]);
+					sprintf(pof->m_szAdditionalErrorInfo, "Program failed for byte at +0x%x; wrote 0x%02X, read 0x%02X", dw, pba[dwSrc], pof->m_pbMemoryMappedStartAddress[dw]);
 					return false;
 				}
 			} else {

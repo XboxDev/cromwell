@@ -1223,7 +1223,6 @@ int BootIdeWriteSector(int nDriveIndex, void * pbBuffer, unsigned int block)
 {
 	tsIdeCommandParams tsicp = IDE_DEFAULT_COMMAND;
 	unsigned uIoBase;
-	unsigned char baBufferSector[IDE_SECTOR_SIZE];
 	unsigned int track;
 	int status;
 	unsigned char ideWriteCommand = IDE_CMD_WRITE_MULTI_RETRY; 

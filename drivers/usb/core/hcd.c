@@ -329,7 +329,7 @@ static int rh_call_control (struct usb_hcd *hcd, struct urb *urb)
 	const u8	*bufp = 0;
 	u8		*ubuf = urb->transfer_buffer;
 	int		len = 0;
-	unsigned long	flags;
+	//unsigned long	flags;
 
 	typeReq  = (cmd->bRequestType << 8) | cmd->bRequest;
 	wValue   = le16_to_cpu (cmd->wValue);
@@ -489,7 +489,7 @@ static void rh_report_status (unsigned long ptr)
 	struct urb	*urb;
 	struct usb_hcd	*hcd;
 	int		length;
-	unsigned long	flags;
+	//unsigned long	flags;
 
 	urb = (struct urb *) ptr;
 	local_irq_save (flags);
@@ -548,7 +548,7 @@ static int rh_urb_enqueue (struct usb_hcd *hcd, struct urb *urb)
 
 void usb_rh_status_dequeue (struct usb_hcd *hcd, struct urb *urb)
 {
-	unsigned long	flags;
+	//unsigned long	flags;
 
 	/* note:  always a synchronous unlink */
 	del_timer_sync (&hcd->rh_timer);

@@ -1042,7 +1042,7 @@ static void set_device_description (struct usb_device *dev)
 			 "USB device %04x:%04x (%s)",
 			 vendor_id, product_id, mfgr_str);
 	}
-	usbprintk("USB connected: %s\n",dev->dev.name);
+	//usbprintk("USB connected: %s\n",dev->dev.name);
 	kfree(buf);
 }
 
