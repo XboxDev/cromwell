@@ -360,7 +360,7 @@ int _FATXFindFile(FATXPartition* partition,
 		lookForFile = 1;
 
 		// check seek filename size
-		if (strlen(filename) > FATX_FILENAME_MAX) {
+		if (HelpStrlen(filename) > FATX_FILENAME_MAX) {
 			printk("Bad filename supplied (one leafname is too big)\n");
 			return false;
 		}
@@ -424,7 +424,7 @@ int _FATXFindFile(FATXPartition* partition,
 			fileSize = *((u_int32_t*) (curEntry + 0x30));
 
 			// is it what we're looking for...
-			if (_strncmp(foundFilename, seekFilename,strlen(seekFilename)) == 0) {
+			if (_strncmp(foundFilename, seekFilename,HelpStrlen(seekFilename)) == 0) {
 				// if we're looking for a directory and found a directory
 				if (lookForDirectory) {
 					if (flags & FATX_FILEATTR_DIRECTORY) {

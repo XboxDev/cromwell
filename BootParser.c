@@ -11,21 +11,21 @@ int ParseConfig(char *szBuffer, CONFIGENTRY *entry) {
 	ptr = HelpGetToken(szBuffer,10);
 	entry->nValid = 1;
 	while(1) {
-		memcpy(szLine,ptr,strlen(ptr));
-		if(strlen(ptr) < MAX_LINE) {
-			if(_strncmp(ptr,"kernel",strlen("kernel")) == 0)  {
+		memcpy(szLine,ptr,HelpStrlen(ptr));
+		if(HelpStrlen(ptr) < MAX_LINE) {
+			if(_strncmp(ptr,"kernel",HelpStrlen("kernel")) == 0)  {
 				HelpGetParm(szTmp, ptr);
 				if(szTmp[0] != '/')
 					HelpCopyUntil(entry->szKernel,"/",MAX_LINE);
 				HelpCopyUntil(HelpScan0(entry->szKernel),szTmp,MAX_LINE);
 			}
-			if(_strncmp(ptr,"initrd",strlen("initrd")) == 0) {
+			if(_strncmp(ptr,"initrd",HelpStrlen("initrd")) == 0) {
 				HelpGetParm(szTmp, ptr);
 				if(szTmp[0] != '/')
 					HelpCopyUntil(entry->szInitrd,"/",MAX_LINE);
 				HelpCopyUntil(HelpScan0(entry->szInitrd),szTmp,MAX_LINE);
 			}
-			if(_strncmp(ptr,"append",strlen("append")) == 0)
+			if(_strncmp(ptr,"append",HelpStrlen("append")) == 0)
 				HelpGetParm(entry->szAppend, ptr);
 		} else {
 			entry->nValid = 0;

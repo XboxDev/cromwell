@@ -347,3 +347,11 @@ char *HelpScan0(char* s) {
         while (*s) s++;
         return s;
 }
+
+int HelpStrlen(char *str) {
+        char *ptr = str;
+
+        while(*ptr != 0) ptr++;
+
+        return ptr-str;
+}
