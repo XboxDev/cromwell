@@ -12,7 +12,8 @@ OBJCOPY = objcopy
 export CC
 
 TOPDIR  := $(shell /bin/pwd)
-SUBDIRS	= etherboot boot_rom fs drivers lib boot
+SUBDIRS	= boot_rom fs drivers lib boot
+ETH_SUBDIRS = etherboot
 
 LDFLAGS-ROM     = -s -S -T $(TOPDIR)/scripts/ldscript-crom.ld
 LDFLAGS-XBEBOOT = -s -S -T $(TOPDIR)/scripts/xbeboot.ld
@@ -20,10 +21,9 @@ LDFLAGS-ROMBOOT = -s -S -T $(TOPDIR)/boot_rom/bootrom.ld
 LDFLAGS-VMLBOOT = -s -S -T $(TOPDIR)/boot_vml/vml_start.ld
 
 #### Etherboot specific stuff
-INCLUDE += 	-I$(TOPDIR)/etherboot/include -I$(TOPDIR)/etherboot/arch/i386/include
+ETH_INCLUDE = 	-I$(TOPDIR)/etherboot/include -I$(TOPDIR)/etherboot/arch/i386/include
+ETH_CFLAGS  = 	-O2 -mcpu=pentium -Werror $(ETH_INCLUDE) -Wstrict-prototypes -fomit-frame-pointer -fno-zero-initialized-in-bss -pipe 
 #### End Etherboot specific stuff
-
-
 
 OBJECTS-IMAGEBLD = $(TOPDIR)/bin/imagebld.o
 OBJECTS-IMAGEBLD += $(TOPDIR)/bin/sha1.o
@@ -136,7 +136,11 @@ RESOURCES += $(TOPDIR)/obj/pcrombios.elf
 export INCLUDE
 export TOPDIR
 
-all: clean resources cromsubdirs image-crom.bin default.xbe vmlboot image.bin imagecompress
+all: clean resources ethsubdirs cromsubdirs image-crom.bin default.xbe vmlboot image.bin imagecompress
+
+ethsubdirs: $(patsubst %, _dir_%, $(ETH_SUBDIRS))
+$(patsubst %, _dir_%, $(ETH_SUBDIRS)) : dummy
+	$(MAKE) CFLAGS="$(ETH_CFLAGS)" -C $(patsubst _dir_%, %, $@)
 
 cromsubdirs: $(patsubst %, _dir_%, $(SUBDIRS))
 $(patsubst %, _dir_%, $(SUBDIRS)) : dummy
