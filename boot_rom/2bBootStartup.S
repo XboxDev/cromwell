@@ -293,52 +293,7 @@ initaftermemcpy:
 	movw    %ax, %fs
 	movw    %ax, %gs
                 
-        
-	mov 	$0x80000854, %eax
-	movw 	$0xcf8, %dx
-	outl 	%eax, %dx
-	movw 	$0xcfc, %dx
-	inl 	%dx, %eax 
-	orl 	$0x88000000, %eax
-	outl 	%eax, %dx 
-
-	mov 	$0x80000064, %eax 
-	movw 	$0xcf8, %dx 
-	outl	%eax, %dx 
-	movw 	$0xcfc, %dx
-	inl 	%dx, %eax 
-	orl 	$0x88000000, %eax 
-	outl	%eax, %dx 
-	
-	mov 	$0x8000006c, %eax 
-	movw 	$0xcf8, %dx
-	outl	%eax, %dx 
-	movw 	$0xcfc, %dx 
-	inl 	%dx, %eax
-	push 	%eax 
-	andl 	$0xfffffffe, %eax 
-	outl	%eax, %dx 
-	pop 	%eax
-	outl	%eax, %dx 
-
-	mov 	$0x80000080, %eax 
-	movw 	$0xcf8, %dx 
-	outl	%eax, %dx 
-	movw 	$0xcfc, %dx 
-	movl 	$0x100, %eax 
-	outl	%eax, %dx 
-
-	mov 	$0x8000088C, %eax 
-	movw 	$0xcf8, %dx 
-	outl	%eax, %dx 
-	movw 	$0xcfc, %dx 
-	movl 	$0x40000000, %eax 
-	outl	%eax, %dx
-
-	movl 	$0x0, 0x0f680600
-       
-       
-
+ 
 	mov	$0x8, %al
 	mov	$0x61, %dx
 	out	%al, %dx
@@ -392,11 +347,6 @@ initaftermemcpy:
 	movl %eax, 0x0f101000
 	movl	$0xeeee0000, 0x0f0010b8
 
-//	movl $0x07633451, 0x0f0010b0
-//	movl $0x0, 0x0f0010cc
-//	movl $0xffff0000, 0x0f0010b8
-//	movl $0x5, 0x0f0010d4
-
 	jmp donea1a
 
 nota1a:
@@ -405,11 +355,6 @@ nota1a:
 	orl 	$0x860c0000, %eax
 	movl 	%eax, 0x0f101000
 	movl	$0xffff0000, 0x0f0010b8
-
-//	movl $0x07633461, 0x0f0010b0
-//	movl $0x66660000, 0x0f0010cc
-//	movl $0xffff0000, 0x0f0010b8
-//	movl $0x9, 0x0f0010d4
 
 donea1a:
 
@@ -449,7 +394,7 @@ nota1b:
 	movw $0xc200, %dx ;	movb $0x70, %al ;	outb %al, %dx
 //	movw $0xc002, %dx ;	movb $0x10, %al ;	outb %al, %dx // enable I2C interrupt
 
-		// skipped unnecessary conexant init
+	// skipped unnecessary conexant init
 
 	movw $0xc000, %dx ;	movb $0x10, %al ;	outb %al, %dx
 	movw $0xc004, %dx ;	movb $0x20, %al ;	outb %al, %dx

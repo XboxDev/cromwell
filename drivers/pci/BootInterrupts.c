@@ -28,6 +28,18 @@ extern volatile AUDIO_ELEMENT_SINE aesTux;
 extern volatile AUDIO_ELEMENT_NOISE aenTux;
 #endif
 
+
+#define rdmsr(msr,val1,val2) \
+       __asm__ __volatile__("rdmsr" \
+			    : "=a" (val1), "=d" (val2) \
+			    : "c" (msr))
+
+#define wrmsr(msr,val1,val2) \
+     __asm__ __volatile__("wrmsr" \
+			  : /* no outputs */ \
+			  : "c" (msr), "a" (val1), "d" (val2))
+
+
 DWORD dwaTitleArea[1024*64];
 
 
@@ -122,6 +134,18 @@ const ISR_PREP isrprep[] = {
 	{ 0, 0 }
 };
 
+void intel_interrupts_on()
+{
+    unsigned long low, high;
+
+    /* this is so interrupts work. This is very limited scope --
+     * linux will do better later, we hope ...
+     */
+    rdmsr(0x1b, low, high);
+    low &= ~0x800;
+    wrmsr(0x1b, low, high);
+}
+
 
 void BootInterruptsWriteIdt() {
 
@@ -179,7 +203,9 @@ void BootInterruptsWriteIdt() {
 
 	// enable interrupts
 
-	__asm__ __volatile__("wbinvd; mov $0x1b, %%cx ; rdmsr ; andl $0xfffff7ff, %%eax ; wrmsr; sti" : : : "%ecx", "%eax", "%edx");
+	//__asm__ __volatile__("wbinvd; mov $0x1b, %%cx ; rdmsr ; andl $0xfffff7ff, %%eax ; wrmsr; sti" : : : "%ecx", "%eax", "%edx");
+	intel_interrupts_on();
+		
 }
 
 
@@ -199,9 +225,13 @@ void IntHandlerCSmc(void)
 
 //	bprintf("&nCountInterruptsSmc=0x%x\n", &nCountInterruptsSmc);
 	
-	#ifdef DEBUG_MODE
-        printk("SMC Interrupt Detected\n");
-        #endif
+//	#ifdef DEBUG_MODE     
+	{
+		int count;
+        printk("              SMC Interrupt Detected");
+        for (count=0;count<nCountInterruptsSmc;count++) printk("####");
+        }
+  //      #endif
 	
 	bStatus=I2CTransmitByteGetReturn(0x10, 0x11); // Query PIC for interrupt reason
 	while(nBit<7) {
@@ -481,6 +511,8 @@ void IntHandler3VsyncC(void)  // video VSYNC
 	}
 
 	*((volatile DWORD *)0xfd600100)=0x1;  // clear VSYNC int
+	while ( ((*((volatile DWORD *)0xfd600100)) & 0x1));  // We wait, until the Vsync IRQ has been deleted
+	
 	BootPciInterruptGlobalPopState(dwTempInt);
 }
 
