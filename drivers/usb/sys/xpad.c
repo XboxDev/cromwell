@@ -141,6 +141,7 @@ static struct usb_device_id xpad_ids [] = {
 	{ USB_DEVICE(0x0e4c, 0x2390) },//Radica Games Jtech Controller
 	{ USB_DEVICE(0x0e6f, 0x0003) },//Logic3 Freebird wireless Controller
 	{ USB_DEVICE(0x0e6f, 0x0005) },//Eclipse wireless Controlle
+	{ USB_DEVICE(0x0e6f, 0x0006) },//Edge wireless Controller
 	{ USB_DEVICE(0x0f30, 0x0202) },//Joytech Advanced Controller 
 	{ USB_DEVICE(0xffff, 0xffff) },//Chinese-made Xbox Controller 
 	{ USB_DEVICE(0x0000, 0x0000) }, // nothing detected - FAIL
