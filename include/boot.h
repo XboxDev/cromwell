@@ -423,7 +423,6 @@ int BootIdeInit(void);
 int BootIdeReadSector(int nDriveIndex, void * pbBuffer, unsigned int block, int byte_offset, int n_bytes);
 int BootIdeBootSectorHddOrElTorito(int nDriveIndex, BYTE * pbaResult);
 int BootIdeAtapiAdditionalSenseCode(int nDrive, BYTE * pba, int nLengthMaxReturn);
-BYTE BootIdeGetTrayState(void);
 int BootIdeSetTransferMode(int nIndexDrive, int nMode);
 int BootIdeWaitNotBusy(unsigned uIoBase);
 bool BootIdeAtapiReportFriendlyError(int nDriveIndex, char * szErrorReturn, int nMaxLengthError);
