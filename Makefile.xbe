@@ -33,8 +33,9 @@ dummy:
 clean:
 	find . \( -name '*.[oas]' -o -name core -o -name '.*.flags' \) -type f -print \
 		| grep -v lxdialog/ | xargs rm -f
-	rm -f $(TOPDIR)/obj/*
-	rm -f $(TOPDIR)/xbe/*
+	rm -f $(TOPDIR)/obj/*.bin rm -f $(TOPDIR)/obj/*.elf
+	rm -f $(TOPDIR)/image/*.bin rm -f $(TOPDIR)/image/*.xbe rm -f $(TOPDIR)/xbe/*.xbe $(TOPDIR)/xbe/*.bin
+	rm -f $(TOPDIR)/xbe/*.elf
 	rm -f $(TOPDIR)/image/*
 
 backdrop.elf:

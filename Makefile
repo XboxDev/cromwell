@@ -29,8 +29,8 @@ dummy:
 clean:
 	find . \( -name '*.[oas]' -o -name core -o -name '.*.flags' \) -type f -print \
 		| grep -v lxdialog/ | xargs rm -f
-	rm -f $(TOPDIR)/obj/*
-	rm -f $(TOPDIR)/image/*
+	rm -f $(TOPDIR)/obj/*.bin rm -f $(TOPDIR)/obj/*.elf
+	rm -f $(TOPDIR)/image/*.bin rm -f $(TOPDIR)/image/*.xbe
 
 backdrop.elf:
 	${LD} -r --oformat elf32-i386 -o $(TOPDIR)/obj/$@ -T $(TOPDIR)/scripts/backdrop.ld -b binary $(TOPDIR)/pics/backdrop.jpg
