@@ -100,8 +100,5 @@ void BootStopUSB(void)
 		wait_ms(1);
 	}
 	module_exit_usb_exit();
-	//memset((void*)0x0,0x0,100);
-	memset((void*)0xfed00006,0x0,40);
-	memset((void*)0xfed08006,0x0,40);
 }	
 /*------------------------------------------------------------------------*/ 	
