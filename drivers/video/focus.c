@@ -267,6 +267,7 @@ int focus_calc_mode(xbox_video_mode * mode, struct riva_regs * riva_out)
         riva_out->ext.hvalidend = mode->xres - 1;
 	riva_out->ext.crtchdispend = mode->xres;
         riva_out->ext.crtcvstart = mode->yres + 32;
+	riva_out->ext.bpp = mode->bpp;
 	//increased from 32
 	riva_out->ext.crtcvtotal = mode->yres + 64;
 
