@@ -178,13 +178,15 @@ void BootPciPeripheralInitialization()
 	PciWriteDword(BUS_0, DEV_9, FUNC_0, 4, PciReadDword(BUS_0, DEV_9, FUNC_0, 4)|5); // 0x00b00005 );
 	PciWriteDword(BUS_0, DEV_9, FUNC_0, 8, PciReadDword(BUS_0, DEV_9, FUNC_0, 8)&0xfffffeff); // 0x01018ab1 ); // was fffffaff
 
-//	PciWriteDword(BUS_0, DEV_9, FUNC_0, 0x4c, 0xffff00ff); // 4x30nS address setup on IDE
 	PciWriteDword(BUS_0, DEV_9, FUNC_0, 0x58, 0x20202020); // kern1.1
-//	PciWriteDword(BUS_0, DEV_9, FUNC_0, 0x60, 0xC0C0C0C0); // kern1.1 <--- this was in kern1.1 but is FATAL for good HDD access
 	PciWriteDword(BUS_0, DEV_9, FUNC_0, 0x60, 0x00000000); // kern1.1
-  PciWriteDword(BUS_0, DEV_9, FUNC_0, 0x40, 0x000084bb); // new
-	PciWriteDword(BUS_0, DEV_9, FUNC_0, 0x50, 0x00000003);  // without this there is no register footprint at IO 1F0
+//  PciWriteDword(BUS_0, DEV_9, FUNC_0, 0x40, 0x000084bb); // new - removed by frankenregister comparison
+	PciWriteDword(BUS_0, DEV_9, FUNC_0, 0x50, 0x00000002);  // without this there is no register footprint at IO 1F0
 
+	PciWriteDword(BUS_0, DEV_9, FUNC_0, 0x2c, 0x00000000); // frankenregister from xbe boot
+	PciWriteDword(BUS_0, DEV_9, FUNC_0, 0x40, 0x00000000); // frankenregister from xbe boot
+		// below reinstated by frankenregister compare with xbe boot
+	PciWriteDword(BUS_0, DEV_9, FUNC_0, 0x60, 0xC0C0C0C0); // kern1.1 <--- this was in kern1.1 but is FATAL for good HDD access
 
 //
 // Bus 0, Device 4, Function 0 = nForce MCP Networking Adapter - all verified with kern1.1

@@ -444,7 +444,8 @@ static int BootIdeDriveInit(unsigned uIoBase, int nIndexDrive)
 				if(nPacketLength<12) {
 					printk("Unable to get ASC from drive when clearing sticky DVD error\n");
 	//				return 1;
-					while(1);
+	//				while(1);
+					ba[2]=0;
 				}
 //				printk("ATAPI Drive reports ASC 0x%02X\n", ba[12]);  // normally 0x29 'reset' but clears the condition by reading
 			}
