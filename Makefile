@@ -12,7 +12,7 @@ OBJCOPY = objcopy
 export CC
 
 TOPDIR  := $(shell /bin/pwd)
-SUBDIRS	= boot_rom fs drivers lib boot 
+SUBDIRS	= boot_rom fs drivers lib boot
 
 LDFLAGS-ROM     = -s -S -T $(TOPDIR)/scripts/ldscript-crom.ld
 LDFLAGS-XBEBOOT = -s -S -T $(TOPDIR)/scripts/xbeboot.ld
@@ -147,6 +147,17 @@ clean:
 	mkdir $(TOPDIR)/obj -p
 	mkdir $(TOPDIR)/bin -p
 
+#rombios.bin:
+#	${GCC295} -E $< > _rombios_.c
+#	${BCC} -o rombios.s -c -D__i86__ -0 _rombios_.c
+#	sed -e 's/^\.text//' -e 's/^\.data//' rombios.s > _rombios_.s
+#	as86 _rombios_.s -b rombios.bin -u- -w- -g -0 -j -O -l rombios.txt
+#	ls -l rombios.bin
+#
+#rombios.elf : rombios.bin
+#	${LD} -r --oformat elf32-i386 -o $@ -T rombios.ld -b binary rombios.bin
+
+ 
 image-crom.bin:
 	${LD} -o $(TOPDIR)/obj/image-crom.elf ${OBJECTS-CROM} ${RESOURCES} ${LDFLAGS-ROM}
 	${OBJCOPY} --output-target=binary --strip-all $(TOPDIR)/obj/image-crom.elf $(TOPDIR)/obj/$@

@@ -25,7 +25,9 @@
 
 /* includes a subset of config.h that can be compiled by bcc, and applies
    to this file */
-#include "biosconfig.h"
+//#include "biosconfig.h"
+
+#define BX_SMP_PROCESSORS 1
 
 // ROM BIOS for use with Bochs/Plex x86 emulation environment
 
