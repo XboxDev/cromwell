@@ -2,7 +2,8 @@
 
 // selects between the supported video modes, both PAL at the moment
 //#define VIDEO_PREFERRED_LINES 576
-#define VIDEO_PREFERRED_LINES 480
+//#define VIDEO_PREFERRED_LINES 480
+#define VIDEO_PREFERRED_LINES 600
 //
 // uncomment to force CD boot mode even if MBR present
 // default is to boot from HDD if MBR present, else CD
@@ -18,3 +19,5 @@
 // show the MBR table if the MBR is valid
 #define DISPLAY_MBR_INFO
 
+// uncomment to do Ethernet init
+//#define DO_ETHERNET 1
