@@ -133,10 +133,12 @@ unsigned long read_dir(int driveId, struct iso_directory_record *dir_read, char 
 
 unsigned long read_file(int driveId, struct iso_directory_record *dir_read, char *buffer, unsigned int max_bytes_to_read) {
 	unsigned long read_size;
+	unsigned long bytes_read;
 	unsigned long offset;
 	int i;
 	char *tmpbuff;
 
+	
 	offset = *((unsigned long *)(dir_read->extent));
 	tmpbuff = (char *) malloc(ISO_BLOCKSIZE);
 
@@ -144,7 +146,9 @@ unsigned long read_file(int driveId, struct iso_directory_record *dir_read, char
 		read_size = *(unsigned long *)dir_read->size;
 	}
 	else read_size = *(unsigned long *)max_bytes_to_read;
-
+	
+	bytes_read = read_size;
+	
 	if(read_size <= ISO_BLOCKSIZE) {
 		read_size = ISO_BLOCKSIZE;
 	} else {
@@ -165,7 +169,7 @@ unsigned long read_file(int driveId, struct iso_directory_record *dir_read, char
 	}
 	free(tmpbuff);
 
-	return read_size;
+	return bytes_read;
 }
 
 int BootIso9660GetFile(int driveId, char *szcPath, unsigned char *pbaFile, unsigned int dwFileLengthMax) {
