@@ -66,6 +66,12 @@ typedef struct {
     unsigned char m_bSector;
     unsigned short m_wCylinder;
     unsigned char m_bDrivehead;
+
+    /* 48-bit LBA */
+    unsigned char m_bCountSectorExt; 
+    unsigned char m_bSectorExt;
+    unsigned short m_wCylinderExt;
+
 #       define IDE_DH_DEFAULT (0xA0)
 #       define IDE_DH_HEAD(x) ((x) & 0x0F)
 #       define IDE_DH_MASTER  (0x00)
@@ -81,9 +87,13 @@ typedef struct {
 typedef enum {
     IDE_CMD_NOOP = 0,
     IDE_CMD_RECALIBRATE = 0x10,
+
+    /* FYI: These are not really IDE read multiple commands (they are normal reads). */
     IDE_CMD_READ_MULTI_RETRY = 0x20,
     IDE_CMD_READ_MULTI = IDE_CMD_READ_MULTI_RETRY,
     IDE_CMD_READ_MULTI_NORETRY = 0x21,
+
+    IDE_CMD_READ_EXT = 0x24, /* 48-bit LBA */
 
     IDE_CMD_DRIVE_DIAG = 0x90,
     IDE_CMD_SET_PARAMS = 0x91,
@@ -173,6 +183,14 @@ int BootIdeIssueAtaCommand(
 //		printk("error on BootIdeIssueAtaCommand wait 1: ret=%d, error %02X\n", n, IoInputByte(IDE_REG_ERROR(uIoBase)));
 //		return 1;
 //	}
+
+	/* 48-bit LBA */
+	/* this won't hurt for non 48-bit LBA commands since we re-write these registers below */
+	IoOutputByte(IDE_REG_SECTOR_COUNT(uIoBase), params->m_bCountSectorExt);
+	IoOutputByte(IDE_REG_SECTOR_NUMBER(uIoBase), params->m_bSectorExt);
+	IoOutputByte(IDE_REG_CYLINDER_LSB(uIoBase), params->m_wCylinderExt & 0xFF);
+	IoOutputByte(IDE_REG_CYLINDER_MSB(uIoBase), (params->m_wCylinderExt >> 8) );
+
 	IoOutputByte(IDE_REG_SECTOR_COUNT(uIoBase), params->m_bCountSector);
 	IoOutputByte(IDE_REG_SECTOR_NUMBER(uIoBase), params->m_bSector);
 	IoOutputByte(IDE_REG_CYLINDER_LSB(uIoBase), params->m_wCylinder & 0xFF);
@@ -455,6 +473,26 @@ static int BootIdeDriveInit(unsigned uIoBase, int nIndexDrive)
 	tsaHarddiskInfo[nIndexDrive].m_wCountSectorsPerTrack = drive_info[6];
 	tsaHarddiskInfo[nIndexDrive].m_dwCountSectorsTotal = *((unsigned int*)&(drive_info[60]));
 	tsaHarddiskInfo[nIndexDrive].m_wAtaRevisionSupported = drive_info[88];
+
+	/* 48-bit LBA */
+	if( drive_info[83] & 1ul<<10 ) {
+		unsigned long long maxLBA;
+		/* 
+		   Do a sanity check here since the T13 spec is not clear on byte/word ordering of this value
+		   The lower 28 bits of the Max 48 bit LBA should match the previously returned 28 bit max LBA.
+		   If it does match, then we are reading the 48-bit Max LBA correctly and we can go ahead and use it...
+		   Once this code is actually tested this check can be removed.
+		*/
+		printk("ATA 48-bit LBA Supported\n");
+		maxLBA = *((unsigned long long*)&(drive_info[100]));
+		if( tsaHarddiskInfo[nIndexDrive].m_dwCountSectorsTotal == (unsigned int)(maxLBA & 0xFFFFFFF) ) {
+			tsaHarddiskInfo[nIndexDrive].m_dwCountSectorsTotal = (unsigned int)maxLBA;
+		} else {
+			printk("28 LSBs of Max 48-bit LBA's don't match.  Using Max 28-bit LBA\n");
+		}
+	} else {
+		printk("ATA 28-bit LBA Support Only\n");
+	}
 
 	{ 
 		WORD * pw=(WORD *)&(drive_info[10]);
@@ -1061,6 +1099,7 @@ int BootIdeReadSector(int nDriveIndex, void * pbBuffer, unsigned int block, int 
 	unsigned char baBufferSector[IDE_SECTOR_SIZE];
 	unsigned int track;
 	int status;
+	unsigned char ideReadCommand = IDE_CMD_READ_MULTI_RETRY; /* 48-bit LBA */
 
 	if(!tsaHarddiskInfo[nDriveIndex].m_fDriveExists) return 4;
 
@@ -1129,7 +1168,19 @@ int BootIdeReadSector(int nDriveIndex, void * pbBuffer, unsigned int block, int 
 
 	tsicp.m_bCountSector = 1;
 
-	if (tsaHarddiskInfo[nDriveIndex].m_bLbaMode == IDE_DH_CHS) {
+	if( block >= 0x10000000 ) { /* 48-bit LBA access required for this block */
+		tsicp.m_bCountSectorExt = 0;
+
+		/* This routine can have a max LBA of 32 bits (due to unsigned int data type used for block parameter) */
+		
+		tsicp.m_wCylinderExt = 0; /* 47:32 */
+		tsicp.m_bSectorExt = (block >> 24) & 0xff; /* 31:24 */
+		tsicp.m_wCylinder = (block >> 8) & 0xffff; /* 23:8 */
+		tsicp.m_bSector = block & 0xff; /* 7:0 */
+		tsicp.m_bDrivehead = IDE_DH_DRIVE(nDriveIndex) | IDE_DH_LBA;
+		ideReadCommand = IDE_CMD_READ_EXT;
+	
+	} else if (tsaHarddiskInfo[nDriveIndex].m_bLbaMode == IDE_DH_CHS) {
 		track = block / tsaHarddiskInfo[nDriveIndex].m_wCountSectorsPerTrack;
 
 		tsicp.m_bSector = 1+(block % tsaHarddiskInfo[nDriveIndex].m_wCountSectorsPerTrack);
@@ -1148,7 +1199,7 @@ int BootIdeReadSector(int nDriveIndex, void * pbBuffer, unsigned int block, int 
 			IDE_DH_LBA;
 	}
 
-	if(BootIdeIssueAtaCommand(uIoBase, IDE_CMD_READ_MULTI_RETRY, &tsicp)) {
+	if(BootIdeIssueAtaCommand(uIoBase, ideReadCommand, &tsicp)) {
 		printk("ide error %02X...\n", IoInputByte(IDE_REG_ERROR(uIoBase)));
 		return 1;
 	}
