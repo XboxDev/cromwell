@@ -8,6 +8,8 @@
 #include "../usb_wrapper.h"
 
 void subsys_usb_init(void);
+void module_exit_usb_exit(void);
+
 extern struct pci_device_id  *module_table_pci_ids;
 
 // straigth call...
@@ -97,7 +99,7 @@ void BootStopUSB(void)
 		USBGetEvents();
 		wait_ms(1);
 	}
-
+	module_exit_usb_exit();
 	//memset((void*)0x0,0x0,100);
 	memset((void*)0xfed00006,0x0,40);
 	memset((void*)0xfed08006,0x0,40);

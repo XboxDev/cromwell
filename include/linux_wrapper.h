@@ -292,7 +292,7 @@ struct usbdevfs_hub_portinfo
 #define __init
 #define __devinitdata
 #define module_init(x) static void module_init_##x(void){ x();}
-#define module_exit(x) static void module_exit_##x(void){ x();}
+#define module_exit(x) void module_exit_##x(void){ x();}
 #define EXPORT_SYMBOL_GPL(x)
 #define EXPORT_SYMBOL(x)
 
