@@ -113,23 +113,31 @@ int BootLodaConfigNative(int nActivePartition, CONFIGENTRY *config) {
 	disk_read_hook=NULL;
 	disk_read_func=NULL;
 
-	
 	VIDEO_ATTR=0xffa8a8a8;
 
 	strcpy(&szGrub[4], "/boot/linuxboot.cfg");
 	nRet=grub_open(szGrub);
+
 	dwConfigSize=filemax;
 	if(nRet!=1 || (errnum)) {
 		printk("linuxboot.cfg not found, using defaults\n");
 	} else {
-		grub_read((void *)0x90000, filemax);
+		int nLen=grub_read((void *)0x90000, filemax);
+		if(nLen>0) { ((char *)0x90000)[nLen]='\0'; }  // needed to terminate incoming string, reboot in ParseConfig without it
+
 		ParseConfig((char *)0x90000,config,&eeprom);
 		BootPrintConfig(config);
 		printf("linuxboot.cfg is %d bytes long.\n", dwConfigSize);
 	}
 	grub_close();
-	
+
 	strcpy(&szGrub[4], config->szKernel);
+
+		// Force a particular kernel to be loaded here
+		// leave commented out normally
+//	strcpy(&szGrub[4], "/boot/vmlinuz-2.4.20-xbox");
+//	strcpy(&szGrub[4], "/boot/vmlinuz-ag");
+
 	nRet=grub_open(szGrub);
 
 	if(nRet!=1) {
@@ -142,6 +150,7 @@ int BootLodaConfigNative(int nActivePartition, CONFIGENTRY *config) {
 	dwKernelSize+=grub_read((void *)0x00100000, filemax-nSizeHeader);
 	grub_close();
 	printk(" -  %d bytes...\n", dwKernelSize);
+
 
 	if( (_strncmp(config->szInitrd, "/no", strlen("/no")) != 0) && config->szInitrd[0]) {
 		VIDEO_ATTR=0xffd8d8d8;
@@ -471,14 +480,13 @@ void StartBios(	int nDrive, int nActivePartition , int nFATXPresent) {
 	disk_read_func=NULL;
 
 
-
 #ifndef IS_XBE_CDLOADER
 #ifdef MENU
 	{
 		int nTempCursorX, nTempCursorY, nTempStartMessageCursorX, nTempStartMessageCursorY, nTempEntryX, nTempEntryY;
 		int nModeDependentOffset=(currentvideomodedetails.m_dwWidthInPixels-640)/2;  // icon offsets computed for 640 modes, retain centering in other modes
 		AUDIO_ELEMENT_SINE aesIconSound;
-		
+
 		#define DELAY_TICKS 72
 		#define TRANPARENTNESS 0x30
 		#define OPAQUENESS 0xc0
@@ -599,6 +607,7 @@ void StartBios(	int nDrive, int nActivePartition , int nFATXPresent) {
 #endif
 #endif
 
+
 	{
 	  	// turn off USB
 
@@ -637,6 +646,7 @@ void StartBios(	int nDrive, int nActivePartition , int nFATXPresent) {
 		strcpy(config.szInitrd, "/boot/initrd");
 	}
 
+
 	switch(nIcon) {
 		case ICON_FATX:
 			BootLodaConfigFATX(&config);
@@ -669,6 +679,8 @@ void StartBios(	int nDrive, int nActivePartition , int nFATXPresent) {
 		VIDEO_ATTR=0xff9f9fbf;
 		printk(sz);
 	}
+
+
 
 		// we have to copy the GDT to a safe place, because one of the first
 		// things Linux is going to do is reinint the paging, making the BIOS

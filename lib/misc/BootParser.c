@@ -8,13 +8,16 @@ int ParseConfig(char *szBuffer, CONFIGENTRY *entry, EEPROMDATA *eeprom) {
 	char szTmp[MAX_LINE];
 	char szNorm[MAX_LINE];
 	char *ptr;
-	
+
 	memset(szNorm,0,MAX_LINE);
 	memset(entry,0,sizeof(CONFIGENTRY));
 	ptr = szBuffer;
 	ptr = HelpGetToken(szBuffer,10);
 	entry->nValid = 1;
+
+
 	while(1) {
+
 		memcpy(szLine,ptr,strlen(ptr));
 		if(strlen(ptr) < MAX_LINE) {
 			if(_strncmp(ptr,"kernel",strlen("kernel")) == 0)  {
@@ -39,7 +42,10 @@ int ParseConfig(char *szBuffer, CONFIGENTRY *entry, EEPROMDATA *eeprom) {
 		}
 		ptr = HelpGetToken(0,10);
 		if(*ptr == 0) break;
+		
 	}
+
+
 	if(entry->nRivaFB == 1) {
 		switch(*((VIDEO_STANDARD *)&eeprom->VideoStandard)) {
 			case NTSC_M:
