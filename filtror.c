@@ -341,6 +341,42 @@ void BootFiltrorDebugShell() {
 					}
 					break;
 
+					case 'I': // IO WORD in
+					{
+						const char * szc=(const char *)&ba[1];
+						DWORD dwAds;
+						while(*szc==' ') szc++;
+						szc+=BootAsciiHexToDword(szc, &dwAds);
+						bprintf("IO %04X: %04X\n", dwAds, IoInputWord(dwAds));
+					}
+					break;
+
+					case 'R': // Mem WORD in
+					{
+						const char * szc=(const char *)&ba[1];
+						DWORD dwAds;
+						volatile WORD * pdw;
+						while(*szc==' ') szc++;
+						szc+=BootAsciiHexToDword(szc, &dwAds);
+						pdw=(volatile WORD *)dwAds;
+						bprintf("Mem %04X: %04X\n", dwAds, *pdw);
+					}
+					break;
+
+					case 'W': // Mem WORD out
+					{
+						const char * szc=(const char *)&ba[1];
+						DWORD dwAds, dw;
+						volatile WORD * pdw;
+						while(*szc==' ') szc++;
+						szc+=BootAsciiHexToDword(szc, &dwAds);
+						while(*szc==' ') szc++;
+						szc+=BootAsciiHexToDword(szc, &dw);
+						pdw=(volatile WORD *)dwAds;
+						*pdw=(WORD)dw;
+						bprintf("Mem %04X: %04X\n", dwAds, *pdw);
+					}
+					break;
 				case 'o': // IO BYTE or WORD or DWORD out
 					{
 						const char * szc=(const char *)&ba[1];

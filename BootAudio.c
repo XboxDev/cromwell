@@ -17,9 +17,15 @@
 // unlike standard AC97 all the regs appear as MMIO from 0xfec00000
 // +0 - +7f = Mixer/Codec regs  <-- Wolfson Micro chip
 // +100 - +17f = Busmaster regs
-// I was unable to get anything other than 0x00 out of the Mixer/Codec region, except
-// for the mandatory Manufacturer and Device ID words.
-// this is disappointing as the Codec regs are probably needed to get S/PDIF working
+
+// The Wolfson Micro 9709 Codec fitted to the Xbox is a "dumb" codec that
+//  has NO PC-controllable registers.  The only regs it has are the
+//  manufacturer and device ID ones.
+
+// S/PDIF comes out of the MCPX device and is controlled by an extra set
+//  of busmaster DMA registers at +0x170.  These need their own descriptor
+//  separate from the PCM Out, although that descriptor can share audio
+//  buffers with PCM out successfully.
 
 // these are the audio buffers, I reuse the 4 x 2KDWORD buffers
 // over the 32 descriptors specified in AC97
@@ -97,6 +103,8 @@ short BootAudioInterpolatedSine(DWORD dwPhase4GIs2PiRadians)
 	}
 }
 
+//short BootAudioLowPassFilter(short sSampleNew,
+
 
 	// this is the main routine responsible for filling up an audio buffer with good stuff
 	// this gets called from the Audio interrupt.  When its called after init, it means that the
@@ -116,6 +124,10 @@ void BootAudioFillNextBuffer(volatile AC97_DEVICE * pac97device)
 		int nSummedSample[2]={0, 0};
 
 		while(pae!=NULL) {  // go through all the audio element objects on the linked list
+
+			if(n==0) {
+				(pae->m_callbackEveryBufferFill)((void *)pac97device, (void *)pae);
+			}
 
 			switch(pae->m_aetType) {
 				case AET_SINE:
@@ -144,22 +156,27 @@ void BootAudioFillNextBuffer(volatile AC97_DEVICE * pac97device)
 				case AET_NOISE:
 					{
 						AUDIO_ELEMENT_NOISE * paen=(AUDIO_ELEMENT_NOISE *)pae;
-						short s=(short)(((paen->m_dwShifter&0xffff)*paen->m_sVolumeZeroIsNone7FFFIsFull)/0x7fff);
+						DWORD dw=((paen->m_dwShifter>>8)|(paen->m_dwShifter<<24)) ^((paen->m_dwShifter>>2)^0x31d2932a);
+						short s=(short)(((int)(paen->m_saSamples[0])* paen->m_sVolumeZeroIsNone7FFFIsFull)/0x7fff);
 						s=(s * (paen->m_paudioelement.m_dwVolumeElementMaster7fff0000Max>>16))/0x7fff;  // apply element envelope
 						nSummedSample[0]+=(s*(0x7fff-paen->m_paudioelement.m_sPanZeroIsAllLeft7FFFIsAllRight))/0x7fff;
 						nSummedSample[1]+=(s*paen->m_paudioelement.m_sPanZeroIsAllLeft7FFFIsAllRight)/0x7fff;
-						paen->m_dwShifter=(paen->m_dwShifter>>7)^((paen->m_dwShifter&0x310009020)>>2)^(paen->m_dwShifter<<19);
+						paen->m_saSamples[0]= (((short)paen->m_saSamples[0])/2)+ (((short)dw)/2);
+						paen->m_saSamples[1]=(short)(dw>>16);
 					}
 					break;
 			} // switch type
 
 			switch(pae->m_bStageZeroIsAttack) {
 				case 0: // attack
-					pae->m_dwVolumeElementMaster7fff0000Max+=pae->m_dwVolumeAttackRate;
-					if(pae->m_dwVolumeElementMaster7fff0000Max>pae->m_dwVolumeAttackLimit) pae->m_bStageZeroIsAttack++;
+					if((pae->m_dwVolumeAttackLimit - pae->m_dwVolumeElementMaster7fff0000Max)< pae->m_dwVolumeAttackRate) {
+						pae->m_bStageZeroIsAttack++;
+					} else {
+						pae->m_dwVolumeElementMaster7fff0000Max+=pae->m_dwVolumeAttackRate;
+					}
 					break;
 				case 1: // sustain
-					if(pae->m_dwVolumeElementMaster7fff0000Max<pae->m_dwVolumeSustainRate) {
+					if((pae->m_dwVolumeElementMaster7fff0000Max-pae->m_dwVolumeSustainLimit)<pae->m_dwVolumeSustainRate) {
 						pae->m_bStageZeroIsAttack++;
 					} else {
 						pae->m_dwVolumeElementMaster7fff0000Max-=pae->m_dwVolumeSustainRate;
@@ -207,9 +224,60 @@ void BootAudioFillNextBuffer(volatile AC97_DEVICE * pac97device)
 	);
 }
 
+	// this gets called at around 23Hz
+	// it gives the AUDIO_ELEMENT derivations a chance to change their notes according to their 'score' table
+
+void BootAudioDefaultScoreHandler(void * pvoidAc97Device, void * pvoidaudioelement)
+{
+//	volatile AC97_DEVICE * pac97device= (volatile AC97_DEVICE *)pvoidAc97Device;
+	volatile AUDIO_ELEMENT * pae=(volatile AUDIO_ELEMENT *)pvoidaudioelement;
+	SONG_NOTE * psongnote=(SONG_NOTE *)pae->m_pvPayload;
+
+	if(psongnote) { // NULL here means AUDIO_ELEMENT is not scored
+
+		switch(pae->m_aetType) {
+
+			case AET_SINE:
+				{
+					volatile AUDIO_ELEMENT_SINE * paes=(volatile AUDIO_ELEMENT_SINE *)pvoidaudioelement;
+
+					if(psongnote[pae->m_dwPayload2].m_wTimeDurationmS) { // ie, unless we reached end of score
+
+								// time to kill existing note?
+
+						if(
+							(pae->m_dwCount48kHzSamplesRendered/48) >=
+							(psongnote[pae->m_dwPayload2].m_wTimeStartmS+psongnote[pae->m_dwPayload2].m_wTimeDurationmS)
+						) {  // yeah, force to decay
+							pae->m_bStageZeroIsAttack=2; // decay
+						}
+								// time for new note?
+
+						if((pae->m_dwCount48kHzSamplesRendered/48)>=psongnote[pae->m_dwPayload2+1].m_wTimeStartmS) {  // yeah, next note
+							pae->m_bStageZeroIsAttack=0; // attack
+							pae->m_dwVolumeElementMaster7fff0000Max=0; // start with note silent
+							paes->m_dwComputedFundamentalPhaseIncrementFor48kHzSamples=0x10000 * (((psongnote[pae->m_dwPayload2+1].m_dwFrequency) <<16)/48000);
+							pae->m_dwPayload2++; // this is current note now
+						}
+
+					}
+
+				}
+				break;
+
+			case AET_NOISE:
+				break;
+
+		}
+
+	}
+
+	pae->m_dwCount48kHzSamplesRendered+=sizeof(dwaaAudioBuffer[0])/sizeof(DWORD);
+}
+
 void BootAudioInit(volatile AC97_DEVICE * pac97device)
 {
-	int n;
+//	int n;
 
 	pac97device->m_pdwMMIO=(DWORD *)0xfec00000;
 
@@ -217,21 +285,16 @@ void BootAudioInit(volatile AC97_DEVICE * pac97device)
 	pac97device->m_dwNextDescriptorMod31=0;
 	pac97device->m_paudioelementFirst=NULL; // no audio elements to start with
 
-	memset((void *)&pac97device->m_aac97descriptorPcmIn[0], 0, sizeof(pac97device->m_aac97descriptorPcmIn));
+	memset((void *)&pac97device->m_aac97descriptorPcmSpdif[0], 0, sizeof(pac97device->m_aac97descriptorPcmSpdif));
 	memset((void *)&pac97device->m_aac97descriptorPcmOut[0], 0, sizeof(pac97device->m_aac97descriptorPcmOut));
-	memset((void *)&pac97device->m_aac97descriptorPcmMic[0], 0, sizeof(pac97device->m_aac97descriptorPcmMic));
 
-	pac97device->m_pdwMMIO[0x108>>2]=0x02000000; // reset, pause
-	pac97device->m_pdwMMIO[0x118>>2]=0x1e000000; // reset, pause, allow interrupts
-	pac97device->m_pdwMMIO[0x128>>2]=0x02000000; // reset, pause
+	pac97device->m_pdwMMIO[0x12C>>2]|=2; // allow interrupts, reset AC97 link
+	while(!pac97device->m_pdwMMIO[0x130>>2]&0x100) ;
 
-	pac97device->m_pdwMMIO[0x12C>>2]=0x31; // allow interrupts, reset AC97 link
-	for(n=0;n<100000;n++) ;  // wait >=1mS
-	pac97device->m_pdwMMIO[0x12C>>2]=0x33; // allow interrupts, no reset
-
-	pac97device->m_pdwMMIO[0x100>>2]=(DWORD)&pac97device->m_aac97descriptorPcmIn[0];
+	pac97device->m_pdwMMIO[0x100>>2]=0;
 	pac97device->m_pdwMMIO[0x110>>2]=(DWORD)&pac97device->m_aac97descriptorPcmOut[0];
-	pac97device->m_pdwMMIO[0x120>>2]=(DWORD)&pac97device->m_aac97descriptorPcmMic[0];
+	pac97device->m_pdwMMIO[0x170>>2]=(DWORD)&pac97device->m_aac97descriptorPcmSpdif[0];
+
 
 		// paused after this
 
@@ -265,6 +328,24 @@ void BootAudioDetachAudioElement(volatile AC97_DEVICE * pac97device, AUDIO_ELEME
 	}
 }
 
+// creates a default AUDIO_ELEMENT with default attack and permanent sustain, with starting envelope at silent
+
+void ConstructAUDIO_ELEMENT(volatile AUDIO_ELEMENT * pae)
+{
+	pae->m_dwVolumeElementMaster7fff0000Max=0;
+	pae->m_dwVolumeAttackRate=0x100000;
+	pae->m_dwVolumeAttackLimit=0x7fffffff;
+	pae->m_dwVolumeDecayRate  =0x03000000;
+
+	pae->m_paudioelementNext=NULL;
+	pae->m_callbackEveryBufferFill=BootAudioDefaultScoreHandler;
+	pae->m_pvPayload=NULL;
+	pae->m_dwPayload2=0;
+	pae->m_dwCount48kHzSamplesRendered=0;
+
+	pae->m_sPanZeroIsAllLeft7FFFIsAllRight=0x3fff;
+}
+
 // creates a default sine element with all harmonic volumes at zero and centred pan
 // everything else is set up as best as it can
 
@@ -272,14 +353,9 @@ void ConstructAUDIO_ELEMENT_SINE(volatile AUDIO_ELEMENT_SINE * paes, int nFreque
 {
 	memset((void *)paes, 0, sizeof(AUDIO_ELEMENT_SINE));
 
-	paes->m_paudioelement.m_dwVolumeElementMaster7fff0000Max=0;
-	paes->m_paudioelement.m_dwVolumeAttackRate=0x100000;
-	paes->m_paudioelement.m_dwVolumeAttackLimit=0x7fffffff;
-	paes->m_paudioelement.m_dwVolumeDecayRate=0x10000;
+	ConstructAUDIO_ELEMENT((volatile AUDIO_ELEMENT *)paes);
 
-	paes->m_paudioelement.m_paudioelementNext=NULL;
 	paes->m_dwComputedFundamentalPhaseIncrementFor48kHzSamples=0x10000 * ((nFrequencyFundamental <<16)/48000);
-	paes->m_paudioelement.m_sPanZeroIsAllLeft7FFFIsAllRight=0x3fff;
 	paes->m_paudioelement.m_aetType=AET_SINE;
 
 }
@@ -289,19 +365,19 @@ void DestructAUDIO_ELEMENT_SINE(volatile AC97_DEVICE * pac97device, AUDIO_ELEMEN
 	BootAudioDetachAudioElement(pac97device, (AUDIO_ELEMENT *)paes);
 }
 
-// creates a default sine element with all harmonic volumes at zero and centred pan
+// creates a default whitish noise source at zero and centred pan
 // everything else is set up as best as it can
 
 void ConstructAUDIO_ELEMENT_NOISE(volatile AUDIO_ELEMENT_NOISE * paen)
 {
 	memset((void *)paen, 0, sizeof(AUDIO_ELEMENT_NOISE));
 
-	paen->m_paudioelement.m_paudioelementNext=NULL;
-	paen->m_paudioelement.m_sPanZeroIsAllLeft7FFFIsAllRight=0x3fff;
+	ConstructAUDIO_ELEMENT((volatile AUDIO_ELEMENT *)paen);
+
 	paen->m_paudioelement.m_aetType=AET_NOISE;
 	paen->m_sVolumeZeroIsNone7FFFIsFull=0;
 
-	paen->m_dwShifter=0;
+	paen->m_dwShifter=0x5234cd92;
 }
 
 void DestructAUDIO_ELEMENT_NOISE(volatile AC97_DEVICE * pac97device, AUDIO_ELEMENT_NOISE * paen)
@@ -314,12 +390,14 @@ void DestructAUDIO_ELEMENT_NOISE(volatile AC97_DEVICE * pac97device, AUDIO_ELEME
 void BootAudioPlayDescriptors(volatile AC97_DEVICE * pac97device)
 {
 	pac97device->m_pdwMMIO[0x118>>2]=(DWORD)0x1d000000; // PCM out - run, allow interrupts
+	pac97device->m_pdwMMIO[0x178>>2]=(DWORD)0x1d000000; // PCM out - run, allow interrupts
 }
 
 
 void BootAudioSilence(volatile AC97_DEVICE * pac97device)
 {
 	pac97device->m_pdwMMIO[0x118>>2]=(DWORD)0x1c000000; // PCM out - PAUSE, allow interrupts
+	pac97device->m_pdwMMIO[0x178>>2]=(DWORD)0x1c000000; // PCM out - PAUSE, allow interrupts
 }
 
 
@@ -327,8 +405,6 @@ void BootAudioOutBufferToDescriptor(volatile AC97_DEVICE * pac97device, DWORD * 
 {
 	volatile BYTE * pb=(BYTE *)pac97device->m_pdwMMIO;
 	WORD w=0x8000;
-//	pb[0x11b]&=~1; // disable busmaster
-//	while(!(pb[0x116]&1)) ;  // wait for everything to stop
 
 	pac97device->m_aac97descriptorPcmOut[pac97device->m_dwNextDescriptorMod31].m_dwBufferStartAddress=(DWORD)pdwBuffer;
 	pac97device->m_aac97descriptorPcmOut[pac97device->m_dwNextDescriptorMod31].m_wBufferLengthInSamples=wLengthInSamples;
@@ -336,12 +412,50 @@ void BootAudioOutBufferToDescriptor(volatile AC97_DEVICE * pac97device, DWORD * 
 	pac97device->m_aac97descriptorPcmOut[pac97device->m_dwNextDescriptorMod31].m_wBufferControl=w;
 	pb[0x115]=(BYTE)pac97device->m_dwNextDescriptorMod31; // set last active descriptor
 
+	pac97device->m_aac97descriptorPcmSpdif[pac97device->m_dwNextDescriptorMod31].m_dwBufferStartAddress=(DWORD)pdwBuffer;
+	pac97device->m_aac97descriptorPcmSpdif[pac97device->m_dwNextDescriptorMod31].m_wBufferLengthInSamples=wLengthInSamples;
+	if(fFinal) w|=0x4000;
+	pac97device->m_aac97descriptorPcmSpdif[pac97device->m_dwNextDescriptorMod31].m_wBufferControl=w;
+	pb[0x175]=(BYTE)pac97device->m_dwNextDescriptorMod31; // set last active descriptor
+
 	pac97device->m_dwNextDescriptorMod31 = (pac97device->m_dwNextDescriptorMod31 +1 ) & 0x1f;
-//	pb[0x11b]|=1; // enable busmaster
 }
 
 
+WORD BootAudioGetMixerSetting(volatile AC97_DEVICE * pac97device, int nSettingIndex)
+{
+	volatile WORD * pw=(WORD *)(((BYTE *)pac97device->m_pdwMMIO));
+	volatile BYTE * pb=(((BYTE *)pac97device->m_pdwMMIO));
+	WORD w;
+	DWORD dw=100000;
+	while( (dw--) && (pb[0x134]&1) ) ;
+	if(dw==0xffffffff) {
+		pw[0x134>>1]=1;
+		return 0x55;
+	}
+
+	w=IoInputWord(0xd000| nSettingIndex);
+//	w=pw[nSettingIndex>>1];
+
+	return w;
+}
+
+void BootAudioSetMixerSetting(volatile AC97_DEVICE * pac97device, int nSettingIndex, WORD wValue)
+{
+	volatile WORD * pw=(WORD *)(((BYTE *)pac97device->m_pdwMMIO));
+	volatile BYTE * pb=(((BYTE *)pac97device->m_pdwMMIO));
+	DWORD dw=100000;
+
+	while( (dw--) && (pb[0x134]&1) ) ;
+	if(dw==0xffffffff) return;
+	pw[nSettingIndex>>1]=wValue;
+}
+
 	// service audio interrupt
+
+	// although we have to explicitly clear the S/PDIF interrupt sources, in fact
+	// the way we are set up PCM and S/PDIF are in lockstep and we only listen for
+	// PCM actions, since S/PDIF is always spooling through the same buffer.
 
 void BootAudioInterrupt(volatile AC97_DEVICE * pac97device)
 {
@@ -350,12 +464,13 @@ void BootAudioInterrupt(volatile AC97_DEVICE * pac97device)
 //	bprintf("   IRQ sees descriptor %d as current (%x)\n", pb[0x114], pac97device);
 
 	BootPciInterruptEnable();  // reenable interrupts - will NOT reneter because we did not clear IRQ source yet
-		// make rentrant because the VSYNC ISR was getting held off too long
+		// reenable interrupts because the VSYNC ISR was getting held off too long
 
 		// get next descriptor ready
 	if(pb[0x116]&8) {
 		BootAudioFillNextBuffer(pac97device);
 	}
+
 	if(pb[0x116]&0x10) {
 		bprintf("Fifo overrun\n");
 	}
@@ -364,5 +479,6 @@ void BootAudioInterrupt(volatile AC97_DEVICE * pac97device)
 		// sonly saw this with 8192 DWORD+ buffers, they take too long to cook.
 
 	pb[0x116]=0xff; // clear all int sources
+	pb[0x176]=0xff; // clear all int sources
 
 }

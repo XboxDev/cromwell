@@ -89,6 +89,9 @@ typedef struct {
 } ICON;
 
 ICON icon[ICONCOUNT];
+const int naChimeFrequencies[] = {
+	329, 349, 392, 440
+};
 
 void BootPrintConfig(CONFIGENTRY *config) {
 	printk("  Bootconfig : Kernel  %s\n", config->szKernel);
@@ -504,13 +507,11 @@ void StartBios(	int nDrive, int nActivePartition , int nFATXPresent) {
 
 				{
 					DestructAUDIO_ELEMENT_SINE(&ac97device, &aesIconSound); // harmless if not yet constructed or attached
-					ConstructAUDIO_ELEMENT_SINE(&aesIconSound, 1000+200 * nIcon);  // constructed silent
-					aesIconSound.m_saVolumePerHarmonicZeroIsNone7FFFIsFull[0]=0x3000;
+					ConstructAUDIO_ELEMENT_SINE(&aesIconSound, naChimeFrequencies[nIcon]);  // constructed silent
+					aesIconSound.m_saVolumePerHarmonicZeroIsNone7FFFIsFull[0]=0x1000;
 					aesIconSound.m_paudioelement.m_dwVolumeSustainRate=0x2800;
-					aesIconSound.m_paudioelement.m_dwVolumeSustainLimit=0;
 					BootAudioAttachAudioElement(&ac97device, (AUDIO_ELEMENT *)&aesIconSound);
 				}
-
 
 				switch(nIcon){
 					case ICON_FATX:
@@ -552,14 +553,9 @@ void StartBios(	int nDrive, int nActivePartition , int nFATXPresent) {
 					dwTick=BIOS_TICK_COUNT;
 
 
-					if(traystate!=ETS_OPEN_OR_OPENING) {  // try went in, specific choice made
+					if(traystate!=ETS_OPEN_OR_OPENING) {  // tray went in, specific choice made
 						{
 							DestructAUDIO_ELEMENT_SINE(&ac97device, &aesIconSound); // harmless if not yet constructed or attached
-							ConstructAUDIO_ELEMENT_SINE(&aesIconSound, 1800);  // constructed silent
-							aesIconSound.m_saVolumePerHarmonicZeroIsNone7FFFIsFull[0]=0x4000;
-							aesIconSound.m_paudioelement.m_dwVolumeSustainRate=0x7000;
-							aesIconSound.m_paudioelement.m_dwVolumeSustainLimit=0;
-							BootAudioAttachAudioElement(&ac97device, (AUDIO_ELEMENT *)&aesIconSound);
 						}
 						VIDEO_CURSOR_POSX=icon[nIcon].nTextX;
 						VIDEO_CURSOR_POSY=icon[nIcon].nTextY;

@@ -48,6 +48,7 @@ volatile USB_CONTROLLER_OBJECT usbcontroller[2];
 volatile AC97_DEVICE ac97device;
 
 volatile AUDIO_ELEMENT_SINE aesTux;
+volatile AUDIO_ELEMENT_SINE aesSong;
 volatile AUDIO_ELEMENT_NOISE aenTux;
 
 const KNOWN_FLASH_TYPE aknownflashtypesDefault[] = {
@@ -58,6 +59,30 @@ const KNOWN_FLASH_TYPE aknownflashtypesDefault[] = {
 	{ 0x20, 0xf1, "ST M29F080A", 0x100000 },  // default flash types
 	{ 0x89, 0xA6, "Sharp LHF08CH1", 0x100000 }, // default flash types
 	{ 0, 0, "", 0 }
+};
+
+
+const SONG_NOTE songnoteaIntro[] = {
+	{  370, 200, 207 },
+	{  730, 200, 207 },
+	{ 1080, 200, 207 },
+	{ 1460, 200, 184 },
+	{ 1630, 200, 207 },
+	{ 2000, 200, 207 },
+	{ 2150, 200, 207 },
+	{ 2520, 200, 207 },
+	{ 2680, 200, 184 },
+	{ 2830, 200, 207 },
+	{ 3190, 200, 207 },
+	{ 3550, 200, 184 },
+	{ 3720, 200, 207 },
+	{ 3900, 200, 207 },
+	{ 4250, 200, 207 },
+	{ 4400, 200, 207 },
+	{ 4760, 200, 184 },
+	{ 4900, 200, 207 },
+	{ 5260, 200, 207 },
+	{ 6000, 0, 0 }
 };
 
 /*
@@ -192,16 +217,26 @@ extern void BootResetAction ( void ) {
 	}
 //#endif
 
+
+#if 1
 			// do audio
 	{
 		BootAudioInit(&ac97device);
 
 		ConstructAUDIO_ELEMENT_SINE(&aesTux, 1000);  // constructed silent, manipulated in video IRQ that moves tux
 		BootAudioAttachAudioElement(&ac97device, (AUDIO_ELEMENT *)&aesTux);
+		ConstructAUDIO_ELEMENT_SINE(&aesSong, 1000);  // constructed silent, manipulated in video IRQ that moves tux
+		aesSong.m_paudioelement.m_pvPayload=(SONG_NOTE *)&songnoteaIntro[0];
+		aesSong.m_saVolumePerHarmonicZeroIsNone7FFFIsFull[0]=0x1fff;
+		aesSong.m_paudioelement.m_bStageZeroIsAttack=3; // silenced initially until first note
+		aesSong.m_paudioelement.m_bStageZeroIsAttack=3; // silenced initially until first note
+		BootAudioAttachAudioElement(&ac97device, (AUDIO_ELEMENT *)&aesSong);
 		ConstructAUDIO_ELEMENT_NOISE(&aenTux);  // constructed silent, manipulated in video IRQ that moves tux
 		BootAudioAttachAudioElement(&ac97device, (AUDIO_ELEMENT *)&aenTux);
 		BootAudioPlayDescriptors(&ac97device);
+
 	}
+#endif
 
 	// init USB
 #ifdef DO_USB
@@ -249,7 +284,7 @@ extern void BootResetAction ( void ) {
 	VIDEO_CURSOR_POSX=(currentvideomodedetails.m_dwMarginXInPixelsRecommended/*+64*/)*4;
 	printk( __DATE__ " -  http://xbox-linux.sf.net\n");
 	VIDEO_CURSOR_POSX=(currentvideomodedetails.m_dwMarginXInPixelsRecommended/*+64*/)*4;
-	printk("(C)2002 Xbox Linux Team - Licensed under the GPL\n");
+	printk("(C)2002-2003 Xbox Linux Team - Licensed under the GPL\n");
 	printk("\n");
 
 		// capture title area
