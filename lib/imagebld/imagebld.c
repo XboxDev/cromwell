@@ -417,11 +417,13 @@ int romcopy (
 	      	#endif
 	      	
 		// In 1MB flash we need the Image 2 times, as ... you know
+		memset(&flash1024[(0*256*1024)+bootloaderstruct.compressed_image_start],0xff,256*1024-bootloaderstruct.compressed_image_start-512);
 		memcpy(&flash1024[3*256*1024],&flash1024[0],256*1024);
 
+                
                 // Ok, the 2BL loader is ready, we now go to the "Kernel"
 
-
+                memset(&flash256[bootloaderstruct.compressed_image_start+20+compressedromsize],0xff,256*1024-(bootloaderstruct.compressed_image_start+20+compressedromsize)-512);
 	      	
 	        // The first 20 bytes of the compressed image are the checksum
 		memcpy(&flash256[bootloaderstruct.compressed_image_start+20],&compressedcrom[0],compressedromsize);
@@ -429,12 +431,16 @@ int romcopy (
 		SHA1Input(&context,&flash256[bootloaderstruct.compressed_image_start+20],compressedromsize);
 		SHA1Result(&context,SHA1_result);                                
 		memcpy(&flash256[bootloaderstruct.compressed_image_start],SHA1_result,20);			
-    			
+
+		memset(&flash1024[1*256*1024],0xff,2*1024*256);
+		    			
 		memcpy(&flash1024[bootloaderstruct.compressed_image_start+(1*256*1024)],SHA1_result,20);			
 		memcpy(&flash1024[bootloaderstruct.compressed_image_start+20+(1*256*1024)],&compressedcrom[0],compressedromsize);
+
 		memcpy(&flash1024[bootloaderstruct.compressed_image_start+(2*256*1024)],SHA1_result,20);			
 	      	memcpy(&flash1024[bootloaderstruct.compressed_image_start+20+(2*256*1024)],&compressedcrom[0],compressedromsize);
-	      	
+
+			      	
 	      	#ifdef debug
 		printf("ROM Hash 1MB             : ");
 		for(a=0; a<SHA1HashSize; a++) {

@@ -200,7 +200,7 @@ extern void BootStartBiosLoader ( void ) {
       			BufferOUT = (unsigned char*)CROMWELL_Memory_pos;
       			Decode();
       			de_compressed_image_size = BufferOUTPos;
-      			
+      			#if 0
       			SHA1Reset(&context);
 			SHA1Input(&context,(void*)(CROMWELL_Memory_pos+0x20),(de_compressed_image_size-0x20));
 			SHA1Result(&context,SHA1_result);
@@ -210,7 +210,7 @@ extern void BootStartBiosLoader ( void ) {
 				I2CTransmitWord(0x10, 0x0201); 
 				while(1); 
 			};
-			
+			#endif
 			
 			memset((void*)(CROMWELL_Memory_pos+de_compressed_image_size),0x0,1024);
 
