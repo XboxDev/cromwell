@@ -215,7 +215,7 @@ bool I2CGetTemperature(int * pnLocalTemp, int * pExternalTemp)
 	*pnLocalTemp=I2CTransmitByteGetReturn(0x4c, 0x01);
 	*pExternalTemp=I2CTransmitByteGetReturn(0x4c, 0x00);
 	
-	//Check for bus error - 1.6 xboes have no readable 
+	//Check for bus error - 1.6 xboxes have no readable 
 	//temperature sensors.
 	if (*pnLocalTemp==ERR_I2C_ERROR_BUS || 
 			*pExternalTemp==ERR_I2C_ERROR_BUS)		
