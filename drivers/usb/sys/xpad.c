@@ -117,6 +117,7 @@ static struct usb_device_id xpad_ids [] = {
 	{ USB_DEVICE(0x045e, 0x285) },  // Microsoft Xbox Controller S
 	{ USB_DEVICE(0x05fd, 0x107a) }, // InterAct PowerPad Pro
         { USB_DEVICE(0x045e, 0x289) },  // Controller S */
+        { USB_DEVICE(0x0738, 0x4516)},  // Mad Catz Controller
 	{ USB_DEVICE(0x0c12, 0x9902) }, // HAMA VibraX - lucky boy"
 	{ USB_DEVICE(0x0f30, 0x0202) }, // Joytech Advanced Controller
 	{ USB_DEVICE(0xffff, 0xffff) }, // Chinese xx Xbox Controller
