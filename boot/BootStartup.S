@@ -12,6 +12,7 @@
  *                                                                         *
  ***************************************************************************/
 #include "consts.h"
+#include "memory_layout.h"
 
 
 	.code32
@@ -47,16 +48,16 @@ tableGdt:
 
 tableGdtDescriptor:
 	// This is the GDT header having 8 bytes
-	.word tableGdtDescriptor-tableGdt      // 30 byte GDT
-	.long 0xA0000                          // GDT located at 0xA0000
-	.word 0                                // Padding
+	.word tableGdtDescriptor-tableGdt  // 30 byte GDT
+	.long GDT_LOC                      // GDT located at 0xA0000
+	.word 0                            // Padding
 tableGdtEnd:
 
 .align 16
 tableIdtDescriptor:
 
 	.word 2048
-	.long 0xb0000
+	.long IDT_LOC                      // IDT located at 0xB0000
 	.word 0     // fill Word, so we get alliged again
         
         // We are again Dword Alligated now
@@ -100,13 +101,13 @@ start_linux:
 	// 0xA0000, so we have to move it there.
 
 	// Copy the GDT to its final location
-	movl $0xA0000, %edi
+	movl $GDT_LOC, %edi
 	movl $tableGdt, %esi
 	movl $(tableGdtEnd-tableGdt)/4, %ecx
 	rep movsl
 
 	// Load the new GDT
-	lgdt 0xA0000+(tableGdtDescriptor-tableGdt)
+	lgdt GDT_LOC+(tableGdtDescriptor-tableGdt)
 	
 	// Kill the LDT, if any
 	xor	%eax, %eax
@@ -134,13 +135,12 @@ reload_cs:
 	mov %eax, %gs
 
 	// Set the stack pointer to give us a valid stack
-	movl $0x03BFFFF0, %esp
-
+	movl $STACK_TOP, %esp
         
-        // We clear the IDT in RAM   (IDT located @  0xb0000 )
+    // We clear the IDT in RAM   (IDT located @  0xb0000 )
 	xor %eax, %eax
 	movl $0x5000/4, %ecx
-	movl $0xB0000, %edi
+	movl $IDT_LOC, %edi
 	rep stosl
 	wbinvd
 	

@@ -8,6 +8,9 @@
  *                                                                         *
  ***************************************************************************/
 #include "boot.h"
+#include "audio.h"
+#include "video.h"
+#include "memory_layout.h"
 #include <shared.h>
 #include <filesys.h>
 #include "rc4.h"
