@@ -190,9 +190,9 @@ void BootAGPBUSInitialization(void)
 
 void BootDetectMemorySize(void)
 {
-	xbox_ram = 64;
-	PciWriteDword(BUS_0, DEV_0, FUNC_0, 0x84, 0x3FFFFFF);  // 64 MB
-	/*
+	//xbox_ram = 64;
+	//PciWriteDword(BUS_0, DEV_0, FUNC_0, 0x84, 0x3FFFFFF);  // 64 MB
+	
 	int i;
 	int result;
 	unsigned char *fillstring;
@@ -201,6 +201,7 @@ void BootDetectMemorySize(void)
 	
 	(*(unsigned int*)(0xFD000000 + 0x100200)) = 0x03070103 ;
 	(*(unsigned int*)(0xFD000000 + 0x100204)) = 0x11448000 ;
+        
         PciWriteDword(BUS_0, DEV_0, FUNC_0, 0x84, 0x7FFFFFF);  // 128 MB
         
 	xbox_ram = 64;	
@@ -210,7 +211,7 @@ void BootDetectMemorySize(void)
 	asm volatile ("wbinvd\n");
 	
 	if (_memcmp(membasetop,fillstring,0x200) == 0) {
-		// Looks like there is memory
+		// Looks like there is memory .. maybe a 128MB box 
 
 		memset(fillstring,0x55,0x200);
 		memset(membasetop,0x55,0x200);
@@ -223,22 +224,24 @@ void BootDetectMemorySize(void)
                         if (_memcmp(membaselow,fillstring,0x200) == 0) {
                              	// Hell, we find the Test-string at 0x0 too !
                              	xbox_ram = 64;
-                             	PciWriteDword(BUS_0, DEV_0, FUNC_0, 0x84, 0x3FFFFFF);  // 64 MB
                         } else {
                         	xbox_ram = 128;
-                        	(*(unsigned int*)(0xFD000000 + 0x100200)) = 0x03070103 ;
-				(*(unsigned int*)(0xFD000000 + 0x100204)) = 0x11448000 ;
+                        	//(*(unsigned int*)(0xFD000000 + 0x100200)) = 0x03070103 ;
+				//(*(unsigned int*)(0xFD000000 + 0x100204)) = 0x11448000 ;
                         }
 		}		
 		
 	}
 	if (xbox_ram == 64) {
-	//	(*(unsigned int*)(0xFD000000 + 0x100200)) = 0x03070103 ;
-	//	(*(unsigned int*)(0xFD000000 + 0x100204)) = 0x11338000 ;
 		PciWriteDword(BUS_0, DEV_0, FUNC_0, 0x84, 0x3FFFFFF);  // 64 MB
 	}
+
+	if (xbox_ram == 128) {
+		PciWriteDword(BUS_0, DEV_0, FUNC_0, 0x84, 0x7FFFFFF);  // 128 MB
+	}
+
         free(fillstring);
-        */
+
 }
 
 void BootPciPeripheralInitialization()

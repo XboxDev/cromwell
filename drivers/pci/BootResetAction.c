@@ -137,7 +137,7 @@ extern void BootResetAction ( void ) {
        	cache_enable();
        	//setup_ioapic();
 	// We look how much memory we have ..
-	BootDetectMemorySize();       
+	BootDetectMemorySize();     
 	
 	BootEepromReadEntireEEPROM();
 	bprintf("BOOT: Read EEPROM\n\r");

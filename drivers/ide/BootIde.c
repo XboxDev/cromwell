@@ -225,7 +225,7 @@ int BootIdeWriteData(unsigned uIoBase, void * buf, size_t size)
 //		printk("BootIdeWriteData timeout or error from BootIdeWaitDataReady ret %d\n", n);
 //		return 1;
 //	}
-	wait_smalldelay();
+	//wait_smalldelay();
 
 	while (size > 1) {
 
@@ -234,8 +234,9 @@ int BootIdeWriteData(unsigned uIoBase, void * buf, size_t size)
 		ptr++;
 	}
 	wait_smalldelay();
+	
 	n=BootIdeWaitNotBusy(uIoBase);
-	wait_smalldelay();
+	//wait_smalldelay();
 	if(n) {
 		printk("BootIdeWriteData timeout or error from BootIdeWaitNotBusy ret %d\n", n);
 		return 1;
@@ -357,7 +358,10 @@ int BootIdeIssueAtapiPacketCommandAndPacket(int nDriveIndex, BYTE *pAtapiCommand
 //  Called by BootIdeInit for each drive
 //  detects and inits each drive, and the structs containing info about them
 
-static int BootIdeDriveInit(unsigned uIoBase, int nIndexDrive)
+#define DRIVETYPE_HDD	0
+#define DRIVETYPE_ATAPI	1
+
+int BootIdeDriveInit(unsigned uIoBase, int nIndexDrive,int drivetype)
 {
 	tsIdeCommandParams tsicp = IDE_DEFAULT_COMMAND;
 	unsigned short* drive_info;
@@ -396,10 +400,12 @@ static int BootIdeDriveInit(unsigned uIoBase, int nIndexDrive)
 
         // Basically, if (nIndexdrive==0) .....(this is for the MAster drive)
         
-	if(!nIndexDrive) // this should be done by ATAPI sig detection, but I couldn't get it to work
+	
+	if (drivetype == DRIVETYPE_HDD)
 	{ 
 		// master... you have to send it IDE_CMD_GET_INFO
 		int nReturn=0;
+		tsaHarddiskInfo[nIndexDrive].m_fAtapi=false;
 		if(BootIdeIssueAtaCommand(uIoBase, IDE_CMD_GET_INFO, &tsicp)) {
 			nReturn=IoInputByte(IDE_REG_CYLINDER_MSB(uIoBase))<<8;
 			nReturn |=IoInputByte(IDE_REG_CYLINDER_LSB(uIoBase));
@@ -411,9 +417,13 @@ static int BootIdeDriveInit(unsigned uIoBase, int nIndexDrive)
 			}
 		}
 	
-	} else { // slave... death if you send it IDE_CMD_GET_INFO, it needs an ATAPI request
+	} 
+        
+        if (drivetype == DRIVETYPE_ATAPI)
+	{ 
+		// slave... death if you send it IDE_CMD_GET_INFO, it needs an ATAPI request
 
-
+		tsaHarddiskInfo[nIndexDrive].m_fAtapi=true;
 		if (cromwell_config==XROMWELL) 
 		{
 			// Is working as Xromwell
@@ -456,8 +466,6 @@ static int BootIdeDriveInit(unsigned uIoBase, int nIndexDrive)
 		}
 	}
         
-        // End MASTER / SLAVE (if(!nIndexDrive)) 
-		
 		
 		
 	BootIdeWaitDataReady(uIoBase);
@@ -513,7 +521,7 @@ static int BootIdeDriveInit(unsigned uIoBase, int nIndexDrive)
 
 	tsaHarddiskInfo[nIndexDrive].m_fDriveExists = 1;
 
-	if(tsaHarddiskInfo[nIndexDrive].m_wCountHeads==0) 
+	if (drivetype == DRIVETYPE_ATAPI)
 	{ // CDROM/DVD
                 // We Detected a CD-DVD or so, as there are no Heads ...
 		tsaHarddiskInfo[nIndexDrive].m_fAtapi=true;
@@ -566,12 +574,12 @@ static int BootIdeDriveInit(unsigned uIoBase, int nIndexDrive)
 		}
 
 
-	} else { 
-		 // We Detected a HDD or so , as there are >0 Heads 
+	} 
+        
+        
+        if (drivetype == DRIVETYPE_HDD)
+        {
 
-#ifdef DO_CMOS_BIOS_DATA
-		BYTE bAdsBase=0x1b;
-#endif
 		unsigned long ulDriveCapacity1024=((tsaHarddiskInfo[nIndexDrive].m_dwCountSectorsTotal /1000)*512)/1000;
 /*
 		int nAta=0;
@@ -597,199 +605,156 @@ static int BootIdeDriveInit(unsigned uIoBase, int nIndexDrive)
 //			drive_info[128]
 		);
 
-#ifdef DO_CMOS_BIOS_DATA
-		if(!nIndexDrive) { //HDD0
-			BiosCmosWrite(0x19, 47); // drive 0 user-defined HDD type
-			BiosCmosWrite(0x12, BiosCmosRead(0x12)|0xf0);
-		} else { // HDD1
-			BiosCmosWrite(0x12, BiosCmosRead(0x12)|0x0f);
-			BiosCmosWrite(0x1a, 47); // drive 1 user-defined HDD type
-			bAdsBase=0x24;
-		}
-
-		BiosCmosWrite(bAdsBase, (BYTE)(tsaHarddiskInfo[nIndexDrive].m_wCountCylinders));
-		BiosCmosWrite(bAdsBase+1, (BYTE)(tsaHarddiskInfo[nIndexDrive].m_wCountCylinders>>8));
-		BiosCmosWrite(bAdsBase+2, (BYTE)(tsaHarddiskInfo[nIndexDrive].m_wCountHeads));
-		BiosCmosWrite(bAdsBase+3, 0);
-		BiosCmosWrite(bAdsBase+4, 0);
-		BiosCmosWrite(bAdsBase+5, 0);
-		BiosCmosWrite(bAdsBase+6, 0);
-		BiosCmosWrite(bAdsBase+7, 0);
-		BiosCmosWrite(bAdsBase+0x8, (BYTE)(tsaHarddiskInfo[nIndexDrive].m_wCountSectorsPerTrack));
-#endif
-	/*post_d0_type47:   <----taken from Bochs BIOS comment
-  ;; CMOS  purpose                  param table offset
-
-	:: 19
-	;; 1b    cylinders low            0
-  ;; 1c    cylinders high           1
-  ;; 1d    heads                    2
-  ;; 1e    write pre-comp low       5
-  ;; 1f    write pre-comp high      6
-  ;; 20    retries/bad map/heads>8  8
-  ;; 21    landing zone low         C
-  ;; 22    landing zone high        D
-  ;; 23    sectors/track            E
-	*/
-	}
-
-/* ag: my original v1.0 box details for reference
-
-HDD details: Model='ST310211A', Serial='6DB2WF1K'
-
-First 0x30 bytes of EEPROM
-
-00000000: 6D AB 59 A2 B8 82 09 AB : 21 84 B2 50 8A 7F 4F 43    m.Y.....!..P..OC
-00000010: 54 01 1E 52 D3 B6 3A 5C : 32 A6 11 28 72 07 AE 3C    T..R..:\2..(r..<
-00000020: 36 D4 83 FB E0 29 EE A8 : 1C 9D 14 EF 44 39 65 37    6....)......D9e7
-
-EEPROM key: 53 70 17 9C 73 06 94 0A : 18 F8 70 69 4C 63 5E B0
-
-Known-good HDD password for this drive:
-
-00000000: 00 00 45 79 8D F1 E9 F5 : 90 A3 3F DA AB 3C E2 5B    ..Ey......?..<.[
-00000010: 1A 41 9D 24 B6 CC
-
-*/
-
-
-if (cromwell_config==CROMWELL) {
-	// Cromwell Mode
-	if((drive_info[128]&0x0004)==0x0004) { // 'security' is in force, unlock the drive (was 0x104/0x104)
-		BYTE baMagic[0x200], baKeyFromEEPROM[0x10], baEeprom[0x30];
-		bool fUnlocked=false;
-		int n,nVersionHashing;
-		tsIdeCommandParams tsicp1 = IDE_DEFAULT_COMMAND;
-		DWORD dwMagicFromEEPROM;
-		DWORD BootHddKeyGenerateEepromKeyData(
-			BYTE *eeprom_data,
-			BYTE *HDKey
-		);
-		int nVersionSuccessfulDecrypt=0;
-
-		printk(" Lck[%x]", drive_info[128]);
-
-		// THE HDD_SANITY Code removed from the CODE
-
-		dwMagicFromEEPROM=0;
-
-		{
- 			nVersionHashing = 0;
-
-			memcpy(&baEeprom[0], &eeprom, 0x30); // first 0x30 bytes from EEPROM image we picked up earlier
-
-			for(n=0;n<0x10;n++) baKeyFromEEPROM[n]=0;
-			nVersionHashing = BootHddKeyGenerateEepromKeyData( &baEeprom[0], &baKeyFromEEPROM[0]);
-
-			for(n=0;n<0x200;n++) baMagic[n]=0;
-
-	#ifdef HDD_DEBUG
-			printk("Model='%s', Serial='%s'\n", tsaHarddiskInfo[nIndexDrive].m_szIdentityModelNumber, tsaHarddiskInfo[nIndexDrive].m_szSerial);
-			VideoDumpAddressAndData(0, &baKeyFromEEPROM[0], 0x10);
-	#endif
-
-			HMAC_SHA1 (&baMagic[2], baKeyFromEEPROM, 0x10,
-					 tsaHarddiskInfo[nIndexDrive].m_szIdentityModelNumber,
-					 tsaHarddiskInfo[nIndexDrive].m_length,
-					 tsaHarddiskInfo[nIndexDrive].m_szSerial,
-					 tsaHarddiskInfo[nIndexDrive].s_length);
-                       
-			if (nVersionHashing == 0)
-			{
-				printk("Got a 0 return from BootHddKeyGenerateEepromKeyData\n");
-				// ERRORR -- Corrupt EEprom or Newer Version of EEprom - key
-			}
-
-
-			nVersionSuccessfulDecrypt=nVersionHashing;
 
 
 
-				// clear down the unlock packet, except for b8 set in first word (high security unlock)
+		if (cromwell_config==CROMWELL) {
+			// Cromwell Mode
+			if((drive_info[128]&0x0004)==0x0004) 
+			{ 
+				// 'security' is in force, unlock the drive (was 0x104/0x104)
+				BYTE baMagic[0x200], baKeyFromEEPROM[0x10], baEeprom[0x30];
+				bool fUnlocked=false;
+				int n,nVersionHashing;
+				tsIdeCommandParams tsicp1 = IDE_DEFAULT_COMMAND;
+				DWORD dwMagicFromEEPROM;
+				DWORD BootHddKeyGenerateEepromKeyData(BYTE *eeprom_data,BYTE *HDKey);
+				
+				int nVersionSuccessfulDecrypt=0;
 
-			{
-				WORD * pword=(WORD *)&baMagic[0];
-				*pword=0;  // try user
-			}
+				printk(" Lck[%x]", drive_info[128]);
 
-			if(BootIdeWaitNotBusy(uIoBase)) {
-					printk("  %d:  Not Ready\n", nIndexDrive);
-					return 1;
-			}
-			tsicp1.m_bDrivehead = IDE_DH_DEFAULT | IDE_DH_HEAD(0) | IDE_DH_CHS | IDE_DH_DRIVE(nIndexDrive);
+				// THE HDD_SANITY Code removed from the CODE
 
-			if(BootIdeIssueAtaCommand(uIoBase, IDE_CMD_SECURITY_UNLOCK, &tsicp1)) {
-				printk("  %d:  when issuing unlock command FAILED, error=%02X\n", nIndexDrive, IoInputByte(IDE_REG_ERROR(uIoBase)));
-				return 1;
-			}
-			BootIdeWaitDataReady(uIoBase);
-			BootIdeWriteData(uIoBase, &baMagic[0], IDE_SECTOR_SIZE);
+				dwMagicFromEEPROM=0;
 
-			if (BootIdeWaitNotBusy(uIoBase))	{
-				printk("..");
+	 			nVersionHashing = 0;
+	
+				memcpy(&baEeprom[0], &eeprom, 0x30); // first 0x30 bytes from EEPROM image we picked up earlier
+	
+				for(n=0;n<0x10;n++) baKeyFromEEPROM[n]=0;
+				nVersionHashing = BootHddKeyGenerateEepromKeyData( &baEeprom[0], &baKeyFromEEPROM[0]);
+	
+				for(n=0;n<0x200;n++) baMagic[n]=0;
+	
+		#ifdef HDD_DEBUG
+				printk("Model='%s', Serial='%s'\n", tsaHarddiskInfo[nIndexDrive].m_szIdentityModelNumber, tsaHarddiskInfo[nIndexDrive].m_szSerial);
+				VideoDumpAddressAndData(0, &baKeyFromEEPROM[0], 0x10);
+		#endif
+	
+				// Claculate the hdd pw from EErpom and Serial / Model Number
+				HMAC_SHA1 (&baMagic[2], baKeyFromEEPROM, 0x10,
+						 tsaHarddiskInfo[nIndexDrive].m_szIdentityModelNumber,
+						 tsaHarddiskInfo[nIndexDrive].m_length,
+						 tsaHarddiskInfo[nIndexDrive].m_szSerial,
+						 tsaHarddiskInfo[nIndexDrive].s_length);
+	                       
+				if (nVersionHashing == 0)
+				{
+					printk("Got a 0 return from BootHddKeyGenerateEepromKeyData\n");
+					// ERRORR -- Corrupt EEprom or Newer Version of EEprom - key
+				}
+	
+	
+				nVersionSuccessfulDecrypt=nVersionHashing;
+	
+	
+	
+					// clear down the unlock packet, except for b8 set in first word (high security unlock)
+	
 				{
 					WORD * pword=(WORD *)&baMagic[0];
-					*pword=1;  // try master
+					*pword=0;  // try user
 				}
-
-				if(BootIdeIssueAtaCommand(uIoBase, IDE_CMD_SECURITY_UNLOCK, &tsicp1)) {
+	
+				if(BootIdeWaitNotBusy(uIoBase)) 
+				{
+					printk("  %d:  Not Ready\n", nIndexDrive);
+					return 1;
+				}
+				tsicp1.m_bDrivehead = IDE_DH_DEFAULT | IDE_DH_HEAD(0) | IDE_DH_CHS | IDE_DH_DRIVE(nIndexDrive);
+	
+				if(BootIdeIssueAtaCommand(uIoBase, IDE_CMD_SECURITY_UNLOCK, &tsicp1)) 
+				{
 					printk("  %d:  when issuing unlock command FAILED, error=%02X\n", nIndexDrive, IoInputByte(IDE_REG_ERROR(uIoBase)));
 					return 1;
 				}
 				BootIdeWaitDataReady(uIoBase);
 				BootIdeWriteData(uIoBase, &baMagic[0], IDE_SECTOR_SIZE);
+        	
+				if (BootIdeWaitNotBusy(uIoBase))	
+				{
+					printk("..");
+					{
+						WORD * pword=(WORD *)&baMagic[0];
+						*pword=1;  // try master
+					}
 
-				if (BootIdeWaitNotBusy(uIoBase))	{
-//					printk("  - Both Master and User unlock attempts failed\n");
+					if(BootIdeIssueAtaCommand(uIoBase, IDE_CMD_SECURITY_UNLOCK, &tsicp1)) 
+					{
+						printk("  %d:  when issuing unlock command FAILED, error=%02X\n", nIndexDrive, IoInputByte(IDE_REG_ERROR(uIoBase)));
+						return 1;
+					}
+					BootIdeWaitDataReady(uIoBase);
+					BootIdeWriteData(uIoBase, &baMagic[0], IDE_SECTOR_SIZE);
+
+					if (BootIdeWaitNotBusy(uIoBase))	
+					{
+//						printk("  - Both Master and User unlock attempts failed\n");
+					}
 				}
-			}
 
 				// check that we are unlocked
 
-			tsicp.m_bDrivehead = IDE_DH_DEFAULT | IDE_DH_HEAD(0) | IDE_DH_CHS | IDE_DH_DRIVE(nIndexDrive);
-			if(BootIdeIssueAtaCommand(uIoBase, IDE_CMD_GET_INFO, &tsicp)) {
-				printk("  %d:  on issuing get status after unlock detect FAILED, error=%02X\n", nIndexDrive, IoInputByte(IDE_REG_ERROR(uIoBase)));
-				return 1;
-			}
-			BootIdeWaitDataReady(uIoBase);
-			if(BootIdeReadData(uIoBase, baBuffer, IDE_SECTOR_SIZE)) {
-				printk("  %d:  BootIdeReadData FAILED, error=%02X\n", nIndexDrive, IoInputByte(IDE_REG_ERROR(uIoBase)));
-				return 1;
-			}
+				tsicp.m_bDrivehead = IDE_DH_DEFAULT | IDE_DH_HEAD(0) | IDE_DH_CHS | IDE_DH_DRIVE(nIndexDrive);
+				if(BootIdeIssueAtaCommand(uIoBase, IDE_CMD_GET_INFO, &tsicp)) 
+				{
+					printk("  %d:  on issuing get status after unlock detect FAILED, error=%02X\n", nIndexDrive, IoInputByte(IDE_REG_ERROR(uIoBase)));
+					return 1;
+				}
+				BootIdeWaitDataReady(uIoBase);
+				if(BootIdeReadData(uIoBase, baBuffer, IDE_SECTOR_SIZE)) 
+				{
+					printk("  %d:  BootIdeReadData FAILED, error=%02X\n", nIndexDrive, IoInputByte(IDE_REG_ERROR(uIoBase)));
+					return 1;
+				}
 
-	//		printk("post-unlock sec status: 0x%x\n", drive_info[128]);
-			if(drive_info[128]&0x0004) {
-				printk("  %d:  FAILED to unlock drive, security: %04x\n", nIndexDrive, drive_info[128]);
-			} else {
+		//		printk("post-unlock sec status: 0x%x\n", drive_info[128]);
+				if(drive_info[128]&0x0004) 
+				{
+					printk("  %d:  FAILED to unlock drive, security: %04x\n", nIndexDrive, drive_info[128]);
+				} else {
 	//				printk("  %d:  Drive unlocked, new sec=%04X\n", nIndexDrive, drive_info[128]);
 					fUnlocked=true;
-	//				printk("    Unlocked");
-			}
+		//			printk("    Unlocked");
+				}
 
 //			nVersionHashing++;
 
-		}
-	#ifndef HDD_DEBUG
-		if(!fUnlocked)
-	#endif
-		{
-			printk("\n");
-			printk("FAILED to unlock drive, sec: %04x; Version=%d, EEPROM:\n", drive_info[128], nVersionSuccessfulDecrypt);
-			VideoDumpAddressAndData(0, &baEeprom[0], 0x30);
-			printk("Computed key:\n");
-			VideoDumpAddressAndData(0, &baMagic[0], 20);
-			return 1;
-		}
+			
 
-	} else {
-		if(nIndexDrive==0) printk("  Unlocked");
-	}
-}  
+				if(!fUnlocked)
+				{
+					printk("\n");
+					printk("FAILED to unlock drive, sec: %04x; Version=%d, EEPROM:\n", drive_info[128], nVersionSuccessfulDecrypt);
+					VideoDumpAddressAndData(0, &baEeprom[0], 0x30);
+					printk("Computed key:\n");
+					VideoDumpAddressAndData(0, &baMagic[0], 20);
+					return 1;
+				}
+			}
+
+		} else {
+			if(nIndexDrive==0) printk("  Unlocked");
+		}
+	}  
 
 // End the C/X romwell Selection from above
 
 
-	if (drive_info[49] & 0x200) { /* bit 9 of capability word is lba supported bit */
+	if (drive_info[49] & 0x200) 
+	{ 
+		/* bit 9 of capability word is lba supported bit */
 		tsaHarddiskInfo[nIndexDrive].m_bLbaMode = IDE_DH_LBA;
 	} else {
 		tsaHarddiskInfo[nIndexDrive].m_bLbaMode = IDE_DH_CHS;
@@ -804,7 +769,8 @@ if (cromwell_config==CROMWELL) {
 			printk("      LBA Mode\n");
 	}
 */
-	if(nIndexDrive==0 /*tsaHarddiskInfo[nIndexDrive].m_wCountHeads */) { // HDD not DVD (that shows up as 0 heads)
+	if (drivetype == DRIVETYPE_HDD) 
+	{ 
 
 		unsigned char ba[512];
 		int nError;
@@ -813,10 +779,12 @@ if (cromwell_config==CROMWELL) {
 
 			// report on the FATX-ness of the drive contents
 
-		if((nError=BootIdeReadSector(nIndexDrive, &ba[0], 3, 0, 512))) {
+		if((nError=BootIdeReadSector(nIndexDrive, &ba[0], 3, 0, 512))) 
+		{
 			printk("  -  Unable to read FATX sector");
 		} else {
-			if( (ba[0]=='B') && (ba[1]=='R') && (ba[2]=='F') && (ba[3]=='R') ) {
+			if( (ba[0]=='B') && (ba[1]=='R') && (ba[2]=='F') && (ba[3]=='R') ) 
+			{
 				tsaHarddiskInfo[nIndexDrive].m_enumDriveType=EDT_UNKNOWN;
 				printk(" - FATX", nIndexDrive);
 			} else {
@@ -826,17 +794,18 @@ if (cromwell_config==CROMWELL) {
 
 			// report on the MBR-ness of the drive contents
 
-		if((nError=BootIdeReadSector(nIndexDrive, &ba[0], 0, 0, 512))) {
+		if((nError=BootIdeReadSector(nIndexDrive, &ba[0], 0, 0, 512))) 
+		{
 			printk("     Unable to get first sector, returned %d\n", nError);
 		} else {
-			if( (ba[0x1fe]==0x55) && (ba[0x1ff]==0xaa) ) {
+			if( (ba[0x1fe]==0x55) && (ba[0x1ff]==0xaa) ) 
+			{
 				printk(" - MBR", nIndexDrive);
-				if(nIndexDrive==0) {
+				if (drivetype == DRIVETYPE_HDD) 
+				{
 					tsaHarddiskInfo[nIndexDrive].m_fHasMbr=1;
-	#ifdef DO_CMOS_BIOS_DATA
-					BiosCmosWrite(0x3d, 2);  // boot from HDD
-	#endif
 				}
+			
 			} else {
 				tsaHarddiskInfo[nIndexDrive].m_fHasMbr=0;
 				printk(" - No MBR", nIndexDrive);
@@ -847,14 +816,12 @@ if (cromwell_config==CROMWELL) {
 
 		printk("\n");
 
-	} else {  // cd/dvd
-	#ifdef DO_CMOS_BIOS_DATA
-		if(BiosCmosRead(0x3d)==0) {  // no bootable HDD
-			BiosCmosWrite(0x3d, 3);  // boot from CD/DVD instead then
-		}
-	#endif
-//		printk("BootIdeDriveInit() DVD completed ok\n");
+	} 
 
+	if (drivetype == DRIVETYPE_ATAPI) 
+	{ 
+		// cd/dvd
+//		printk("BootIdeDriveInit() DVD completed ok\n");
 	}
 
 	return 0;
@@ -872,14 +839,21 @@ if (cromwell_config==CROMWELL) {
 
 int BootIdeInit(void)
 {
+	int error;
+	
 	tsaHarddiskInfo[0].m_bCableConductors=40;
 
 	IoOutputByte(0xff60+0, 0x00); // stop bus mastering
 	IoOutputByte(0xff60+2, 0x62); // DMA possible for both drives
 
-	BootIdeDriveInit(IDE_BASE1, 0);
-	BootIdeDriveInit(IDE_BASE1, 1);
-
+	BootIdeDriveInit(IDE_BASE1, 0, DRIVETYPE_HDD);		// Master is a HDD
+	
+	// Maybe it is a HDD ?
+	//error = BootIdeDriveInit(IDE_BASE1, 1, DRIVETYPE_HDD);	// Slave is a HDD
+        //if (error != 0) 
+        BootIdeDriveInit(IDE_BASE1, 1, DRIVETYPE_ATAPI);        // Slave is a CD-Drive
+        
+        
 	if(tsaHarddiskInfo[0].m_fDriveExists) 
 	{
 		unsigned int uIoBase = tsaHarddiskInfo[0].m_fwPortBase;

@@ -909,6 +909,24 @@ int BootMenue(CONFIGENTRY *config,int nDrive,int nActivePartition, int nFATXPres
 
 }
 
+/*
+int hddclone(void) {
+	
+	unsigned char buffer[512];
+	unsigned int blockcount;
+	int BootIdeReadSector(int nDriveIndex, void * pbBuffer, unsigned int block, int byte_offset, int n_bytes) ;
+	int BootIdeWriteSector(int nDriveIndex, void * pbBuffer, unsigned int block) ;
+	
+	printk("STARTING\n");
+	for (blockcount = 0; blockcount<3400000;blockcount++) {
+	  	BootIdeReadSector(0,buffer,blockcount,0,512);
+	  	BootIdeWriteSector(1,buffer,blockcount);
+	  	if ((blockcount%2048)==2047) printk("*");
+	}
+        printk("READY\n");
+	
+}
+*/
 
 void StartBios(CONFIGENTRY *config, int nActivePartition , int nFATXPresent,int bootfrom) {
 
@@ -976,6 +994,7 @@ void StartBios(CONFIGENTRY *config, int nActivePartition , int nFATXPresent,int 
 			BootLodaConfigNative(nActivePartition, config, false);
 			break;
 		case ICON_CD:
+			//hddclone();
 			BootLodaConfigCD(config);
 			break;
 		case ICON_FLASH:
@@ -1040,8 +1059,6 @@ void StartBios(CONFIGENTRY *config, int nActivePartition , int nFATXPresent,int 
 	
 	asm volatile ("wbinvd\n");
 	
-	//wait_ms(200);
-	BootPciPeripheralInitialization();
 	
 	// Tell Video Card we have changed the offset to higher up
 	(*(unsigned int*)0xFD600800) = (0xf0000000 | ((xbox_ram*0x100000) - FRAMEBUFFER_SIZE));
