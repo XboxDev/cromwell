@@ -13,7 +13,6 @@
 
 // killed temporarily to allow clean CVS checkin
 
-#ifdef DO_ETHERNET
 
 #include "nvn/basetype.h"
 #include "nvn/adapter.h"
@@ -22,6 +21,11 @@
 
 #define bool_already_defined_
 #include "boot.h"
+#include "BootEEPROM.h"
+
+#ifdef DO_ETHERNET
+
+extern EEPROMDATA eeprom;
 
 #define DEBUG_ETH 0
 
@@ -169,6 +173,7 @@ typedef struct nvnet_private NVNET_PRIVATE;
 int BootStartUpEthernet()
 {
 	int n;
+	BYTE realmac[6];
 	ADAPTER_API adapterapi;
 	NVNET_PRIVATE priv;
 	OS_API cromwellapi;
@@ -232,6 +237,14 @@ int BootStartUpEthernet()
 		&priv.phyaddr
 	);
 
+        realmac[0] = eeprom.MACAddress[5];
+        realmac[1] = eeprom.MACAddress[4];
+        realmac[2] = eeprom.MACAddress[3];
+        realmac[3] = eeprom.MACAddress[2];
+        realmac[4] = eeprom.MACAddress[1];
+        realmac[5] = eeprom.MACAddress[0];
+        priv.hwapi->pfnSetNodeAddress(priv.hwapi->pADCX, realmac);
+								
 /*
 	int n=PHY_Open(&baOsStruct[0], &phyapi, &ulIsHPNAPhy, &ulPhyAddr, &ulPhyConnected);
 

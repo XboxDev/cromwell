@@ -5,6 +5,9 @@
 # free bios project.
 #
 # $Log$
+# Revision 1.2  2003/01/13 12:33:52  warmcat
+# Updated Makefile.rom
+#
 # Revision 1.9  2003/01/13 12:29:07  warmcat
 # Left off BootInterrupts.c from last commit :-)
 #
@@ -68,7 +71,7 @@ jpeg-6b/jdinput.o jpeg-6b/jdmarker.o jpeg-6b/jdhuff.o jpeg-6b/jdphuff.o jpeg-6b/
 jpeg-6b/jdpostct.o jpeg-6b/jddctmgr.o jpeg-6b/jidctfst.o jpeg-6b/jidctflt.o jpeg-6b/jidctint.o jpeg-6b/jidctred.o \
 jpeg-6b/jdsample.o jpeg-6b/jdcolor.o jpeg-6b/jquant1.o jpeg-6b/jquant2.o jpeg-6b/jdmerge.o jpeg-6b/jmemnobs.o \
 jpeg-6b/jmemmgr.o jpeg-6b/jcomapi.o jpeg-6b/jutils.o jpeg-6b/jerror.o \
-BootFlash.o \
+BootFlash.o BootEEPROM.o\
 # !!! killed temporarily to allow clean CVS checkin
 #BootEthernet.o \
 #nvn/nvnetlib.o

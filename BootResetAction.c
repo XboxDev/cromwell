@@ -23,6 +23,10 @@
  */
 
 #include "boot.h"
+#include "BootEEPROM.h"
+
+void ReadEEPROM();
+void PrintInfo();
 
 #ifdef XBE
 #include "config-xbe.h"
@@ -114,6 +118,8 @@ extern void BootResetAction ( void ) {
 	WATCHDOG;
 	bprintf("BOOT: done with VGA initialization\n\r");
 #endif
+
+	ReadEEPROM();
 
 	bAvPackType=BootVgaInitializationKernel(VIDEO_PREFERRED_LINES);
 
