@@ -385,7 +385,7 @@ int FATXFindFile(FATXPartition* partition,
                     int clusterId, FATXFILEINFO *fileinfo) {
 
 	int i = 0;
-
+	char _filename[50];
 #ifdef FATX_DEBUG
 	VIDEO_ATTR=0xffc8c8c8;
 	printk("FATXFindFile : %s\n",filename);
@@ -398,6 +398,28 @@ int FATXFindFile(FATXPartition* partition,
 	    	}
 	    	i++;
   	}
+
+	// Work with windows formatting
+	i=0;
+	int k=0;
+	int count=0;
+	while((filename[i] != 0) && (count < 2)) {
+		if((filename[i] > 32) && (filename[i] < 127)) {
+			_filename[k] = filename[i];
+			k++;
+		}
+		if(filename[i] == 0) {
+			count++;
+		}
+		i++;
+	}
+
+	while(k<50) {
+		_filename[k] = 0;
+		k++;
+	}
+
+	strcpy(filename, _filename);
 
   	// skip over any leading / characters
   	i=0;
