@@ -22,7 +22,6 @@
 #include "consts.h"
 #include "jpeglib.h"
 
-
 unsigned int cromwell_config;
 unsigned int cromwell_retryload;
 unsigned int cromwell_loadbank;

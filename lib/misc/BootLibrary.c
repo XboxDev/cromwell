@@ -15,6 +15,7 @@
 void BootPciInterruptEnable()  {	__asm__ __volatile__  (  "sti" ); }
 
 
+
 void * memcpy(void *dest, const void *src,  size_t size) {
 
 #if 0

@@ -119,7 +119,7 @@ extern void BootResetAction ( void ) {
         
 	MemoryManagementInitialization((void *)MEMORYMANAGERSTART, MEMORYMANAGERSIZE);
 	
-	dwaTitleArea = malloc(1024*64);
+
 
 	BootInterruptsWriteIdt();	
 	bprintf("BOOT: done interrupts\n\r");
@@ -149,6 +149,7 @@ extern void BootResetAction ( void ) {
         
         // Load and Init the Background image
         
+	dwaTitleArea = malloc(1024*64);
         // clear the Video Ram
 	memset((void *)FRAMEBUFFER_START,0x00,0x400000);
 	CACHE_VSYNC_WRITEBACK=1;
@@ -464,6 +465,7 @@ extern void BootResetAction ( void ) {
 	// argument 0 for hdd and 1 for from CDROM
 
 //#ifndef IS_XBE_CDLOADER
+	
 
 
 	temp = -1; // Nothing Choosed
@@ -482,6 +484,7 @@ extern void BootResetAction ( void ) {
      	StartBios(&kernel_config, nActivePartitionIndex, nFATXPresent,temp);
     
     while(1);   
+ 
 
 
 }

@@ -16,7 +16,7 @@
  *                                                                         *
  ***************************************************************************/
 
-#define VERSION "2.25 dev"
+#define VERSION "2.25 dev-1"
 
 #define PCI_CFG_ADDR 0x0CF8
 #define PCI_CFG_DATA 0x0CFC
