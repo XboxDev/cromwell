@@ -132,7 +132,7 @@ unsigned long read_dir(int driveId, struct iso_directory_record *dir_read, char 
 	free(buffer);
 	free(newfilename);
 
-	return 0;
+	return sect;
 }
 
 void read_file(int driveId, struct iso_directory_record *dir_read, char *buffer) {
