@@ -4,6 +4,8 @@
 
 #define NAME "Etherboot"
 
+#define LINUXBIOS
+
 #if defined(PCBIOS)
 #define FIRMWARE "PCBIOS"
 #endif
