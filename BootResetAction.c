@@ -389,7 +389,7 @@ extern void BootResetAction ( void ) {
 
 			// set Ethernet MAC address from EEPROM
 		{
-			BYTE * volatile pb=(BYTE *)0xfef000a8;  // Ethernet MMIO base + MAC register offset (<--thanks to Anders Gustaffson)
+			BYTE * volatile pb=(BYTE *)0xfef000a8;  // Ethernet MMIO base + MAC register offset (<--thanks to Anders Gustafsson)
 			int n;
 			for(n=5;n>=0;n--) { *pb++=	eeprom.MACAddress[n]; } // send it in backwards, its reversed by the driver
 		}
