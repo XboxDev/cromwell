@@ -129,6 +129,15 @@ DWORD nvMainRegs[] =
 		0x680684, 0x680688, 0x68068C, 0x680690,
 };
 
+void DetectVideoEncoder(void)
+{
+#if 1
+	if (I2CTransmitByteGetReturn(0x6a,0x000) == ERR_I2C_ERROR_BUS) VideoEncoder = VIDEO_CONEXANT;
+	else VideoEncoder = VIDEO_FOCUS;
+#else
+	VideoEncoder = VIDEO_FOCUS;	
+#endif
+}
 
 
 void BootVgaInitializationKernelNG(CURRENT_VIDEO_MODE_DETAILS * pcurrentvideomodedetails) {
@@ -139,6 +148,7 @@ void BootVgaInitializationKernelNG(CURRENT_VIDEO_MODE_DETAILS * pcurrentvideomod
 	RIVA_HW_INST riva;
 
 	videoStd = DetectVideoStd();
+	DetectVideoEncoder();
 	
         // Dump to global variable
 	VIDEO_AV_MODE=I2CTransmitByteGetReturn(0x10, 0x04);
@@ -291,7 +301,7 @@ void BootVgaInitializationKernelNG(CURRENT_VIDEO_MODE_DETAILS * pcurrentvideomod
 	NVSetFBStart (&riva, 0, pcurrentvideomodedetails->m_dwFrameBufferStart);
 
 	// FOCUS HACK FROM HERE
-	if (1)
+	if (VideoEncoder == VIDEO_FOCUS)
 	{
 		int i;
 		unlockCrtNv(&riva,0);
