@@ -37,14 +37,16 @@ void BootIso9660DescriptorToString(const char * szcDescriptor, int nLength, char
 int BootIso9660GoDownOneLevelOrHit(DWORD dwSector, DWORD dwBytesToScan, const char * szcName, ISO_SYSTEM_DIRECTORY_RECORD * pisdrForFile)
 {
 	BYTE *ba=malloc(dwBytesToScan);  // enough for 50 sectors
+	
 	ISO_SYSTEM_DIRECTORY_RECORD * pisdr=(ISO_SYSTEM_DIRECTORY_RECORD *)&ba[0];
 	int nPos=0;
 	DWORD dwTotalLength;
-//	printk("BootIso9660GoDownOneLevelOrHit(0x%x, 0x%x, %s ...)\n", dwSector, dwBytesToScan, szcName);
+
+	//printk("BootIso9660GoDownOneLevelOrHit(0x%x, 0x%x, %s ...)\n", dwSector, dwBytesToScan, szcName);
 
 	dwTotalLength=dwBytesToScan;
 
-		// pull in the whole dir struct at once, to avoid probs at sector boundaries
+	// pull in the whole dir struct at once, to avoid probs at sector boundaries
 
 	while(dwBytesToScan || (dwSector==ROOT_SECTOR)) {
 
@@ -55,39 +57,53 @@ int BootIso9660GoDownOneLevelOrHit(DWORD dwSector, DWORD dwBytesToScan, const ch
 		dwSector++;
 	}
 
-			// root sector has a single struct pointing to root dir
+	// root sector has a single struct pointing to root dir
 
 	if((dwSector-1)==ROOT_SECTOR) {
 		pisdr=(ISO_SYSTEM_DIRECTORY_RECORD *)&ba[ROOT_DIR_STRUCT_OFFSET];
 		*pisdrForFile = *pisdr;
+		//printk("We Return 2\n");
 		free(ba);
 		return 2;
 	}
 
-			// otherwise we are looking at a number of back-to-back structs
-			// each talking about a file
+	// otherwise we are looking at a number of back-to-back structs
+	// each talking about a file
 
 	nPos=0;
 
-	while((((BYTE *)pisdr)-&ba[0])<dwTotalLength) {  // while we haven't gone off the end the dir structs
+	while((((BYTE *)pisdr)-&ba[0])<dwTotalLength) 
+	{  
+		// while we haven't gone off the end the dir structs
 
 		char *szc = (char *)(&pisdr->m_cFirstFileIdPlaceholder);
 			// compute what's left after total struct size and 8.3 name
 		int nCharsLeft=pisdr->m_bLength - ((szc-((char *)pisdr))  );
 
-			// check mangled 8.3 version
-
-//		{ int n=0; for(n=0;n<pisdr->m_bFileIdentifierLength;n++) { printk("%c", szc[n]); } printk("\n"); }
-
+		// check mangled 8.3 version
+                
+                #if 0
+			// This prints out the Directory Listing
+		{ 
+			int n=0; 
+			for(n=0;n<pisdr->m_bFileIdentifierLength;n++) 
+			{ 
+				printk("%c", szc[n]); 
+			} printk("\n"); 
+		}
+                #endif
+                
 		 {
 
 			int n=0;
 			while((n<strlen(szcName)) && (szc[n]==szcName[n]) && (szc[n]!=';')) n++;
 
-			if((n==strlen(szcName)) && (szc[n]==';')) {
+			if((n==strlen(szcName)) && (szc[n]==';')) 
+			{
 
 				*pisdrForFile = *pisdr; // copy over results
-				if(pisdr->m_bFileFlags & 1) {
+				if ((pisdr->m_bFileFlags & 2)==2) 
+				{
 //						printk("returning dir hit\n");
 					free(ba);
 					return 2; // its a hit: its a directory
@@ -147,7 +163,8 @@ int BootIso9660GoDownOneLevelOrHit(DWORD dwSector, DWORD dwBytesToScan, const ch
 
 				if(fGood) {
 					*pisdrForFile = *pisdr; // copy over results
-					if(pisdr->m_bFileFlags & 1) {
+					if ((pisdr->m_bFileFlags & 2)==2) 
+					{
 //						printk("returning dir hit\n");
 						free(ba);
 						return 2; // its a hit: its a directory
