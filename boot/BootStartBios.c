@@ -263,7 +263,7 @@ int BootLodaConfigFATX(CONFIGENTRY *config) {
 
 	I2CTransmitWord(0x10, 0x0c01); // Close DVD tray
 	
-	printk("Loading linuxboot.cfg form FATX\n");
+	printk("Loading linuxboot.cfg from FATX\n");
 	partition = OpenFATXPartition(0,
 			SECTOR_STORE,
 			STORE_SIZE);
