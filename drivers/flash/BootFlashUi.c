@@ -54,8 +54,8 @@ void DisplayFlashProgressBar(int currentVal, int maxVal, unsigned long color) {
                 return;
         }
 
-        w=vmode.height;
-        h=vmode.width;
+        w=vmode.width;
+        h=vmode.height;
         l=w-100;
         y=h-100;
         m=((w-150)>>2)*currentVal/maxVal;
