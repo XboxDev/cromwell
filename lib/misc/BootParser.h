@@ -12,6 +12,7 @@ typedef struct _CONFIGENTRY {
         char szInitrd[MAX_LINE];
         char szAppend[MAX_LINE];
         int nRivaFB;
+	int nVesaFB;
 } CONFIGENTRY, *LPCONFIGENTRY;
 
 int ParseConfig(char *szBuffer, CONFIGENTRY *entry, EEPROMDATA *eeprom);
