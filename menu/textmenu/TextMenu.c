@@ -63,13 +63,13 @@ void TextMenuDraw(TEXTMENU* menu, TEXTMENUITEM *firstVisibleMenuItem, TEXTMENUIT
 	VIDEO_ATTR=0xffffff;
 }
 
-void TextMenu(TEXTMENU *menu) {
+void TextMenu(TEXTMENU *menu, TEXTMENUITEM *selectedItem) {
 	TEXTMENUITEM *itemPtr, *selectedMenuItem, *firstVisibleMenuItem;
-	
 	BootVideoClearScreen(&jpegBackdrop, 0, 0xffff);
-
-	//Select the first item in the list to start with, and draw the menu
-	selectedMenuItem = menu->firstMenuItem;
+	
+	if (selectedItem!=NULL) selectedMenuItem = selectedItem;
+	else selectedMenuItem = menu->firstMenuItem;
+	
 	firstVisibleMenuItem = menu->firstMenuItem;
 	TextMenuDraw(menu, firstVisibleMenuItem, selectedMenuItem);
 	

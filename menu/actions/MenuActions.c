@@ -22,10 +22,12 @@
 #include "TextMenu.h"
 void MoveToTextMenu(void *nothing) {
 	TEXTMENU *parentMenu = (TEXTMENU*)TextMenuInit();
-	TextMenu(parentMenu);
+	TextMenu(parentMenu, NULL);
 }
 
 void BootFromCD(void *data) {
+	//We have to go an extra step when the CD icon is selected, as unlike
+	//the other boot modes, we have not parsed the linuxboot.cfg file yet.
 	int nTempCursorY = VIDEO_CURSOR_POSY; 
 	CONFIGENTRY *config = (CONFIGENTRY*)LoadConfigCD(*(int*)data);
 	if (config==NULL) {
@@ -41,10 +43,11 @@ void BootFromCD(void *data) {
 void DrawBootMenu(void *rootEntry) {
 	//entry is the pointer to the root config entry
 	TEXTMENU *menu;
-	TEXTMENUITEM *menuPtr;
+	TEXTMENUITEM *menuPtr, *defaultMenuItem;
 	CONFIGENTRY *configEntry, *currentConfigEntry;
 	extern int timedOut;
-	
+
+	defaultMenuItem=NULL;
 	configEntry = (CONFIGENTRY*)rootEntry;
 
 	if (configEntry->nextConfigEntry==NULL) {
@@ -83,9 +86,11 @@ void DrawBootMenu(void *rootEntry) {
 		else menuPtr->szCaption=currentConfigEntry->title;
 		menuPtr->functionPtr = BootMenuEntry;
 		menuPtr->functionDataPtr = (void *)currentConfigEntry;
+		//If this config entry is default, mark the menu item as default.
+		if (currentConfigEntry->isDefault) defaultMenuItem = menuPtr;
 		TextMenuAddItem(menu,menuPtr);
 	}
-	TextMenu(menu);
+	TextMenu(menu, defaultMenuItem);
 }
 
 void BootMenuEntry(void *entry) {
