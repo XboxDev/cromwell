@@ -915,9 +915,9 @@ void StartBios(CONFIGENTRY *config, int nActivePartition , int nFATXPresent,int 
 	char szGrub[256+4];
 	int menu=0,selected=0;
 	int change=0;
-
-	memset(szGrub,0x00,sizeof(szGrub));
-
+        
+        memset(szGrub,0x00,sizeof(szGrub));
+        
 	szGrub[0]=0xff; 
 	szGrub[1]=0xff; 
 	szGrub[2]=nActivePartition; 

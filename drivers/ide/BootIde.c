@@ -1114,8 +1114,19 @@ int BootIdeReadSector(int nDriveIndex, void * pbBuffer, unsigned int block, int 
 //		printk("nReturn = %x\n", nReturn);
 
 		if(nReturn>2048) nReturn=2048;
-		BootIdeReadData(uIoBase, pbBuffer, nReturn);
-
+		status = BootIdeReadData(uIoBase, pbBuffer, nReturn);
+		if (status != 0) 
+		{
+			while(1) 
+			{
+				wait_ms(50);
+				status = BootIdeReadData(uIoBase, pbBuffer, nReturn);				
+				if (status == 0) 
+				{
+					break;
+				}
+			}
+		}
 		return 0;
 	}
 
@@ -1174,6 +1185,7 @@ int BootIdeReadSector(int nDriveIndex, void * pbBuffer, unsigned int block, int 
 		printk("ide error %02X...\n", IoInputByte(IDE_REG_ERROR(uIoBase)));
 		return 1;
 	}
+	
 	if (n_bytes != IDE_SECTOR_SIZE)
 	{
 		status = BootIdeReadData(uIoBase, baBufferSector, IDE_SECTOR_SIZE);
@@ -1183,7 +1195,7 @@ int BootIdeReadSector(int nDriveIndex, void * pbBuffer, unsigned int block, int 
 		} else {
 			// UPS, it failed, but we are brutal, we try again ....
 			while(1) {
-				wait_ms(10);
+				wait_ms(50);
 				status = BootIdeReadData(uIoBase, baBufferSector, IDE_SECTOR_SIZE);
 				if (status == 0) {
 					memcpy(pbBuffer, baBufferSector+byte_offset, n_bytes);
@@ -1199,7 +1211,7 @@ int BootIdeReadSector(int nDriveIndex, void * pbBuffer, unsigned int block, int 
 		if (status!=0) {
 			// UPS, it failed, but we are brutal, we try again ....
 			while(1) {
-				wait_ms(10);
+				wait_ms(50);
 				status = BootIdeReadData(uIoBase, pbBuffer, IDE_SECTOR_SIZE);		
 				if (status == 0) {
 					break;
