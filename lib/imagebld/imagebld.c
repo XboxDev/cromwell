@@ -61,86 +61,87 @@ int xberepair (	unsigned char * xbeimage,
        	printf("XBE Modus\n");
 	
 	f = fopen(cromimage, "rb");
-	if (f!=NULL) 
-    	{    
- 		fseek(f, 0, SEEK_END); 
-         	romsize	 = ftell(f);        
-         	fseek(f, 0, SEEK_SET);
-    		fread(crom, 1, romsize, f);
-    		fclose(f);
-    	}
+	if (f==NULL) {
+		fprintf(stderr,"Unable to open cromwell image file %s : %s \nAborting\n",cromimage,strerror(errno)); 
+		return 1;
+	}
+	
+ 	fseek(f, 0, SEEK_END); 
+        romsize	 = ftell(f);        
+        fseek(f, 0, SEEK_SET);
+    	fread(crom, 1, romsize, f);
+    	fclose(f);
     	
     	if (romsize>0x100000) {
     		printf("Romsize too big, increase the satic Variables everywhere");
     		return 1;
     	}
-    	
+    
+//	f=NULL;
 	f = fopen(xbeimage, "rb");
-    	if (f!=NULL) 
-    	{   
-  		fseek(f, 0, SEEK_END); 
-         	xbesize	 = ftell(f); 
-         	fseek(f, 0, SEEK_SET);
-
-    		memset(xbe,0x00,sizeof(xbe));
-    		fread(xbe, 1, xbesize, f);
-    		fclose(f);
-	        
-	        // We copy the ROM image now into the Thing
-	        memcpy(&xbe[0x3000],crom,romsize);
-	        memcpy(&xbe[0x1084],&romsize,4);	// We dump the ROM Size into the Image
-	        
-	        romsize = (romsize & 0xfffffff0) + 32;	// We fill it up with "spaces"
-	        
-	        
-	        header = (XBE_HEADER*) xbe;
-		// This selects the First Section, we only have one
-		sechdr = (XBE_SECTION *)(((char *)xbe) + (int)header->Sections - (int)header->BaseAddress);
-	        
-	        // Correcting overall size now
-		xbesize = 0x3000+romsize;
-	        header->ImageSize = xbesize; 
-		
-		//printf("%08x",sechdr->FileSize);                    
-		
-
-		sechdr->FileSize = 0x2000+romsize;
-		sechdr->VirtualSize = 0x2000+romsize;
-	        
-	 //       printf("Sections: %d\n",header->NumSections);
-
-        	shax(&sha_Message_Digest[0], ((unsigned char *)xbe)+(int)sechdr->FileAddress ,sechdr->FileSize);
-	  	memcpy(&sechdr->ShaHash[0],&sha_Message_Digest[0],20);
-	  	
-	  	#ifdef debug
-	 	printf("Size of all headers:     : 0x%08X\n", (unsigned int)header->HeaderSize);
-         
-         	printf("Size of entire image     : 0x%08X\n", (unsigned int)header->ImageSize);
-		printf("Virtual address          : 0x%08X\n", (unsigned int)sechdr->VirtualAddress);
-         	printf("Virtual size             : 0x%08X\n", (unsigned int)sechdr->VirtualSize);
-         	printf("File address             : 0x%08X\n", (unsigned int)sechdr->FileAddress);
-         	printf("File size                : 0x%08X\n", (unsigned int)sechdr->FileSize);
-
-		printf("Section 0 Hash XBE       : ");
-		for(a=0; a<SHA1HashSize; a++) {
-			printf("%02x",sha_Message_Digest[a]);
-		}
-	      	printf("\n");
-	      	#endif
-	      	
-		// Write back the Image to Disk
-		f = fopen(xbeimage, "wb");
-    		if (f!=NULL) 
-    		{   
-		 fwrite(xbe, 1, xbesize, f);
-        	 fclose(f);			
-		}	  	
-	        
-	        printf("XRomwell File Created    : %s\n",xbeimage);
-	        
-
+    	if (f==NULL) {
+		fprintf(stderr,"Unable to open xbe destination file %s : %s \nAborting\n",xbeimage,strerror(errno)); 
+		return 1;
 	}
+  		
+	fseek(f, 0, SEEK_END); 
+        xbesize	 = ftell(f); 
+        fseek(f, 0, SEEK_SET);
 
+    	memset(xbe,0x00,sizeof(xbe));
+    	fread(xbe, 1, xbesize, f);
+    	fclose(f);
+        
+        // We copy the ROM image now into the Thing
+        memcpy(&xbe[0x3000],crom,romsize);
+        memcpy(&xbe[0x1084],&romsize,4);	// We dump the ROM Size into the Image
+        
+        romsize = (romsize & 0xfffffff0) + 32;	// We fill it up with "spaces"
+        
+        
+        header = (XBE_HEADER*) xbe;
+	// This selects the First Section, we only have one
+	sechdr = (XBE_SECTION *)(((char *)xbe) + (int)header->Sections - (int)header->BaseAddress);
+	        
+        // Correcting overall size now
+	xbesize = 0x3000+romsize;
+        header->ImageSize = xbesize; 
+	
+	//printf("%08x",sechdr->FileSize);                    
+	
+
+	sechdr->FileSize = 0x2000+romsize;
+	sechdr->VirtualSize = 0x2000+romsize;
+        
+ //       printf("Sections: %d\n",header->NumSections);
+
+       	shax(&sha_Message_Digest[0], ((unsigned char *)xbe)+(int)sechdr->FileAddress ,sechdr->FileSize);
+  	memcpy(&sechdr->ShaHash[0],&sha_Message_Digest[0],20);
+  	
+  	#ifdef debug
+ 	printf("Size of all headers:     : 0x%08X\n", (unsigned int)header->HeaderSize);
+        
+       	printf("Size of entire image     : 0x%08X\n", (unsigned int)header->ImageSize);
+	printf("Virtual address          : 0x%08X\n", (unsigned int)sechdr->VirtualAddress);
+       	printf("Virtual size             : 0x%08X\n", (unsigned int)sechdr->VirtualSize);
+       	printf("File address             : 0x%08X\n", (unsigned int)sechdr->FileAddress);
+       	printf("File size                : 0x%08X\n", (unsigned int)sechdr->FileSize);
+
+	printf("Section 0 Hash XBE       : ");
+	for(a=0; a<SHA1HashSize; a++) {
+		printf("%02x",sha_Message_Digest[a]);
+	}
+      	printf("\n");
+      	#endif
+      	
+	// Write back the Image to Disk
+	f = fopen(xbeimage, "wb");
+    	if (f!=NULL) {   
+	 	fwrite(xbe, 1, xbesize, f);
+       	 	fclose(f);			
+	}	  	
+        
+        printf("XRomwell File Created    : %s\n",xbeimage);
         
 	return 0;	
 }
