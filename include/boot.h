@@ -99,7 +99,7 @@ extern void WATCHDOG(void);
 extern volatile CURRENT_VIDEO_MODE_DETAILS currentvideomodedetails;
 
 
-#define FRAMEBUFFER_START  	0x03c00000 
+#define FRAMEBUFFER_START  	0xf3c00000 
 
 volatile DWORD VIDEO_CURSOR_POSX;
 volatile DWORD VIDEO_CURSOR_POSY;

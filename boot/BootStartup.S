@@ -164,41 +164,49 @@ reload_cs:
 
 
 	// MTRR for RAM
-	// from address 0, Writeback Caching, 64MB range
-        movl	$0x200, %ecx 		
-	movl	$0x00000000, %edx 	 
+	// from address 0, Writeback Caching, 128MB range
+        movl	$0x200, %ecx
+	movl	$0x00000000, %edx
 	movl	$0x00000006, %eax 	// == WB_CACHE == 6
 	wrmsr
 
-	// MASK0 set to 0xffc400[000] == 64M    
-        movl	$0x201, %ecx  		 
-	movl	$0x0000000f, %edx 	
-	movl	$0xfc000800, %eax  	
+	// MASK0 set to 0xf8000[000] == 128M
+        movl	$0x201, %ecx
+	movl	$0x0000000f, %edx
+	movl	$0xf8000800, %eax
 	wrmsr
 
-	// MTRR for FLASH   
-	movl	$0x202, %ecx		
-	movl	$0x00000000, %edx 	
-	movl	$0xFff00000, %eax 	    // We set to Write Protected
+	// MTRR for shadow RAM
+	// from address 0xf0000000, Write-combining Caching, 128MB range
+        movl	$0x202, %ecx
+	movl	$0x00000000, %edx
+	movl	$0xf0000001, %eax 	// Write-Combining == 1
 	wrmsr
 
-        movl	$0x203, %ecx             
-	movl	$0x0000000f, %edx 
-	movl	$0xfff00800, %eax  
-	wrmsr	        
+	// MASK0 set to 0xf8000[000] == 128M
+        movl	$0x203, %ecx
+	movl	$0x0000000f, %edx
+	movl	$0xf8000800, %eax
+	wrmsr
+
+     // MTRR for FLASH
+	movl	$0x204, %ecx
+	movl	$0x00000000, %edx
+	movl	$0xFff00000, %eax 	    // We set to Uncacheable
+	wrmsr
+
+        movl	$0x205, %ecx
+	movl	$0x0000000f, %edx
+	movl	$0xfff00800, %eax
+	wrmsr
 
         xor	%eax, %eax
 	xor	%edx, %edx
-	
-	movl	$0x204, %ecx		// IA32_MTRR_PHYS Base 2
-        wrmsr                                                   
-	movl	$0x205, %ecx		// IA32_MTRR_PHYS_MASK 2
-        wrmsr                                                   
-                                                
+
 	movl	$0x206, %ecx		// IA32_MTRR_PHYS Base 3
-        wrmsr                                                   
+        wrmsr
 	movl	$0x207, %ecx		// IA32_MTRR_PHYS_MASK 3
-        wrmsr                                                   
+        wrmsr
 
 	movl	$0x208, %ecx		// IA32_MTRR_PHYS Base 4
         wrmsr                                                   
