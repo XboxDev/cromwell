@@ -508,11 +508,14 @@ extern void BootResetAction ( void ) {
 
 					printk("\n");
 
-					if(!fSeenActive) {
-						printk("No active partition.  Cannot boot, halting\n");
-						while(1) ;
-					}
-
+// If there is no active partition, it's posible
+// that the HDD has and empty MBR and we want 
+// to boot from cdrom
+//
+//					if(!fSeenActive) {
+//						printk("No active partition.  Cannot boot, halting\n");
+//						while(1) ;
+//					}
 					VIDEO_ATTR=0xffffffff;
 				} else { // no mbr signature
 					;
@@ -538,7 +541,7 @@ extern void BootResetAction ( void ) {
 #ifdef FORCE_CD_BOOT
 	StartBios(1, 0);
 #else
-		if(fMbrPresent) { // if there's an MBR, try to boot from HDD
+		if(fMbrPresent && fSeenActive) { // if there's an MBR and active partition , try to boot from HDD
 			StartBios(0, nActivePartitionIndex);
 		} else { // otherwise prompt for CDROM
 			StartBios(1, 0);
