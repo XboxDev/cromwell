@@ -333,7 +333,7 @@ int BootLodaConfigCD(CONFIGENTRY *config) {
 		}
 
 		if(!fOkay) {
-			void BootFiltrorDebugShell();
+			void BootFiltrorDebugShell(void);
 			printk("cdrom unhappy\n");
 #if INCLUDE_FILTROR
 			BootFiltrorDebugShell();
@@ -499,7 +499,7 @@ void BootStartBiosDoIcon(ICON *icon, BYTE bOpaqueness)
 		);
 }
 
-void RecoverMbrArea()
+void RecoverMbrArea(void)
 {
 		BootVideoClearScreen(&jpegBackdrop, nTempCursorMbrY, VIDEO_CURSOR_POSY);  // blank out volatile data area
 		VIDEO_CURSOR_POSX=nTempCursorMbrX;

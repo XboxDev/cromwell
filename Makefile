@@ -6,7 +6,7 @@ INCLUDE = -I$(TOPDIR)/grub -I$(TOPDIR)/include -I$(TOPDIR)/ -I./ -I$(TOPDIR)/fs/
 	-I$(TOPDIR)/startuploader -I$(TOPDIR)/drivers/cpu
 
 
-CFLAGS	= -O2 -mcpu=pentium -Wall -Werror $(INCLUDE)
+CFLAGS	= -O2 -mcpu=pentium -Wall -Werror $(INCLUDE) -Wstrict-prototypes -fomit-frame-pointer -pipe -mpreferred-stack-boundary=2
 LD      = ld
 OBJCOPY = objcopy
 

@@ -129,7 +129,7 @@ tsHarddiskInfo tsaHarddiskInfo[2];  // static struct stores data about attached 
 //
 
 
-int Delay() { int i=0, u=0; while(u<1000) { i+=u++; } return i; }
+int Delay(void) { int i=0, u=0; while(u<1000) { i+=u++; } return i; }
 
 
 int BootIdeWaitNotBusy(unsigned uIoBase)

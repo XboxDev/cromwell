@@ -23,7 +23,7 @@
 			  : "=a" (low), "=d" (high) \
 			  : "c" (counter))
 
-extern void intel_interrupts_on();
+extern void intel_interrupts_on(void);
 extern void cache_disable(void);
 extern void cache_enable(void);
 extern void cpuid(int op, int *eax, int *ebx, int *ecx, int *edx);

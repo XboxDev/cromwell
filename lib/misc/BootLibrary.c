@@ -234,7 +234,7 @@ int _strncmp(const char *sz1, const char *sz2, int nMax) {
 }
 
 
-unsigned long GetMillisecondCount()
+unsigned long GetMillisecondCount(void)
 {
 	DWORD dw1, dw2, * pdw;
 	unsigned long ul[2];

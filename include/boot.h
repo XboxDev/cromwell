@@ -550,7 +550,6 @@ void MemoryManagementInitialization(void * pvStartAddress, DWORD dwTotalMemoryAl
 void * malloc(size_t size);
 void free(void *);
 
-unsigned long long GetTickCount();
 void Sleep(int nMicroseconds);
 
 extern volatile int nCountI2cinterrupts, nCountUnusedInterrupts, nCountUnusedInterruptsPic2, nCountInterruptsSmc, nCountInterruptsIde;
@@ -565,7 +564,7 @@ typedef enum {
 extern volatile TRAY_STATE traystate;
 
 
-void BootInterruptsWriteIdt();
+extern void BootInterruptsWriteIdt(void);
 
 int copy_swap_trim(unsigned char *dst, unsigned char *src, int len);
 void HMAC_SHA1( unsigned char *result,
