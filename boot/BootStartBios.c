@@ -366,7 +366,7 @@ int BootLoadConfigCD(CONFIGENTRY *config) {
 	while(1) {
 		wait_ms(200);
 			
-		if(BootIso9660GetFile(cdromId,"/linuxboo.cfg", (BYTE *)KERNEL_SETUP, 0x800)) {
+		if((BootIso9660GetFile(cdromId,"/linuxboo.cfg", (BYTE *)KERNEL_SETUP, 0x800)) >=0 ) {
 			break;
 		}
 
@@ -377,7 +377,7 @@ int BootLoadConfigCD(CONFIGENTRY *config) {
 	
 	dwConfigSize=BootIso9660GetFile(cdromId,"/linuxboo.cfg", (BYTE *)KERNEL_SETUP, 0x800);
 
-	if( !dwConfigSize ) { // has to be there on CDROM
+	if( dwConfigSize < 0 ) { // has to be there on CDROM
 		printk("linuxboot.cfg not found on CDROM... Halting\n");
 		while(1) ;
 	}
@@ -392,7 +392,7 @@ int BootLoadConfigCD(CONFIGENTRY *config) {
 	tempBuf = (BYTE*)INITRD_START;
 	dwKernelSize=BootIso9660GetFile(cdromId,config->szKernel, tempBuf, MAX_KERNEL_SIZE);
 
-	if( !dwKernelSize ) {
+	if( dwKernelSize < 0 ) {
 		printk("Not Found, error %d\nHalting\n", dwKernelSize); 
 		while(1);
 	} else {
@@ -406,7 +406,7 @@ int BootLoadConfigCD(CONFIGENTRY *config) {
 		VIDEO_ATTR=0xffa8a8a8;
 		
 		dwInitrdSize=BootIso9660GetFile(cdromId,config->szInitrd, (void*)INITRD_START, MAX_INITRD_SIZE);
-		if( !dwInitrdSize ) {
+		if( dwInitrdSize < 0 ) {
 			printk("Not Found, error %d\nHalting\n", dwInitrdSize); 
 			while(1);
 		}

@@ -182,7 +182,7 @@ int BootIso9660GetFile(int driveId, char *szcPath, BYTE *pbaFile, DWORD dwFileLe
 	if(BootIdeReadSector(driveId, pvd, 16 , 0, ISO_BLOCKSIZE)) {
 		free(pvd);
 		free(dir);
-		return 0;
+		return -1;
 	}
 
 	rootd = (struct iso_directory_record *)&pvd->root_directory_record;
@@ -192,14 +192,14 @@ int BootIso9660GetFile(int driveId, char *szcPath, BYTE *pbaFile, DWORD dwFileLe
 		if(*((unsigned long *)(dir->size)) > dwFileLengthMax) {
 			free(pvd);
 			free(dir);
-			return 0;
+			return -1;
 		}
 		read_file(driveId, dir, pbaFile);
 		return *((unsigned long *)(dir->size));
 	} else {
 		free(pvd);
 		free(dir);
-		return 0;
+		return -1;
 	}
 }
 
