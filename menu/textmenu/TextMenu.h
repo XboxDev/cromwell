@@ -23,9 +23,12 @@
 struct TEXTMENUITEM;
 struct TEXTMENU;
 
+#define MENUCAPTIONSIZE 50
+extern int breakOutOfMenu;
+
 typedef struct TEXTMENUITEM {
 	//Menu item text
-	char szCaption[51];
+	char szCaption[MENUCAPTIONSIZE+1];
 	//Pointer to function to run when menu item selected.
 	//If NULL, menuitem will not do anything when selected
 	void (*functionPtr) (void *);
@@ -38,13 +41,10 @@ typedef struct TEXTMENUITEM {
 
 typedef struct TEXTMENU {
 	//Menu title e.g. "Main Menu"
-	char szCaption[51];
+	char szCaption[MENUCAPTIONSIZE+1];
 	//A pointer to the first item of the linked list of menuitems that
 	//make up this menu.
 	TEXTMENUITEM* firstMenuItem;
-	//If NULL, we're a top level menu, otherwise a "BACK" menu item will be created,
-	//which takes us back to the parent menu..
-	struct TEXTMENU* parentMenu;
 } TEXTMENU;
 
 #endif

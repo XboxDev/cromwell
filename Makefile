@@ -88,6 +88,7 @@ OBJECTS-CROM += $(TOPDIR)/obj/VideoMenuActions.o
 OBJECTS-CROM += $(TOPDIR)/obj/ResetMenuActions.o
 OBJECTS-CROM += $(TOPDIR)/obj/FlashMenuActions.o
 OBJECTS-CROM += $(TOPDIR)/obj/HddMenuActions.o
+OBJECTS-CROM += $(TOPDIR)/obj/Confirm.o
 OBJECTS-CROM += $(TOPDIR)/obj/LoadLinux.o
 OBJECTS-CROM += $(TOPDIR)/obj/setup.o
 OBJECTS-CROM += $(TOPDIR)/obj/iso9660.o

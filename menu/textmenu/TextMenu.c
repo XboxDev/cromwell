@@ -8,6 +8,7 @@
  ***************************************************************************/
 
 #include "TextMenu.h"
+int breakOutOfMenu=0;
 
 void TextMenuDraw(TEXTMENU *menu, TEXTMENUITEM *firstVisibleMenuItem, TEXTMENUITEM *selectedItem);
 
@@ -112,8 +113,15 @@ void TextMenu(TEXTMENU *menu, TEXTMENUITEM *selectedItem) {
 			VIDEO_ATTR=0xffffff;
 			//Menu item selected - invoke function pointer.
 			if (selectedMenuItem->functionPtr!=NULL) selectedMenuItem->functionPtr(selectedMenuItem->functionDataPtr);
-			//When we return from the function pointer, redraw ourselves.
+			//Clear the screen again	
 			BootVideoClearScreen(&jpegBackdrop, 0, 0xffff);
+			VIDEO_ATTR=0xffffff;
+			//Did the function that was run set the 'Quit the menu' flag?
+			if (breakOutOfMenu) {
+				breakOutOfMenu=0;
+				return;
+			}
+			//We need to redraw ourselves
 			TextMenuDraw(menu, firstVisibleMenuItem, selectedMenuItem);
 		}
 		else if (risefall_xpad_BUTTON(TRIGGER_XPAD_KEY_B) == 1 || risefall_xpad_BUTTON(TRIGGER_XPAD_KEY_BACK) == 1) {

@@ -13,6 +13,9 @@ void LockHdd(void *driveId) {
 	u8 password[20];
 	unsigned uIoBase = tsaHarddiskInfo[nIndexDrive].m_fwPortBase;
 	int i;
+
+	if (!Confirm("Confirm locking of drive", "Yes", "No", 0)) return;	
+	
 	if (CalculateDrivePassword(nIndexDrive,password)) {
 		printk("Unable to calculate drive password - eeprom corrupt?");
 		return;
@@ -44,6 +47,9 @@ void UnlockHdd(void *driveId) {
 	int nIndexDrive = *(int *)driveId;
 	u8 password[20];
 	unsigned uIoBase = tsaHarddiskInfo[nIndexDrive].m_fwPortBase;
+	
+	if (!Confirm("Confirm unlocking of drive", "Yes", "No", 0)) return;	
+	
 	if (CalculateDrivePassword(nIndexDrive,password)) {
 		printk("Unable to calculate drive password - eeprom corrupt?  Aborting\n");
 		return;
