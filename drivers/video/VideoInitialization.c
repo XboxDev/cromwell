@@ -135,12 +135,6 @@ static inline double max (double a, double b)
 	if (a > b) return a; else return b;
 }
 
-int I2CWriteBytetoRegister(BYTE bPicAddressI2cFormat, BYTE bRegister, BYTE wDataToWrite)
-{
-	return I2CTransmitWord(bPicAddressI2cFormat, (bRegister<<8) | wDataToWrite );
-	wait_us(200);
-}
-
 
 
 static void SetVGAConexantRegister(BYTE pll_int, BYTE* pbRegs)

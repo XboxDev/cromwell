@@ -10,6 +10,86 @@
 #include "boot.h"
 
 
+/* ------------------- WORD operations ---------------------------*/
+
+
+int I2CTransmitWordGetReturn(BYTE bPicAddressI2cFormat, BYTE bDataToWrite)
+{
+	int nRetriesToLive=400;
+	
+	if(IoInputWord(I2C_IO_BASE+0)&0x8000) { 
+		//bprintf("Smb status=%x\n",IoInputWord(I2C_IO_BASE+0)); 
+		}
+	while(IoInputWord(I2C_IO_BASE+0)&0x0800) ;  // Franz's spin while bus busy with any master traffic
+
+	while(nRetriesToLive--) {
+
+		IoOutputByte(I2C_IO_BASE+4, (bPicAddressI2cFormat<<1)|1);
+		IoOutputByte(I2C_IO_BASE+8, bDataToWrite);
+		IoOutputWord(I2C_IO_BASE+0, 0xffff); // clear down all preexisting errors
+		IoOutputByte(I2C_IO_BASE+2, 0x0b);	// WORD modus
+
+		{
+			BYTE b=0x0;
+			while( (b&0x36)==0 ) { b=IoInputByte(I2C_IO_BASE+0); }
+
+			if(b&0x24) {
+				//printf("I2CTransmitByteGetReturn error %x\n", b);
+			}
+			if(!(b&0x10)) {
+				//printf("I2CTransmitByteGetReturn no complete, retry\n");
+			} else {
+				return (int)IoInputWord(I2C_IO_BASE+6);
+			}
+		}
+	}
+       
+	return ERR_I2C_ERROR_BUS;
+}
+
+
+
+
+int I2CWriteWordtoRegister(BYTE bPicAddressI2cFormat,BYTE bRegister ,WORD wDataToWrite)
+{
+	
+	int nRetriesToLive=400;
+       
+	if(IoInputWord(I2C_IO_BASE+0)&0x8000) { 
+		//bprintf("Smb status=%x\n",IoInputWord(I2C_IO_BASE+0)); 
+		}
+	while(IoInputWord(I2C_IO_BASE+0)&0x0800) ;  // Franz's spin while bus busy with any master traffic
+
+	while(nRetriesToLive--) {
+
+		IoOutputByte(I2C_IO_BASE+4, (bPicAddressI2cFormat<<1)|0);
+
+		IoOutputByte(I2C_IO_BASE+8, bRegister);
+		IoOutputWord(I2C_IO_BASE+6, (WORD)wDataToWrite);
+		IoOutputWord(I2C_IO_BASE+0, 0xffff);  // clear down all preexisting errors
+		IoOutputByte(I2C_IO_BASE+2, 0x1b);	// WORD modus
+
+		{
+			BYTE b=0x0;
+			while( (b&0x36)==0 ) { b=IoInputByte(I2C_IO_BASE+0); }
+
+			if(b&0x24) {
+		//		bprintf("I2CTransmitWord error %x\n", b);
+			}
+			if(!(b&0x10)) {
+		//		bprintf("I2CTransmitWord no complete, retry\n");
+			} else {
+				return ERR_SUCCESS;
+			}
+		}
+	}
+        
+	return ERR_I2C_ERROR_BUS;
+}
+
+
+/* --------------------- Normal 8 bit operations -------------------------- */
+
 // ----------------------------  I2C -----------------------------------------------------------
 //
 // get a value from a given device address
@@ -86,6 +166,13 @@ int I2CTransmitWord(BYTE bPicAddressI2cFormat, WORD wDataToWrite)
         
 	return ERR_I2C_ERROR_BUS;
 }
+
+int I2CWriteBytetoRegister(BYTE bPicAddressI2cFormat, BYTE bRegister, BYTE wDataToWrite)
+{
+	return I2CTransmitWord(bPicAddressI2cFormat, (bRegister<<8) | wDataToWrite );
+}
+
+
 
 void I2CModifyBits(BYTE bAds, BYTE bReg, BYTE bData, BYTE bMask)
 {

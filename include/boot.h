@@ -32,6 +32,8 @@ unsigned int cromwell_haverombios;
 
 unsigned int xbox_ram;
 
+#define VIDEO_CONEXANT	0
+#define VIDEO_FOCUS	1
 
 #define XROMWELL	0
 #define CROMWELL	1
@@ -102,6 +104,7 @@ extern void WATCHDOG(void);
 #include "BootVideo.h"
 
 extern volatile CURRENT_VIDEO_MODE_DETAILS currentvideomodedetails;
+unsigned int VideoEncoder;
 
 volatile DWORD VIDEO_CURSOR_POSX;
 volatile DWORD VIDEO_CURSOR_POSY;
