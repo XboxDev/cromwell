@@ -491,27 +491,26 @@ static int BootIdeDriveInit(unsigned uIoBase, int nIndexDrive)
 
 		dwMagicFromEEPROM=0;
 
-		while( (!fUnlocked)) {
-                        nVersionHashing = 0; 
+		{
+                        nVersionHashing = 0;
 			memcpy(&baEeprom[0], &eeprom, 0x30); // first 0x30 bytes from EEPROM image we picked up earlier
 			nVersionHashing = BootHddKeyGenerateEepromKeyData( &baEeprom[0], &baKeyFromEEPROM[0]);
-      			genHDPass( baKeyFromEEPROM, tsaHarddiskInfo[nIndexDrive].m_szSerial, tsaHarddiskInfo[nIndexDrive].m_szIdentityModelNumber, &baMagic[2]);
+			for(n=0;n<0x200;n++) baMagic[n]=0;
+      genHDPass( baKeyFromEEPROM, tsaHarddiskInfo[nIndexDrive].m_szSerial, tsaHarddiskInfo[nIndexDrive].m_szIdentityModelNumber, &baMagic[2]);
                         if (nVersionHashing == 0)
                         {
-                         // ERRORR -- Corrupt EEprom or Newer Version of EEprom - key
-                        }                                                            
-                        
+                         	printk("Got a 0 return from BootHddKeyGenerateEepromKeyData\n");
+												 // ERRORR -- Corrupt EEprom or Newer Version of EEprom - key
+                        }
+
 			nVersionSuccessfulDecrypt=nVersionHashing;
 
 				// clear down the unlock packet, except for b8 set in first word (high security unlock)
 
-			for(n=0;n<0x200;n++) baMagic[n]=0;
 			{
 				WORD * pword=(WORD *)&baMagic[0];
 				*pword=0;  // try user
 			}
-
-
 
 			if(BootIdeWaitNotBusy(uIoBase)) {
 					printk("  %d:  Not Ready\n", nIndexDrive);
@@ -560,14 +559,14 @@ static int BootIdeDriveInit(unsigned uIoBase, int nIndexDrive)
 
 	//		printk("post-unlock sec status: 0x%x\n", drive_info[128]);
 			if(drive_info[128]&0x0004) {
-//				printk("  %d:  FAILED to unlock drive, security: %04x\n", nIndexDrive, drive_info[128]);
+				printk("  %d:  FAILED to unlock drive, security: %04x\n", nIndexDrive, drive_info[128]);
 			} else {
-//					printk("  %d:  Drive unlocked, new sec=%04X\n", nIndexDrive, drive_info[128]);
+	//				printk("  %d:  Drive unlocked, new sec=%04X\n", nIndexDrive, drive_info[128]);
 					fUnlocked=true;
-	//				printf("    Unlocked");
+	//				printk("    Unlocked");
 			}
 
-			nVersionHashing++;
+//			nVersionHashing++;
 
 		}
 
@@ -581,7 +580,7 @@ static int BootIdeDriveInit(unsigned uIoBase, int nIndexDrive)
 		}
 
 	} else {
-		if(nIndexDrive==0) printf("  Unlocked");
+		if(nIndexDrive==0) printk("  Unlocked");
 	}
 
 	if (drive_info[49] & 0x200) { /* bit 9 of capability word is lba supported bit */

@@ -33,14 +33,14 @@ void HMAC_SHA1_calculation(int, unsigned char *HMAC_result, ... );
 
 extern size_t strlen(const char * s);
 
-/*
-void quick_SHA1( int nVersion, unsigned char *SHA1_result, ... )
+
+void quick_SHA1(  unsigned char *SHA1_result, ... )
 {
 	va_list args;
 	struct SHA1Context context;
 
 	va_start(args,SHA1_result);
-	SHA1Reset(nVersion, &context);
+	SHA1Reset(&context);
 
 	while(1) {
 		unsigned char *buffer = va_arg(args,unsigned char *);
@@ -57,47 +57,48 @@ void quick_SHA1( int nVersion, unsigned char *SHA1_result, ... )
 
 	va_end(args);
 }
-  */
+
 void HMAC_SHA1( unsigned char *result,
-		unsigned char *key, int key_length, 
+		unsigned char *key, int key_length,
 		unsigned char *text1, int text1_length,
 		unsigned char *text2, int text2_length )
 {
 	unsigned char state1[0x40];
 	unsigned char state2[0x40+0x14];
 	int i;
-	struct SHA1Context context;			
-		
+	struct SHA1Context context;
+
 	for(i=0x40-1; i>=key_length;--i) state1[i] = 0x36;
 	for(;i>=0;--i) state1[i] = key[i] ^ 0x36;
-	
+
 	SHA1Reset(&context);
 	SHA1Input(&context,state1,0x40);
 	SHA1Input(&context,text1,text1_length);
 	SHA1Input(&context,text2,text2_length);
 	SHA1Result(&context,&state2[0x40]);
-	
-/*	
+
+/*
 	quick_SHA1 ( &state2[0x40],
 			state1,		0x40,
 			text1,		text1_length,
 			text2,		text2_length,
 			NULL );
-*/	
-	 
+
+*/
 	for(i=0x40-1; i>=key_length;--i) state2[i] = 0x5C;
 	for(;i>=0;--i) state2[i] = key[i] ^ 0x5C;
-	
-	/*
+
+/*
 	quick_SHA1 ( result,
 			state2,		0x40+0x14,
 			NULL );
-	*/
-	SHA1Reset(&context);
+			
+*/
+		SHA1Reset(&context);
 	SHA1Input(&context,state2,0x40+0x14);
 	SHA1Result(&context,result);
-	
-}   
+
+}
 
 
 void HMAC_SHA1_calculation(int version,unsigned char *HMAC_result, ... )
