@@ -145,6 +145,7 @@ typedef enum enumVideoStandards {
 typedef enum enumAvTypes {
 	AV_ILLEGAL=-1,
 	AV_SCART_RGB,
+	AV_SVIDEO,
 	AV_HDTV,
 	AV_COMPOSITE
 } EAVTYPE;
@@ -156,6 +157,7 @@ typedef struct {
   ULONG v_activei;
   ULONG v_linesi;
   ULONG h_clki;
+  ULONG bpp;
   double clk_ratio;
   EVIDEOSTD nVideoStd;
 } MODE_PARAMETER;
@@ -215,6 +217,7 @@ typedef struct {
 	DWORD m_dwVideoFadeupTimer;
 	double hoc;
 	double voc;
+	BYTE m_bBPP;
 } CURRENT_VIDEO_MODE_DETAILS;
 
 static const double dPllBaseClockFrequency = 13500000.0;
@@ -222,21 +225,22 @@ static const double dPllBasePeriod = (1.0/13500000.0);
 
 ///////// BootVgaInitialization.c
 
-void BootVgaInitializationKernelNG(CURRENT_VIDEO_MODE_DETAILS * pcurrentvidemodedetails);
+void BootVgaInitializationKernelNG(CURRENT_VIDEO_MODE_DETAILS * pcurrentvideomodedetails);
 
 bool FindOverscanValues(
 	long h_active,
 	long v_activei,
 	double hoc,
 	double voc,
+	long bpp,
 	EVIDEOSTD nVideoStd,
 	MODE_PARAMETER* result
 );
 
-void CalcBlankings(const MODE_PARAMETER* m, 
-	long* h_blanki, long* h_blanko, 
-	long* v_blanki, 
-	long* v_blanko, 
+void CalcBlankings(const MODE_PARAMETER* m,
+	long* h_blanki, long* h_blanko,
+	long* v_blanki,
+	long* v_blanko,
 	long* vscale
 );
 

@@ -48,87 +48,6 @@ const VID_STANDARD vidstda[] = {
 
 #define NVCRTC 0x6013D4
 
-const BYTE baVideoModeCrtc[TV_ENCODING_COUNT][VIDEO_MODE_COUNT][0x3F] = {
-{ // PAL CRTC
-
-	{ // 640x480
-		0x6F, 0x4F, 0x4F, 0x93, 0x55, 0xB9, 0x0B, 0x3E, 0x00, 0x40, 0x00, 0x00, 0x40, 0x00, 0x00, 0x00,
-		0xE8, /**/  0xDF, 0x40, 0x00, 0xDF, 0x0C, 0xE3, 0xFF, 0x3B, 0x3A, 0x85, 0x00, 0x00, 0x00, /**/
-		0x80, 0xFF, 0xFF, 0xA1, 0x00, 0x10, 0x14, 0xA3, 0x83, 0x00, 0x00, 0xFF, 0xFD, 0xE0, 0x00, 0x00,
-		0x00, 0x00, 0x00, 0x11, 0x02, 0x02, 0x02, 0x30, 0x00, 0xFF, 0xFF, 0xFF, 0x7F, 0x00, 0x23, 0x30,
-		0x00
-	},
-	{ // 640x576
-		0x56, 0x4F, 0x4F, 0x9c, 0x51, 0x35, 0x6f, 0xf0, 0x00, 0x60, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-		0x45, /**/  0x3f, 0x40, 0x00, 0x3F, 0x70, 0xE3, 0xFF, 0x30, 0x3A, 0x85, 0x00, 0x00, 0x00, /**/
-		0x80, 0xFF, 0xFF, 0xA1, 0x00, 0x10, 0x20, 0xA3, 0x83, 0x00, 0x00, 0xFF, 0xFf, 0xE0, 0x00, 0x00,
-		0x00, 0x00, 0x00, 0x11, 0x02, 0x02, 0x22, 0x30, 0x00, 0xFF, 0xFF, 0xdF, 0x7F, 0x00, 0x20, 0x30,
-		0x00
-	},
-	{ // 720x576
-		0x64, 0x59, 0x59, 0x88, 0x5E, 0x89, 0x6F, 0xF0, 0x00, 0x60, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-		0x42, /*0x24,*/ 0x3F, 0x68, 0x00, 0x3F, 0x70, 0xE3, 0xFF, 0x30, 0x2C, 0x85, 0x00, 0x00, 0x00, /*0x03,*/
-		0x41, 0xFF, 0xEF, 0xA1, 0x00, 0x10, 0x20, 0xA3, 0x83, 0x00, 0x00, 0xFF, 0xFF, 0xE0, 0x00, 0x03,
-		0xFF, 0x00, 0x00, 0x11, 0x02, 0x02, 0x23, 0x30, 0x00, 0xFF, 0xFF, 0xDF, 0x7F, 0x00, 0x20, 0x30,
-		0x00
-	},
-	{ // 800x600 MEDIUM
-		0x72 ,0x63 ,0x63 ,0x96 ,0x69 ,0x8C ,0xAD ,0xF0, 0x00 ,0x60 ,0x00 ,0x00 ,0x00 ,0x00 ,0x00 ,0x00,
-		0x70 ,/*0x22,*/ 0x57 ,0x90 ,0x00 ,0x57 ,0xAE ,0xE3, 0xFF ,0x30 ,0x2C ,0x85 ,0x00 ,0x00 ,0x00 , /*0x03, */
-		0x41 ,0xFF ,0xEF ,0xA1 ,0x00 ,0x10 ,0x20 ,0xA3, 0x83 ,0x00 ,0x00 ,0xFF ,0xFF ,0xE0 ,0x00 ,0x03,
-		0xFF ,0x00 ,0x00 ,0x11 ,0x02 ,0x02 ,0x22 ,0x30,	0x00 ,0xFF ,0xFF ,0xDF ,0x7F ,0x00 ,0x20 ,0x30,
-		0x00
-	}, {  // 1024 x576
-		0xA4, 0x7F, 0x80, 0x88, 0x84, 0x85, 0x6F, 0xF0, 0x00, 0x60, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-		0x42, /*0x20, */0x3F, 0x00, 0x00, 0x3F, 0x70, 0xE3, 0xFF, 0x50, 0x2C, 0x85, 0x00, 0x00, 0x00, /*0x03,*/
-		0x41, 0xFF, 0xEF, 0xA1, 0x00, 0x10, 0x00, 0xA3, 0x83, 0x00, 0x00, 0xFF, 0xFF, 0xE0, 0x00, 0x03,
-		0xFF, 0x00, 0x00, 0x11, 0x02, 0x02, 0x23, 0x30, 0x00, 0xFF, 0xFF, 0xDF, 0x7F, 0x00, 0x20, 0x30,
-		0x00
-	}
-},
-{ // NTSC CRTC
-	{// 640x480
-		0x56, 0x4F, 0x4F, 0x9c, 0x51, 0x35, 0x0b, 0x3e, 0x00, 0x40, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-		0xeb, /**/  0xdf, 0x40, 0x00, 0xdF, 0x0c, 0xE3, 0xFF, 0x30, 0x3A, 0x85, 0x00, 0x00, 0x00, /**/
-		0x29, 0xFe, 0xFd, 0xA1, 0x80, 0x10, 0x15, 0xA3, 0x83, 0x00, 0x00, 0xFe, 0xF3, 0xE0, 0x00, 0x00,
-		0x00, 0x00, 0x00, 0x11, 0x02, 0x02, 0x00, 0x30, 0x00, 0xFF, 0x58, 0xFe, 0xeb, 0x00, 0x00, 0x31,
-		0x00
-	},
-	{// 640x576 Doesn't exist in NTSC
-		0x56, 0x4F, 0x4F, 0x9c, 0x51, 0x35, 0x0b, 0x3e, 0x00, 0x40, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-		0xeb, /**/  0xdf, 0x40, 0x00, 0xdF, 0x0c, 0xE3, 0xFF, 0x30, 0x3A, 0x85, 0x00, 0x00, 0x00, /**/
-		0x29, 0xFe, 0xFd, 0xA1, 0x80, 0x10, 0x15, 0xA3, 0x83, 0x00, 0x00, 0xFe, 0xF3, 0xE0, 0x00, 0x00,
-		0x00, 0x00, 0x00, 0x11, 0x02, 0x02, 0x00, 0x30, 0x00, 0xFF, 0x58, 0xFe, 0xeb, 0x00, 0x00, 0x31,
-		0x00
-	},
-	{// 720x576 Doesn't exist in NTSC
-		0x56, 0x4F, 0x4F, 0x9c, 0x51, 0x35, 0x0b, 0x3e, 0x00, 0x40, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-		0xeb, /**/  0xdf, 0x40, 0x00, 0xdF, 0x0c, 0xE3, 0xFF, 0x30, 0x3A, 0x85, 0x00, 0x00, 0x00, /**/
-		0x29, 0xFe, 0xFd, 0xA1, 0x80, 0x10, 0x15, 0xA3, 0x83, 0x00, 0x00, 0xFe, 0xF3, 0xE0, 0x00, 0x00,
-		0x00, 0x00, 0x00, 0x11, 0x02, 0x02, 0x00, 0x30, 0x00, 0xFF, 0x58, 0xFe, 0xeb, 0x00, 0x00, 0x31,
-		0x00
-	},
-	{// 800x600 NTSC
-		0x69, 0x63, 0x63, 0x8D, 0x6C, 0x8D, 0x8B, 0xF0, 0x00, 0x60, 0x20, 0x00, 0x00, 0x00, 0x00, 0x00,
-		0x78, /*0x20,*/ 0x57, 0x90, 0x00, 0x57, 0x8C, 0xE3, 0xFF, 0x30, 0x28, 0x80, 0x00, 0x00, 0x00, /*0x03,*/
-		0x41, 0xFF, 0xEF, 0xA1, 0x00, 0x10, 0x00, 0xA3, 0x83, 0x00, 0x00, 0xFF, 0xFF, 0xE0, 0x00, 0x03,
-		0xFF, 0x00, 0x00, 0x11, 0x02, 0x02, 0x23, 0x30, 0x00, 0xFF, 0xFF, 0xDF, 0x7F, 0x00, 0x20, 0x30,
-		0x00
-	}
-,
-	{// 1024x576 NOT DONE YET
-		0x56, 0x4F, 0x4F, 0x9c, 0x51, 0x35, 0x0b, 0x3e, 0x00, 0x40, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-		0xeb, /**/  0xdf, 0x40, 0x00, 0xdF, 0x0c, 0xE3, 0xFF, 0x30, 0x3A, 0x85, 0x00, 0x00, 0x00, /**/
-		0x29, 0xFe, 0xFd, 0xA1, 0x80, 0x10, 0x15, 0xA3, 0x83, 0x00, 0x00, 0xFe, 0xF3, 0xE0, 0x00, 0x00,
-		0x00, 0x00, 0x00, 0x11, 0x02, 0x02, 0x00, 0x30, 0x00, 0xFF, 0x58, 0xFe, 0xeb, 0x00, 0x00, 0x31,
-		0x00
-	}
-
-}
-};
-
-// memory mapped IO
-
 #ifndef JUSTVIDEO
 static double fabs(double d) {
 	if (d > 0) return d;
@@ -136,7 +55,7 @@ static double fabs(double d) {
 }
 #endif
 
-void BootVgaInitializationKernelNG(CURRENT_VIDEO_MODE_DETAILS * pcurrentvidemodedetails) {
+void BootVgaInitializationKernelNG(CURRENT_VIDEO_MODE_DETAILS * pcurrentvideomodedetails) {
 	EVIDEOSTD videoStd;
 	DWORD dwTempIntState;
 	MODE_PARAMETER parameter;
@@ -149,34 +68,34 @@ void BootVgaInitializationKernelNG(CURRENT_VIDEO_MODE_DETAILS * pcurrentvidemode
 
         // If the client hasn't set the frame buffer start address, assume
         // it should be at 4M from the end of RAM.
-        if ( pcurrentvidemodedetails->m_dwFrameBufferStart == 0 ) {
-            pcurrentvidemodedetails->m_dwFrameBufferStart = 0x03c00000;
+        if ( pcurrentvideomodedetails->m_dwFrameBufferStart == 0 ) {
+            pcurrentvideomodedetails->m_dwFrameBufferStart = 0x03c00000;
         }
 
-	pcurrentvidemodedetails->m_bAvPack=I2CTransmitByteGetReturn(0x10, 0x04);
-	pcurrentvidemodedetails->m_pbBaseAddressVideo=(BYTE *)0xfd000000;
-	pcurrentvidemodedetails->m_fForceEncoderLumaAndChromaToZeroInitially=1;
+	pcurrentvideomodedetails->m_bAvPack=I2CTransmitByteGetReturn(0x10, 0x04);
+	pcurrentvideomodedetails->m_pbBaseAddressVideo=(BYTE *)0xfd000000;
+	pcurrentvideomodedetails->m_fForceEncoderLumaAndChromaToZeroInitially=1;
 
 	b=I2CTransmitByteGetReturn(0x54, 0x5A); // the eeprom defines the TV standard for the box
 
 	// The values for hoc and voc are stolen from nvtv small mode
 
 	if(b != 0x40) {
-		pcurrentvidemodedetails->hoc = 13.44;
-		pcurrentvidemodedetails->voc = 14.24;
-		pcurrentvidemodedetails->m_bTvStandard = TV_ENCODING_PAL;
+		pcurrentvideomodedetails->hoc = 13.44;
+		pcurrentvideomodedetails->voc = 14.24;
+		pcurrentvideomodedetails->m_bTvStandard = TV_ENCODING_PAL;
 	} else {
-		pcurrentvidemodedetails->hoc = 15.11;
-		pcurrentvidemodedetails->voc = 14.81;
-		pcurrentvidemodedetails->m_bTvStandard = TV_ENCODING_NTSC;
+		pcurrentvideomodedetails->hoc = 15.11;
+		pcurrentvideomodedetails->voc = 14.81;
+		pcurrentvideomodedetails->m_bTvStandard = TV_ENCODING_NTSC;
 	}
-	pcurrentvidemodedetails->hoc /= 100.0;
-	pcurrentvidemodedetails->voc /= 100.0;
+	pcurrentvideomodedetails->hoc /= 100.0;
+	pcurrentvideomodedetails->voc /= 100.0;
 
-	mapNvMem(&riva,pcurrentvidemodedetails->m_pbBaseAddressVideo);
+	mapNvMem(&riva,pcurrentvideomodedetails->m_pbBaseAddressVideo);
 	unlockCrtNv(&riva,0);
 
-	MMIO_H_OUT32 (riva.PCRTC, 0, 0x800, pcurrentvidemodedetails->m_dwFrameBufferStart);
+	MMIO_H_OUT32 (riva.PCRTC, 0, 0x800, pcurrentvideomodedetails->m_dwFrameBufferStart);
 
 	IoOutputByte(0x80d3, 5);  // definitively kill video out using an ACPI control pin
 
@@ -234,56 +153,63 @@ void BootVgaInitializationKernelNG(CURRENT_VIDEO_MODE_DETAILS * pcurrentvidemode
 	MMIO_H_OUT32(riva.PRAMDAC,0,0x600,0);
 	MMIO_H_OUT32(riva.PRAMDAC,0,0x2600,0x0);
 */
+	writeCrtNv (&riva, 0, 0x14, 0x00);
+	writeCrtNv (&riva, 0, 0x17, 0xe3); // Set CRTC mode register
+	writeCrtNv (&riva, 0, 0x19, 0x10); // ?
+	writeCrtNv (&riva, 0, 0x1b, 0x05); // arbitration0
+	writeCrtNv (&riva, 0, 0x22, 0xff); // ?
+	writeCrtNv (&riva, 0, 0x33, 0x11); // ?
 
-	// frankenvideo-derived Video Mode setting
-	{
-		int n=0;
-		int n1=0;
 
-		// nVidia CRTC registers
-		for(n=0;n1<(sizeof(baVideoModeCrtc[0][0]));n++) {
-			if((n!=0x11) && (n!=0x1f)) {
-				writeCrtNv (&riva, 0, n, baVideoModeCrtc[pcurrentvidemodedetails->m_bTvStandard]
-				[pcurrentvidemodedetails->m_nVideoModeIndex][n1++]);
-			}
-		}
-	}
+	I2CTransmitWord(0x45, (0xb8<<8) | 7); // Set autoconfig, 800x600, PAL, YCrCb in
+	while (I2CTransmitByteGetReturn(0x45, 0x10) & 0x01) {} // wait until busy cleared
+	// Switch to Pseudo-Master mode
+	I2CTransmitWord(0x45, (0xa0<<8) | 0x13);
 
-	switch(pcurrentvidemodedetails->m_nVideoModeIndex) {
+	switch(pcurrentvideomodedetails->m_nVideoModeIndex) {
 
 		case VIDEO_MODE_640x480:
-			pcurrentvidemodedetails->m_dwWidthInPixels=640;
-			pcurrentvidemodedetails->m_dwHeightInLines=480;
-			pcurrentvidemodedetails->m_dwMarginXInPixelsRecommended=0;
-			pcurrentvidemodedetails->m_dwMarginYInLinesRecommended=0;
+			pcurrentvideomodedetails->m_dwWidthInPixels=640;
+			pcurrentvideomodedetails->m_dwHeightInLines=480;
+			pcurrentvideomodedetails->m_dwMarginXInPixelsRecommended=0;
+			pcurrentvideomodedetails->m_dwMarginYInLinesRecommended=0;
 			break;
 		case VIDEO_MODE_640x576:
-			pcurrentvidemodedetails->m_dwWidthInPixels=640;
-			pcurrentvidemodedetails->m_dwHeightInLines=576;
-			pcurrentvidemodedetails->m_dwMarginXInPixelsRecommended=40; // pixels
-			pcurrentvidemodedetails->m_dwMarginYInLinesRecommended=40; // lines
+			pcurrentvideomodedetails->m_dwWidthInPixels=640;
+			pcurrentvideomodedetails->m_dwHeightInLines=576;
+			pcurrentvideomodedetails->m_dwMarginXInPixelsRecommended=40; // pixels
+			pcurrentvideomodedetails->m_dwMarginYInLinesRecommended=40; // lines
 			break;
 		case VIDEO_MODE_720x576:
-			pcurrentvidemodedetails->m_dwWidthInPixels=720;
-			pcurrentvidemodedetails->m_dwHeightInLines=576;
-			pcurrentvidemodedetails->m_dwMarginXInPixelsRecommended=40; // pixels
-			pcurrentvidemodedetails->m_dwMarginYInLinesRecommended=40; // lines
+			pcurrentvideomodedetails->m_dwWidthInPixels=720;
+			pcurrentvideomodedetails->m_dwHeightInLines=576;
+			pcurrentvideomodedetails->m_dwMarginXInPixelsRecommended=40; // pixels
+			pcurrentvideomodedetails->m_dwMarginYInLinesRecommended=40; // lines
 			break;
 		case VIDEO_MODE_800x600: // 800x600
-			pcurrentvidemodedetails->m_dwWidthInPixels=800;
-			pcurrentvidemodedetails->m_dwHeightInLines=600;
-			pcurrentvidemodedetails->m_dwMarginXInPixelsRecommended=20;
-			pcurrentvidemodedetails->m_dwMarginYInLinesRecommended=20; // lines
+			pcurrentvideomodedetails->m_dwWidthInPixels=800;
+			pcurrentvideomodedetails->m_dwHeightInLines=600;
+			pcurrentvideomodedetails->m_dwMarginXInPixelsRecommended=20;
+			pcurrentvideomodedetails->m_dwMarginYInLinesRecommended=20; // lines
 			break;
 		case VIDEO_MODE_1024x576: // 1024x576
-			pcurrentvidemodedetails->m_dwWidthInPixels=1024;
-			pcurrentvidemodedetails->m_dwHeightInLines=576;
-			pcurrentvidemodedetails->m_dwMarginXInPixelsRecommended=20;
-			pcurrentvidemodedetails->m_dwMarginYInLinesRecommended=20; // lines
+			pcurrentvideomodedetails->m_dwWidthInPixels=1024;
+			pcurrentvideomodedetails->m_dwHeightInLines=576;
+			pcurrentvideomodedetails->m_dwMarginXInPixelsRecommended=20;
+			pcurrentvideomodedetails->m_dwMarginYInLinesRecommended=20; // lines
 			I2CTransmitWord(0x45, (0x60<<8)|0xc7);
 			I2CTransmitWord(0x45, (0x62<<8)|0x0);
 			I2CTransmitWord(0x45, (0x64<<8)|0x0);
 			break;
+	}
+	pcurrentvideomodedetails->m_bBPP = 32;
+
+	if(FindOverscanValues(pcurrentvideomodedetails->m_dwWidthInPixels,
+		pcurrentvideomodedetails->m_dwHeightInLines,
+		pcurrentvideomodedetails->hoc, pcurrentvideomodedetails->voc,
+		pcurrentvideomodedetails->m_bBPP,
+		videoStd, &parameter)) {
+			SetAutoParameter(&parameter, pcurrentvideomodedetails->m_pbBaseAddressVideo);
 	}
 
 	NVDisablePalette (&riva, 0);
@@ -294,7 +220,7 @@ void BootVgaInitializationKernelNG(CURRENT_VIDEO_MODE_DETAILS * pcurrentvidemode
 
 
 /*
-	switch(pcurrentvidemodedetails->m_bAvPack) {
+	switch(pcurrentvideomodedetails->m_bAvPack) {
 		case 0:  // SCART AV lead
 			MMIO_H_OUT32(riva.PRAMDAC,0,0x880,0x21121111);
 			break;
@@ -306,23 +232,16 @@ void BootVgaInitializationKernelNG(CURRENT_VIDEO_MODE_DETAILS * pcurrentvidemode
 	IoOutputByte(0x80d8, 4);  // ACPI IO thing seen in kernel, set to 4
 	IoOutputByte(0x80d6, 5);  // ACPI IO thing seen in kernel, set to 4 or 5
 
-	if(FindOverscanValues(pcurrentvidemodedetails->m_dwWidthInPixels,
-		pcurrentvidemodedetails->m_dwHeightInLines,
-		pcurrentvidemodedetails->hoc, pcurrentvidemodedetails->voc,
-		videoStd, &parameter)) {
-			SetAutoParameter(&parameter, pcurrentvidemodedetails->m_pbBaseAddressVideo);
-	}
-
 //#ifndef XBE
 	NVVertIntrEnabled (&riva,0);
-	NVSetFBStart (&riva, 0, pcurrentvidemodedetails->m_dwFrameBufferStart);
+	NVSetFBStart (&riva, 0, pcurrentvideomodedetails->m_dwFrameBufferStart);
 //#endif
 
 	IoOutputByte(0x80d3, 4);  // ACPI IO video enable REQUIRED <-- particularly crucial to get composite out
 
-	pcurrentvidemodedetails->m_bFinalConexantA8 = 0x81;
-	pcurrentvidemodedetails->m_bFinalConexantAA = 0x49;
-	pcurrentvidemodedetails->m_bFinalConexantAC = 0x8c;
+	pcurrentvideomodedetails->m_bFinalConexantA8 = 0x81;
+	pcurrentvideomodedetails->m_bFinalConexantAA = 0x49;
+	pcurrentvideomodedetails->m_bFinalConexantAC = 0x8c;
 	I2CTransmitWord(0x45, (0xa8<<8)|0);
 	I2CTransmitWord(0x45, (0xaa<<8)|0);
 	I2CTransmitWord(0x45, (0xac<<8)|0);
@@ -333,7 +252,7 @@ void BootVgaInitializationKernelNG(CURRENT_VIDEO_MODE_DETAILS * pcurrentvidemode
 	MMIO_H_OUT8(riva.PCIO, 0, 0x3c0, 0x01);
 	MMIO_H_OUT8(riva.PVIO, 0, 0x3c2, 0xe3);
 
-	MMIO_H_OUT32 (riva.PCRTC, 0, 0x800, pcurrentvidemodedetails->m_dwFrameBufferStart);
+	MMIO_H_OUT32 (riva.PCRTC, 0, 0x800, pcurrentvideomodedetails->m_dwFrameBufferStart);
 
 	writeCrtNv (&riva, 0, 0x11, 0x20);
 */
@@ -519,7 +438,7 @@ EVIDEOSTD xbvDetectVideoStd(void) {
 		videoStd = NTSC;
 	} else {
 		videoStd = PALBDGHI;
-        }
+	}
 
 	return videoStd;
 }
@@ -530,6 +449,7 @@ EAVTYPE xbvDetectAvType(void) {
 	switch (b) {
 		case 0: avType = AV_SCART_RGB; break;
 		case 1: avType = AV_HDTV; break;
+		case 4: avType = AV_SVIDEO; break;
 		case 6: avType = AV_COMPOSITE; break;
 		default: avType = AV_COMPOSITE; break;
 	}
@@ -569,6 +489,7 @@ void SetAutoParameter(const MODE_PARAMETER* mode, BYTE *pbRegs) {
 	ULONG vscale = 0;
 	ULONG v_activeo = 0;
 	ULONG h_clko = 0;
+	ULONG crtc_h_total = 0;
 	double hoc = 0;
 	double voc = 0;
 	double  tto = vidstda[mode->nVideoStd].m_dSecHsyncPeriod;
@@ -576,6 +497,7 @@ void SetAutoParameter(const MODE_PARAMETER* mode, BYTE *pbRegs) {
 	// first, get the fixed values
 	DWORD xres = mode->h_active;
 	DWORD yres = mode->v_activei;
+	BYTE pixelDepth = (mode->bpp+1) / 8;
 
 	// Let's go
 	CalcBlankings (mode, &h_blanki, &h_blanko, &v_blanki, &v_blanko, &vscale);
@@ -760,6 +682,7 @@ void SetAutoParameter(const MODE_PARAMETER* mode, BYTE *pbRegs) {
 	I2CTransmitWord(0x45, (0xa2<<8)|b);
 	switch(xbvDetectAvType()) {
 		case AV_COMPOSITE:
+		case AV_SVIDEO:
 			I2CTransmitWord(0x45, (0x6c<<8) | 0x46); // FLD_MODE = 10, EACTIVE = 1, EN_SCART = 0, EN_REG_RD = 1
 			I2CTransmitWord(0x45, (0x5a<<8) | 0x00); // Y_OFF (Brightness)
 			I2CTransmitWord(0x45, (0xa4<<8) | 0xe5); // SYNC_AMP
@@ -832,9 +755,10 @@ void SetAutoParameter(const MODE_PARAMETER* mode, BYTE *pbRegs) {
 	NvSetCrtc(pbRegs, 1, ((xres + 8)/8)-1);
 	NvSetCrtc(pbRegs, 2, ((xres + 8)/8)-1);
 	NvSetCrtc(pbRegs, 0x17, (NvGetCrtc(pbRegs, 0x17)&0x7f)|0x80);
-	// CRTC_LINESTRIDE = (xres / 8) * ((bpp + 1) / 8)
-	NvSetCrtc(pbRegs, 0x19, (NvGetCrtc(pbRegs, 0x19)&0x1f) | ((((xres / 8) * 4)>>3)&0xe0));
-	NvSetCrtc(pbRegs, 0x13, ((xres / 8) * 4));
+	// CRTC_LINESTRIDE = (xres / 8) * pixelDepth
+	m=(xres / 8) * pixelDepth;
+	NvSetCrtc(pbRegs, 0x19, (NvGetCrtc(pbRegs, 0x19)&0x1f) | ((m >> 3) & 0xe0));
+	NvSetCrtc(pbRegs, 0x13, (m & 0xff));
 	// NVVDISPEND
 	*((DWORD *)&pbRegs[0x680800]) = yres - 1;
 	// NVVTOTAL
@@ -859,7 +783,8 @@ void SetAutoParameter(const MODE_PARAMETER* mode, BYTE *pbRegs) {
 	NvSetCrtc(pbRegs, 7, b | (((mode->v_linesi + 32) >> 4) & 0x20) | (((mode->v_linesi + 32) >> 8) & 0x01));
 	NvSetCrtc(pbRegs, 6, ((mode->v_linesi + 32) & 0xff));
 	// CRTC_VBLANKEND = CRTC_VTOTAL
-	NvSetCrtc(pbRegs, 0x16, (mode->v_linesi + 32) & 0x7f);
+	b = NvGetCrtc(pbRegs, 0x16) & 0x80;
+	NvSetCrtc(pbRegs, 0x16, b |((mode->v_linesi + 32) & 0x7f));
 	// CRTC_VDISPEND = yres
 	b = NvGetCrtc(pbRegs, 7) & 0xbd;
 	NvSetCrtc(pbRegs, 7, b | (((yres - 1) >> 3) & 0x40) | (((yres - 1) >> 7) & 0x02));
@@ -870,6 +795,47 @@ void SetAutoParameter(const MODE_PARAMETER* mode, BYTE *pbRegs) {
 	b = NvGetCrtc(pbRegs, 7) & 0xf7;
 	NvSetCrtc(pbRegs, 7, b | (((yres - 1) >> 5) & 0x08));
 	NvSetCrtc(pbRegs, 0x15, ((yres - 1) & 0xff));
+	// CRTC_LINECOMP
+	m = 0x3ff; // 0x3ff = disable
+	b = NvGetCrtc(pbRegs, 7) & 0xef;
+	NvSetCrtc(pbRegs, 7, b | ((m>> 4) & 0x10));
+	b = NvGetCrtc(pbRegs, 9) & 0xbf;
+	NvSetCrtc(pbRegs, 9, b | ((m >> 3) & 0x40));
+	NvSetCrtc(pbRegs, 0x18, (m & 0xff));
+	// CRTC_REPAINT1
+	if (xres < 1280) {
+		b = 0x04;
+	}
+	else {
+		b = 0x00;
+	}
+	NvSetCrtc(pbRegs, 0x1a, b);
+	// Overflow bits
+	/*
+	b = ((hTotal   & 0x040) >> 2)
+		| ((vDisplay & 0x400) >> 7)
+		| ((vStart   & 0x400) >> 8)
+		| ((vDisplay & 0x400) >> 9)
+		| ((vTotal   & 0x400) >> 10);
+	*/
+	b = ((crtc_h_total & 0x040) >> 2)
+		| (((yres - 1) & 0x400) >> 7)
+		| (((yres + 32)   & 0x400) >> 8)
+		| (((yres - 1) & 0x400) >> 9)
+		| (((mode->v_linesi + 32)   & 0x400) >> 10);
+	NvSetCrtc(pbRegs, 0x25, b);
+
+	b = pixelDepth;
+	if (b >= 3) b = 3;
+	/* switch pixel mode to TV */
+	b  |= 0x80;
+	NvSetCrtc(pbRegs, 0x28, b);
+
+	b = NvGetCrtc(pbRegs, 0x2d) & 0xe0;
+	if (crtc_h_total >= 260) {
+		b |= 0x01;
+	}
+	NvSetCrtc(pbRegs, 0x2d, b);
 }
 
 void CalcBlankings(const MODE_PARAMETER* m, long* h_blanki, long* h_blanko, long* v_blanki, long* v_blanko, long* vscale)
@@ -1018,6 +984,7 @@ bool FindOverscanValues(
 	long v_activei,
 	double hoc,
 	double voc,
+	long bpp,
 	EVIDEOSTD nVideoStd,
 	MODE_PARAMETER* result
 ){
@@ -1062,6 +1029,7 @@ bool FindOverscanValues(
 	result->nVideoStd = nVideoStd;
 	result->h_active = h_active;
 	result->v_activei = v_activei;
+	result->bpp = bpp;
 
 	dMinTLI= (DWORD)(v_activei / ((1 - dMinVOC) * alo) * tlo);
 	dMaxTLI = (DWORD)(v_activei / ((1 - dMaxVOC) * alo) * tlo);
