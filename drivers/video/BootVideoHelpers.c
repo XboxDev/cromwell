@@ -539,6 +539,11 @@ int console_putchar(int c)
 	return (int)buf[0];	
 }
 
+// Fix for BSD
+#ifdef putchar
+#undef putchar
+#endif
+
 int putchar(int c)
 {
 	return console_putchar(c);
