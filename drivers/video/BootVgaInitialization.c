@@ -26,7 +26,6 @@
 #include "BootVgaInitialization.h"
 #include "encoder.h"
 #include "xcalibur.h"
-#include "xcalibur-regs.h"
 
 void DetectVideoEncoder(void) {
 	if (I2CTransmitByteGetReturn(0x45,0x00) != ERR_I2C_ERROR_BUS) video_encoder = ENCODER_CONEXANT;
@@ -194,15 +193,25 @@ void BootVgaInitializationKernelNG(CURRENT_VIDEO_MODE_DETAILS * pvmode) {
 			pvmode->height=480;
 			pvmode->xmargin=0;
 		 	pvmode->ymargin=0;
-        	
-			/* HDTV uses hardcoded settings for these - these are the
-			 * correct ones for 480p */
+        
+
+			if (video_encoder==ENCODER_XCALIBUR) {
+				/* This info should be in the xcalibur.c file, but
+				*  the HDTV api doesn't allow for it right now. */
+				gpu.nvhtotal = 779;
+				gpu.nvvtotal = 524;
+			}
+			else {	
+				/* HDTV uses hardcoded settings for these - these are the
+				 * correct ones for 480p */
+				gpu.nvhtotal = 858;
+				gpu.nvvtotal = 525;
+			}
+
 			gpu.xres = pvmode->width;
-	       		gpu.nvhstart = 738;
-			gpu.nvhtotal = 858;
 			gpu.yres = pvmode->height;
+	       		gpu.nvhstart = 738;
 			gpu.nvvstart = 489;
-			gpu.nvvtotal = 525;
 			gpu.pixelDepth = (32 + 1) / 8;
 			gpu.crtchdispend = pvmode->width;
 			gpu.crtcvstart = gpu.nvvstart;
@@ -210,9 +219,11 @@ void BootVgaInitializationKernelNG(CURRENT_VIDEO_MODE_DETAILS * pvmode) {
 			
 			pll_int = (unsigned char)((double)27027 * 6.0 / 13.5e3 + 0.5);
 			if (video_encoder == ENCODER_CONEXANT)
-				encoder_ok = conexant_calc_hdtv_mode(hdtv_mode, pll_int, newmode.encoder_mode);
+				encoder_ok = conexant_calc_hdtv_mode(hdtv_mode, pll_int, &(newmode.encoder_mode));
 			else if (video_encoder == ENCODER_FOCUS)
-				encoder_ok = focus_calc_hdtv_mode(hdtv_mode, pll_int, newmode.encoder_mode);
+				encoder_ok = focus_calc_hdtv_mode(hdtv_mode, pll_int, &(newmode.encoder_mode));
+			else if (video_encoder == ENCODER_XCALIBUR) 
+				encoder_ok = xcalibur_calc_hdtv_mode(hdtv_mode, pll_int, &(newmode.encoder_mode));
 		}
 		else {
 			//VGA or VGA_SOG
@@ -235,7 +246,7 @@ void BootVgaInitializationKernelNG(CURRENT_VIDEO_MODE_DETAILS * pvmode) {
 			pll_int = (unsigned char)((double)36000 * 6.0 / 13.5e3 + 0.5);
 			
 			if (video_encoder == ENCODER_CONEXANT)
-				encoder_ok = conexant_calc_vga_mode(av_type, pll_int, newmode.encoder_mode);
+				encoder_ok = conexant_calc_vga_mode(av_type, pll_int, &(newmode.encoder_mode));
 			else if (video_encoder == ENCODER_FOCUS);
 				//No focus VGA functions as yet
 		}
@@ -290,7 +301,7 @@ void BootVgaInitializationKernelNG(CURRENT_VIDEO_MODE_DETAILS * pvmode) {
 			encoder_ok = focus_calc_mode(&encoder_mode, &newmode);
 		}
 		else if (video_encoder == ENCODER_XCALIBUR) {
-			encoder_ok = xcalibur_calc_mode(&encoder_mode, &newmode, tv_encoding);
+			encoder_ok = xcalibur_calc_mode(&encoder_mode, &newmode);
 		}
         	
 		gpu.xres = pvmode->width;
@@ -311,25 +322,27 @@ void BootVgaInitializationKernelNG(CURRENT_VIDEO_MODE_DETAILS * pvmode) {
 		//Load registers into chip
 		if (video_encoder == ENCODER_CONEXANT) {
 			int n1=0;
-		   	I2CWriteBytetoRegister(0x45,0xc4, 0x00); // EN_OUT = 1
+			unsigned char *regs;
+			I2CWriteBytetoRegister(0x45,0xc4, 0x00); // EN_OUT = 1
 		        // Conexant init (starts at register 0x2e)
 		        n1=0;
+			regs = (unsigned char*)newmode.encoder_mode;
 		        for(i=0x2e;i<0x100;i+=2) {
 		        	switch(i) {
 		        		case 0x6c: // reset
-		          			I2CWriteBytetoRegister(0x45,i, newmode.encoder_mode[n1] & 0x7f);
+		          			I2CWriteBytetoRegister(0x45,i, regs[n1] & 0x7f);
 	                          		break;
 	                    		case 0xc4: // EN_OUT
-						I2CWriteBytetoRegister(0x45,i, newmode.encoder_mode[n1] & 0xfe);
+						I2CWriteBytetoRegister(0x45,i, regs[n1] & 0xfe);
 				 		break;
 					case 0xb8: // autoconfig
 						break;
 					default:
-						I2CWriteBytetoRegister(0x45,i, newmode.encoder_mode[n1]);
+						I2CWriteBytetoRegister(0x45,i, regs[n1]);
 						break;
 				}
 				n1++;
-				wait_us(800);	
+				wait_us(500);	
 			}
                 	// Timing Reset
 			b=I2CTransmitByteGetReturn(0x45,0x6c) & (0x7f);
@@ -338,32 +351,25 @@ void BootVgaInitializationKernelNG(CURRENT_VIDEO_MODE_DETAILS * pvmode) {
 			I2CWriteBytetoRegister(0x45, 0xc4, 0x01|b); // EN_OUT = 1
 		}
 		else if (video_encoder == ENCODER_FOCUS) {
+			unsigned char *regs;
+			regs = (unsigned char*)newmode.encoder_mode;
 	             	for (i=0; i<0xc4; ++i) {
-                        	I2CWriteBytetoRegister(0x6a, i, newmode.encoder_mode[i]);
-				wait_us(800);
+                        	I2CWriteBytetoRegister(0x6a, i, regs[i]);
+				wait_us(500);
                		}
 		}
 		else if (video_encoder == ENCODER_XCALIBUR) {
 			//Xlb init
+			unsigned long *XCal_Reg = (unsigned long*)newmode.encoder_mode;
 			ReadfromSMBus(0x70,4,4,&i);
 			WriteToSMBus(0x70,4,4,0x0F000000);
 			ReadfromSMBus(0x70,0,4,&i);
 			WriteToSMBus(0x70,0,4,0x00000000);
 			MMIO_H_OUT32(riva.PRAMDAC, 0, 0x630, 0x2);
-			if ( tv_encoding == TV_ENC_PALBDGHI) {
-				/* Encoder registers */
-				for (i=0; i<(sizeof(xcal_video_register_sequence)); i++) {
-					WriteToSMBus(0x70,xcal_video_register_sequence[i],4,xcal_composite_pal[i]);
-					wait_us(50);
-				}
-			}
-			else {
-				//NTSC
-				/* Encoder registers */
-				for (i=0; i<(sizeof(xcal_video_register_sequence)); i++) {
-					WriteToSMBus(0x70,xcal_video_register_sequence[i],4,xcal_composite_ntsc[i]);
-					wait_us(50);
-				}
+				
+			for (i=0; i<0x90; i++) {
+				WriteToSMBus(0x70, i, 4, XCal_Reg[i]);
+				wait_us(500);
 			}
 		}
 	}

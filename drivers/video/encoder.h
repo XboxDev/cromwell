@@ -110,7 +110,7 @@ struct riva_regs {
        	u8 seq[NUM_SEQ_REGS];
        	u8 misc_output;
       	RIVA_HW_STATE ext;
-    	u8 encoder_mode[255];
+	void *encoder_mode;
 };
 
 typedef enum enumEncoderType {

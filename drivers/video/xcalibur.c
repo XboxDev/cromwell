@@ -8,73 +8,65 @@
  * for more details.
  *
  * Known bugs and issues:
+ * Overscanned composite and svideo, 480p component only.
  *
- * It doesnt DO anything yet!
 */
 #include "xcalibur.h"
+#include "xcalibur-regs.h"
 #include "encoder.h"
-
-typedef struct _xcalibur_sync {
-	U032	htotal;
-	U032	vtotal;
-	U032	hsyncstart;
-	U032 	hsyncend;
-	U032	vsyncstart;
-	U032	vsyncend;
-} XCALIBUR_SYNC;
-
-static const XCALIBUR_SYNC xcalibur_sync[2][1] = {
-{	// NTSC MODES
-	{780, 525, 682, 684, 486, 488},
-},
-{	// PAL MODES
-	{800, 520, 702, 726, 480, 490},
-}
-};
 
 int xcalibur_calc_hdtv_mode(
 	xbox_hdtv_mode hdtv_mode,
 	int dotClock,
-	unsigned char * regs
+	void **regs
 	){
+	*regs = (void *)malloc(0x90*sizeof(char)*4);
+	//Only 480p so far, sorry!
+	memcpy(*regs,&HDTV_XCal_Vals_480p[0],0x90*sizeof(char)*4);	
 	return 1;
 }
 
-int xcalibur_calc_mode(xbox_video_mode * mode, struct riva_regs * riva_out, int tv_encoding)
+int xcalibur_calc_mode(xbox_video_mode * mode, struct riva_regs * riva_out)
 {
-
-	XCALIBUR_SYNC *sync;
-	int syncindex;
+	//These registers consist of 4 bytes per address.
+	riva_out->encoder_mode = (void *)malloc(0x90*sizeof(char)*4);
 	
-	switch(tv_encoding) {
+	//Syncs.
+	switch(mode->tv_encoding) {
 		case TV_ENC_PALBDGHI:
-			syncindex = 1;
+			memcpy(riva_out->encoder_mode,&Composite_XCal_Vals_PAL[0],0x90*sizeof(char)*4);
+			riva_out->ext.vsyncstart = 481;
+			riva_out->ext.hsyncstart = 703;
+			riva_out->ext.htotal = 800 - 1;
+			riva_out->ext.vtotal = 520 - 1;
 			break;
+			
 		case TV_ENC_NTSC:
 		default: // Default to NTSC
-			syncindex = 0;
+			memcpy(riva_out->encoder_mode,&Composite_XCal_Vals_NTSC[0],0x90*sizeof(char)*4);
+			riva_out->ext.vsyncstart = 487;
+			riva_out->ext.hsyncstart = 683;
+			riva_out->ext.htotal = 780 - 1;
+			riva_out->ext.vtotal = 525 - 1;
 			break;
 	}
-
-	sync = (XCALIBUR_SYNC *)&xcalibur_sync[syncindex];
-
-	riva_out->ext.vsyncstart = sync->vsyncstart + 1;
-	riva_out->ext.hsyncstart = sync->hsyncstart + 1;
-	
+		
 	riva_out->ext.width = mode->xres;
 	riva_out->ext.height = mode->yres;
-	riva_out->ext.htotal = sync->htotal - 1;
-	riva_out->ext.vend = mode->yres - 1;
-	riva_out->ext.vtotal = sync->vtotal- 1;
 	riva_out->ext.vcrtc = mode->yres - 1;
-	riva_out->ext.vsyncend = sync->vsyncend + 1;
+	riva_out->ext.vend = mode->yres - 1;
+	riva_out->ext.vsyncend = riva_out->ext.vsyncstart + 3;
 	riva_out->ext.vvalidstart = 0;
 	riva_out->ext.vvalidend = mode->yres - 1;
-	riva_out->ext.hend = mode->xres - 1;
-	riva_out->ext.hcrtc = 599;
-	riva_out->ext.hsyncend = sync->hsyncend + 1;
+	riva_out->ext.hend = mode->xres + 7 ;
+	riva_out->ext.hcrtc = mode->xres - 1;
+	riva_out->ext.hsyncend = riva_out->ext.hsyncstart + 32;
 	riva_out->ext.hvalidstart = 0;
 	riva_out->ext.hvalidend = mode->xres - 1;
-
+	riva_out->ext.crtchdispend = mode->xres;
+	riva_out->ext.crtcvstart = mode->yres + 32;
+	//increased from 32
+	riva_out->ext.crtcvtotal = mode->yres + 64;
+	
 	return 1;
 }

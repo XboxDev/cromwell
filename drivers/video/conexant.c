@@ -82,8 +82,11 @@ static double fabs(double d) {
 int conexant_calc_vga_mode(
 	xbox_av_type av_type,
 	unsigned char pll_int,
-	unsigned char * regs
+	unsigned char **reg_ptr
 ){
+	unsigned char *regs;
+	*reg_ptr = malloc(sizeof(char) * NUM_CONEXANT_REGS);
+	regs = *reg_ptr;
 	memset(regs, 0, NUM_CONEXANT_REGS);
 	// Protect against overclocking
 	if (pll_int > 36) {
@@ -119,8 +122,11 @@ int conexant_calc_vga_mode(
 int conexant_calc_hdtv_mode(
 	xbox_hdtv_mode hdtv_mode,
 	unsigned char pll_int,
-	unsigned char * regs
+	unsigned char **reg_ptr
 ){
+	unsigned char *regs;
+	*reg_ptr = malloc(sizeof(char) * NUM_CONEXANT_REGS);
+	regs = *reg_ptr;
 	memset(regs, 0, NUM_CONEXANT_REGS);
 	// Protect against overclocking
 	if (pll_int > 36) {

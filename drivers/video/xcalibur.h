@@ -16,9 +16,10 @@
 #ifndef XCALIBUR_H_
 #define XCALIBUR_H_
 
+//#include <linux/slab.h>
 #include "encoder.h"
 //#include "xboxfb.h"
 
-int xcalibur_calc_mode(xbox_video_mode * mode, struct riva_regs * riva_out , int tv_encoding);
-int xcalibur_calc_hdtv_mode(xbox_hdtv_mode hdtv_mode, int dotClock, unsigned char * mode_out);
+int xcalibur_calc_mode(xbox_video_mode * mode, struct riva_regs * riva_out);
+int xcalibur_calc_hdtv_mode(xbox_hdtv_mode hdtv_mode, int dotClock, void **encoder_regs);
 #endif

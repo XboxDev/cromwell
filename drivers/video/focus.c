@@ -12,7 +12,7 @@
  * VGA SoG/internal sync not yet implemented
 */
 #include "focus.h"
-//#include "encoder.h"
+#include "encoder.h"
 
 typedef struct _focus_pll_settings{
 	long dotclock;
@@ -53,8 +53,13 @@ static const unsigned char focus_defaults[0xc4] = {
 int focus_calc_hdtv_mode(
 	xbox_hdtv_mode hdtv_mode,
 	unsigned char pll_int,
-	unsigned char * regs
+	void **encoder_regs
 	){
+	unsigned char *regs;
+	
+	//This can be reduced
+	*encoder_regs = (void *) malloc(256*sizeof(char));
+	regs=(unsigned char*)*encoder_regs;
 	memcpy(regs,focus_defaults,sizeof(focus_defaults));	
 	/* Uncomment for HDTV 480p colour bars */
 	//regs[0x0d]|=0x02;
@@ -178,13 +183,16 @@ int focus_calc_hdtv_mode(
 int focus_calc_mode(xbox_video_mode * mode, struct riva_regs * riva_out)
 {
 	unsigned char b;
-	char* regs = riva_out->encoder_mode;
+	
+	unsigned char* regs;
 	int tv_htotal, tv_vtotal, tv_vactive, tv_hactive;
 	int vga_htotal, vga_vtotal;
 	int vsc, hsc;
-
 	long dotclock;
 	focus_pll_settings pll_settings;
+
+	riva_out->encoder_mode = (void *)malloc(256*sizeof(char));
+	regs=(unsigned char *)riva_out->encoder_mode;
 	
 	memcpy(regs,focus_defaults,sizeof(focus_defaults));
 	
