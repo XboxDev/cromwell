@@ -383,12 +383,11 @@ int BootLoadConfigCD(int cdromId, CONFIGENTRY *config) {
 }
 
 #ifdef FLASH 
-int BootLoadFlashCD(void) {
+int BootLoadFlashCD(int cdromId) {
 	
 	DWORD dwConfigSize=0, dw;
 	int n;
 	int cdPresent=0;
-	int cdromId=0;
 	DWORD dwY=VIDEO_CURSOR_POSY;
 	DWORD dwX=VIDEO_CURSOR_POSX;
 	BYTE* tempBuf;

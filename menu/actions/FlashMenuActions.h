@@ -8,4 +8,4 @@
  ***************************************************************************/
 #include "include/config.h"
 
-void FlashBiosFromCD(void *ignored);
+void FlashBiosFromCD(void *cdromId);

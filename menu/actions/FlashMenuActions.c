@@ -8,8 +8,8 @@
  ***************************************************************************/
 #include "FlashMenuActions.h"
 
-void FlashBiosFromCD(void *ignored) {
+void FlashBiosFromCD(void *cdromId) {
 #ifdef FLASH
-	BootLoadFlashCD();
+	BootLoadFlashCD(*(int *)cdromId);
 #endif
 }

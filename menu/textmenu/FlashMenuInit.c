@@ -8,12 +8,14 @@
  ***************************************************************************/
 
 #include "include/boot.h"
+#include "BootIde.h"
 #include "TextMenu.h"
 #include "FlashMenuActions.h"
 
 void FlashMenuInit(TEXTMENUITEM *parentItem) {
 	TEXTMENUITEM *itemPtr;
 	TEXTMENU *menuPtr;
+	int i=0;
 
 	menuPtr = (TEXTMENU*)malloc(sizeof(TEXTMENU));
 	memset(menuPtr,0x00,sizeof(TEXTMENU));
@@ -21,10 +23,17 @@ void FlashMenuInit(TEXTMENUITEM *parentItem) {
 	menuPtr->parentMenu=(struct TEXTMENU*)firstMenu;
 	parentItem->childMenu = (struct TEXTMENU*)menuPtr;
 
-	itemPtr = (TEXTMENUITEM*)malloc(sizeof(TEXTMENUITEM));
-	memset(itemPtr,0x00,sizeof(TEXTMENUITEM));
-	itemPtr->szCaption = "Flash bios from CD";
-	itemPtr->functionPtr= FlashBiosFromCD;
-	itemPtr->functionDataPtr = NULL;
-	TextMenuAddItem(menuPtr, itemPtr);
+	for (i=0; i<2; ++i) {
+		if (tsaHarddiskInfo[i].m_fAtapi) {
+			itemPtr = (TEXTMENUITEM*)malloc(sizeof(TEXTMENUITEM));
+			memset(itemPtr,0x00,sizeof(TEXTMENUITEM));
+   			char *driveName=malloc(sizeof(char)*32);
+                        sprintf(driveName,"Flash bios from CD-ROM (hd%c)",i ? 'b':'a');
+			itemPtr->szCaption = driveName;
+			itemPtr->functionPtr= FlashBiosFromCD;
+    			itemPtr->functionDataPtr = malloc(sizeof(int));
+                        *(int*)itemPtr->functionDataPtr = i;
+			TextMenuAddItem(menuPtr, itemPtr);
+		}
+	}
 }
