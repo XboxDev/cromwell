@@ -551,7 +551,7 @@ typedef struct {
 } JPEG;
 
 int BootVideoOverlayString(DWORD * pdwaTopLeftDestination, DWORD m_dwCountBytesPerLineDestination, RGBA rgbaOpaqueness, const char * szString);
-void BootVideoChunkedPrint(char * szBuffer, WORD wLength);
+void BootVideoChunkedPrint(const char * szBuffer);
 int VideoDumpAddressAndData(DWORD dwAds, const BYTE * baData, DWORD dwCountBytesUsable);
 unsigned int BootVideoGetStringTotalWidth(const char * szc);
 void BootVideoClearScreen(JPEG * pJpeg, int nStartLine, int nEndLine);

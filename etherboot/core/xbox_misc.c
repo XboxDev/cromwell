@@ -298,14 +298,6 @@ void gateA20_unset(void)
 }
 #endif
 
-int
-putchar(int c)
-{
-	if (c == '\n')
-		putchar('\r');
-	printf("%c", c);
-}
-
 #define DEBUG_UTILS 0
 #if DEBUG_UTILS
 

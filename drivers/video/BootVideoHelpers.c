@@ -235,7 +235,7 @@ int BootVideoOverlayString(DWORD * pdwaTopLeftDestination, DWORD m_dwCountBytesP
 {
 	unsigned int uiWidth=0;
 	bool fDouble=0;
-	while(*szString) {
+	while((*szString != 0) && (*szString != '\n')) {
 		if(*szString=='\2') {
 			fDouble=!fDouble;
 		} else {
@@ -445,26 +445,31 @@ int VideoDumpAddressAndData(DWORD dwAds, const BYTE * baData, DWORD dwCountBytes
 	}
 	return 1;
 }
-void BootVideoChunkedPrint(char * szBuffer, WORD wLength) {
-	int n, nDone=0;
+void BootVideoChunkedPrint(const char * szBuffer) {
+	int n=0;
+	int nDone=0;
 
-	szBuffer[wLength]='\0';
-
-	for(n=0;n<(int)(wLength+1);n++) {
-		if((szBuffer[n]=='\n') || (szBuffer[n]=='\0')) {
-			bool f=(n<wLength);
-			szBuffer[n]='\0';
-			if(n!=nDone) {
-				VIDEO_CURSOR_POSX+=BootVideoOverlayString(
-					(DWORD *)((FRAMEBUFFER_START) + VIDEO_CURSOR_POSY * (currentvideomodedetails.m_dwWidthInPixels*4) + VIDEO_CURSOR_POSX),
-					currentvideomodedetails.m_dwWidthInPixels*4, VIDEO_ATTR, &szBuffer[nDone]
-				)<<2;
-				nDone=n+1;
-			}
-			if(f) { VIDEO_CURSOR_POSY+=16; VIDEO_CURSOR_POSX=currentvideomodedetails.m_dwMarginXInPixelsRecommended<<2; }
+	while (szBuffer[n] != 0)
+	{
+		if(szBuffer[n]=='\n') {
+			BootVideoOverlayString(
+				(DWORD *)((FRAMEBUFFER_START) + VIDEO_CURSOR_POSY * (currentvideomodedetails.m_dwWidthInPixels*4) + VIDEO_CURSOR_POSX),
+				currentvideomodedetails.m_dwWidthInPixels*4, VIDEO_ATTR, &szBuffer[nDone]
+			);
+			nDone=n+1;
+			VIDEO_CURSOR_POSY+=16; 
+			VIDEO_CURSOR_POSX=currentvideomodedetails.m_dwMarginXInPixelsRecommended<<2;
 		}
+		n++;
 	}
-//	__asm__ __volatile__ ( "wbinvd" );
+	if (n != nDone)
+	{
+		VIDEO_CURSOR_POSX+=BootVideoOverlayString(
+			(DWORD *)((FRAMEBUFFER_START) + VIDEO_CURSOR_POSY * (currentvideomodedetails.m_dwWidthInPixels*4) + VIDEO_CURSOR_POSX),
+			currentvideomodedetails.m_dwWidthInPixels*4, VIDEO_ATTR, &szBuffer[nDone]
+		)<<2;
+	}
+
 }
 
 int printk(const char *szFormat, ...) {  // printk displays to video and filtror if enabled
@@ -489,7 +494,7 @@ int printk(const char *szFormat, ...) {  // printk displays to video and filtror
 //	BootFiltrorSendArrayToPcModal(&szBuffer[0], wLength);
 	#endif
 
-	BootVideoChunkedPrint(szBuffer, wLength);
+	BootVideoChunkedPrint(szBuffer);
 
 	return wLength;
 }
@@ -517,4 +522,11 @@ int serialprint(const char *szFormat, ...) {
 }
 #endif
 
-
+int putchar(int c)
+{
+	char buf[2];
+	buf[0] = (char)c;
+	buf[1] = 0;
+	BootVideoChunkedPrint(buf);
+	return (int)buf[0];
+}
