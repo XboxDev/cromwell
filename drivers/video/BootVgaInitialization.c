@@ -1,8 +1,9 @@
 /*
  * video-related stuff
- * 2003-02-02  andy@warmcat.com  Major reshuffle, threw out tons of unnecessary init
-                                 Made a good start on separating the video mode from the AV cable
-																 Consolidated init tables into a big struct (see boot.h)
+ * 2004-03-03  dmp@davidmpye.dyndns.org	Synced with kernel fb driver, added proper focus support etc
+ * 2003-02-02  andy@warmcat.com  	Major reshuffle, threw out tons of unnecessary init
+                                 	Made a good start on separating the video mode from the AV cable
+				 	Consolidated init tables into a big struct (see boot.h)
  * 2002-12-04  andy@warmcat.com  Video now working :-)
  */
 
@@ -31,16 +32,18 @@ void DetectVideoEncoder(void) {
 void BootVgaInitializationKernelNG(CURRENT_VIDEO_MODE_DETAILS * pcurrentvideomodedetails) {
 	xbox_tv_encoding tv_encoding; 
 	xbox_av_type av_type;
-	TV_MODE_PARAMETER parameter;
+//	TV_MODE_PARAMETER parameter;
 	BYTE b;
 	RIVA_HW_INST riva;
         struct riva_regs newmode;
-	int bpp, width, hDisplaySize, crtc_hDisplay, crtc_hStart,
-	          crtc_hEnd, crtc_hTotal, height, crtc_vDisplay, crtc_vStart,
-	          crtc_vEnd, crtc_vTotal, dotClock,
-	          hStart, hTotal, vStart, vTotal;
+//	int bpp, width, hDisplaySize, crtc_hDisplay, crtc_hStart,
+//	          crtc_hEnd, crtc_hTotal, height, crtc_vDisplay, crtc_vStart,
+//	          crtc_vEnd, crtc_vTotal, dotClock,
+//	          hStart, hTotal, vStart, vTotal;
+	int dotClock;
 	int encoder_ok = 0;
 	int i=0;
+	GPU_PARAMETER gpu;
 	
 	tv_encoding = DetectVideoStd();
 	DetectVideoEncoder();
@@ -48,6 +51,7 @@ void BootVgaInitializationKernelNG(CURRENT_VIDEO_MODE_DETAILS * pcurrentvideomod
 	av_type = DetectAvType();
         // Dump to global variable
 	VIDEO_AV_MODE=I2CTransmitByteGetReturn(0x10, 0x04);
+	gpu.av_type = av_type;
 
    	memset((void *)pcurrentvideomodedetails,0,sizeof(CURRENT_VIDEO_MODE_DETAILS));
 
@@ -120,44 +124,66 @@ void BootVgaInitializationKernelNG(CURRENT_VIDEO_MODE_DETAILS * pcurrentvideomod
 		unsigned char pll_int = (unsigned char)((double)dotClock * 6.0 / 13.5e3 + 0.5);
 		if (av_type == AV_HDTV) {
 			xbox_hdtv_mode hdtv_mode = HDTV_480p;
-		//	if (video_mode->yres > 800) {
-		//		hdtv_mode = HDTV_1080i;
-		//	}
-		//	else if (video_mode->yres > 600) {
-		//		hdtv_mode = HDTV_720p;
-		//	}
+			//Only 480p supported at present
+			/*if (video_mode->yres > 800) {
+				hdtv_mode = HDTV_1080i;
+			}
+			else if (video_mode->yres > 600) {
+				hdtv_mode = HDTV_720p;
+			}*/
+			
+			// Settings for 720x480@60Hz (480p)
+			pcurrentvideomodedetails->m_dwWidthInPixels=720;
+			pcurrentvideomodedetails->m_dwHeightInLines=480;
+			pcurrentvideomodedetails->m_dwMarginXInPixelsRecommended=0;
+		 	pcurrentvideomodedetails->m_dwMarginYInLinesRecommended=0;
+        	
+			/* HDTV uses hardcoded settings for these - these are the
+			 * correct ones for 480p */
+			gpu.xres = pcurrentvideomodedetails->m_dwWidthInPixels;
+	       		gpu.nvhstart = 738;
+			gpu.nvhtotal = 858;
+			gpu.yres = pcurrentvideomodedetails->m_dwHeightInLines;
+			gpu.nvvstart = 489;
+			gpu.nvvtotal = 525;
+			gpu.pixelDepth = (32 + 1) / 8;
+			gpu.crtchdispend = pcurrentvideomodedetails->m_dwWidthInPixels;
+			gpu.crtcvstart = gpu.nvvstart;
+			pll_int = (unsigned char)27027000;
+			
 			if (video_encoder == ENCODER_CONEXANT)
 				encoder_ok = conexant_calc_hdtv_mode(hdtv_mode, pll_int, newmode.encoder_mode);
 			else if (video_encoder == ENCODER_FOCUS)
 				encoder_ok = focus_calc_hdtv_mode(hdtv_mode, pll_int, newmode.encoder_mode);
-			else printk("Error - unknown encoder type detected\n");
 		}
 		else {
+
+			// Settings for 800x600@56Hz, 35 kHz HSync
+			pcurrentvideomodedetails->m_dwWidthInPixels=800;
+			pcurrentvideomodedetails->m_dwHeightInLines=600;
+			pcurrentvideomodedetails->m_dwMarginXInPixelsRecommended=20;
+			pcurrentvideomodedetails->m_dwMarginYInLinesRecommended=20;
+		
+			gpu.xres = pcurrentvideomodedetails->m_dwWidthInPixels;
+	       		gpu.nvhstart = 900;
+			gpu.nvhtotal = 1028;
+			gpu.yres = pcurrentvideomodedetails->m_dwHeightInLines;
+			gpu.nvvstart = 614;
+			gpu.nvvtotal = 630;
+			gpu.pixelDepth = (32 + 1) / 8;
+			gpu.crtchdispend = pcurrentvideomodedetails->m_dwWidthInPixels;
+			gpu.crtcvstart = gpu.nvvstart;
+			pll_int = (unsigned char)36000000;
+			
 			if (video_encoder == ENCODER_CONEXANT)
 				encoder_ok = conexant_calc_vga_mode(av_type, pll_int, newmode.encoder_mode);
 			else if (video_encoder == ENCODER_FOCUS);
-				//No focus VGA functions yet
-			else printk("Error - unknown encoder type detected\n");
+				//No focus VGA functions as yet
 		}
-		/*newmode.ext.vend = video_mode->yres - 1;
-		newmode.ext.vtotal = vTotal;
-		newmode.ext.vcrtc = video_mode->yres - 1;
-		newmode.ext.vsyncstart = vStart;
-		newmode.ext.vsyncend = vStart + 3;
-		newmode.ext.vvalidstart = 0;
-		newmode.ext.vvalidend = video_mode->yres - 1;
-		newmode.ext.hend = video_mode->xres - 1;
-		newmode.ext.htotal = hTotal;
-		newmode.ext.hcrtc = video_mode->xres - 1;
-		newmode.ext.hsyncstart = hStart;
-		newmode.ext.hsyncend = hStart + 32;
-		newmode.ext.hvalidstart = 0;
-		newmode.ext.hvalidend = video_mode->xres - 1;
-	*/
 	}
 	else {	
 
-	/* Normal composite */
+	/* Everything else - normal SDTV */
 		switch(pcurrentvideomodedetails->m_nVideoModeIndex) {
 			case VIDEO_MODE_640x480:
 				pcurrentvideomodedetails->m_dwWidthInPixels=640;
@@ -207,21 +233,7 @@ void BootVgaInitializationKernelNG(CURRENT_VIDEO_MODE_DETAILS * pcurrentvideomod
 			encoder_ok = focus_calc_mode(&encoder_mode, &newmode);
 		}
 		else printk("Error - unknown encoder type detected\n");
-		/*
-		crtc_hDisplay = (newmode.ext.crtchdispend / 8) - 1;
-		crtc_hStart = (newmode.ext.htotal - 32) / 8;
-		crtc_hEnd = crtc_hStart + 1;
-		crtc_hTotal = (newmode.ext.htotal) / 8 - 1;
-		crtc_vDisplay = video_mode->yres - 1;
-		crtc_vStart = newmode.ext.crtcvstart;
-		crtc_vEnd = newmode.ext.crtcvstart + 3;
-		crtc_vTotal = newmode.ext.crtcvtotal;
-		*/
-	}
-
-	if (encoder_ok) {
-		//Set up the GPU 
-		GPU_PARAMETER gpu;
+		
         	gpu.xres = pcurrentvideomodedetails->m_dwWidthInPixels;
 	       	gpu.nvhstart = newmode.ext.hsyncstart;
 		gpu.nvhtotal = newmode.ext.htotal;
@@ -232,8 +244,10 @@ void BootVgaInitializationKernelNG(CURRENT_VIDEO_MODE_DETAILS * pcurrentvideomod
 		gpu.crtchdispend = newmode.ext.width;
 		gpu.crtcvstart = newmode.ext.vsyncstart;
 		gpu.crtcvtotal = newmode.ext.vtotal;
-		gpu.av_type = av_type;
-		
+	}
+
+	if (encoder_ok) {
+		//Set up the GPU 
 		SetGPURegister(&gpu, pcurrentvideomodedetails->m_pbBaseAddressVideo);
 		//Load registers into chip
 		if (video_encoder == ENCODER_CONEXANT) {
