@@ -141,12 +141,19 @@ static void SetVGAConexantRegister(BYTE pll_int, BYTE* pbRegs)
 {
 	BYTE b;
 
-	
+	// Protect against overclocking
+	if (pll_int > 36) {
+		pll_int = 36; // 36 / 6 * 13.5 MHz = 81 MHz, just above the limit.
+	}
+	if (pll_int == 0) {
+		pll_int = 1;  // 0 will cause a burnout ...
+	}
+
 	I2CWriteBytetoRegister(0x45,0xba,0x80); // Conexant reset
 	wait_ms(5);
 	I2CTransmitByteGetReturn(0x45, 0xb8);       // dummy read to wait for completion
 	I2CWriteBytetoRegister(0x45,0xa0,0x13); // Switch to Pseudo-Master mode
-	
+
 	if (DetectAvType() == AV_VGA_SOG)
 	{
 		I2CWriteBytetoRegister(0x45,0x2e,0xad); // HDTV_EN = 1, RPR_SYNC_DIS = 1, BPB_SYNC_DIS = 1, HD_SYNC_EDGE = 1, RASTER_SEL = 01
@@ -175,6 +182,57 @@ static void SetVGAConexantRegister(BYTE pll_int, BYTE* pbRegs)
 	I2CWriteBytetoRegister(0x45,0x6c,0x80|b);
 }
 
+static void SetHDTVConexantRegister(
+	HDTV_MODE hdtv_mode,
+	BYTE pll_int,
+	BYTE* pbRegs
+){
+	BYTE b;
+
+	// Protect against overclocking
+	if (pll_int > 36) {
+		pll_int = 36; // 36 / 6 * 13.5 MHz = 81 MHz, just above the limit.
+	}
+	if (pll_int == 0) {
+		pll_int = 1;  // 0 will cause a burnout ...
+	}
+	switch (hdtv_mode) {
+		case HDTV_480p:
+			// use sync on green
+			I2CWriteBytetoRegister(0x45, 0x2e, 0xad); // HDTV_EN = 1, RPR_SYNC_DIS = 1, BPB_SYNC_DIS = 1, HD_SYNC_EDGE = 1, RASTER_SEL = 01
+			I2CWriteBytetoRegister(0x45, 0x32, 0x48); // DRVS = 2, IN_MODE[3] = 1;
+			break;
+		case HDTV_720p:
+			// use sync on green
+			I2CWriteBytetoRegister(0x45, 0x2e, 0xaa); // HDTV_EN = 1, RPR_SYNC_DIS = 1, BPB_SYNC_DIS = 1, HD_SYNC_EDGE = 1, RASTER_SEL = 01
+			I2CWriteBytetoRegister(0x45, 0x32, 0x49); // DRVS = 2, IN_MODE[3] = 1, CSC_SEL=1;
+			break;
+		case HDTV_1080i:
+			// use sync on green
+			I2CWriteBytetoRegister(0x45, 0x2e, 0xab); // HDTV_EN = 1, RPR_SYNC_DIS = 1, BPB_SYNC_DIS = 1, HD_SYNC_EDGE = 1, RASTER_SEL = 01
+			I2CWriteBytetoRegister(0x45, 0x32, 0x49); // DRVS = 2, IN_MODE[3] = 1, CSC_SEL=1;
+			break;
+	}
+	I2CWriteBytetoRegister(0x45,0x3c,0x90); // MCOMPY
+	I2CWriteBytetoRegister(0x45,0x3e,0x8c); // MCOMPU
+	I2CWriteBytetoRegister(0x45,0x40,0x8c); // MCOMPV
+	I2CWriteBytetoRegister(0x45,0x6c,0x46); // FLD_MODE = 10, EACTIVE = 1, EN_SCART = 0, EN_REG_RD = 1
+	I2CWriteBytetoRegister(0x45,0x9c,0x00); // PLL_FRACT
+	I2CWriteBytetoRegister(0x45,0x9e,0x00); // PLL_FRACT
+	I2CWriteBytetoRegister(0x45,0xa0,pll_int); // PLL_INT
+	I2CWriteBytetoRegister(0x45,0xba,0x28); // SLAVER = 1, DACDISD = 1
+	I2CWriteBytetoRegister(0x45,0xc4,0x01); // EN_OUT = 1
+	I2CWriteBytetoRegister(0x45,0xc6,0x9c); // IN_MODE = 24 bit YCrCb multiplexed
+	I2CWriteBytetoRegister(0x45,0xce,0xe1); // OUT_MUXA = 01, OUT_MUXB = 00, OUT_MUXC = 10, OUT_MUXD = 11
+	I2CWriteBytetoRegister(0x45,0xd6,0x0c); // OUT_MODE = 11 (RGB / SCART / HDTV)
+	*((DWORD *)&pbRegs[0x680630]) = 2; // switch GPU to YCrCb
+	*((DWORD *)&pbRegs[0x68084c]) = 0x801080;
+
+	// Timing Reset
+	b=I2CTransmitByteGetReturn(0x45, 0x6c)&(0x7f);
+	I2CWriteBytetoRegister(0x45,0x6c,0x80|b);
+}
+
 
 static void SetTVConexantRegister(const TV_MODE_PARAMETER* mode, const BLANKING_PARAMETER* blanks, BYTE* pbRegs)
 {
@@ -195,7 +253,7 @@ static void SetTVConexantRegister(const TV_MODE_PARAMETER* mode, const BLANKING_
 	b=I2CTransmitByteGetReturn(0x45, 0x8e)&(~0x07);
 	I2CWriteBytetoRegister(0x45,0x8e,((mode->h_clki>>8)&0x07)|b);
 	I2CWriteBytetoRegister(0x45,0x8a,((mode->h_clki)&0xff));
-	
+
 	// H_CLKO
 	b=I2CTransmitByteGetReturn(0x45, 0x86)&(~0x0f);
 	I2CWriteBytetoRegister(0x45,0x86,((h_clko>>8)&0x0f)|b);
@@ -820,7 +878,7 @@ void SetTvModeParameter(const TV_MODE_PARAMETER* mode, BYTE *pbRegs) {
 	SetGPURegister(&gpu, pbRegs);
 }
 
-void SetVgaModeParameter(const VGA_MODE_PARAMETER* mode, BYTE *pbRegs) {
+void SetVgaHdtvModeParameter(const VGA_MODE_PARAMETER* mode, BYTE *pbRegs) {
 	double f_h;
 	double f_v;
 	GPU_PARAMETER gpu;
@@ -842,7 +900,18 @@ void SetVgaModeParameter(const VGA_MODE_PARAMETER* mode, BYTE *pbRegs) {
 	gpu.crtchdispend = mode->xres;
 	gpu.crtcvstart = mode->vsyncstart;
 	gpu.crtcvtotal = mode->vtotal;
-
-	SetVGAConexantRegister(pll_int, pbRegs);
+    if (DetectAvType() == AV_HDTV) {
+		HDTV_MODE hdtv_mode = HDTV_480p;
+		if (mode->yres > 800) {
+			hdtv_mode = HDTV_1080i;
+		}
+		else if (mode->yres > 600) {
+			hdtv_mode = HDTV_720p;
+		}
+		SetHDTVConexantRegister(hdtv_mode, pll_int, pbRegs);
+	}
+	else {
+		SetVGAConexantRegister(pll_int, pbRegs);
+	}
 	SetGPURegister(&gpu, pbRegs);
 }

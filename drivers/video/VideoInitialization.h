@@ -24,6 +24,12 @@ typedef enum enumAvTypes {
 	AV_VGA
 } EAVTYPE;
 
+typedef enum enumHdtvModes {
+	HDTV_480p,
+	HDTV_720p,
+	HDTV_1080i
+} HDTV_MODE;
+
 // this struct contains all required parameter to define a TV mode
 
 typedef struct {
@@ -97,6 +103,6 @@ int FindOverscanValues(
 );
 
 void SetTvModeParameter(const TV_MODE_PARAMETER* mode, unsigned char *pbRegs);
-void SetVgaModeParameter(const VGA_MODE_PARAMETER* mode, unsigned char *pbRegs);
+void SetVgaHdtvModeParameter(const VGA_MODE_PARAMETER* mode, unsigned char *pbRegs);
 
 #endif

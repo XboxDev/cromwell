@@ -244,7 +244,24 @@ void BootVgaInitializationKernelNG(CURRENT_VIDEO_MODE_DETAILS * pcurrentvideomod
 		mode.vsyncstart = 614;
 		mode.vtotal = 630;
 		mode.pixclock = 36000000;
-		SetVgaModeParameter(&mode, pcurrentvideomodedetails->m_pbBaseAddressVideo);
+		SetVgaHdtvModeParameter(&mode, pcurrentvideomodedetails->m_pbBaseAddressVideo);
+	}
+	else if (avType == AV_HDTV) {
+		VGA_MODE_PARAMETER mode;
+		// Settings for 720x480@60Hz (480p)
+		pcurrentvideomodedetails->m_dwWidthInPixels=720;
+		pcurrentvideomodedetails->m_dwHeightInLines=480;
+		pcurrentvideomodedetails->m_dwMarginXInPixelsRecommended=0;
+		pcurrentvideomodedetails->m_dwMarginYInLinesRecommended=0;
+		mode.bpp = 32;
+		mode.xres = 720;
+		mode.hsyncstart = 738;
+		mode.htotal =  858;
+		mode.yres = 480;
+		mode.vsyncstart = 489;
+		mode.vtotal = 525;
+		mode.pixclock = 27027000;
+		SetVgaHdtvModeParameter(&mode, pcurrentvideomodedetails->m_pbBaseAddressVideo);
 	}
 	else
 	{
