@@ -378,11 +378,14 @@ static int BootIdeDriveInit(unsigned uIoBase, int nIndexDrive)
 				if(pw[n] == ' ') pw[n] = 0;
 			}
 		}
-		tsaHarddiskInfo[nIndexDrive].s_length = 
+		tsaHarddiskInfo[nIndexDrive].s_length =
 			copy_swap_trim(tsaHarddiskInfo[nIndexDrive].m_szSerial,(BYTE*)pw,0x14);
 		pw=(WORD *)&(drive_info[27]);
-		tsaHarddiskInfo[nIndexDrive].m_length = 
+		tsaHarddiskInfo[nIndexDrive].m_length =
 			copy_swap_trim(tsaHarddiskInfo[nIndexDrive].m_szIdentityModelNumber,(BYTE *)pw,0x28);
+
+	tsaHarddiskInfo[nIndexDrive].m_szSerial[sizeof(tsaHarddiskInfo[0].m_szSerial)-1]='\0';
+	tsaHarddiskInfo[nIndexDrive].m_szIdentityModelNumber[sizeof(tsaHarddiskInfo[0].m_szIdentityModelNumber)-1]='\0';
 
 /*
 		for(n=0; n<20;n+=2) { tsaHarddiskInfo[nIndexDrive].m_szSerial[n]=(*pw)>>8; tsaHarddiskInfo[nIndexDrive].m_szSerial[n+1]=(char)(*pw); pw++; }
