@@ -469,7 +469,7 @@ int romcopy (
      
 	//Apply the SmartXX bios identifier data
       	writeBiosIdentifier(flash256, 256*1024);
-      	writeBiosIdentifier(flash256, 1024*1024);
+      	writeBiosIdentifier(flash1024, 1024*1024);
 	// Write the 256 /1024 Kbyte Image Back
       	f = fopen(binname256, "wb");               
 	fwrite(flash256, 1, 256*1024, f);
