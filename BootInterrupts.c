@@ -228,10 +228,9 @@ void IntHandlerCSmc(void)
 #ifndef XBE
 						{
 							BYTE b=I2CTransmitByteGetReturn(0x10, 0x04);
-							bprintf("Detected new AV type %d, cf %d\n", b, bAvPackType);
-							if((b!=bAvPackType ) && (!((b==6)&&((bAvPackType>=7)||(bAvPackType<=9)))) ) {
-								bAvPackType=BootVgaInitializationKernel(VIDEO_PREFERRED_LINES, false);
-								BootVideoEnableOutput(bAvPackType);
+							bprintf("Detected new AV type %d, cf %d\n", b, currentvideomodedetails.m_bAvPack);
+							if(b!=currentvideomodedetails.m_bAvPack ) {
+								BootVgaInitializationKernel((CURRENT_VIDEO_MODE_DETAILS *)&currentvideomodedetails);
 							}
 						}
 #endif
@@ -240,6 +239,7 @@ void IntHandlerCSmc(void)
 
 				case 4: // AV CABLE HAS BEEN UNPLUGGED
 					bprintf("SMC Interrupt %d: AV cable unplugged\n", nCountInterruptsSmc);
+					currentvideomodedetails.m_bAvPack=0xff;
 					break;
 
 				case 5: // BUTTON PRESSED REQUESTING TRAY OPEN
@@ -314,6 +314,8 @@ void IntHandler3VsyncC(void)  // video VSYNC
 	BootPciInterruptGlobalStackStateAndDisable(&dwTempInt);
 	VIDEO_VSYNC_COUNT++;
 
+	if(VIDEO_VSYNC_COUNT>0) {
+
 		if(fSeenPowerdown) {
 			if(VIDEO_LUMASCALING) {
 				if(VIDEO_LUMASCALING<8) VIDEO_LUMASCALING=0; else VIDEO_LUMASCALING-=8;
@@ -324,27 +326,28 @@ void IntHandler3VsyncC(void)  // video VSYNC
 				I2CTransmitWord(0x45, 0xa800|((VIDEO_RSCALING)&0xff)); // 81
 			}
 			if(VIDEO_BSCALING) {
-				if(VIDEO_BSCALING<18) VIDEO_BSCALING=0; else VIDEO_BSCALING-=18;
+				if(VIDEO_BSCALING<8) VIDEO_BSCALING=0; else VIDEO_BSCALING-=8;
 				I2CTransmitWord(0x45, 0xaa00|((VIDEO_BSCALING)&0xff)); // 49
 			}
 		} else {
 
-			if(VIDEO_LUMASCALING<bFinalConexantAC) {
+			if(VIDEO_LUMASCALING<currentvideomodedetails.m_bFinalConexantAC) {
 				VIDEO_LUMASCALING+=5;
 				I2CTransmitWord(0x45, 0xac00|((VIDEO_LUMASCALING)&0xff)); // 8c
 			}
-			if(VIDEO_RSCALING<bFinalConexantA8) {
+			if(VIDEO_RSCALING<currentvideomodedetails.m_bFinalConexantA8) {
 				VIDEO_RSCALING+=3;
 				I2CTransmitWord(0x45, 0xa800|((VIDEO_RSCALING)&0xff)); // 81
 			}
-			if(VIDEO_BSCALING<bFinalConexantAA) {
-				VIDEO_BSCALING+=4;
+			if(VIDEO_BSCALING<currentvideomodedetails.m_bFinalConexantAA) {
+				VIDEO_BSCALING+=2;
 				I2CTransmitWord(0x45, 0xaa00|((VIDEO_BSCALING)&0xff)); // 49
 			}
 		}
 
+	}
 
-	if(VIDEO_VSYNC_COUNT>10) {
+	if(VIDEO_VSYNC_COUNT>20) {
 		DWORD dwOld=VIDEO_VSYNC_POSITION;
 		char c=(VIDEO_VSYNC_COUNT*4)&0xff;
 		DWORD dw=c;
@@ -353,9 +356,9 @@ void IntHandler3VsyncC(void)  // video VSYNC
 		switch(VIDEO_VSYNC_DIR) {
 			case 0:
 //				dw+=64; dw<<=24;
-				dw=(((VIDEO_VSYNC_POSITION * 192)/VIDEO_WIDTH)+64)<<24;
+				dw=(((VIDEO_VSYNC_POSITION * 192)/currentvideomodedetails.m_dwWidthInPixels)+64)<<24;
 				VIDEO_VSYNC_POSITION+=2;
-				if(VIDEO_VSYNC_POSITION>=(VIDEO_WIDTH-64-VIDEO_MARGINX)) VIDEO_VSYNC_DIR=2;
+				if(VIDEO_VSYNC_POSITION>=(currentvideomodedetails.m_dwWidthInPixels-64-(currentvideomodedetails.m_dwMarginXInPixelsRecommended*2))) VIDEO_VSYNC_DIR=2;
 				break;
 			case 1:
 				dw+=64; dw<<=24;
@@ -368,20 +371,20 @@ void IntHandler3VsyncC(void)  // video VSYNC
 		}
 
 		BootVideoJpegBlitBlend(
-			(DWORD *)(FRAMEBUFFER_START+VIDEO_WIDTH*4*VIDEO_MARGINY+VIDEO_MARGINX*4+(dwOld<<2)), VIDEO_WIDTH * 4, &jpegBackdrop,
-			&dwaTitleArea[dwOld+VIDEO_MARGINX],
+			(DWORD *)(FRAMEBUFFER_START+currentvideomodedetails.m_dwWidthInPixels*4*currentvideomodedetails.m_dwMarginYInLinesRecommended+currentvideomodedetails.m_dwMarginXInPixelsRecommended*4+(dwOld<<2)), currentvideomodedetails.m_dwWidthInPixels * 4, &jpegBackdrop,
+			&dwaTitleArea[dwOld+currentvideomodedetails.m_dwMarginXInPixelsRecommended],
 			0x00ff00ff,
-			&dwaTitleArea[dwOld+VIDEO_MARGINX],
-			VIDEO_WIDTH*4,
+			&dwaTitleArea[dwOld+currentvideomodedetails.m_dwMarginXInPixelsRecommended],
+			currentvideomodedetails.m_dwWidthInPixels*4,
 			4,
 			54, 64
 		);
 		BootVideoJpegBlitBlend(
-			(DWORD *)(FRAMEBUFFER_START+VIDEO_WIDTH*4*VIDEO_MARGINY+VIDEO_MARGINX*4+(VIDEO_VSYNC_POSITION<<2)), VIDEO_WIDTH * 4, &jpegBackdrop,
+			(DWORD *)(FRAMEBUFFER_START+currentvideomodedetails.m_dwWidthInPixels*4*currentvideomodedetails.m_dwMarginYInLinesRecommended+currentvideomodedetails.m_dwMarginXInPixelsRecommended*4+(VIDEO_VSYNC_POSITION<<2)), currentvideomodedetails.m_dwWidthInPixels * 4, &jpegBackdrop,
 			(DWORD *)(((BYTE *)jpegBackdrop.m_pBitmapData)+(jpegBackdrop.m_nWidth*(jpegBackdrop.m_nHeight-64)*jpegBackdrop.m_nBytesPerPixel)),
 			0x00ff00ff | dw,
-			&dwaTitleArea[VIDEO_VSYNC_POSITION+VIDEO_MARGINX],
-			VIDEO_WIDTH*4,
+			&dwaTitleArea[VIDEO_VSYNC_POSITION+currentvideomodedetails.m_dwMarginXInPixelsRecommended],
+			currentvideomodedetails.m_dwWidthInPixels*4,
 			4,
 			54, 64
 		);

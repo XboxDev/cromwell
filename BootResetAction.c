@@ -35,8 +35,10 @@
 
 extern DWORD dwaTitleArea[1024*64];
 JPEG jpegBackdrop;
-BYTE bAvPackType;
+
 int nTempCursorMbrX, nTempCursorMbrY;
+
+volatile CURRENT_VIDEO_MODE_DETAILS currentvideomodedetails;
 
 const KNOWN_FLASH_TYPE aknownflashtypesDefault[] = {
 	{ 0xbf, 0x61, "SST49LF020", 0x40000 },  // default flash types
@@ -119,15 +121,36 @@ extern void BootResetAction ( void ) {
 	BootPciPeripheralInitialization();
 	bprintf("BOOT: done with PCI initialization\n\r");
 
-	// bring up Video (2BL portion)
-#ifndef XBE
-	BootVgaInitialization();
-	bprintf("BOOT: done with VGA initialization\n\r");
-#endif
 
 	BootEepromReadEntireEEPROM();
 	bprintf("BOOT: Read EEPROM\n\r");
 //	DumpAddressAndData(0, (BYTE *)&eeprom, 256);
+
+	currentvideomodedetails.m_nVideoModeIndex=VIDEO_PREFERRED_MODE;
+#ifdef XBE
+	currentvideomodedetails.m_fForceEncoderLumaAndChromaToZeroInitially=0;
+#else
+	currentvideomodedetails.m_fForceEncoderLumaAndChromaToZeroInitially=1;
+#endif
+
+	BootVgaInitializationKernel((CURRENT_VIDEO_MODE_DETAILS *)&currentvideomodedetails);
+
+	bprintf("BOOT: kern VGA init done\n\r");
+
+	{ // decode and malloc backdrop bitmap
+		extern int _start_backdrop, _end_backdrop;
+		BootVideoJpegUnpackAsRgb(
+			(BYTE *)&_start_backdrop,
+			((DWORD)(&_end_backdrop)-(DWORD)(&_start_backdrop)),
+			&jpegBackdrop
+		);
+	}
+	bprintf("BOOT: backdrop unpacked\n\r");
+
+		// paint the backdrop
+	BootVideoClearScreen(&jpegBackdrop, 0, 0xffff);
+	bprintf("BOOT: done backdrop\n\r");
+
 
 #ifndef XBE
 	// configure ACPI hardware to generate interrupt on PIC-chip pin6 action (via EXTSMI#)
@@ -143,34 +166,11 @@ extern void BootResetAction ( void ) {
 		I2CTransmitWord(0x10, 0x0b00); // unknown, done after video update
 		I2CTransmitWord(0x10, 0x0b01); // unknown, done immediately after reading out eeprom data
 		I2CTransmitWord(0x10, 0x1a01); // unknown, done immediately after reading out eeprom data
-		I2CTransmitWord( 0x10, 0x1b04); // unknown
+		I2CTransmitWord(0x10, 0x1b04); // unknown
 		BootPciInterruptGlobalPopState(dw);
 	}
 #endif
 
-#ifdef XBE
-	bAvPackType=BootVgaInitializationKernel(VIDEO_PREFERRED_LINES, false);
-#else
-	bAvPackType=BootVgaInitializationKernel(VIDEO_PREFERRED_LINES, true);
-#endif
-	
-	bprintf("BOOT: kern VGA init done\n\r");
-
-	{ // decode and malloc backdrop bitmap
-		extern int _start_backdrop, _end_backdrop;
-		BootVideoJpegUnpackAsRgb(
-			(BYTE *)&_start_backdrop,
-			((DWORD)(&_end_backdrop)-(DWORD)(&_start_backdrop)),
-			&jpegBackdrop
-		);
-	}
-		// paint the backdrop
-	BootVideoClearScreen(&jpegBackdrop, 0, 0xffff);
-	bprintf("BOOT: done backdrop\n\r");
-
-		// finally bring up video
-	BootVideoEnableOutput(bAvPackType);
-	bprintf("BOOT: video up\n\r");
 
 	// display solid red frontpanel LED while we start up
 	I2cSetFrontpanelLed(I2C_LED_RED0 | I2C_LED_RED1 | I2C_LED_RED2 | I2C_LED_RED3 );
@@ -193,22 +193,22 @@ extern void BootResetAction ( void ) {
 	IoOutputByte(0x40, 0xff);
 	IoOutputByte(0x40, 0xff);
 
-	VIDEO_CURSOR_POSY=VIDEO_MARGINY;
-	VIDEO_CURSOR_POSX=(VIDEO_MARGINX/*+64*/)*4;
+	VIDEO_CURSOR_POSY=currentvideomodedetails.m_dwMarginYInLinesRecommended;
+	VIDEO_CURSOR_POSX=(currentvideomodedetails.m_dwMarginXInPixelsRecommended/*+64*/)*4;
 #ifdef XBE
 	printk("\2Xbox Linux XROMWELL  " VERSION "\2\n" );
 #else
 	printk("\2Xbox Linux Clean BIOS  " VERSION "\2\n" );
 #endif
-	VIDEO_CURSOR_POSY=VIDEO_MARGINY+32;
-	VIDEO_CURSOR_POSX=(VIDEO_MARGINX/*+64*/)*4;
+	VIDEO_CURSOR_POSY=currentvideomodedetails.m_dwMarginYInLinesRecommended+32;
+	VIDEO_CURSOR_POSX=(currentvideomodedetails.m_dwMarginXInPixelsRecommended/*+64*/)*4;
 	printk( __DATE__ " -  http://xbox-linux.sf.net\n");
-	VIDEO_CURSOR_POSX=(VIDEO_MARGINX/*+64*/)*4;
+	VIDEO_CURSOR_POSX=(currentvideomodedetails.m_dwMarginXInPixelsRecommended/*+64*/)*4;
 	printk("(C)2002 Xbox Linux Team - Licensed under the GPL\n");
 	printk("\n");
 
 		// capture title area
-	BootVideoBlit(&dwaTitleArea[0], VIDEO_WIDTH*4, ((DWORD *)FRAMEBUFFER_START)+(VIDEO_MARGINY*VIDEO_WIDTH), VIDEO_WIDTH*4, 64);
+	BootVideoBlit(&dwaTitleArea[0], currentvideomodedetails.m_dwWidthInPixels*4, ((DWORD *)FRAMEBUFFER_START)+(currentvideomodedetails.m_dwMarginYInLinesRecommended*currentvideomodedetails.m_dwWidthInPixels), currentvideomodedetails.m_dwWidthInPixels*4, 64);
 
 	nTempCursorX=VIDEO_CURSOR_POSX;
 	nTempCursorY=VIDEO_CURSOR_POSY;
@@ -255,7 +255,7 @@ extern void BootResetAction ( void ) {
 	printk("AV: ");
 	VIDEO_ATTR=0xffc8c800;
 
-	switch(bAvPackType) {
+	switch(currentvideomodedetails.m_bAvPack) {
 		case 0:
 			printk("Scart");
 			break;
@@ -421,7 +421,7 @@ extern void BootResetAction ( void ) {
 		{
 			BYTE ba[512];
 			if(BootIdeReadSector(0, &ba[0], 0, 0, 512)) {
-				printk("Unable to read HDD first sector\n");
+				printk("Unable to read HDD first sector getting partition table\n");
 			} else {
 
 				if( (ba[0x1fe]==0x55) && (ba[0x1ff]==0xaa) ) fMbrPresent=true;
@@ -475,8 +475,7 @@ extern void BootResetAction ( void ) {
 						if(pb[4]) {
 							VIDEO_ATTR=0xffc8c8c8;
 							if(pb[0]&0x80) VIDEO_ATTR=0xffd8d8d8;
-							nPos+=sprintf(&sz[nPos],"Start: 0x%08x\tTotal: 0x%08x\t(%dMB)\n", *((DWORD *)&pb[8]), *((DWORD *)&pb[0xc]), (*((DWORD
-*)&pb[0xc]))/2048 );
+							nPos+=sprintf(&sz[nPos],"Start: 0x%08x \tTotal: 0x%08x\t(%dMB)\n", *((DWORD *)&pb[8]), *((DWORD *)&pb[0xc]), (*((DWORD*)&pb[0xc]))/2048 );
 						} else {
 							VIDEO_ATTR=0xffa8a8a8;
 							sz[nPos++]='\n'; sz[nPos]='\0';

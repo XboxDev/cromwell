@@ -1,10 +1,8 @@
 ////////////////////// compile-time options ////////////////////////////////
 
-// selects between the supported video modes, both PAL at the moment
-#define VIDEO_PREFERRED_LINES 600
-//#define VIDEO_PREFERRED_LINES 576
-//#define VIDEO_PREFERRED_LINES 480
-//
+// selects between the supported video modes, see boot.h for enum listing those available
+#define VIDEO_PREFERRED_MODE VIDEO_MODE_800x600
+
 // uncomment to force CD boot mode even if MBR present
 // default is to boot from HDD if MBR present, else CD
 //#define FORCE_CD_BOOT

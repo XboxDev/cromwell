@@ -63,8 +63,8 @@ void setup(void* KernelPos, void* PhysInitrdPos, void* InitrdSize, char* kernel_
 void BootStartBiosDoIcon(int nDestX, int nDestY, int nSrcX, int nSrcLength, int nSrcHeight, BYTE bOpaqueness)
 {
 		BootVideoJpegBlitBlend(
-			(DWORD *)(FRAMEBUFFER_START+/*(640*4*VIDEO_MARGINY)*/+(nDestX<<2)+(VIDEO_WIDTH*4*nDestY)),
-			VIDEO_WIDTH * 4, // dest bytes per line
+			(DWORD *)(FRAMEBUFFER_START+/*(640*4*currentvideomodedetails.m_dwMarginYInLinesRecommended)*/+(nDestX<<2)+(currentvideomodedetails.m_dwWidthInPixels*4*nDestY)),
+			currentvideomodedetails.m_dwWidthInPixels * 4, // dest bytes per line
 			&jpegBackdrop, // source jpeg object
 			(DWORD *)(((BYTE *)jpegBackdrop.m_pBitmapData)+((jpegBackdrop.m_nHeight-64)*jpegBackdrop.m_nWidth*jpegBackdrop.m_nBytesPerPixel)+(nSrcX *jpegBackdrop.m_nBytesPerPixel)),
 			0xff00ff|(((DWORD)bOpaqueness)<<24),
@@ -115,7 +115,7 @@ void StartBios(	int nDrive, int nActivePartition ) {
 	{
 		int nTempCursorX, nTempCursorY, nTempStartMessageCursorX, nTempStartMessageCursorY, nTempEntryX, nTempEntryY;
 		DWORD dwTick=BIOS_TICK_COUNT;
-		int nModeDependentOffset=(VIDEO_WIDTH-640)/2;  // icon offsets computed for 640 modes, retain centering in other modes
+		int nModeDependentOffset=(currentvideomodedetails.m_dwWidthInPixels-640)/2;  // icon offsets computed for 640 modes, retain centering in other modes
 		#define DELAY_TICKS 72
 		#define TRANPARENTNESS 0x30
 		#define OPAQUENESS 0xc0
@@ -128,7 +128,7 @@ void StartBios(	int nDrive, int nActivePartition ) {
 		nTempEntryY=VIDEO_CURSOR_POSY;
 
 		nTempCursorX=VIDEO_CURSOR_POSX;
-		nTempCursorY=VIDEO_HEIGHT-80;
+		nTempCursorY=currentvideomodedetails.m_dwHeightInLines-80;
 
 		VIDEO_CURSOR_POSX=((215+nModeDependentOffset)<<2);
 		VIDEO_CURSOR_POSY=nTempCursorY-100;
@@ -176,7 +176,7 @@ void StartBios(	int nDrive, int nActivePartition ) {
 				} else {
 					dwTick=BIOS_TICK_COUNT;
 					BootVideoClearScreen(&jpegBackdrop, nTempCursorY, VIDEO_CURSOR_POSY+1);  // blank out volatile data area
-					VIDEO_CURSOR_POSX=((nModeDependentOffset+350)<<2)+VIDEO_MARGINX;
+					VIDEO_CURSOR_POSX=((nModeDependentOffset+350)<<2)+currentvideomodedetails.m_dwMarginXInPixelsRecommended;
 					VIDEO_CURSOR_POSY=nTempCursorY;
 					printk("/dev/hdb\n");
 					while((BIOS_TICK_COUNT<(dwTick+DELAY_TICKS)) && (traystate==ETS_OPEN_OR_OPENING)) {
@@ -192,7 +192,7 @@ void StartBios(	int nDrive, int nActivePartition ) {
 					} else {
 						dwTick=BIOS_TICK_COUNT;
 						BootVideoClearScreen(&jpegBackdrop, nTempCursorY, VIDEO_CURSOR_POSY+1);  // blank out volatile data area
-						VIDEO_CURSOR_POSX=((440+nModeDependentOffset)<<2)+VIDEO_MARGINX;
+						VIDEO_CURSOR_POSX=((440+nModeDependentOffset)<<2)+currentvideomodedetails.m_dwMarginXInPixelsRecommended;
 						VIDEO_CURSOR_POSY=nTempCursorY;
 						printk("Setup [TBD]\n");
 						while((BIOS_TICK_COUNT<(dwTick+DELAY_TICKS)) && (traystate==ETS_OPEN_OR_OPENING)) {
@@ -262,7 +262,7 @@ void StartBios(	int nDrive, int nActivePartition ) {
 			DWORD dwY=VIDEO_CURSOR_POSY;
 			DWORD dwX=VIDEO_CURSOR_POSX;
 
-			BootVideoBlit((DWORD *)&baBackground[0], 320*4, (DWORD *)(FRAMEBUFFER_START+(VIDEO_CURSOR_POSY*VIDEO_WIDTH*4)+VIDEO_CURSOR_POSX), VIDEO_WIDTH*4, 32);
+			BootVideoBlit((DWORD *)&baBackground[0], 320*4, (DWORD *)(FRAMEBUFFER_START+(VIDEO_CURSOR_POSY*currentvideomodedetails.m_dwWidthInPixels*4)+VIDEO_CURSOR_POSX), currentvideomodedetails.m_dwWidthInPixels*4, 32);
 
 #ifndef IS_XBE_BOOTLOADER
 			while((b=BootIdeGetTrayState())>=8) {
@@ -285,8 +285,8 @@ void StartBios(	int nDrive, int nActivePartition ) {
 			VIDEO_CURSOR_POSX=dwX;
 			VIDEO_CURSOR_POSY=dwY;
 			BootVideoBlit(
-				(DWORD *)(FRAMEBUFFER_START+(VIDEO_CURSOR_POSY*VIDEO_WIDTH*4)+VIDEO_CURSOR_POSX),
-				VIDEO_WIDTH*4, (DWORD *)&baBackground[0], 320*4, 32
+				(DWORD *)(FRAMEBUFFER_START+(VIDEO_CURSOR_POSY*currentvideomodedetails.m_dwWidthInPixels*4)+VIDEO_CURSOR_POSX),
+				currentvideomodedetails.m_dwWidthInPixels*4, (DWORD *)&baBackground[0], 320*4, 32
 			);
 
 				// wait until the media is readable
@@ -327,8 +327,8 @@ void StartBios(	int nDrive, int nActivePartition ) {
 			VIDEO_CURSOR_POSX=dwX;
 			VIDEO_CURSOR_POSY=dwY;
 			BootVideoBlit(
-				(DWORD *)(FRAMEBUFFER_START+(VIDEO_CURSOR_POSY*VIDEO_WIDTH*4)+VIDEO_CURSOR_POSX),
-				VIDEO_WIDTH*4, (DWORD *)&baBackground[0], 320*4, 32
+				(DWORD *)(FRAMEBUFFER_START+(VIDEO_CURSOR_POSY*currentvideomodedetails.m_dwWidthInPixels*4)+VIDEO_CURSOR_POSX),
+				currentvideomodedetails.m_dwWidthInPixels*4, (DWORD *)&baBackground[0], 320*4, 32
 			);
 
 //			BootVideoClearScreen();
@@ -501,8 +501,8 @@ void StartBios(	int nDrive, int nActivePartition ) {
 	printf("\n");
 	{
 		char *sz="\2Starting Linux\2";
-		VIDEO_CURSOR_POSX=((VIDEO_WIDTH-BootVideoGetStringTotalWidth(sz))/2)*4;
-		VIDEO_CURSOR_POSY=VIDEO_HEIGHT-64;
+		VIDEO_CURSOR_POSX=((currentvideomodedetails.m_dwWidthInPixels-BootVideoGetStringTotalWidth(sz))/2)*4;
+		VIDEO_CURSOR_POSY=currentvideomodedetails.m_dwHeightInLines-64;
 
 		VIDEO_ATTR=0xff9f9fbf;
 		printk(sz);
@@ -530,7 +530,9 @@ void StartBios(	int nDrive, int nActivePartition ) {
 			// force the HDD into a good mode 0x40 ==UDMA | 2 == UDMA2
 			nAta=2; // best transfer mode without 80-pin cable
 		}
+//		nAta=1;
 		BootIdeSetTransferMode(0, 0x40 | nAta);
+//		BootIdeSetTransferMode(0, 0x04);
 	}
 		__asm __volatile__ (
 

@@ -26,6 +26,7 @@
 #include  "boot.h"
 //#include "string.h"
 #include "grub/shared.h"
+#include "BootEEPROM.h"
 
 ////////////////////////////////////
 // IDE types and constants
@@ -467,11 +468,10 @@ static int BootIdeDriveInit(unsigned uIoBase, int nIndexDrive)
 	*/
 	}
 
-
-	if((drive_info[128]&0x0104)==0x0104) { // 'security' is in force, unlock the drive
+	if((drive_info[128]&0x0004)==0x0004) { // 'security' is in force, unlock the drive (was 0x104/0x104)
 		BYTE baMagic[0x200], baKeyFromEEPROM[0x10], baEeprom[0x30];
-		int n;
-		int nEepHash;
+		bool fUnlocked=false;
+		int n, nVersionHashing=10;
 		tsIdeCommandParams tsicp1 = IDE_DEFAULT_COMMAND;
 		DWORD dwMagicFromEEPROM;
 		void genHDPass(
@@ -482,84 +482,104 @@ static int BootIdeDriveInit(unsigned uIoBase, int nIndexDrive)
 		);
 		DWORD BootHddKeyGenerateEepromKeyData(
 			BYTE *eeprom_data,
-			BYTE *HDKey
+			BYTE *HDKey,
+			int nVersion
 		);
-		int nEepromAttempts=3;  // three goes at getting uncorrupted EEPROM only
+		int nVersionSuccessfulDecrypt=0;
 
-		printk(" Locked");
+		printk(" Lck[%x]", drive_info[128]);
 
-//		BootCpuCache(true);  // operate at good speed
 
 		dwMagicFromEEPROM=0;
-		while((dwMagicFromEEPROM==0) && (nEepromAttempts--)) {
 
-			nEepHash=0;
+		while((nVersionHashing<=11) && (!fUnlocked)) {
 
-			for(n=0;n<0x30;n++) {
-				int nValue=-1;
-				while(nValue<0) {
-					nValue=I2CTransmitByteGetReturn(0x54, n);
-					if(nValue<0) { int n1=20; while(n1--) Delay();  }  // in event of error, have a little sit down
-				}
-				baEeprom[n]=(BYTE)nValue;
-				nEepHash+=baEeprom[n];
+			memcpy(&baEeprom[0], &eeprom, 0x30); // first 0x30 bytes from EEPROM image we picked up earlier
+			dwMagicFromEEPROM = BootHddKeyGenerateEepromKeyData( &baEeprom[0], &baKeyFromEEPROM[0], nVersionHashing);
+
+			if(!dwMagicFromEEPROM) {
+				nVersionHashing++;
+				continue;
 			}
-//			DumpAddressAndData(0, &baEeprom[0], 0x30);
-			dwMagicFromEEPROM = BootHddKeyGenerateEepromKeyData( &baEeprom[0], &baKeyFromEEPROM[0]);  // 0 = something screwed with EEPROM read
+			nVersionSuccessfulDecrypt=nVersionHashing;
 
-		}
+				// clear down the unlock packet, except for b8 set in first word (high security unlock)
 
+			for(n=0;n<0x200;n++) baMagic[n]=0;
+			{
+				WORD * pword=(WORD *)&baMagic[0];
+				*pword=0;  // try user
+			}
 
-		if(nEepromAttempts<1) {
-			printk("Corrupted EEPROM!\n");
-#if INCLUDE_FILTROR
-			DumpAddressAndData(0, &baEeprom[0], 0x30);
-#endif
-	I2cSetFrontpanelLed(0x10);
-
-			while(1) ;
-		}
-
-			// clear down the unlock packet, except for b8 set in first word (high security unlock)
-
-		for(n=0;n<0x200;n++) baMagic[n]=0;
-		baMagic[1]=0x01;
-
-		genHDPass( baKeyFromEEPROM, tsaHarddiskInfo[nIndexDrive].m_szSerial, tsaHarddiskInfo[nIndexDrive].m_szIdentityModelNumber, &baMagic[2]);
+			genHDPass( baKeyFromEEPROM, tsaHarddiskInfo[nIndexDrive].m_szSerial, tsaHarddiskInfo[nIndexDrive].m_szIdentityModelNumber, &baMagic[2]);
 
 			if(BootIdeWaitNotBusy(uIoBase)) {
-					printk_debug("  %d:  Not Ready\n", nIndexDrive);
+					printk("  %d:  Not Ready\n", nIndexDrive);
 					return 1;
 			}
 			tsicp1.m_bDrivehead = IDE_DH_DEFAULT | IDE_DH_HEAD(0) | IDE_DH_CHS | IDE_DH_DRIVE(nIndexDrive);
 
-				if(BootIdeIssueAtaCommand(uIoBase, IDE_CMD_SECURITY_UNLOCK, &tsicp1)) {
-					printk_debug("  %d:  when issuing unlock command FAILED, error=%02X\n", nIndexDrive, IoInputByte(IDE_REG_ERROR(uIoBase)));
-					return 1;
-				}
+			if(BootIdeIssueAtaCommand(uIoBase, IDE_CMD_SECURITY_UNLOCK, &tsicp1)) {
+				printk("  %d:  when issuing unlock command FAILED, error=%02X\n", nIndexDrive, IoInputByte(IDE_REG_ERROR(uIoBase)));
+				return 1;
+			}
 			BootIdeWaitDataReady(uIoBase);
 			BootIdeWriteData(uIoBase, &baMagic[0], IDE_SECTOR_SIZE);
-//			DumpAddressAndData(0, &baMagic[0], 0x30);
 
-			if (BootIdeWaitNotBusy(uIoBase))	{ printk_debug("error on BootIdeIssueAtaCommand wait 1\n"); return 1; }
+			if (BootIdeWaitNotBusy(uIoBase))	{
+				printk("..");
+				{
+					WORD * pword=(WORD *)&baMagic[0];
+					*pword=1;  // try master
+				}
+
+				if(BootIdeIssueAtaCommand(uIoBase, IDE_CMD_SECURITY_UNLOCK, &tsicp1)) {
+					printk("  %d:  when issuing unlock command FAILED, error=%02X\n", nIndexDrive, IoInputByte(IDE_REG_ERROR(uIoBase)));
+					return 1;
+				}
+				BootIdeWaitDataReady(uIoBase);
+				BootIdeWriteData(uIoBase, &baMagic[0], IDE_SECTOR_SIZE);
+
+				if (BootIdeWaitNotBusy(uIoBase))	{
+//					printk("  - Both Master and User unlock attempts failed\n");
+				}
+			}
+
 				// check that we are unlocked
 
 			tsicp.m_bDrivehead = IDE_DH_DEFAULT | IDE_DH_HEAD(0) | IDE_DH_CHS | IDE_DH_DRIVE(nIndexDrive);
 			if(BootIdeIssueAtaCommand(uIoBase, IDE_CMD_GET_INFO, &tsicp)) {
-				printk_debug("  %d:  on issuing get status after unlock detect FAILED, error=%02X\n", nIndexDrive, IoInputByte(IDE_REG_ERROR(uIoBase)));
+				printk("  %d:  on issuing get status after unlock detect FAILED, error=%02X\n", nIndexDrive, IoInputByte(IDE_REG_ERROR(uIoBase)));
 				return 1;
 			}
 			BootIdeWaitDataReady(uIoBase);
 			if(BootIdeReadData(uIoBase, baBuffer, IDE_SECTOR_SIZE)) {
-				printk_debug("  %d:  BootIdeReadData FAILED, error=%02X\n", nIndexDrive, IoInputByte(IDE_REG_ERROR(uIoBase)));
+				printk("  %d:  BootIdeReadData FAILED, error=%02X\n", nIndexDrive, IoInputByte(IDE_REG_ERROR(uIoBase)));
 				return 1;
 			}
+
+	//		printk("post-unlock sec status: 0x%x\n", drive_info[128]);
 			if(drive_info[128]&0x0004) {
-				printk("  %d:  FAILED to unlock drive, security: %04x\n", nIndexDrive, drive_info[128]);
+//				printk("  %d:  FAILED to unlock drive, security: %04x\n", nIndexDrive, drive_info[128]);
 			} else {
-//				printk("  %d:  Drive unlocked, new sec=%04X\n", nIndexDrive, drive_info[128]);
-//				printf("    Unlocked");
+//					printk("  %d:  Drive unlocked, new sec=%04X\n", nIndexDrive, drive_info[128]);
+					fUnlocked=true;
+	//				printf("    Unlocked");
 			}
+
+			nVersionHashing++;
+
+		}
+
+		if(!fUnlocked) {
+			printk("\n");
+			printk("FAILED to unlock drive, sec: %04x; Version=%d, EEPROM:\n", drive_info[128], nVersionSuccessfulDecrypt);
+			VideoDumpAddressAndData(0, &baEeprom[0], 0x30);
+			printk("Computed key:\n");
+			VideoDumpAddressAndData(0, &baMagic[0], 0x40);
+			return 1;
+		}
+
 	} else {
 		if(nIndexDrive==0) printf("  Unlocked");
 	}
@@ -579,14 +599,16 @@ static int BootIdeDriveInit(unsigned uIoBase, int nIndexDrive)
 			printk("      LBA Mode\n");
 	}
 */
-	if(tsaHarddiskInfo[nIndexDrive].m_wCountHeads) { // HDD not DVD (that shows up as 0 heads)
+	if(nIndexDrive==0 /*tsaHarddiskInfo[nIndexDrive].m_wCountHeads */) { // HDD not DVD (that shows up as 0 heads)
 
 		unsigned char ba[512];
+		int nError;
 
+//		printk("Looking at capabilities\n");
 
 			// report on the FATX-ness of the drive contents
 
-		if(BootIdeReadSector(nIndexDrive, &ba[0], 3, 0, 512)) {
+		if((nError=BootIdeReadSector(nIndexDrive, &ba[0], 3, 0, 512))) {
 			printk("  -  Unable to read FATX sector");
 		} else {
 			if( (ba[0]=='B') && (ba[1]=='R') && (ba[2]=='F') && (ba[3]=='R') ) {
@@ -599,8 +621,8 @@ static int BootIdeDriveInit(unsigned uIoBase, int nIndexDrive)
 
 			// report on the MBR-ness of the drive contents
 
-		if(BootIdeReadSector(nIndexDrive, &ba[0], 0, 0, 512)) {
-			printk("     Unable to get first sector");
+		if((nError=BootIdeReadSector(nIndexDrive, &ba[0], 0, 0, 512))) {
+			printk("     Unable to get first sector, returned %d\n", nError);
 		} else {
 			if( (ba[0x1fe]==0x55) && (ba[0x1ff]==0xaa) ) {
 				printk(" - MBR", nIndexDrive);
@@ -612,12 +634,17 @@ static int BootIdeDriveInit(unsigned uIoBase, int nIndexDrive)
 			}
 		}
 
+//		printk("BootIdeDriveInit() HDD completed ok\n");
+
 		printk("\n");
 
 	} else {  // cd/dvd
 		if(BiosCmosRead(0x3d)==0) {  // no bootable HDD
 			BiosCmosWrite(0x3d, 3);  // boot from CD/DVD instead then
 		}
+
+//		printk("BootIdeDriveInit() DVD completed ok\n");
+
 	}
 
 	return 0;
@@ -649,10 +676,12 @@ int BootIdeInit(void)
 			if(!BootIdeReadData(uIoBase, (BYTE *)&waBuffer[0], IDE_SECTOR_SIZE)) {
 //				printk("%04X ", waBuffer[80]);
 				if( ((waBuffer[93]&0xc000)!=0) && ((waBuffer[93]&0x8000)==0) && ((waBuffer[93]&0xe000)!=0x6000)) 	tsaHarddiskInfo[0].m_bCableConductors=80;
+			} else {
+				printk("Error getting final GET_INFO\n");
 			}
 		}
 	}
-	
+
 	if(tsaHarddiskInfo[0].m_bCableConductors==40) {
 		printk("UDMA2\n");
 	} else {
@@ -760,7 +789,7 @@ int BootIdeReadSector(int nDriveIndex, void * pbBuffer, unsigned int block, int 
 	if ((nDriveIndex < 0) || (nDriveIndex >= 2) ||
 	    (tsaHarddiskInfo[nDriveIndex].m_fDriveExists == 0))
 	{
-		printk_debug("unknown drive\n");
+		printk("unknown drive\n");
 		return 1;
 	}
 
@@ -781,7 +810,7 @@ int BootIdeReadSector(int nDriveIndex, void * pbBuffer, unsigned int block, int 
 		ba[0]=0x28; ba[2]=block>>24; ba[3]=block>>16; ba[4]=block>>8; ba[5]=block; ba[7]=0; ba[8]=1;
 
 		if(BootIdeIssueAtapiPacketCommandAndPacket(nDriveIndex, &ba[0])) {
-			bprintf("Unable to issue ATAPI command\n");
+			printk("Unable to issue ATAPI command\n");
 			return 1;
 		}
 
@@ -823,7 +852,7 @@ int BootIdeReadSector(int nDriveIndex, void * pbBuffer, unsigned int block, int 
 	}
 
 	if(BootIdeIssueAtaCommand(uIoBase, IDE_CMD_READ_MULTI_RETRY, &tsicp)) {
-		printk_debug("ide error %02X...\n", IoInputByte(IDE_REG_ERROR(uIoBase)));
+		printk("ide error %02X...\n", IoInputByte(IDE_REG_ERROR(uIoBase)));
 		return 1;
 	}
 	if ((n_bytes != IDE_SECTOR_SIZE) || (byte_offset)) {
@@ -976,12 +1005,18 @@ int BootIdeSetTransferMode(int nIndexDrive, int nMode)
 {
 	tsIdeCommandParams tsicp = IDE_DEFAULT_COMMAND;
 	unsigned int uIoBase = tsaHarddiskInfo[nIndexDrive].m_fwPortBase;
+	BYTE b;
+	DWORD dw;
+
+	if(tsaHarddiskInfo[nIndexDrive].m_bCableConductors==80) {
+//		PciWriteDword(BUS_0, DEV_9, FUNC_0, 0x4c, 0xffff00ff); // 2x30nS address setup on IDE
+	}
 
 	tsicp.m_bDrivehead = IDE_DH_DEFAULT | IDE_DH_HEAD(0) | IDE_DH_CHS | IDE_DH_DRIVE(nIndexDrive);
 	IoOutputByte(IDE_REG_DRIVEHEAD(uIoBase), tsicp.m_bDrivehead);
 
 	if(BootIdeWaitNotBusy(uIoBase)) {
-			printk_debug("  Drive %d: Not Ready\n", nIndexDrive);
+			printk("  Drive %d: Not Ready\n", nIndexDrive);
 			return 1;
 	}
 	{
@@ -994,8 +1029,27 @@ int BootIdeSetTransferMode(int nIndexDrive, int nMode)
 
 //		printk("BootIdeSetTransferMode nReturn = %x/ error %02X\n", nReturn, IoInputByte(IDE_REG_ERROR(uIoBase)) );
 
-		return nReturn;
+		switch(nMode&7) {
+			case 0: b=3; break;
+			case 1: b=1; break;
+			case 2: b=0; break;
+			case 3: b=4; break;
+			case 4: b=5; break;
+			case 5: b=6; break;
+			default: b=6; break;
+		}
+		b|=0xc0;
+		dw=PciReadDword(BUS_0, DEV_9, FUNC_0, 0x60);
+		if(nIndexDrive) { // slave
+			dw&=0xff00ff00;
+			dw|=(b<<16) | (b);
+		} else { // primary
+			dw&=0x00ff00ff;
+			dw|=(b<<24) | (b<<8);
+		}
+//		PciWriteDword(BUS_0, DEV_9, FUNC_0, 0x60, dw); // new
 
+		return nReturn;
 	}
 	return 0;
 }

@@ -145,7 +145,7 @@ start_linux:
 	movl $0x07633461, 0x0f0010b0
 	movl $0x66660000, 0x0f0010cc
 
-//	movl $0x03e00000, 0x0f600800  // new guy, move the video out of the way
+	movl $0x03c00000, 0x0f600800  // new guy, move the video out of the way
 //	movl $0x0, 0x0f680600  // stopped blue horrors previously
 
 	cld             // clear direction flag

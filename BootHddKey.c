@@ -82,37 +82,6 @@ void HMAC_SHA1(
 }
 
 
-/*
-void HMAC_SHA1_calculation(unsigned char *HMAC_result, ... )
-{
-	va_list args;
-	struct SHA1Context context;			
-	unsigned char middle_result[20];
-        va_start(args,HMAC_result);
-
-	HMAC1Reset(&context);
-
-	while(1) {
-		unsigned char *buffer = va_arg(args,unsigned char *);
-		int length;
-
-		if (buffer == NULL) break;
-
-		length = va_arg(args,int);
-
-		SHA1Input(&context,buffer,length);
-
-	}
-	va_end(args);
-
-	SHA1Result(&context,&middle_result[0]);
-	HMAC2Reset(&context);
-        SHA1Input(&context,&middle_result[0],20);
-        SHA1Result(&context,HMAC_result);
-
-}
-*/
-
 void HMAC_SHA1_calculation(int version,unsigned char *HMAC_result, ... )
 {
 	va_list args;
@@ -139,7 +108,8 @@ void HMAC_SHA1_calculation(int version,unsigned char *HMAC_result, ... )
 
 DWORD BootHddKeyGenerateEepromKeyData(
 		BYTE *pbEeprom_data,
-		BYTE *pbResult
+		BYTE *pbResult,
+		int nVersion
 ) {
 
 	BYTE baKeyHash[20];
@@ -147,39 +117,31 @@ DWORD BootHddKeyGenerateEepromKeyData(
 	BYTE baEepromDataLocalCopy[0x30];
 	struct rc4_key RC4_key;
 
-	int nVersion=10;
+	memcpy(&baEepromDataLocalCopy[0], pbEeprom_data, 0x30);
 
-	while(nVersion<=11) {  // try twice, once for v1.0 and if that fails, again for v1.1
+	HMAC_SHA1_calculation(nVersion, baKeyHash, &baEepromDataLocalCopy[0], 20, NULL);
 
-		memcpy(&baEepromDataLocalCopy[0], pbEeprom_data, 0x30);
+		//initialize RC4 key
+	rc4_prepare_key(baKeyHash, 20, &RC4_key);
 
-		HMAC_SHA1_calculation(nVersion, baKeyHash, &baEepromDataLocalCopy[0], 20, NULL);
+		//decrypt data (from eeprom) with generated key
+	rc4_crypt(&baEepromDataLocalCopy[20],8,&RC4_key);		//confounder of some kind?
+	rc4_crypt(&baEepromDataLocalCopy[28],20,&RC4_key);		//"real" data
 
-			//initialize RC4 key
-		rc4_prepare_key(baKeyHash, 20, &RC4_key);
+	HMAC_SHA1_calculation(nVersion, baDataHashConfirm, &baEepromDataLocalCopy[20], 8, &baEepromDataLocalCopy[28], 20, NULL);
 
-			//decrypt data (from eeprom) with generated key
-		rc4_crypt(&baEepromDataLocalCopy[20],8,&RC4_key);		//confounder of some kind?
-		rc4_crypt(&baEepromDataLocalCopy[28],20,&RC4_key);		//"real" data
-
-		HMAC_SHA1_calculation(nVersion, baDataHashConfirm, &baEepromDataLocalCopy[20], 8, &baEepromDataLocalCopy[28], 20, NULL);
-
-		{  // assess correctness
-			bool f=true;
-			int n;
-			for(n=0;n<0x14;n++) {
-				if(baEepromDataLocalCopy[n]!=baDataHashConfirm[n]) f=false;
-			}
-			if(!f) { nVersion++; continue; }  // se if we can try again on fail
+	{  // assess correctness
+		bool f=true;
+		int n;
+		for(n=0;n<0x14;n++) {
+			if(baEepromDataLocalCopy[n]!=baDataHashConfirm[n]) f=false;
 		}
-
-			//copy out HDKey
-		memcpy(pbResult,&baEepromDataLocalCopy[28],16);
-		return 1;
+		if(!f) return 0; // failure
 	}
 
-	return 0; // failure
-
+		//copy out HDKey
+	memcpy(pbResult,&baEepromDataLocalCopy[28],16);
+	return 1;
 }
 
 

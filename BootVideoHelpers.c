@@ -360,8 +360,8 @@ bool BootVideoJpegUnpackAsRgb(
 
 BYTE * BootVideoGetPointerToEffectiveJpegTopLeft(JPEG * pJpeg)
 {
-	DWORD dwCountPixelsHorzOffsetIntoJpeg=(pJpeg->m_nWidth-VIDEO_WIDTH)/2;
-	DWORD dwCountLinesVertOffsetIntoJpeg=(pJpeg->m_nHeight-VIDEO_HEIGHT)/2;
+	DWORD dwCountPixelsHorzOffsetIntoJpeg=(pJpeg->m_nWidth-currentvideomodedetails.m_dwWidthInPixels)/2;
+	DWORD dwCountLinesVertOffsetIntoJpeg=(pJpeg->m_nHeight-currentvideomodedetails.m_dwHeightInLines)/2;
 	return ((BYTE *)pJpeg->m_pBitmapData)+
 			(dwCountLinesVertOffsetIntoJpeg * pJpeg->m_nWidth * pJpeg->m_nBytesPerPixel)+
 			(dwCountPixelsHorzOffsetIntoJpeg * pJpeg->m_nBytesPerPixel)
@@ -370,20 +370,22 @@ BYTE * BootVideoGetPointerToEffectiveJpegTopLeft(JPEG * pJpeg)
 
 void BootVideoClearScreen(JPEG * pJpeg, int nStartLine, int nEndLine)
 {
-	VIDEO_CURSOR_POSX=VIDEO_MARGINX;
-	VIDEO_CURSOR_POSY=VIDEO_MARGINY;
+	VIDEO_CURSOR_POSX=currentvideomodedetails.m_dwMarginXInPixelsRecommended;
+	VIDEO_CURSOR_POSY=currentvideomodedetails.m_dwMarginYInLinesRecommended;
 
-	if(nEndLine>=VIDEO_HEIGHT) nEndLine=VIDEO_HEIGHT-1;
+//	bprintf("%x, %d, %d\n", FRAMEBUFFER_START, currentvideomodedetails.m_dwWidthInPixels, currentvideomodedetails.m_dwHeightInLines);
+
+	if(nEndLine>=currentvideomodedetails.m_dwHeightInLines) nEndLine=currentvideomodedetails.m_dwHeightInLines-1;
 
 	{
 		if(pJpeg->m_pBitmapData!=NULL) {
-			DWORD *pdw=((DWORD *)FRAMEBUFFER_START)+VIDEO_WIDTH*nStartLine;
+			DWORD *pdw=((DWORD *)FRAMEBUFFER_START)+currentvideomodedetails.m_dwWidthInPixels*nStartLine;
 			int n1=pJpeg->m_nBytesPerPixel * pJpeg->m_nWidth * nStartLine;
 			BYTE *pbJpegBitmapAdjustedDatum=BootVideoGetPointerToEffectiveJpegTopLeft(pJpeg) ;
 
 			while(nStartLine++<nEndLine) {
 				int n;
-				for(n=0;n<VIDEO_WIDTH;n++) {
+				for(n=0;n<currentvideomodedetails.m_dwWidthInPixels;n++) {
 					pdw[n]=0xff000000|
 						((pbJpegBitmapAdjustedDatum[n1+2]))|
 						((pbJpegBitmapAdjustedDatum[n1+1])<<8)|
@@ -391,8 +393,8 @@ void BootVideoClearScreen(JPEG * pJpeg, int nStartLine, int nEndLine)
 					;
 					n1+=pJpeg->m_nBytesPerPixel;
 				}
-				n1+=pJpeg->m_nBytesPerPixel * (pJpeg->m_nWidth - VIDEO_WIDTH);
-				pdw+=VIDEO_WIDTH; // adding DWORD footprints
+				n1+=pJpeg->m_nBytesPerPixel * (pJpeg->m_nWidth - currentvideomodedetails.m_dwWidthInPixels);
+				pdw+=currentvideomodedetails.m_dwWidthInPixels; // adding DWORD footprints
 			}
 		} else{
 			printk("null jpg");
@@ -449,12 +451,12 @@ void BootVideoChunkedPrint(char * szBuffer, WORD wLength) {
 			szBuffer[n]='\0';
 			if(n!=nDone) {
 				VIDEO_CURSOR_POSX+=BootVideoOverlayString(
-					(DWORD *)((FRAMEBUFFER_START) + VIDEO_CURSOR_POSY * (VIDEO_WIDTH*4) + VIDEO_CURSOR_POSX),
-					VIDEO_WIDTH*4, VIDEO_ATTR, &szBuffer[nDone]
+					(DWORD *)((FRAMEBUFFER_START) + VIDEO_CURSOR_POSY * (currentvideomodedetails.m_dwWidthInPixels*4) + VIDEO_CURSOR_POSX),
+					currentvideomodedetails.m_dwWidthInPixels*4, VIDEO_ATTR, &szBuffer[nDone]
 				)<<2;
 				nDone=n+1;
 			}
-			if(f) { VIDEO_CURSOR_POSY+=16; VIDEO_CURSOR_POSX=VIDEO_MARGINX<<2; }
+			if(f) { VIDEO_CURSOR_POSY+=16; VIDEO_CURSOR_POSX=currentvideomodedetails.m_dwMarginXInPixelsRecommended<<2; }
 		}
 	}
 //	__asm__ __volatile__ ( "wbinvd" );

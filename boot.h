@@ -68,6 +68,47 @@
 
 extern void WATCHDOG(void);
 
+enum {
+	TV_ENCODING_PAL=0,
+	TV_ENCODING_NTSC,
+	TV_ENCODING_COUNT
+};
+
+enum {
+	VIDEO_MODE_UNKNOWN=-1,
+	VIDEO_MODE_640x480=0,
+	VIDEO_MODE_640x576,
+	VIDEO_MODE_720x576,
+	VIDEO_MODE_800x600,
+	VIDEO_MODE_COUNT
+};
+
+typedef struct {
+	DWORD m_dwaAddressesNv[0x3c];
+	DWORD m_dwaVideoModeNv[TV_ENCODING_COUNT][VIDEO_MODE_COUNT][0x3c];
+	BYTE m_baVideoModeCrtc[TV_ENCODING_COUNT][VIDEO_MODE_COUNT][0x3F];
+	BYTE m_baVideoModeConexant[TV_ENCODING_COUNT][VIDEO_MODE_COUNT][0x69];
+} VIDEO_MODE_TABLES;
+
+
+typedef struct {
+	int m_nVideoModeIndex; // fill on entry to BootVgaInitializationKernel(), eg, VIDEO_MODE_800x600
+	BYTE m_fForceEncoderLumaAndChromaToZeroInitially; // fill on entry to BootVgaInitializationKernel(), 0=mode change visible immediately, !0=initially forced to black raster
+	DWORD m_dwWidthInPixels; // everything else filled by BootVgaInitializationKernel() on return
+	DWORD m_dwHeightInLines;
+	DWORD m_dwMarginXInPixelsRecommended;
+	DWORD m_dwMarginYInLinesRecommended;
+	BYTE m_bTvStandard;
+	BYTE m_bAvPack;
+	BYTE m_bFinalConexantA8;
+	BYTE m_bFinalConexantAA;
+	BYTE m_bFinalConexantAC;
+	DWORD m_dwVideoFadeupTimer;
+} CURRENT_VIDEO_MODE_DETAILS;
+
+extern volatile CURRENT_VIDEO_MODE_DETAILS currentvideomodedetails;
+
+
 #define FRAMEBUFFER_START ( /* 0xf0000000 */ (*((DWORD *)0xfd600800)) & 0x7fffffff  )
 
 #define VIDEO_CURSOR_POSX (*((volatile DWORD *)0x430))
@@ -77,13 +118,10 @@ extern void WATCHDOG(void);
 #define VIDEO_RSCALING (*((volatile DWORD *)0x440))
 #define VIDEO_BSCALING (*((volatile DWORD *)0x444))
 #define VIDEO_VSYNC_COUNT (*((volatile DWORD *)0x448))
-#define VIDEO_HEIGHT (*((volatile DWORD *)0x44c))
-#define VIDEO_MARGINX (*((volatile DWORD *)0x450))
-#define VIDEO_MARGINY (*((volatile DWORD *)0x454))
 #define BIOS_TICK_COUNT (*((volatile DWORD *)0x46c))
 #define VIDEO_VSYNC_POSITION (*((volatile DWORD *)0x470))
 #define VIDEO_VSYNC_DIR (*((volatile DWORD *)0x474))
-#define VIDEO_WIDTH (*((volatile DWORD *)0x478))
+
 
 /////////////////////////////////
 // Superfunky i386 internal structures
@@ -344,8 +382,7 @@ bool I2CGetTemperature(int *, int *);
 
 ///////// BootVgaInitialization.c
 
-void BootVgaInitialization(void) ;
-BYTE BootVgaInitializationKernel(int nLinesPref, bool fFakeEncoderAllBlackForStartup);  // returns AV pack index, call with 480 or 576
+void BootVgaInitializationKernel(CURRENT_VIDEO_MODE_DETAILS * pcurrentvideomodedetails);  // returns AV pack index, call with 480 or 576
 
 ///////// BootIde.c
 

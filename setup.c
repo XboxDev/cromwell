@@ -95,27 +95,27 @@ void setup(void* KernelPos, void* PhysInitrdPos, void* InitrdSize, char* kernel_
     kernel_setup->orig_video_isVGA = 0x23;
     kernel_setup->orig_x = 0;
     kernel_setup->orig_y = 0;
-		if(VIDEO_WIDTH==640) {
+		if(currentvideomodedetails.m_dwWidthInPixels==640) {
 	    kernel_setup->vid_mode = 0x312;		/* 640x480x16M Colors (works if you are already in x576 as well)*/
 		} else {
 	    kernel_setup->vid_mode = 0x315;		/* 800x600x16M Colors */
 		}
     kernel_setup->orig_video_mode = kernel_setup->vid_mode-0x300;
-    kernel_setup->orig_video_cols = VIDEO_WIDTH/8;
-    kernel_setup->orig_video_lines = VIDEO_HEIGHT/16;
+    kernel_setup->orig_video_cols = currentvideomodedetails.m_dwWidthInPixels/8;
+    kernel_setup->orig_video_lines = currentvideomodedetails.m_dwHeightInLines/16;
     kernel_setup->orig_video_ega_bx = 0;
     kernel_setup->orig_video_points = 16;
     kernel_setup->lfb_depth = 32;
-    kernel_setup->lfb_width = VIDEO_WIDTH;
+    kernel_setup->lfb_width = currentvideomodedetails.m_dwWidthInPixels;
 
-		kernel_setup->lfb_height = VIDEO_HEIGHT; // SCREEN_HEIGHT_480;
-		memcpy((void *)(60 * 1024 * 1024), (void *)((*(unsigned int*)0xFD600800)&0x7fffffff), VIDEO_WIDTH*VIDEO_HEIGHT*4);
+		kernel_setup->lfb_height = currentvideomodedetails.m_dwHeightInLines; // SCREEN_HEIGHT_480;
+		memcpy((void *)(60 * 1024 * 1024), (void *)((*(unsigned int*)0xFD600800)&0x7fffffff), currentvideomodedetails.m_dwWidthInPixels*currentvideomodedetails.m_dwHeightInLines*4);
 		(*(unsigned int*)0xFD600800)= (60 * 1024 * 1024);
 	  kernel_setup->lfb_base = (0xf0000000|*(unsigned int*)0xFD600800); // 0xF0000000+NEW_FRAMEBUFFER_480;
 //	printk("kernel_setup->lfb_base=0x%08X\n", kernel_setup->lfb_base);
 		kernel_setup->lfb_size = (4 * 1024 * 1024)/0x10000; // (FRAMEBUFFER_SIZE_480+0xFFFF)/0x10000;
 
-    kernel_setup->lfb_linelength = VIDEO_WIDTH*4;
+    kernel_setup->lfb_linelength = currentvideomodedetails.m_dwWidthInPixels*4;
     kernel_setup->pages=1;
     kernel_setup->vesapm_seg = 0;
     kernel_setup->vesapm_off = 0;
