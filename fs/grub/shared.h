@@ -22,6 +22,12 @@
  *  Generic defines to use anywhere
  */
 
+/* This is important -otherwise things like the HDD unlock code
+ * pick up the grub_memcpy instead of the normal cromwell memcpy
+ * - this causes chaos! */
+#define WITHOUT_LIBC_STUBS
+
+
 #ifndef GRUB_SHARED_HEADER
 #define GRUB_SHARED_HEADER	1
 
@@ -349,7 +355,7 @@ extern char *grub_scratch_mem;
 #define memcpy grub_memmove	/* we don't need a separate memcpy */
 #define memset grub_memset
 #define isspace grub_isspace
-//#define printf grub_printf
+#define printf grub_printf
 #define sprintf grub_sprintf
 #undef putchar
 #define putchar grub_putchar
