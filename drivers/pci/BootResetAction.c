@@ -596,16 +596,6 @@ extern void BootResetAction ( void ) {
 //	printk("i2C=%d SMC=%d, IDE=%d, tick=%d una=%d unb=%d\n", nCountI2cinterrupts, nCountInterruptsSmc, nCountInterruptsIde, BIOS_TICK_COUNT, nCountUnusedInterrupts, nCountUnusedInterruptsPic2);
 
 
-	// enable below for stress testing
-	// continually restarts _romwell without hard-resetting the hardware
-
-#if 0
-		{
-			void bootloader2();
-			printk("rebooting\n");
-			bootloader2();
-		}
-#endif
 
 	// Used to start Bochs; now a misnomer as it runs vmlinux
 	// argument 0 for hdd and 1 for from CDROM

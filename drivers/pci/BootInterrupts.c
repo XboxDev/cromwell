@@ -377,7 +377,7 @@ void IntHandler3VsyncC(void)  // video VSYNC
 	DWORD dwTempInt;
 	int i;
 	
-	if(!nInteruptable) return;
+	if(!nInteruptable) goto endvsyncirq;
 	
 	BootPciInterruptGlobalStackStateAndDisable(&dwTempInt);
 	VIDEO_VSYNC_COUNT++;
@@ -417,7 +417,7 @@ void IntHandler3VsyncC(void)  // video VSYNC
 
 	if(VIDEO_VSYNC_COUNT>20) {
 #ifndef DEBUG_MODE
-		DWORD dwOld=VIDEO_VSYNC_POSITION;
+		//DWORD dwOld=VIDEO_VSYNC_POSITION;
 #endif
 		char c=(VIDEO_VSYNC_COUNT*4)&0xff;
 		DWORD dw=c;
@@ -467,6 +467,7 @@ void IntHandler3VsyncC(void)  // video VSYNC
 		}
 
 #ifndef DEBUG_MODE
+		/*
 		BootVideoJpegBlitBlend(
 			(DWORD *)(FRAMEBUFFER_START+currentvideomodedetails.m_dwWidthInPixels*4*currentvideomodedetails.m_dwMarginYInLinesRecommended+currentvideomodedetails.m_dwMarginXInPixelsRecommended*4+(dwOld<<2)),
 			currentvideomodedetails.m_dwWidthInPixels * 4, &jpegBackdrop,
@@ -477,6 +478,8 @@ void IntHandler3VsyncC(void)  // video VSYNC
 			4,
 			ICON_WIDTH, ICON_HEIGH
 		);
+		*/
+	/*
 		BootVideoJpegBlitBlend(
 			(DWORD *)(FRAMEBUFFER_START+currentvideomodedetails.m_dwWidthInPixels*4*currentvideomodedetails.m_dwMarginYInLinesRecommended+currentvideomodedetails.m_dwMarginXInPixelsRecommended*4+(VIDEO_VSYNC_POSITION<<2)),
 			currentvideomodedetails.m_dwWidthInPixels * 4, &jpegBackdrop,
@@ -487,8 +490,12 @@ void IntHandler3VsyncC(void)  // video VSYNC
 			4,
 			ICON_WIDTH, ICON_HEIGH
 		);
+		*/
 #endif
 	}
+
+endvsyncirq:
+
         i=1000;
 	*((volatile DWORD *)0xfd600100)=0x1;  // clear VSYNC int
 	while ( ((*((volatile DWORD *)0xfd600100)) & 0x1)) {
