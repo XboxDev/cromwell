@@ -146,6 +146,7 @@ typedef enum enumAvTypes {
 	AV_ILLEGAL=-1,
 	AV_SCART_RGB,
 	AV_SVIDEO,
+	AV_VGA,
 	AV_HDTV,
 	AV_COMPOSITE
 } EAVTYPE;
@@ -237,19 +238,11 @@ bool FindOverscanValues(
 	MODE_PARAMETER* result
 );
 
-void CalcBlankings(const MODE_PARAMETER* m,
-	long* h_blanki, long* h_blanko,
-	long* v_blanki,
-	long* v_blanko,
-	long* vscale
-);
-
 void SetAutoParameter(const MODE_PARAMETER* mode, BYTE *pbRegs);
 
 BYTE NvGetCrtc(BYTE * pbRegs, int nIndex);
 void NvSetCrtc(BYTE * pbRegs, int nIndex, BYTE b);
 
-EVIDEOSTD xbvDetectVideoStd(void);
 void mapNvMem (RIVA_HW_INST *riva, BYTE *IOAddress);
 void NVDisablePalette (RIVA_HW_INST *riva, int head);
 void NVWriteSeq(RIVA_HW_INST *riva, CARD8 index, CARD8 value);
