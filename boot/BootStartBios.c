@@ -287,6 +287,7 @@ int BootLodaConfigCD(CONFIGENTRY *config) {
 			VIDEO_ATTR=0xff000000|(((bCount1>>2)+192)<<16)|(((bCount1>>2)+192)<<8)|(((bCount1>>2)+192)) ;
 		}
 //		printk("\2BootResetAction 0x%08X\2\n",&BootResetAction);
+//		printk("%08x",(*((DWORD * )0xfd600800)));
 		printk("\2Please insert CD\n\2");
 		
 		for(n=0;n<1000000;n++) { ; }

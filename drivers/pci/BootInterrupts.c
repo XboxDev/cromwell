@@ -225,13 +225,13 @@ void IntHandlerCSmc(void)
 
 //	bprintf("&nCountInterruptsSmc=0x%x\n", &nCountInterruptsSmc);
 	
-//	#ifdef DEBUG_MODE     
+	#ifdef DEBUG_MODE     
 	{
-		int count;
-        printk("              SMC Interrupt Detected");
-        for (count=0;count<nCountInterruptsSmc;count++) printk("####");
+	int count;
+        printk(" SMC Interrupt Detected");
+        for (count=0;count<nCountInterruptsSmc;count++) printk("##");
         }
-  //      #endif
+	#endif
 	
 	bStatus=I2CTransmitByteGetReturn(0x10, 0x11); // Query PIC for interrupt reason
 	while(nBit<7) {
