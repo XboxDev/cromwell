@@ -52,7 +52,7 @@ enum {
 	ICON_FATX = 0,
 	ICON_NATIVE,
 	ICON_CD,
-	ICON_FLASH,
+	ICON_ETHERBOOT,
 	ICONCOUNT // always last
 };
 
@@ -605,42 +605,39 @@ void BootIcons(int nXOffset, int nYOffset, int nTextOffsetX, int nTextOffsetY) {
 	memset(icon,0,sizeof(ICON) * ICONCOUNT);
 	icon[ICON_FATX].nDestX = nXOffset + 120;
 	icon[ICON_FATX].nDestY = nYOffset - 74;
-	icon[ICON_FATX].nSrcX = ICON_WIDTH;
+	icon[ICON_FATX].nSrcX = ICON_WIDTH*4;
 	icon[ICON_FATX].nSrcLength = ICON_WIDTH;
 	icon[ICON_FATX].nSrcHeight = ICON_HEIGH;
-	icon[ICON_FATX].nTextX = (nTextOffsetX+60)<<2;;
+	icon[ICON_FATX].nTextX = (nTextOffsetX+118)<<2;;
 	icon[ICON_FATX].nTextY = nTextOffsetY;
-	icon[ICON_FATX].szCaption = "/linuxboot.cfg from FATX";
+	icon[ICON_FATX].szCaption = "FatX (E:)";
 
-	icon[ICON_NATIVE].nDestX = nXOffset + 245;
+	icon[ICON_NATIVE].nDestX = nXOffset + 232;
 	icon[ICON_NATIVE].nDestY = nYOffset - 74;
 	icon[ICON_NATIVE].nSrcX = ICON_WIDTH;
 	icon[ICON_NATIVE].nSrcLength = ICON_WIDTH;
 	icon[ICON_NATIVE].nSrcHeight = ICON_HEIGH;
-	icon[ICON_NATIVE].nTextX = (nTextOffsetX+240)<<2;;
+	icon[ICON_NATIVE].nTextX = (nTextOffsetX+230)<<2;;
 	icon[ICON_NATIVE].nTextY = nTextOffsetY;
 	icon[ICON_NATIVE].szCaption = "/dev/hda";
 
-	icon[ICON_CD].nDestX = nXOffset + 350;
+	icon[ICON_CD].nDestX = nXOffset + 344;
 	icon[ICON_CD].nDestY = nYOffset - 74;
 	icon[ICON_CD].nSrcX = ICON_WIDTH*2;
 	icon[ICON_CD].nSrcLength = ICON_WIDTH;
 	icon[ICON_CD].nSrcHeight = ICON_HEIGH;
-	icon[ICON_CD].nTextX = (nTextOffsetX+350)<<2;
+	icon[ICON_CD].nTextX = (nTextOffsetX+340)<<2;
 	icon[ICON_CD].nTextY = nTextOffsetY;
 	icon[ICON_CD].szCaption = "/dev/hdb";
 	
-	icon[ICON_FLASH].nDestX = nXOffset + 440;
-	icon[ICON_FLASH].nDestY = nYOffset - 74;
-	icon[ICON_FLASH].nSrcX = ICON_WIDTH*3;
-	icon[ICON_FLASH].nSrcLength = ICON_WIDTH;
-	icon[ICON_FLASH].nSrcHeight = ICON_HEIGH;
-	icon[ICON_FLASH].nTextX = (nTextOffsetX+440)<<2;
-	icon[ICON_FLASH].nTextY = nTextOffsetY;
-	icon[ICON_FLASH].szCaption = "Flash";
-
-	if (cromwell_haverombios==1) icon[ICON_FLASH].szCaption = "BIOS";	
-	
+	icon[ICON_ETHERBOOT].nDestX = nXOffset + 456;
+	icon[ICON_ETHERBOOT].nDestY = nYOffset - 74;
+	icon[ICON_ETHERBOOT].nSrcX = ICON_WIDTH*3;
+	icon[ICON_ETHERBOOT].nSrcLength = ICON_WIDTH;
+	icon[ICON_ETHERBOOT].nSrcHeight = ICON_HEIGH;
+	icon[ICON_ETHERBOOT].nTextX = (nTextOffsetX+451)<<2;
+	icon[ICON_ETHERBOOT].nTextY = nTextOffsetY;
+	icon[ICON_ETHERBOOT].szCaption = "Etherboot";
 }
 
 void BootStartBiosDoIcon(ICON *icon, BYTE bOpaqueness)
@@ -691,7 +688,7 @@ int BootMenu(CONFIGENTRY *config,int nDrive,int nActivePartition, int nFATXPrese
 	videosavepage = malloc(FB_SIZE);
 	memcpy(videosavepage,(void*)FB_START,FB_SIZE);
 	
-	VIDEO_CURSOR_POSX=((215+nModeDependentOffset)<<2);
+	VIDEO_CURSOR_POSX=((252+nModeDependentOffset)<<2);
 	VIDEO_CURSOR_POSY=nTempCursorY-100;
 	
 	VIDEO_ATTR=0xffc8c8c8;
@@ -739,14 +736,14 @@ int BootMenu(CONFIGENTRY *config,int nDrive,int nActivePartition, int nFATXPrese
 				}
 				break;
 	
-			case ICON_FLASH:
+			case ICON_ETHERBOOT:
 				icon[menu].nEnabled = 1;
 				if(nSelected == -1) nSelected = menu;
 				break;
 		}
 	}	
         
-        if (nSelected==-1) nSelected = ICON_FLASH;
+        if (nSelected==-1) nSelected = ICON_ETHERBOOT;
         
         // Initial Selected Icon
         menu = nSelected;
@@ -912,7 +909,7 @@ void StartBios(CONFIGENTRY *config, int nActivePartition , int nFATXPresent,int 
 			BootLoadConfigCD(config);
 			ExittoLinux(config);
 			break;
-		case ICON_FLASH:
+		case ICON_ETHERBOOT:
 			#ifdef ETHERBOOT
 			etherboot();
 			#endif
