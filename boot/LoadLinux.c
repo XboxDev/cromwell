@@ -316,6 +316,7 @@ CONFIGENTRY *LoadConfigCD(int cdromId) {
 		wait_ms(250);
 	}
 
+	//We couldn't read the disk, so we eject the drive so the user can insert one.
 	if (!configLoaded) {
 		//Needs to be changed for non-xbox drives, which don't have an eject line
 		//Need to send ATA eject command.
@@ -329,18 +330,17 @@ CONFIGENTRY *LoadConfigCD(int cdromId) {
 			// Make button 'A' close the DVD tray
 			if (risefall_xpad_BUTTON(TRIGGER_XPAD_KEY_A) == 1) {
 				I2CTransmitWord(0x10, 0x0c01);
-				// May as well break here too incase the drive is
-				// a non-standard Xbox drive and can't report whether the
-				// tray is closing or not.
 				wait_ms(500);
 				break;
 			}
-
-			// If the drive is closing, exit the loop.  This accounts
-			// for people pushing the drive shut or even pressing the eject
-			//  button.  
-			if (DVD_TRAY_STATE == DVD_CLOSING) {
+			else if (DVD_TRAY_STATE == DVD_CLOSING) {
+				//It's an xbox drive, and somebody pushed the tray in manually
 				wait_ms(500);
+				break;
+			}
+			else if (BootIso9660GetFile(cdromId,"/linuxboo.cfg", (u8 *)KERNEL_SETUP, 0x800)>0) {
+				//It isnt an xbox drive, and somebody pushed the tray in manually, and 
+				//the cd is valid.
 				break;
 			}
 			wait_ms(10);
