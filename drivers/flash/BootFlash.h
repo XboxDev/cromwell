@@ -14,7 +14,6 @@
 
 // callback events
 // note that if you receive *_START, you will always receive *_END even if an error is detected
-
  typedef enum {
  	EE_ERASE_START=1,
 	EE_ERASE_UPDATE,  // dwPos runs from 0 to dwExtent-1
@@ -33,8 +32,7 @@
  	// callback typedef
 typedef bool (*CALLBACK_FLASH)(void * pvoidObjectFlash, ENUM_EVENTS ee, DWORD dwPos, DWORD dwExtent);
 
- typedef struct {
-
+typedef struct {
  	volatile BYTE * volatile m_pbMemoryMappedStartAddress; // fill on entry
 	BYTE m_bManufacturerId;
 	BYTE m_bDeviceId;
@@ -46,20 +44,17 @@ typedef bool (*CALLBACK_FLASH)(void * pvoidObjectFlash, ENUM_EVENTS ee, DWORD dw
 	CALLBACK_FLASH m_pcallbackFlash;
 	bool m_fDetectedUsing28xxxConventions;
 	bool m_fIsBelievedCapableOfWriteAndErase;
-
- } OBJECT_FLASH;
+} OBJECT_FLASH;
 
 
 typedef struct {
-
 	BYTE m_bManufacturerId;
 	BYTE m_bDeviceId;
  	char m_szFlashDescription[32];
 	DWORD m_dwLengthInBytes;
-
 } KNOWN_FLASH_TYPE;
 
- 	// requires pof->m_pbMemoryMappedStartAddress set to start address of flash in memory on entry
+// requires pof->m_pbMemoryMappedStartAddress set to start address of flash in memory on entry
 
 int BootReflashAndReset(BYTE *pbNewData, DWORD dwStartOffset, DWORD dwLength);
 void BootReflashAndReset_RAM(BYTE *pbNewData, DWORD dwStartOffset, DWORD dwLength);

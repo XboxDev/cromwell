@@ -2,8 +2,6 @@
  *
  *
  */
-
-
 #include "boot.h"
 #include "config.h"
 #include "cpu.h"

@@ -11,10 +11,9 @@
 #include "boot.h"
 #include "BootFlash.h"
 #include <stdio.h>
-//#include <string.h>
 
-	// gets device ID, sets pof up accordingly
-	// returns true if device okay or false for unrecognized device
+// gets device ID, sets pof up accordingly
+// returns true if device okay or false for unrecognized device
 
 bool BootFlashGetDescriptor( OBJECT_FLASH *pof, KNOWN_FLASH_TYPE * pkft )
 {
@@ -84,8 +83,6 @@ bool BootFlashGetDescriptor( OBJECT_FLASH *pof, KNOWN_FLASH_TYPE * pkft )
 		) nTries=2;  // don't try any more if we got some result the first time
 
 	} // while
-
-
 		// interpret device ID info
 
 	{
@@ -185,8 +182,6 @@ bool BootFlashEraseMinimalRegion( OBJECT_FLASH *pof )
 				nCountEraseRetryIn4KBlock=MAX_ERASE_RETRIES_IN_4KBLOCK_BEFORE_FAILING;  // different block, reset retry counter
 				dwLastEraseAddress=dw;
 			}
-
-
 
 			if(pof->m_fDetectedUsing28xxxConventions) {
 				int nCountMinSpin=0x100;

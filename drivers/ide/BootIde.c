@@ -13,8 +13,6 @@
 
 ////////////////////////////////////
 // IDE types and constants
-
-
 #define IDE_SECTOR_SIZE 		0x200
 #define IDE_BASE1             		(0x1F0u) /* primary controller */
 
@@ -111,15 +109,9 @@ const char * const szaSenseKeys[] = {
 int BootIdeWaitNotBusy(unsigned uIoBase)
 {
 	BYTE b = 0x80;
-//	int n=0;
-
-//	I2cSetFrontpanelLed(0x66);
 	while (b & 0x80) {
 		b=IoInputByte(IDE_REG_ALTSTATUS(uIoBase));
-//		printk("%02x %d\n", b, n++);
-//		WATCHDOG;
 	}
-
 	return b&1;
 }
 
@@ -134,7 +126,6 @@ int BootIdeWaitDataReady(unsigned uIoBase)
 	    if(IoInputByte(IDE_REG_ALTSTATUS(uIoBase)) & 0x01) return 2;
 			return 0;
 		}
-//		WATCHDOG();
 		i--;
 	} while (i != 0);
 
@@ -203,12 +194,10 @@ int BootIdeReadData(unsigned uIoBase, void * buf, size_t size)
 	}
 
 	IoInputByte(IDE_REG_STATUS(uIoBase));
-
 	if(IoInputByte(IDE_REG_ALTSTATUS(uIoBase)) & 0x01) {
 		printk("BootIdeReadData ended with an error\n");
 		return 2;
 	}
-
 	return 0;
 }
 
@@ -1080,24 +1069,19 @@ int BootIdeWriteSector(int nDriveIndex, void * pbBuffer, unsigned int block)
 	}
 
 	tsicp.m_bCountSector = 1;
-
-	
 	
 	if( block >= 0x10000000 ) 
 	{ 	
 		/* 48-bit LBA access required for this block */ 
-		
 		tsicp.m_bCountSectorExt = 0;   
 		
 		 /* This routine can have a max LBA of 32 bits (due to unsigned int data type used for block parameter) */   
-		
 		tsicp.m_wCylinderExt = 0; /* 47:32 */   
 		tsicp.m_bSectorExt = (block >> 24) & 0xff; /* 31:24 */   
 		tsicp.m_wCylinder = (block >> 8) & 0xffff; /* 23:8 */   
 		tsicp.m_bSector = block & 0xff; /* 7:0 */   
 		tsicp.m_bDrivehead = IDE_DH_DRIVE(nDriveIndex) | IDE_DH_LBA;   
 		ideWriteCommand = IDE_CMD_WRITE_MULTI_RETRY;
-    
 	} else {
         	// Looks Like we do not have LBA 48 need
         	if (tsaHarddiskInfo[nDriveIndex].m_bLbaMode == IDE_DH_CHS) 
@@ -1121,23 +1105,14 @@ int BootIdeWriteSector(int nDriveIndex, void * pbBuffer, unsigned int block)
 				IDE_DH_LBA;
 		}
         }       
-        
 	if(BootIdeIssueAtaCommand(uIoBase, ideWriteCommand, &tsicp)) 
 	{
 		printk("ide error %02X...\n", IoInputByte(IDE_REG_ERROR(uIoBase)));
 		return 1;
 	}
-	
 	status = BootIdeWriteData(uIoBase, pbBuffer, IDE_SECTOR_SIZE);
-	
-
 	return status;
 }
-
-
-
-
-
 
 /* -------------------------------------------------------------------------------- */
 

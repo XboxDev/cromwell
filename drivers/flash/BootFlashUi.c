@@ -32,11 +32,7 @@ const KNOWN_FLASH_TYPE aknownflashtypesDefault[] = {
 	{ 0, 0, "", 0 } // terminator
 };
 
-// this is a ROM-resident wrapper for the function below
-
  // callback to show progress
-
-
 bool BootFlashUserInterface(void * pvoidObjectFlash, ENUM_EVENTS ee, DWORD dwPos, DWORD dwExtent) {
 	if(ee==EE_ERASE_UPDATE){
 		DisplayFlashProgressBar(dwPos,dwExtent,0xffffff00);
@@ -91,21 +87,18 @@ int BootReflashAndReset(BYTE *pbNewData, DWORD dwStartOffset, DWORD dwLength)
 	OBJECT_FLASH of;
 	bool fMore=true;
 
-		// prep our flash object with start address and params
-
+	// prep our flash object with start address and params
 	of.m_pbMemoryMappedStartAddress=(BYTE *)LPCFlashadress;
 	of.m_dwStartOffset=dwStartOffset;
 	of.m_dwLengthUsedArea=dwLength;
 	of.m_pcallbackFlash=BootFlashUserInterface;
 
-		// check device type and parameters are sane
-
+	// check device type and parameters are sane
 	if(!BootFlashGetDescriptor(&of, (KNOWN_FLASH_TYPE *)&aknownflashtypesDefault[0])) return 1; // unable to ID device - fail
 	if(!of.m_fIsBelievedCapableOfWriteAndErase) return 2; // seems to be write-protected - fail
 	if(of.m_dwLengthInBytes<(dwStartOffset+dwLength)) return 3; // requested layout won't fit device - sanity check fail
-
-		// committed to reflash now
-
+	
+	// committed to reflash now
 	while(fMore) {
 		if(BootFlashEraseMinimalRegion(&of)) {
 			if(BootFlashProgram(&of, pbNewData)) {
@@ -117,7 +110,5 @@ int BootReflashAndReset(BYTE *pbNewData, DWORD dwStartOffset, DWORD dwLength)
 			;
 		}
 	}
-
-	
 	return 0; // keep compiler happy
 }
