@@ -98,7 +98,7 @@ void setup(void* KernelPos, void* PhysInitrdPos, unsigned long InitrdSize, const
     kernel_setup->heap_end_ptr = 0xffff;	/* 64K heap */
     kernel_setup->flags = 0x81;			/* loaded high, heap existant */
     kernel_setup->start = KERNEL_PM_CODE;
-    kernel_setup->ext_mem_k = (((xbox_ram-1) * 1024) - FRAMEBUFFER_SIZE / 1024) & 0xffff ; /* now replaced by e820 map */
+    kernel_setup->ext_mem_k = (((xbox_ram-1) * 1024) - FB_SIZE / 1024) & 0xffff ; /* now replaced by e820 map */
 
     /* initrd */
     /* ED : only if initrd */
@@ -113,7 +113,7 @@ void setup(void* KernelPos, void* PhysInitrdPos, unsigned long InitrdSize, const
     kernel_setup->orig_video_isVGA = 0x23;
     kernel_setup->orig_x = 0;
     kernel_setup->orig_y = 0;
-    if(currentvideomodedetails.m_dwWidthInPixels==640) {
+    if(vmode.width==640) {
 
 	kernel_setup->vid_mode = 0x312;		/* 640x480x16M Colors (works if you are already in x576 as well)*/
     } else {
@@ -121,20 +121,20 @@ void setup(void* KernelPos, void* PhysInitrdPos, unsigned long InitrdSize, const
     }
 
     kernel_setup->orig_video_mode = kernel_setup->vid_mode-0x300;
-    kernel_setup->orig_video_cols = currentvideomodedetails.m_dwWidthInPixels/8;
-    kernel_setup->orig_video_lines = currentvideomodedetails.m_dwHeightInLines/16;
+    kernel_setup->orig_video_cols = vmode.width/8;
+    kernel_setup->orig_video_lines = vmode.height/16;
     kernel_setup->orig_video_ega_bx = 0;
     kernel_setup->orig_video_points = 16;
     kernel_setup->lfb_depth = 32;
-    kernel_setup->lfb_width = currentvideomodedetails.m_dwWidthInPixels;
+    kernel_setup->lfb_width = vmode.width;
 
-    kernel_setup->lfb_height = currentvideomodedetails.m_dwHeightInLines; // SCREEN_HEIGHT_480;
+    kernel_setup->lfb_height = vmode.height; // SCREEN_HEIGHT_480;
     
-    kernel_setup->lfb_base =  (0xf0000000 | ((xbox_ram*0x100000) - FRAMEBUFFER_SIZE));
+    kernel_setup->lfb_base =  (0xf0000000 | ((xbox_ram*0x100000) - FB_SIZE));
 
-    kernel_setup->lfb_size = FRAMEBUFFER_SIZE / 0x10000;
+    kernel_setup->lfb_size = FB_SIZE / 0x10000;
 
-    kernel_setup->lfb_linelength = currentvideomodedetails.m_dwWidthInPixels*4;
+    kernel_setup->lfb_linelength = vmode.width*4;
     kernel_setup->pages=1;
     kernel_setup->vesapm_seg = 0;
     kernel_setup->vesapm_off = 0;
@@ -165,10 +165,10 @@ void setup(void* KernelPos, void* PhysInitrdPos, unsigned long InitrdSize, const
     kernel_setup->e820_size2=0x0000000000061000;
     kernel_setup->e820_type2=2; /* Reserved, legacy memory region */
     kernel_setup->e820_addr3=0x0000000000100000;
-    kernel_setup->e820_size3=(xbox_ram - 1) * 1024 * 1024 - FRAMEBUFFER_SIZE;
+    kernel_setup->e820_size3=(xbox_ram - 1) * 1024 * 1024 - FB_SIZE;
     kernel_setup->e820_type3=1; /* RAM*/
-    kernel_setup->e820_addr4=(xbox_ram * 1024 * 1024) - FRAMEBUFFER_SIZE;
-    kernel_setup->e820_size4=FRAMEBUFFER_SIZE;
+    kernel_setup->e820_addr4=(xbox_ram * 1024 * 1024) - FB_SIZE;
+    kernel_setup->e820_size4=FB_SIZE;
     kernel_setup->e820_type4=2; /* Reserved, framebuffer */
 
     /* set command line */

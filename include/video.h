@@ -2,17 +2,8 @@
 #define video_h
 
 #include "stdlib.h"
-#include "jpeglib.h"
 
 // video helpers
-
-void BootVideoBlit(
-	DWORD * pdwTopLeftDestination,
-	DWORD dwCountBytesPerLineDestination,
-	DWORD * pdwTopLeftSource,
-	DWORD dwCountBytesPerLineSource,
-	DWORD dwCountLines
-);
 
 void BootVideoVignette(
 	DWORD * pdwaTopLeftDestination,
@@ -26,10 +17,11 @@ void BootVideoVignette(
 
 
 typedef struct {
-	BYTE * m_pBitmapData;
-	int m_nWidth;
-	int m_nHeight;
-	int m_nBytesPerPixel;
+	BYTE * pData;
+	BYTE * pBackdrop;
+	int width;
+	int height;
+	int bpp;
 } JPEG;
 
 int BootVideoOverlayString(DWORD * pdwaTopLeftDestination, DWORD m_dwCountBytesPerLineDestination, RGBA rgbaOpaqueness, const char * szString);
@@ -37,22 +29,20 @@ void BootVideoChunkedPrint(const char * szBuffer);
 int VideoDumpAddressAndData(DWORD dwAds, const BYTE * baData, DWORD dwCountBytesUsable);
 unsigned int BootVideoGetStringTotalWidth(const char * szc);
 void BootVideoClearScreen(JPEG * pJpeg, int nStartLine, int nEndLine);
+
 void BootVideoJpegBlitBlend(
-	DWORD * pdwTopLeftDestination,
-	DWORD dwCountBytesPerLineDestination,
+	BYTE *pDst,
+	DWORD dst_width,
 	JPEG * pJpeg,
-	DWORD * pdwTopLeftInJpegBitmap,
+	BYTE *pFront,
 	RGBA m_rgbaTransparent,
-	DWORD * pdwTopLeftBackground,
-	DWORD dwCountBytesPerLineBackground,
-	DWORD dwCountBytesPerPixelBackground,
+	BYTE *pBack,
 	int x,
 	int y
 );
 
 bool BootVideoJpegUnpackAsRgb(
 	BYTE *pbaJpegFileImage,
-	int nFileLength,
 	JPEG * pJpeg
 );
 

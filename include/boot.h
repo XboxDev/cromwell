@@ -54,7 +54,7 @@ extern void WATCHDOG(void);
 
 #include "BootVideo.h"
 
-extern volatile CURRENT_VIDEO_MODE_DETAILS currentvideomodedetails;
+extern volatile CURRENT_VIDEO_MODE_DETAILS vmode;
 unsigned int video_encoder;
 
 volatile DWORD VIDEO_CURSOR_POSX;

@@ -1,3 +1,3 @@
-subdir +=  eeprom crypt misc jpeg-6b gzip
+subdir +=  eeprom crypt misc gzip jpeg
 
 include $(TOPDIR)/Rules.make

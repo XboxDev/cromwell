@@ -341,9 +341,9 @@ void IntHandlerCSmc(void)
 						VIDEO_AV_MODE = 0xff;
 						wait_ms(30);
 						VIDEO_AV_MODE = temp_AV_mode;
-						BootVgaInitializationKernelNG((CURRENT_VIDEO_MODE_DETAILS *)&currentvideomodedetails);
+						BootVgaInitializationKernelNG((CURRENT_VIDEO_MODE_DETAILS *)&vmode);
 						wait_ms(200);
-						BootVgaInitializationKernelNG((CURRENT_VIDEO_MODE_DETAILS *)&currentvideomodedetails);
+						BootVgaInitializationKernelNG((CURRENT_VIDEO_MODE_DETAILS *)&vmode);
 						
 					}
 					break;
@@ -351,7 +351,7 @@ void IntHandlerCSmc(void)
 				case 4: // AV CABLE HAS BEEN UNPLUGGED
 					bprintf("SMC Interrupt %d: AV cable unplugged\n", nCountInterruptsSmc);
 					VIDEO_AV_MODE=0xff;
-					//currentvideomodedetails.m_bAvPack=0xff;
+					//vmode.m_bAvPack=0xff;
 					break;
 
 				case 5: // BUTTON PRESSED REQUESTING TRAY OPEN

@@ -29,12 +29,12 @@
 #define MAX_INITRD_SIZE    (MAX_INITRD_END - INITRD_START)
 
 /* the size of the framebuffer (defaults to 4 MB) */
-#define FRAMEBUFFER_SIZE 0x00400000
+#define FB_SIZE 0x00400000
 /* the start of the framebuffer */
-#define FRAMEBUFFER_START (0xf0000000 | (RAMSIZE - FRAMEBUFFER_SIZE))
+#define FB_START (0xf0000000 | (RAMSIZE - FB_SIZE))
 
 /* let's reserve 4 MB at the top for the framebuffer */
-#define RAMSIZE_USE (RAMSIZE - FRAMEBUFFER_SIZE)
+#define RAMSIZE_USE (RAMSIZE - FB_SIZE)
 
 //#define LPCFlashadress 0xFFF00000
 #define LPCFlashadress 0xFF000000

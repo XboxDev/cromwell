@@ -6,8 +6,9 @@ ETHERBOOT := yes
 INCLUDE = -I$(TOPDIR)/grub -I$(TOPDIR)/include -I$(TOPDIR)/ -I./ -I$(TOPDIR)/fs/cdrom \
 	-I$(TOPDIR)/fs/fatx -I$(TOPDIR)/lib/eeprom -I$(TOPDIR)/lib/crypt \
 	-I$(TOPDIR)/drivers/video -I$(TOPDIR)/drivers/ide -I$(TOPDIR)/drivers/flash -I$(TOPDIR)/lib/misc \
-	-I$(TOPDIR)/boot_xbe/ -I$(TOPDIR)/fs/grub -I$(TOPDIR)/lib/font -I$(TOPDIR)/lib/jpeg-6b \
-	-I$(TOPDIR)/startuploader -I$(TOPDIR)/drivers/cpu
+	-I$(TOPDIR)/boot_xbe/ -I$(TOPDIR)/fs/grub -I$(TOPDIR)/lib/font \
+	-I$(TOPDIR)/startuploader -I$(TOPDIR)/drivers/cpu \
+	-I$(TOPDIR)/lib/jpeg/
 
 CFLAGS	= -O2 -mcpu=pentium -Werror $(INCLUDE) -Wstrict-prototypes -fomit-frame-pointer -pipe
 
@@ -86,33 +87,7 @@ OBJECTS-CROM += $(TOPDIR)/obj/fsys_reiserfs.o
 OBJECTS-CROM += $(TOPDIR)/obj/fsys_ext2fs.o
 OBJECTS-CROM += $(TOPDIR)/obj/char_io.o
 OBJECTS-CROM += $(TOPDIR)/obj/disk_io.o
-OBJECTS-CROM += $(TOPDIR)/obj/jdapimin.o
-OBJECTS-CROM += $(TOPDIR)/obj/jdapistd.o
-OBJECTS-CROM += $(TOPDIR)/obj/jdtrans.o
-OBJECTS-CROM += $(TOPDIR)/obj/jdatasrc.o
-OBJECTS-CROM += $(TOPDIR)/obj/jdmaster.o
-OBJECTS-CROM += $(TOPDIR)/obj/jdinput.o
-OBJECTS-CROM += $(TOPDIR)/obj/jdmarker.o
-OBJECTS-CROM += $(TOPDIR)/obj/jdhuff.o
-OBJECTS-CROM += $(TOPDIR)/obj/jdphuff.o
-OBJECTS-CROM += $(TOPDIR)/obj/jdmainct.o
-OBJECTS-CROM += $(TOPDIR)/obj/jdcoefct.o
-OBJECTS-CROM += $(TOPDIR)/obj/jdpostct.o
-OBJECTS-CROM += $(TOPDIR)/obj/jddctmgr.o
-OBJECTS-CROM += $(TOPDIR)/obj/jidctfst.o
-OBJECTS-CROM += $(TOPDIR)/obj/jidctflt.o
-OBJECTS-CROM += $(TOPDIR)/obj/jidctint.o
-OBJECTS-CROM += $(TOPDIR)/obj/jidctred.o
-OBJECTS-CROM += $(TOPDIR)/obj/jdsample.o
-OBJECTS-CROM += $(TOPDIR)/obj/jdcolor.o
-OBJECTS-CROM += $(TOPDIR)/obj/jquant1.o
-OBJECTS-CROM += $(TOPDIR)/obj/jquant2.o
-OBJECTS-CROM += $(TOPDIR)/obj/jdmerge.o
-OBJECTS-CROM += $(TOPDIR)/obj/jmemnobs.o
-OBJECTS-CROM += $(TOPDIR)/obj/jmemmgr.o
-OBJECTS-CROM += $(TOPDIR)/obj/jcomapi.o
-OBJECTS-CROM += $(TOPDIR)/obj/jutils.o
-OBJECTS-CROM += $(TOPDIR)/obj/jerror.o
+OBJECTS-CROM += $(TOPDIR)/obj/decode-jpg.o
 #AUDIO
 #OBJECTS-CROM += $(TOPDIR)/obj/BootAudio.o
 OBJECTS-CROM += $(TOPDIR)/obj/BootFlash.o

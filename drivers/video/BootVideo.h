@@ -18,10 +18,10 @@ typedef struct {
 	DWORD m_dwFrameBufferStart; // frame buffer start address, set to zero to use default
 	BYTE * volatile m_pbBaseAddressVideo; // base address of video, usually 0xfd000000
 		// filled on exit
-	DWORD m_dwWidthInPixels; // everything else filled by BootVgaInitializationKernel() on return
-	DWORD m_dwHeightInLines;
-	DWORD m_dwMarginXInPixelsRecommended;
-	DWORD m_dwMarginYInLinesRecommended;
+	DWORD width; // everything else filled by BootVgaInitializationKernel() on return
+	DWORD height;
+	DWORD xmargin;
+	DWORD ymargin;
 	BYTE m_bAvPack;
 	DWORD m_dwVideoFadeupTimer;
 	double hoc;
@@ -29,6 +29,6 @@ typedef struct {
 	BYTE m_bBPP;
 } CURRENT_VIDEO_MODE_DETAILS;
 
-void BootVgaInitializationKernelNG(CURRENT_VIDEO_MODE_DETAILS * pcurrentvideomodedetails);
+void BootVgaInitializationKernelNG(CURRENT_VIDEO_MODE_DETAILS * pvmode);
 
 #endif // _BootVideo_H_

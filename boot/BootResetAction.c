@@ -26,8 +26,6 @@
 #include "video.h"
 #include "memory_layout.h"
 
-DWORD *dwaTitleArea;
-
 JPEG jpegBackdrop;
 
 CONFIGENTRY kernel_config;
@@ -36,7 +34,7 @@ int nTempCursorMbrX, nTempCursorMbrY;
 
 extern volatile int nInteruptable;
 
-volatile CURRENT_VIDEO_MODE_DETAILS currentvideomodedetails;
+volatile CURRENT_VIDEO_MODE_DETAILS vmode;
 /*
 volatile AC97_DEVICE ac97device;
 
@@ -152,19 +150,17 @@ extern void BootResetAction ( void ) {
         
         // Load and Init the Background image
         
-	dwaTitleArea = malloc(1024*64);
         // clear the Video Ram
-	memset((void *)FRAMEBUFFER_START,0x00,0x400000);
+	memset((void *)FB_START,0x00,0x400000);
 	
-	BootVgaInitializationKernelNG((CURRENT_VIDEO_MODE_DETAILS *)&currentvideomodedetails);
+	BootVgaInitializationKernelNG((CURRENT_VIDEO_MODE_DETAILS *)&vmode);
 
 	//bprintf("BOOT: kern VGA init done\n\r");
         
 	{ // decode and malloc backdrop bitmap
-		extern int _start_backdrop, _end_backdrop;
+		extern int _start_backdrop;
 		BootVideoJpegUnpackAsRgb(
 			(BYTE *)&_start_backdrop,
-			((DWORD)(&_end_backdrop)-(DWORD)(&_start_backdrop)),
 			&jpegBackdrop
 		);
 	}
@@ -213,15 +209,15 @@ extern void BootResetAction ( void ) {
      //   I2CTransmitWord(0x10, 0x0c00); // eject DVD tray
        // while(1);
          
-	VIDEO_CURSOR_POSY=currentvideomodedetails.m_dwMarginYInLinesRecommended;
-	VIDEO_CURSOR_POSX=(currentvideomodedetails.m_dwMarginXInPixelsRecommended/*+64*/)*4;
+	VIDEO_CURSOR_POSY=vmode.ymargin;
+	VIDEO_CURSOR_POSX=(vmode.xmargin/*+64*/)*4;
 	
 	if (cromwell_config==XROMWELL) 	printk("\2Xbox Linux XROMWELL  " VERSION "\2\n" );
 	if (cromwell_config==CROMWELL)	printk("\2Xbox Linux Cromwell BIOS  " VERSION "\2\n" );
-	VIDEO_CURSOR_POSY=currentvideomodedetails.m_dwMarginYInLinesRecommended+32;
-	VIDEO_CURSOR_POSX=(currentvideomodedetails.m_dwMarginXInPixelsRecommended/*+64*/)*4;
+	VIDEO_CURSOR_POSY=vmode.ymargin+32;
+	VIDEO_CURSOR_POSX=(vmode.xmargin/*+64*/)*4;
 	printk( __DATE__ " -  http://xbox-linux.org\n");
-	VIDEO_CURSOR_POSX=(currentvideomodedetails.m_dwMarginXInPixelsRecommended/*+64*/)*4;
+	VIDEO_CURSOR_POSX=(vmode.xmargin/*+64*/)*4;
 	printk("(C)2002-2004 Xbox Linux Team   RAM : %d MB  ",xbox_ram);
 	if (cromwell_config==CROMWELL) {
 		printk("(Load Tries: %d Bank: %d ",cromwell_retryload,cromwell_loadbank);
@@ -232,7 +228,6 @@ extern void BootResetAction ( void ) {
 
     
 	// capture title area
-	BootVideoBlit(&dwaTitleArea[0], currentvideomodedetails.m_dwWidthInPixels*4, ((DWORD *)FRAMEBUFFER_START)+(currentvideomodedetails.m_dwMarginYInLinesRecommended*currentvideomodedetails.m_dwWidthInPixels), currentvideomodedetails.m_dwWidthInPixels*4, 64);
 
 	nTempCursorX=VIDEO_CURSOR_POSX;
 	nTempCursorY=VIDEO_CURSOR_POSY;
@@ -268,7 +263,7 @@ extern void BootResetAction ( void ) {
 	printk("AV: ");
 	VIDEO_ATTR=0xffc8c800;
 
-	switch(currentvideomodedetails.m_bAvPack) {
+	switch(vmode.m_bAvPack) {
 		case 0:
 			printk("Scart");
 			break;

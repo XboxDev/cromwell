@@ -25,11 +25,11 @@ void zxprintf(char* fmt, ...)
 	VIDEO_CURSOR_POSX=usb_curs_x;
 	VIDEO_CURSOR_POSY=usb_curs_y;
 	       
-	if ((VIDEO_CURSOR_POSY==0) || (VIDEO_CURSOR_POSY > (currentvideomodedetails.m_dwHeightInLines -16)))
+	if ((VIDEO_CURSOR_POSY==0) || (VIDEO_CURSOR_POSY > (vmode.height -16)))
 	{
-		BootVideoClearScreen(&jpegBackdrop, 3*currentvideomodedetails.m_dwHeightInLines/4, 
-				     currentvideomodedetails.m_dwHeightInLines);
-		VIDEO_CURSOR_POSY=3*currentvideomodedetails.m_dwHeightInLines/4;
+		BootVideoClearScreen(&jpegBackdrop, 3*vmode.height/4, 
+				     vmode.height);
+		VIDEO_CURSOR_POSY=3*vmode.height/4;
 	}
 
         va_start(ap, fmt);

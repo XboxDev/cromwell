@@ -103,7 +103,7 @@ void XCaliburDumpNormalSequence(unsigned int *I2C_Encoder_Values)
 
 
 
-void BootVgaInitializationKernelNG(CURRENT_VIDEO_MODE_DETAILS * pcurrentvideomodedetails) {
+void BootVgaInitializationKernelNG(CURRENT_VIDEO_MODE_DETAILS * pvmode) {
 	xbox_tv_encoding tv_encoding; 
 	xbox_av_type av_type;
 	BYTE b;
@@ -122,45 +122,45 @@ void BootVgaInitializationKernelNG(CURRENT_VIDEO_MODE_DETAILS * pcurrentvideomod
 	av_type = DetectAvType();
 	gpu.av_type = av_type;
 
-   	memset((void *)pcurrentvideomodedetails,0,sizeof(CURRENT_VIDEO_MODE_DETAILS));
+   	memset((void *)pvmode,0,sizeof(CURRENT_VIDEO_MODE_DETAILS));
 
 	//Focus driver (presumably XLB also) doesnt do widescreen yet - only blackscreens otherwise.
 	if(((BYTE *)&eeprom)[0x96]&0x01 && video_encoder == ENCODER_CONEXANT) { // 16:9 widescreen TV
-		pcurrentvideomodedetails->m_nVideoModeIndex=VIDEO_MODE_1024x576;
+		pvmode->m_nVideoModeIndex=VIDEO_MODE_1024x576;
 	} else { // 4:3 TV
-		pcurrentvideomodedetails->m_nVideoModeIndex=VIDEO_PREFERRED_MODE;
+		pvmode->m_nVideoModeIndex=VIDEO_PREFERRED_MODE;
 	}
 
-	pcurrentvideomodedetails->m_pbBaseAddressVideo=(BYTE *)0xfd000000;
-	pcurrentvideomodedetails->m_fForceEncoderLumaAndChromaToZeroInitially=1;
+	pvmode->m_pbBaseAddressVideo=(BYTE *)0xfd000000;
+	pvmode->m_fForceEncoderLumaAndChromaToZeroInitially=1;
 
         // If the client hasn't set the frame buffer start address, assume
         // it should be at 4M from the end of RAM.
 
-	pcurrentvideomodedetails->m_dwFrameBufferStart = FRAMEBUFFER_START;
+	pvmode->m_dwFrameBufferStart = FB_START;
 
-        (*(unsigned int*)0xFD600800) = (FRAMEBUFFER_START & 0x0fffffff);
+        (*(unsigned int*)0xFD600800) = (FB_START & 0x0fffffff);
 
-	pcurrentvideomodedetails->m_bAvPack=I2CTransmitByteGetReturn(0x10, 0x04);
-	pcurrentvideomodedetails->m_pbBaseAddressVideo=(BYTE *)0xfd000000;
-	pcurrentvideomodedetails->m_fForceEncoderLumaAndChromaToZeroInitially=1;
-	pcurrentvideomodedetails->m_bBPP = 32;
+	pvmode->m_bAvPack=I2CTransmitByteGetReturn(0x10, 0x04);
+	pvmode->m_pbBaseAddressVideo=(BYTE *)0xfd000000;
+	pvmode->m_fForceEncoderLumaAndChromaToZeroInitially=1;
+	pvmode->m_bBPP = 32;
 
 	b=I2CTransmitByteGetReturn(0x54, 0x5A); // the eeprom defines the TV standard for the box
 
 	// The values for hoc and voc are stolen from nvtv small mode
 
 	if(b != 0x40) {
-		pcurrentvideomodedetails->hoc = 13.44;
-		pcurrentvideomodedetails->voc = 14.24;
+		pvmode->hoc = 13.44;
+		pvmode->voc = 14.24;
 	} else {
-		pcurrentvideomodedetails->hoc = 15.11;
-		pcurrentvideomodedetails->voc = 14.81;
+		pvmode->hoc = 15.11;
+		pvmode->voc = 14.81;
 	}
-	pcurrentvideomodedetails->hoc /= 100.0;
-	pcurrentvideomodedetails->voc /= 100.0;
+	pvmode->hoc /= 100.0;
+	pvmode->voc /= 100.0;
 
-	mapNvMem(&riva,pcurrentvideomodedetails->m_pbBaseAddressVideo);
+	mapNvMem(&riva,pvmode->m_pbBaseAddressVideo);
 	unlockCrtNv(&riva,0);
 
 	if (xbox_ram == 128) {
@@ -169,7 +169,7 @@ void BootVgaInitializationKernelNG(CURRENT_VIDEO_MODE_DETAILS * pcurrentvideomod
 		MMIO_H_OUT32(riva.PFB    ,0,0x200,0x03070003);
 	}
 
-	MMIO_H_OUT32 (riva.PCRTC, 0, 0x800, pcurrentvideomodedetails->m_dwFrameBufferStart);
+	MMIO_H_OUT32 (riva.PCRTC, 0, 0x800, pvmode->m_dwFrameBufferStart);
 
 	IoOutputByte(0x80d3, 5);  // Kill all video out using an ACPI control pin
 
@@ -202,21 +202,21 @@ void BootVgaInitializationKernelNG(CURRENT_VIDEO_MODE_DETAILS * pcurrentvideomod
 			}*/
 			
 			// Settings for 720x480@60Hz (480p)
-			pcurrentvideomodedetails->m_dwWidthInPixels=720;
-			pcurrentvideomodedetails->m_dwHeightInLines=480;
-			pcurrentvideomodedetails->m_dwMarginXInPixelsRecommended=0;
-		 	pcurrentvideomodedetails->m_dwMarginYInLinesRecommended=0;
+			pvmode->width=720;
+			pvmode->height=480;
+			pvmode->xmargin=0;
+		 	pvmode->ymargin=0;
         	
 			/* HDTV uses hardcoded settings for these - these are the
 			 * correct ones for 480p */
-			gpu.xres = pcurrentvideomodedetails->m_dwWidthInPixels;
+			gpu.xres = pvmode->width;
 	       		gpu.nvhstart = 738;
 			gpu.nvhtotal = 858;
-			gpu.yres = pcurrentvideomodedetails->m_dwHeightInLines;
+			gpu.yres = pvmode->height;
 			gpu.nvvstart = 489;
 			gpu.nvvtotal = 525;
 			gpu.pixelDepth = (32 + 1) / 8;
-			gpu.crtchdispend = pcurrentvideomodedetails->m_dwWidthInPixels;
+			gpu.crtchdispend = pvmode->width;
 			gpu.crtcvstart = gpu.nvvstart;
 			gpu.crtcvtotal = gpu.nvvtotal;
 			
@@ -229,19 +229,19 @@ void BootVgaInitializationKernelNG(CURRENT_VIDEO_MODE_DETAILS * pcurrentvideomod
 		else {
 			//VGA or VGA_SOG
 			// Settings for 800x600@56Hz, 35 kHz HSync
-			pcurrentvideomodedetails->m_dwWidthInPixels=800;
-			pcurrentvideomodedetails->m_dwHeightInLines=600;
-			pcurrentvideomodedetails->m_dwMarginXInPixelsRecommended=20;
-			pcurrentvideomodedetails->m_dwMarginYInLinesRecommended=20;
+			pvmode->width=800;
+			pvmode->height=600;
+			pvmode->xmargin=20;
+			pvmode->ymargin=20;
 		
-			gpu.xres = pcurrentvideomodedetails->m_dwWidthInPixels;
+			gpu.xres = pvmode->width;
 	       		gpu.nvhstart = 900;
 			gpu.nvhtotal = 1028;
-			gpu.yres = pcurrentvideomodedetails->m_dwHeightInLines;
+			gpu.yres = pvmode->height;
 			gpu.nvvstart = 614;
 			gpu.nvvtotal = 630;
 			gpu.pixelDepth = (32 + 1) / 8;
-			gpu.crtchdispend = pcurrentvideomodedetails->m_dwWidthInPixels;
+			gpu.crtchdispend = pvmode->width;
 			gpu.crtcvstart = gpu.nvvstart;
 			gpu.crtcvtotal = gpu.nvvtotal;
 			pll_int = (unsigned char)((double)36000 * 6.0 / 13.5e3 + 0.5);
@@ -254,44 +254,44 @@ void BootVgaInitializationKernelNG(CURRENT_VIDEO_MODE_DETAILS * pcurrentvideomod
 	}
 	else {	
 	/* All other cable types - normal SDTV */
-		switch(pcurrentvideomodedetails->m_nVideoModeIndex) {
+		switch(pvmode->m_nVideoModeIndex) {
 			case VIDEO_MODE_640x480:
-				pcurrentvideomodedetails->m_dwWidthInPixels=640;
-				pcurrentvideomodedetails->m_dwHeightInLines=480;
-				pcurrentvideomodedetails->m_dwMarginXInPixelsRecommended=0;
-				pcurrentvideomodedetails->m_dwMarginYInLinesRecommended=0;
+				pvmode->width=640;
+				pvmode->height=480;
+				pvmode->xmargin=0;
+				pvmode->ymargin=0;
 				break;
 			case VIDEO_MODE_640x576:
-				pcurrentvideomodedetails->m_dwWidthInPixels=640;
-				pcurrentvideomodedetails->m_dwHeightInLines=576;
-				pcurrentvideomodedetails->m_dwMarginXInPixelsRecommended=40; // pixels
-				pcurrentvideomodedetails->m_dwMarginYInLinesRecommended=40; // lines
+				pvmode->width=640;
+				pvmode->height=576;
+				pvmode->xmargin=40; // pixels
+				pvmode->ymargin=40; // lines
 				break;
 			case VIDEO_MODE_720x576:
-				pcurrentvideomodedetails->m_dwWidthInPixels=720;
-				pcurrentvideomodedetails->m_dwHeightInLines=576;
-				pcurrentvideomodedetails->m_dwMarginXInPixelsRecommended=40; // pixels
-				pcurrentvideomodedetails->m_dwMarginYInLinesRecommended=40; // lines
+				pvmode->width=720;
+				pvmode->height=576;
+				pvmode->xmargin=40; // pixels
+				pvmode->ymargin=40; // lines
 				break;
 			case VIDEO_MODE_800x600: // 800x600
-				pcurrentvideomodedetails->m_dwWidthInPixels=800;
-				pcurrentvideomodedetails->m_dwHeightInLines=600;
-				pcurrentvideomodedetails->m_dwMarginXInPixelsRecommended=20;
-				pcurrentvideomodedetails->m_dwMarginYInLinesRecommended=20; // lines
+				pvmode->width=800;
+				pvmode->height=600;
+				pvmode->xmargin=20;
+				pvmode->ymargin=20; // lines
 				break;
 			case VIDEO_MODE_1024x576: // 1024x576
-				pcurrentvideomodedetails->m_dwWidthInPixels=1024;
-				pcurrentvideomodedetails->m_dwHeightInLines=576;
-				pcurrentvideomodedetails->m_dwMarginXInPixelsRecommended=20;
-				pcurrentvideomodedetails->m_dwMarginYInLinesRecommended=20; // lines
+				pvmode->width=1024;
+				pvmode->height=576;
+				pvmode->xmargin=20;
+				pvmode->ymargin=20; // lines
 				break;
 		}	
-		encoder_mode.xres = pcurrentvideomodedetails->m_dwWidthInPixels; 
-		encoder_mode.yres = pcurrentvideomodedetails->m_dwHeightInLines;
+		encoder_mode.xres = pvmode->width; 
+		encoder_mode.yres = pvmode->height;
 		encoder_mode.tv_encoding = tv_encoding;
 		encoder_mode.bpp = 32;
-		encoder_mode.hoc = pcurrentvideomodedetails->hoc;
-		encoder_mode.voc = pcurrentvideomodedetails->voc;
+		encoder_mode.hoc = pvmode->hoc;
+		encoder_mode.voc = pvmode->voc;
 		encoder_mode.av_type = av_type;
 		encoder_mode.tv_encoding = tv_encoding;
 
@@ -303,21 +303,21 @@ void BootVgaInitializationKernelNG(CURRENT_VIDEO_MODE_DETAILS * pcurrentvideomod
 		}
 		else printk("Error - unknown encoder type detected\n");
 		
-        	gpu.xres = pcurrentvideomodedetails->m_dwWidthInPixels;
+        	gpu.xres = pvmode->width;
 	       	gpu.nvhstart = newmode.ext.hsyncstart;
 		gpu.nvhtotal = newmode.ext.htotal;
-		gpu.yres = pcurrentvideomodedetails->m_dwHeightInLines;
+		gpu.yres = pvmode->height;
 		gpu.nvvstart = newmode.ext.vsyncstart;
 		gpu.nvvtotal = newmode.ext.vtotal;
 		gpu.pixelDepth = (32 + 1) / 8;
-		gpu.crtchdispend = pcurrentvideomodedetails->m_dwWidthInPixels;
+		gpu.crtchdispend = pvmode->width;
 		gpu.crtcvstart = newmode.ext.vsyncstart;
 		gpu.crtcvtotal = newmode.ext.vtotal;
 	}
 
 	if (encoder_ok) {
 		//Set up the GPU 
-		SetGPURegister(&gpu, pcurrentvideomodedetails->m_pbBaseAddressVideo);
+		SetGPURegister(&gpu, pvmode->m_pbBaseAddressVideo);
 		//Load registers into chip
 		if (video_encoder == ENCODER_CONEXANT) {
 			int n1=0;
@@ -363,7 +363,7 @@ void BootVgaInitializationKernelNG(CURRENT_VIDEO_MODE_DETAILS * pcurrentvideomod
 	IoOutputByte(0x80d8, 4);  // ACPI IO thing seen in kernel, set to 4
 	IoOutputByte(0x80d6, 5);  // ACPI IO thing seen in kernel, set to 4 or 5
 	NVVertIntrEnabled (&riva,0);
-	NVSetFBStart (&riva, 0, pcurrentvideomodedetails->m_dwFrameBufferStart);
+	NVSetFBStart (&riva, 0, pvmode->m_dwFrameBufferStart);
 	IoOutputByte(0x80d3, 4);  // ACPI IO video enable REQUIRED <-- particularly crucial to get composite out
 	// We dimm the Video OFF - focus video is implicitly disabled.
 	if (video_encoder == ENCODER_CONEXANT) {

@@ -425,6 +425,14 @@ int BootLoadConfigCD(CONFIGENTRY *config) {
 
 #ifdef FLASH 
 
+/*****************************************
+ *                                       *
+ * If someone needs this function, it    *
+ * needs adoption like the loading linux *
+ * from cd                               *
+ *                                       *
+ *****************************************/
+
 int BootLoadFlashCD(CONFIGENTRY *config) {
 
 	DWORD dwConfigSize=0;
@@ -447,8 +455,8 @@ int BootLoadFlashCD(CONFIGENTRY *config) {
 selectinsert:
 	BootVideoBlit(
 		(DWORD *)&baBackground[0], 640*4,
-		(DWORD *)(FRAMEBUFFER_START+(VIDEO_CURSOR_POSY*currentvideomodedetails.m_dwWidthInPixels*4)+VIDEO_CURSOR_POSX),
-		currentvideomodedetails.m_dwWidthInPixels*4, 64
+		(DWORD *)(FB_START+(VIDEO_CURSOR_POSY*vmode.width*4)+VIDEO_CURSOR_POSX),
+		vmode.width*4, 64
 	);
 
 
@@ -470,8 +478,8 @@ selectinsert:
 	VIDEO_CURSOR_POSX=dwX;
 	VIDEO_CURSOR_POSY=dwY;
 	BootVideoBlit(
-		(DWORD *)(FRAMEBUFFER_START+(VIDEO_CURSOR_POSY*currentvideomodedetails.m_dwWidthInPixels*4)+VIDEO_CURSOR_POSX),
-		currentvideomodedetails.m_dwWidthInPixels*4, (DWORD *)&baBackground[0], 640*4, 64
+		(DWORD *)(FB_START+(VIDEO_CURSOR_POSY*vmode.width*4)+VIDEO_CURSOR_POSX),
+		vmode.width*4, (DWORD *)&baBackground[0], 640*4, 64
 	);
 
 	// wait until the media is readable
@@ -489,8 +497,8 @@ selectinsert:
 				VIDEO_CURSOR_POSX=dwX;
 				VIDEO_CURSOR_POSY=dwY;
 				BootVideoBlit(
-				(DWORD *)(FRAMEBUFFER_START+(VIDEO_CURSOR_POSY*currentvideomodedetails.m_dwWidthInPixels*4)+VIDEO_CURSOR_POSX),
-				currentvideomodedetails.m_dwWidthInPixels*4, (DWORD *)&baBackground[0], 640*4, 64
+				(DWORD *)(FB_START+(VIDEO_CURSOR_POSY*vmode.width*4)+VIDEO_CURSOR_POSX),
+				vmode.width*4, (DWORD *)&baBackground[0], 640*4, 64
 				);
 				I2CTransmitWord(0x10, 0x0c00); // eject DVD tray	
 				wait_ms(2000); // Wait for DVD to become responsive to inject command
@@ -527,8 +535,8 @@ selectinsert:
 	VIDEO_CURSOR_POSX=dwX;
 	VIDEO_CURSOR_POSY=dwY;
 	BootVideoBlit(
-		(DWORD *)(FRAMEBUFFER_START+(VIDEO_CURSOR_POSY*currentvideomodedetails.m_dwWidthInPixels*4)+VIDEO_CURSOR_POSX),
-		currentvideomodedetails.m_dwWidthInPixels*4, (DWORD *)&baBackground[0], 640*4, 64
+		(DWORD *)(FB_START+(VIDEO_CURSOR_POSY*vmode.width*4)+VIDEO_CURSOR_POSX),
+		vmode.width*4, (DWORD *)&baBackground[0], 640*4, 64
 	);
  
         
@@ -639,21 +647,16 @@ void BootStartBiosDoIcon(ICON *icon, BYTE bOpaqueness)
 {
 
 	BootVideoJpegBlitBlend(
-		(DWORD *)(FRAMEBUFFER_START+(icon->nDestX<<2)+(currentvideomodedetails.m_dwWidthInPixels*4*icon->nDestY)),
-		currentvideomodedetails.m_dwWidthInPixels * 4, // dest bytes per line
+		(BYTE *)(FB_START+((vmode.width * icon->nDestY)+icon->nDestX) * 4),
+		vmode.width, // dest bytes per line
 		&jpegBackdrop, // source jpeg object
-		(DWORD *)(((BYTE *)jpegBackdrop.m_pBitmapData)+(icon->nSrcX *jpegBackdrop.m_nBytesPerPixel)),
+		(BYTE *)(jpegBackdrop.pData+(icon->nSrcX * jpegBackdrop.bpp)),
 		0xff00ff|(((DWORD)bOpaqueness)<<24),
-		(DWORD *)(((BYTE *)BootVideoGetPointerToEffectiveJpegTopLeft(&jpegBackdrop))+(jpegBackdrop.m_nWidth * (icon->nDestY) *jpegBackdrop.m_nBytesPerPixel)+((icon->nDestX) *jpegBackdrop.m_nBytesPerPixel)),
-		jpegBackdrop.m_nWidth*jpegBackdrop.m_nBytesPerPixel,
-		jpegBackdrop.m_nBytesPerPixel,
-		icon->nSrcLength, icon->nSrcHeight
+		(BYTE *)(jpegBackdrop.pBackdrop + ((jpegBackdrop.width * icon->nDestY) + icon->nDestX) * jpegBackdrop.bpp),
+		icon->nSrcLength, 
+		icon->nSrcHeight
 	);
 }
-
-
-
-
 
 int BootMenu(CONFIGENTRY *config,int nDrive,int nActivePartition, int nFATXPresent){
 	
@@ -664,7 +667,7 @@ int BootMenu(CONFIGENTRY *config,int nDrive,int nActivePartition, int nFATXPrese
 
 	int nTempCursorResumeX, nTempCursorResumeY ;
 	int nTempCursorX, nTempCursorY;
-	int nModeDependentOffset=(currentvideomodedetails.m_dwWidthInPixels-640)/2;  // icon offsets computed for 640 modes, retain centering in other modes
+	int nModeDependentOffset=(vmode.width-640)/2;  // icon offsets computed for 640 modes, retain centering in other modes
 	int nShowSelect = false;
         unsigned char *videosavepage;
         
@@ -682,11 +685,11 @@ int BootMenu(CONFIGENTRY *config,int nDrive,int nActivePartition, int nFATXPrese
 
 	
 	nTempCursorX=VIDEO_CURSOR_POSX;
-	nTempCursorY=currentvideomodedetails.m_dwHeightInLines-80;
+	nTempCursorY=vmode.height-80;
 	
 	// We save the complete Video Page to a memory (we restore at exit)
-	videosavepage = malloc(FRAMEBUFFER_SIZE);
-	memcpy(videosavepage,(void*)FRAMEBUFFER_START,FRAMEBUFFER_SIZE);
+	videosavepage = malloc(FB_SIZE);
+	memcpy(videosavepage,(void*)FB_START,FB_SIZE);
 	
 	VIDEO_CURSOR_POSX=((215+nModeDependentOffset)<<2);
 	VIDEO_CURSOR_POSY=nTempCursorY-100;
@@ -795,7 +798,7 @@ int BootMenu(CONFIGENTRY *config,int nDrive,int nActivePartition, int nFATXPrese
 
 		if ((risefall_xpad_BUTTON(TRIGGER_XPAD_KEY_A) == 1) || (temp>(0x369E99*BOOT_TIMEWAIT))) {
 			change=1; 
-			memcpy((void*)FRAMEBUFFER_START,videosavepage,FRAMEBUFFER_SIZE);
+			memcpy((void*)FB_START,videosavepage,FB_SIZE);
 			free(videosavepage);
 			
 			VIDEO_CURSOR_POSX=nTempCursorResumeX;
@@ -929,8 +932,8 @@ int ExittoLinux(CONFIGENTRY *config) {
 
 	{
 		char *sz="\2Starting Linux\2";
-		VIDEO_CURSOR_POSX=((currentvideomodedetails.m_dwWidthInPixels-BootVideoGetStringTotalWidth(sz))/2)*4;
-		VIDEO_CURSOR_POSY=currentvideomodedetails.m_dwHeightInLines-64;
+		VIDEO_CURSOR_POSX=((vmode.width-BootVideoGetStringTotalWidth(sz))/2)*4;
+		VIDEO_CURSOR_POSY=vmode.height-64;
 
 		VIDEO_ATTR=0xff9f9fbf;
 		printk(sz);
@@ -971,7 +974,7 @@ void startLinux(void* initrdStart, unsigned long initrdSize, const char* appendL
 	);
 	         
 	// Set framebuffer address to final location (for vesafb driver)
-	(*(unsigned int*)0xFD600800) = (0xf0000000 | ((xbox_ram*0x100000) - FRAMEBUFFER_SIZE));
+	(*(unsigned int*)0xFD600800) = (0xf0000000 | ((xbox_ram*0x100000) - FB_SIZE));
 	
 	// disable interrupts
 	asm volatile ("cli\n");
@@ -1059,8 +1062,8 @@ int ExittoRomBios(void) {
 
 	{
 		char *sz="\2Starting BOCHS-BIOS\2";
-		VIDEO_CURSOR_POSX=((currentvideomodedetails.m_dwWidthInPixels-BootVideoGetStringTotalWidth(sz))/2)*4;
-		VIDEO_CURSOR_POSY=currentvideomodedetails.m_dwHeightInLines-64;
+		VIDEO_CURSOR_POSX=((vmode.width-BootVideoGetStringTotalWidth(sz))/2)*4;
+		VIDEO_CURSOR_POSY=vmode.height-64;
 
 		VIDEO_ATTR=0xff9f9fbf;
 		printk(sz);
