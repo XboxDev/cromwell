@@ -156,6 +156,66 @@ int xberepair (	unsigned char * xbeimage,
 }
 
 
+int vmlbuild (	unsigned char * vmlimage,
+		unsigned char * cromimage
+		)
+{
+	FILE *f;
+	unsigned int vmlsize;
+        int a;
+
+        unsigned char crom[1024*1024];
+        unsigned char vml[1024*1024+0x3000];
+        unsigned int romsize=0;
+         
+       	printf("ImageBLD Hasher by XBL Project (c) hamtitampti\n");
+       	printf("VML Modus\n");
+	
+	f = fopen(cromimage, "rb");
+	if (f!=NULL) 
+    	{    
+ 		fseek(f, 0, SEEK_END); 
+         	romsize	 = ftell(f);        
+         	fseek(f, 0, SEEK_SET);
+    		fread(crom, 1, romsize, f);
+    		fclose(f);
+    	}
+    	
+    	if (romsize>0x100000) {
+    		printf("Romsize too big, increase the satic Variables everywhere");
+    		return 1;
+    	}
+    	
+	f = fopen(vmlimage, "rb");
+    	if (f!=NULL) 
+    	{   
+  		fseek(f, 0, SEEK_END); 
+         	vmlsize	 = ftell(f); 
+         	fseek(f, 0, SEEK_SET);
+    		fread(vml, 1, vmlsize, f);
+    		fclose(f); 
+    			
+    		memcpy(&vml[0x1700],crom,romsize);
+    		memset(&vml[0x1700+romsize],0x0,100);
+    		vmlsize +=romsize;
+    		vmlsize +=100;
+    		
+		// Write back the Image to Disk
+		f = fopen(vmlimage, "wb");
+    		if (f!=NULL) 
+    		{   
+		 fwrite(vml, 1, vmlsize, f);
+        	 fclose(f);			
+		} 
+		
+	        printf("VML File Created    : %s\n",vmlimage);    		
+    		
+    	}
+
+
+}
+
+
 int romcopy (
 		unsigned char * binname256,
 		unsigned char * cromimage,
@@ -364,10 +424,15 @@ int main (int argc, const char * argv[])
 	
 	if (strcmp(argv[1],"-xbe")==0) { 
 		xberepair((unsigned char*)argv[2],(unsigned char*)argv[3]);
-		}
+	}
+	
+	if (strcmp(argv[1],"-vml")==0) { 
+		vmlbuild((unsigned char*)argv[2],(unsigned char*)argv[3]);
+	}
+	
 	if (strcmp(argv[1],"-rom")==0) { 
 		if( argc < 4 ) return -1;
 		romcopy((unsigned char*)argv[2],(unsigned char*)argv[3],(unsigned char*)argv[4]);
-		}
+	}
 	return 0;	
 }

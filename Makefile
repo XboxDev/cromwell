@@ -19,6 +19,7 @@ SUBDIRS	= boot_rom fs drivers lib boot
 LDFLAGS-ROM     = -s -S -T $(TOPDIR)/scripts/ldscript-crom.ld
 LDFLAGS-XBEBOOT = -s -S -T $(TOPDIR)/scripts/xbeboot.ld
 LDFLAGS-ROMBOOT = -s -S -T $(TOPDIR)/boot_rom/bootrom.ld
+LDFLAGS-VMLBOOT = -s -S -T $(TOPDIR)/boot_vml/vml_start.ld
 
 RESOURCES-ROMBOOT = $(TOPDIR)/obj/xcodes11.elf 
 
@@ -27,6 +28,8 @@ OBJECTS-IMAGEBLD += $(TOPDIR)/bin/sha1.o
 OBJECTS-IMAGEBLD += $(TOPDIR)/obj/minilzo.o
 
 OBJECTS-XBE = $(TOPDIR)/boot_xbe/xbeboot.o
+
+OBJECTS-VML = $(TOPDIR)/boot_vml/vml_Startup.o
                                              
 OBJECTS-ROMBOOT = $(TOPDIR)/obj/2bBootStartup.o
 OBJECTS-ROMBOOT += $(TOPDIR)/obj/2bPicResponseAction.o
@@ -113,7 +116,7 @@ RESOURCES = $(TOPDIR)/obj/backdrop.elf
 export INCLUDE
 export TOPDIR
 
-all: clean xcodes11.elf cromsubdirs image.elf imagebld backdrop.elf image-crom.elf image-crom.bin default.xbe image.bin
+all: clean xcodes11.elf cromsubdirs image.elf imagebld backdrop.elf image-crom.elf image-crom.bin default.xbe vmlboot image.bin
 
 cromsubdirs: $(patsubst %, _dir_%, $(SUBDIRS))
 $(patsubst %, _dir_%, $(SUBDIRS)) : dummy
@@ -145,6 +148,7 @@ clean:
 	rm -f $(TOPDIR)/xbe/*.elf
 	rm -f $(TOPDIR)/image/*.bin
 	rm -f $(TOPDIR)/bin/imagebld*
+	rm -f $(TOPDIR)/boot_vml/disk/vmlboot
 	mkdir $(TOPDIR)/xbe -p
 	mkdir $(TOPDIR)/image -p
 	mkdir $(TOPDIR)/obj -p
@@ -157,6 +161,13 @@ backdrop.elf:
 default.elf: ${OBJECTS-XBE}
 	${LD} -o $(TOPDIR)/obj/$@ ${OBJECTS-XBE} ${LDFLAGS-XBEBOOT}
 
+vmlboot.elf: ${OBJECTS-VML}
+	${LD} -o $(TOPDIR)/obj/$@ ${OBJECTS-VML} ${LDFLAGS-VMLBOOT}
+        
+vmlboot: vmlboot.elf
+	${OBJCOPY} --output-target=binary --strip-all $(TOPDIR)/obj/vmlboot.elf $(TOPDIR)/boot_vml/disk/$@
+	$(TOPDIR)/bin/imagebld -vml $(TOPDIR)/boot_vml/disk/vmlboot $(TOPDIR)/obj/image-crom.bin 
+		
 default.xbe: default.elf
 	${OBJCOPY} --output-target=binary --strip-all $(TOPDIR)/obj/default.elf $(TOPDIR)/xbe/$@
 	$(TOPDIR)/bin/imagebld -xbe $(TOPDIR)/xbe/default.xbe $(TOPDIR)/obj/image-crom.bin
