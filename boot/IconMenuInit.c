@@ -88,7 +88,7 @@ void InitNativeIcons(void) {
 
 	//This needs enhancing to check multiple HDDs, and support multiple
 	//boot entries.
-	BootIdeReadSector(0, &ba[0], 3, 0, 512);
+	BootIdeReadSector(0, &ba[0], 0, 0, 512);
 	        
 	//Is there an MBR here?
 	if( (ba[0x1fe]==0x55) && (ba[0x1ff]==0xaa) ) {
