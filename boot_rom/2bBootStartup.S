@@ -3,12 +3,7 @@
  *  BIOS ROM Startup Assembler
  *  (C)2002 Andy, Michael, Paul, Steve
  * Original top and bottom ROM code by Steve from an idea by Michael
- *
- *  This contains the magic values read by the MCPX before the CPU gets started,
- *  as well as a minimal Xcode program which exits the Xcode interpreter immediately
- *  by turning off the MCPX ROM while the interpreter is running.
- *  The CPU will start executing *our* ROM instructions at location 0xFFFFFE62.
- *  See label jmp_code in this file for where execution picks up
+ * -- NOTE: Comment removed, the top / bottom Code changed to turnaround code.
  */
 
 /***************************************************************************
@@ -19,8 +14,14 @@
  *   (at your option) any later version.                                   *
  *                                                                         *
  ***************************************************************************/
- 
- // Initial Xcalibur support by Lehner Franz (franz@caos.at) 
+/* 
+	Rewritten from Original .bin linking to compiler system by Lehner Franz (franz@caos.at) 
+	Rewritten to Dual Boot concept for 2BL loading
+	New written CPU Inits by Lehner Franz (franz@caos.at) 
+	Written New Working Xcodes + Xcode compiler by Lehner Franz (franz@caos.at) 
+	Focus support by Lehner Franz (franz@caos.at) 
+	Xcalibur support by Lehner Franz (franz@caos.at) 
+*/
  
 #include "2bconsts.h"
  

@@ -10,6 +10,10 @@
 #include "boot.h"
 #include "filtror.h"
 
+/*
+	WriteToSMBus()	by Lehner Franz (franz@caos.at)
+	ReadfromSMBus() by Lehner Franz (franz@caos.at)
+*/
 
 int WriteToSMBus(BYTE Address,BYTE bRegister,BYTE Size,DWORD Data_to_smbus)
 {
