@@ -23,4 +23,3 @@
 
 .org 0x1700	// Here, we append the thing we want to load
 
-		
