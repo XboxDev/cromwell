@@ -20,6 +20,7 @@
 #define isxdigit(c)	(((c) >= '0' && (c) <= '9') || ((c) >= 'a' && (c) <= 'f') || ((c) >= 'A' && (c) <= 'F'))
 #define islower(c)	((c) >= 'a' && (c) <= 'z')
 #define toupper(c) __toupper(c)
+#define ETH_ALEN 6
 
 static inline unsigned char __toupper(unsigned char c)
 {
@@ -299,7 +300,28 @@ int vsprintf(char *buf, const char *fmt, va_list args)
 			flags |= SIGN;
 		case 'u':
 			break;
-
+		case '@': 
+		{
+			unsigned char *r;
+			union {
+					unsigned long   l;
+					unsigned char   c[4];
+			} u;
+			u.l = va_arg(args, unsigned long);
+			for (r = &u.c[0]; r < &u.c[4]; ++r)
+					str += sprintf(str, "%d.", *r);
+			--str;
+			continue;
+		}
+		case '!':
+		{
+			unsigned char *r;
+			unsigned char *p = va_arg(args, unsigned char *);
+			for (r = p + ETH_ALEN; p < r; ++p)
+					str += sprintf(str, "%02hX:", *p);
+			--str;
+			continue;
+		}
 		default:
 
 			*str++ = '%';
