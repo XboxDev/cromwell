@@ -55,5 +55,5 @@
 // enable logging to serial port.  You probably don't have this.
 #define INCLUDE_SERIAL 0
 
-// enable trace message printing for debugging - with filtror or serial only
+// enable trace message printing for debugging - with serial only
 #define PRINT_TRACE 0
