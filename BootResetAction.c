@@ -179,8 +179,8 @@ extern void BootResetAction ( void ) {
 		IoOutputByte(0x8002, IoInputByte(0x8002)|1);  // KERN: Enable SCI interrupt when timer status goes high
 		IoOutputByte(0x8028, IoInputByte(0x8028)|1);  // KERN: setting readonly trap event???
 
-		I2CTransmitWord(0x10, 0x0b00); // unknown, done after video update
-		I2CTransmitWord(0x10, 0x0b01); // unknown, done immediately after reading out eeprom data
+		I2CTransmitWord(0x10, 0x0b00); // Allow audio
+//		I2CTransmitWord(0x10, 0x0b01); // GAH!!!  Audio Mute!
 		I2CTransmitWord(0x10, 0x1a01); // unknown, done immediately after reading out eeprom data
 		I2CTransmitWord(0x10, 0x1b04); // unknown
 		BootPciInterruptGlobalPopState(dw);
