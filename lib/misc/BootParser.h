@@ -3,7 +3,7 @@
 
 #include "BootEEPROM.h"
 
-#define MAX_LINE 1024
+#define MAX_LINE 2048
 
 typedef struct _CONFIGENTRY {
         int  nValid;

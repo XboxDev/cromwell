@@ -15,11 +15,11 @@ int ParseConfig(char *szBuffer, CONFIGENTRY *entry, EEPROMDATA *eeprom) {
 	ptr = HelpGetToken(szBuffer,10);
 	entry->nValid = 1;
 
-
+//	printk("Entered Parseconfig\n");
 	while(1) {
-                memset(szLine,0x00,sizeof(szLine));
-		memcpy(szLine,ptr,strlen(ptr));    
-                szLine[sizeof(szLine)-1]=0;	// Make sure, we are Terminated
+                memset(szLine,0x00,MAX_LINE);
+                _strncpy(szLine,ptr,MAX_LINE);
+                szLine[MAX_LINE-1]=0; 	// Make sure, we are Terminated
                 
 		if(strlen(ptr) < MAX_LINE) {
 			if(_strncmp(ptr,"kernel",strlen("kernel")) == 0)  {
@@ -71,10 +71,10 @@ int ParseConfig(char *szBuffer, CONFIGENTRY *entry, EEPROMDATA *eeprom) {
 	if(entry->nXboxFB == 1) {
 		switch(*((VIDEO_STANDARD *)&eeprom->VideoStandard)) {
 			case NTSC_M:
-				strcpy(szNorm," video=xbox:640x480,nohwcursor ");
+				strcpy(szNorm," video=xbox:640x480,nomtrr,nohwcursor,tv=NTSC ");
 				break;
 			case PAL_I:
-				strcpy(szNorm," video=xbox:640x480,nohwcursor ");
+				strcpy(szNorm," video=xbox:640x480,nomtrr,nohwcursor,tv=PAL ");
 				break;
 			case VID_INVALID:
 			default:

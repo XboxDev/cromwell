@@ -197,32 +197,32 @@ int BootLodaConfigNative(int nActivePartition, CONFIGENTRY *config, bool fJustTe
 
 int BootTryLoadConfigFATX(CONFIGENTRY *config) {
 
-	static FATXPartition *partition = NULL;
-	static FATXFILEINFO fileinfo;
-	static FATXFILEINFO infokernel;
+	FATXPartition *partition = NULL;
+	FATXFILEINFO fileinfo;
+	FATXFILEINFO infokernel;
 
-
-	partition = OpenFATXPartition(0,
-			SECTOR_STORE,
-			STORE_SIZE);
+	partition = OpenFATXPartition(0,SECTOR_STORE,STORE_SIZE);
+	
 	if(partition != NULL) {
+
 		if(LoadFATXFile(partition,"/linuxboot.cfg",&fileinfo) ) {
 			ParseConfig(fileinfo.buffer,config,&eeprom);
 			free(fileinfo.buffer);
 		}
 	} else {
+		 CloseFATXPartition(partition);
 		 return 0;
 	}
 
 	// We use the INITRD_POS as temporary location for the Loading of the Kernel into intermediate Ram
 	
 	if(! LoadFATXFilefixed(partition,config->szKernel,&infokernel,(BYTE*)INITRD_POS)) {
+		CloseFATXPartition(partition);
 		return 0;
 	} else {
+		CloseFATXPartition(partition);
 		return 1; // worth trying, since the filesystem and kernel exists
 	}
-
-
 	
 }
 

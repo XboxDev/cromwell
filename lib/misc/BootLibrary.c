@@ -78,6 +78,18 @@ void * memset(void *dest, int data,  size_t size)
 	}
 }
                               
+int memcmp(const void *buffer1, const void *buffer2, size_t num) 
+{
+  	register int r;
+  	register const char *d=buffer1;
+  	register const char *s=buffer2;
+  	while (num--) {
+    		if ((r=(*d - *s))) return r;
+    		++d;
+    		++s;
+  	}
+  	return 0;
+}
 
 char * strcpy(char *sz, const char *szc)
 {
@@ -126,104 +138,171 @@ char *strrchr0(char *string, char ch)
 /* -------------------------------------------------------------------- */
 
 
-	// this is the memory managemnt struct stored behind every allocation
 
-typedef struct {
-	void * m_pvNext;
-	void * m_pvPrev;
-	DWORD m_dwSentinel;
-	int m_nLength; // negative means allocated length including mgt struct
-} MEM_MGT;
+unsigned int MemoryManagerStartAddress=0;
 
-MEM_MGT * pmemmgtStartAddressMemoryMangement;
-#define SENTINEL_CONST 0xaa556b2
-#define MERGE_IF_LESS_THAN_THIS_LEFT_OVER 0x100
-
-
+int MemoryManagerGetFree(void) {
+	
+	unsigned char *memsmall = (void*)MemoryManagerStartAddress;
+	int freeblocks = 0;
+	int counter;
+	for (counter=0;counter<0x400;counter++) {
+		if (memsmall[counter]==0x0) freeblocks++;	
+	}
+	return freeblocks;
+		
+}
 
 void MemoryManagementInitialization(void * pvStartAddress, DWORD dwTotalMemoryAllocLength)
 {
-	pmemmgtStartAddressMemoryMangement=pvStartAddress;
-	pmemmgtStartAddressMemoryMangement->m_dwSentinel=SENTINEL_CONST;
-	pmemmgtStartAddressMemoryMangement->m_pvNext=NULL;
-	pmemmgtStartAddressMemoryMangement->m_pvPrev=NULL;
-	pmemmgtStartAddressMemoryMangement->m_nLength=dwTotalMemoryAllocLength;
+	unsigned char *mem = pvStartAddress;
+	//if (dwTotalMemoryAllocLength!=0x1000000) return 1;
+
+	MemoryManagerStartAddress = (unsigned int)pvStartAddress;
+
+	// Prepare the memory cluster Table to be free
+	memset(mem,0x0,0x4000);
+	// Set the first cluster to be "reserved"
+	mem[0] = 0xff;
+
+	return ;
 }
 
-void * t_malloc(size_t size) {
-	MEM_MGT * pmemmgt=pmemmgtStartAddressMemoryMangement;
-	
-	
 
-	size+=sizeof(MEM_MGT);  // account for the fact that any block is prepended with management structure
+void * t_malloc(size_t size)
+{
+	unsigned char *memsmall = (void*)MemoryManagerStartAddress;
+	unsigned int counter;
+	unsigned int dummy = 0;
+	unsigned int blockcount = 0;
+	unsigned int temp;
 
-		// have a look for first available block of equal or larger size
+	// this is for 16 kbyes allocations (quick & fast)
+	if (size<(0x4000+1)) {
+		for (counter=1;counter<0x400;counter++) {
+			if (memsmall[counter]==0)
+			{
+				memsmall[counter] = 0xAA;
+				return (void*)(MemoryManagerStartAddress+counter*0x4000);
+			}
+		}
+		// No free Memory found
+		return 0;
+	}
 
-	while(pmemmgt) {
-		ASSERT(pmemmgt->m_dwSentinel == SENTINEL_CONST);
-		if(pmemmgt->m_nLength > size) {
-			if((pmemmgt->m_nLength - size) <= (sizeof(MEM_MGT)+MERGE_IF_LESS_THAN_THIS_LEFT_OVER)) {
-					// use whole of this block, there's not enough left to split it off
-				pmemmgt->m_nLength=-pmemmgt->m_nLength;
-				return (void *)(((BYTE *)pmemmgt)+sizeof(MEM_MGT));
-			} else {
-					// new guy takes up space at end of donor block
-				MEM_MGT *pmemmgtNew=(MEM_MGT *)(((BYTE *)pmemmgt)+pmemmgt->m_nLength-size);
-				pmemmgtNew->m_dwSentinel=SENTINEL_CONST;
-				pmemmgtNew->m_pvNext=pmemmgt->m_pvNext;
-				pmemmgtNew->m_pvPrev=pmemmgt;
-				pmemmgtNew->m_nLength=-size;
-				pmemmgt->m_nLength-=size;  // adjust donor length
-				pmemmgt->m_pvNext=pmemmgtNew; // insert into linked list
-				if(pmemmgtNew->m_pvNext!=NULL) {
-					MEM_MGT * pmemmgtNext = (MEM_MGT *)pmemmgtNew->m_pvNext;
-					ASSERT(pmemmgtNext->m_pvPrev == (void *)pmemmgt);
-					pmemmgtNext->m_pvPrev=pmemmgtNew;
+	// this is for 64 kbyte allocations (also quick)
+	if (size<(0x10000+1)) {
+		for (counter=1;counter<0x400;counter++) {
+			if (memcmp(&memsmall[counter],&dummy,4)==0)
+			{
+				dummy = 0xB8BADCFE;
+				memcpy(&memsmall[counter],&dummy,4);
+				return (void*)(MemoryManagerStartAddress+counter*0x4000);
+			}
+		}
+		// No free Memory found
+		return 0;
+	}
+
+	if (size<(5*1024*1024+1)) {
+
+		for (counter=1;counter<0x400;counter++) {
+			unsigned int needsectory;
+			unsigned int foundstart;
+
+			temp = (size & 0xffffc000) + 0x4000;
+			needsectory = temp / 0x4000;
+
+			//printf("Need Sectors %x\n",needsectory);
+
+			foundstart = 1;
+			for (blockcount=0;blockcount<needsectory;blockcount++) {
+				if (memsmall[counter+blockcount]!=0	) {
+					foundstart = 0;
+					break;
 				}
-				return (void *)(((BYTE *)pmemmgtNew)+sizeof(MEM_MGT));
 			}
+
+			if (foundstart == 1)
+			{
+				// We found a free sector
+				//printf("Found Sectors Start %x\n",counter);
+				memset(&memsmall[counter],0xFF,needsectory);
+				memsmall[counter] = 0xBB;
+				memsmall[counter+1] = 0xCC;
+				memsmall[counter+needsectory-2] = 0xCC;
+				memsmall[counter+needsectory-1] = 0xBB;
+
+				return (void*)(MemoryManagerStartAddress+counter*0x4000);
+			}
+
 		}
-		pmemmgt=(MEM_MGT *)pmemmgt->m_pvNext;
+		return 0;
 	}
 
-	return NULL; // screwed, not enough memory
+	return 0;
+
 }
 
-void t_free (void *ptr) {
-	MEM_MGT * pmemmgt=(MEM_MGT *)(((BYTE *)ptr)-sizeof(MEM_MGT));
-	MEM_MGT * pmemmgtPrev=(MEM_MGT *)pmemmgt->m_pvPrev;
-	MEM_MGT * pmemmgtNext=(MEM_MGT *)pmemmgt->m_pvNext;
 
-	ASSERT(pmemmgt->m_dwSentinel == SENTINEL_CONST);
 
-	pmemmgt->m_nLength=-pmemmgt->m_nLength; // change over to being free memory
+void t_free (void *ptr)
+{
+	unsigned char *memsmall = (void*)MemoryManagerStartAddress;
+	unsigned int temp;
+	unsigned int dummy = 0;
+	unsigned int point = (unsigned int)ptr;
 
-		// try to combine with previous first
-	if(pmemmgtPrev!=NULL) {
-		if(pmemmgtPrev->m_nLength >0) { // free area previous too: previous guy takes us over
-			pmemmgtPrev->m_nLength+=pmemmgt->m_nLength;
-				// fix up linked list
-			pmemmgtPrev->m_pvNext = pmemmgtNext;
-			if(pmemmgtNext!=NULL) {
-				pmemmgtNext->m_pvPrev =pmemmgtPrev;
-			}
+	// this is the offset of the Free thing
+	temp = point - MemoryManagerStartAddress;
 
-			return; // done
+	if ((temp & 0xffffc000) == temp)
+	{
+		// Allignement OK
+		temp = temp / 0x4000;
+		//printf("Free %x\n",temp);
+
+		if (memsmall[temp] == 0xAA)
+		{
+			// Found Small Block, free it
+			ptr = NULL;
+			memsmall[temp] = 0x0;
+			return;
 		}
-	}
-	if(pmemmgtNext!=NULL) {
-		if(pmemmgtNext->m_nLength >0) { // free area next too: our guy takes over next
-			pmemmgt->m_nLength+=pmemmgtNext->m_nLength;
-				// fix up linked list
-			pmemmgt->m_pvNext=pmemmgtNext->m_pvNext;
-			if(pmemmgtNext->m_pvNext!=NULL) {
-				MEM_MGT * pmemmgtNextNext=(MEM_MGT *)pmemmgtNext->m_pvNext;
-				ASSERT(pmemmgtNextNext->m_pvPrev==pmemmgtNext);
-				pmemmgtNextNext->m_pvPrev =pmemmgt;
-			}
+
+		dummy = 0xB8BADCFE;
+		if (memcmp(&memsmall[temp],&dummy,4)==0)
+		{
+			// Found 64 K block, free it
+			ptr = NULL;
+			dummy = 0;
+			memset(&memsmall[temp],dummy,4);
+			return;
 		}
+
+
+		dummy = 0xFFFFCCBB;
+		if (memcmp(&memsmall[temp],&dummy,4)==0)
+		{
+			unsigned int counter;
+			// Found 64 K block, free it
+			//printf("Found Big block %x\n",temp);
+			ptr = NULL;
+			for (counter=temp;counter<0x400;counter++)
+			{
+				if ((memsmall[counter]==0xCC)&(memsmall[counter+1]==0xBB))
+				{
+					// End detected
+					memsmall[counter]=0;
+					memsmall[counter+1]=0;
+					return;
+				}
+				memsmall[counter]=0;
+			}
+			return;
+		}
+
 	}
-		// otherwise we have to leave it isolated, but marked as free now
 
 }
 
@@ -257,7 +336,9 @@ void free(void *ptr) {
 
 	unsigned int *tempmalloc1;
         __asm__ __volatile__  (  "cli" );
-        
+      	
+      	if (ptr == NULL) return;
+      	  
 	tempmalloc1 = ptr;
 	tempmalloc1--;
 	tempmalloc1--;
@@ -328,16 +409,4 @@ void HelpGetParm(char *szBuffer, char *szOrig) {
 	*copy = 0;
 }
 
-int memcmp(const void *buffer1, const void *buffer2, size_t num) 
-{
-       register int r;
-       register const char *d=buffer1;
-       register const char *s=buffer2;
-       while (num--) {
-               if ((r=(*d - *s))) return r;
-               ++d;
-               ++s;
-       }
-       return 0;
-}
 

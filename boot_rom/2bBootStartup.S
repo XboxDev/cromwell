@@ -156,7 +156,35 @@
 	xcode_pciout(0x80000914, 0x0000c001);
 	xcode_pciout(0x80000918, 0x0000c201);
 	xcode_outb(0x0000c200, 0x00000070);
- 
+
+#if 1 // focus hack
+	
+	xcode_outb(0x0000c004, 0x000000d4);
+	
+	//I2CTransmitWord(0x6a,0x0c00);
+	xcode_outb(SMBUS+8, 0x0000000c);
+	xcode_outb(SMBUS+6, 0x00000000);
+	xcode_outb(SMBUS+2, 0x0000000a);
+        xcode_inb(SMBUS);
+        xcode_ifgoto(0x00000010,2)
+	xcode_goto(5);
+	xcode_bittoggle(0x00000008,0x00000000);
+	xcode_ifgoto(0x00000000,-4)	
+	xcode_outb(SMBUS, 0x000000ff);
+	xcode_goto(9);    			// Jump to beginning of Connexant codes
+	xcode_outb(SMBUS, 0x00000010);
+	
+	//I2CTransmitWord(0x6a,0x0d20);
+	xcode_outb(SMBUS+8, 0x0000000d);
+	xcode_outb(SMBUS+6, 0x00000020);
+	xcode_outb(SMBUS+2, 0x0000000a);
+        xcode_inb(SMBUS);
+        xcode_ifgoto(0x00000010,-1)
+	xcode_outb(SMBUS, 0x00000010);
+	
+	xcode_goto(44);	// Jump to end of Connexant inits
+#endif         
+
 	// Connexant 
 	/*
 	we have to send him the following:
