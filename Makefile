@@ -10,11 +10,11 @@ INCLUDE = -I$(TOPDIR)/grub -I$(TOPDIR)/include -I$(TOPDIR)/ -I./ -I$(TOPDIR)/fs/
 	-I$(TOPDIR)/startuploader -I$(TOPDIR)/drivers/cpu \
 	-I$(TOPDIR)/lib/jpeg/ -I$(TOPDIR)/menu/actions -I$(TOPDIR)/menu/textmenu -I$(TOPDIR)/menu/iconmenu
 
-CFLAGS	= -O2 -mcpu=pentium -Werror $(INCLUDE) -Wstrict-prototypes -fomit-frame-pointer -pipe
+CROM_CFLAGS= -O2 -mcpu=pentium -Werror $(INCLUDE) -Wstrict-prototypes -fomit-frame-pointer -pipe
 
 # add the option for gcc 3.3 only
 ifeq ($(GCC_3.3), 1)
-CFLAGS += -fno-zero-initialized-in-bss
+CROM_CFLAGS += -fno-zero-initialized-in-bss
 endif
 
 LD      = ld
@@ -27,7 +27,7 @@ SUBDIRS	= boot_rom fs drivers lib boot menu
 #### Etherboot specific stuff
 ifeq ($(ETHERBOOT), yes)
 ETH_SUBDIRS = etherboot
-CFLAGS	+= -DETHERBOOT
+CROM_CFLAGS	+= -DETHERBOOT
 ETH_INCLUDE = 	-I$(TOPDIR)/etherboot/include -I$(TOPDIR)/etherboot/arch/i386/include	
 ETH_CFLAGS  = 	-O2 -mcpu=pentium -Werror $(ETH_INCLUDE) -Wstrict-prototypes -fomit-frame-pointer -pipe -Ui386
 endif
@@ -159,7 +159,7 @@ endif
 
 cromsubdirs: $(patsubst %, _dir_%, $(SUBDIRS))
 $(patsubst %, _dir_%, $(SUBDIRS)) : dummy
-	$(MAKE) CFLAGS="$(CFLAGS)" -C $(patsubst _dir_%, %, $@)
+	$(MAKE) CFLAGS="$(CROM_CFLAGS) $(CFLAGS)" -C $(patsubst _dir_%, %, $@)
 
 dummy:
 
