@@ -113,8 +113,6 @@ extern void BootResetAction ( void ) {
 	// Reset the AGP bus and start with good condition
 	BootAGPBUSInitialization();
 	
-	//bprintf("BOOT: done with PCI initialization\n\r");
-
 	// We disable The CPU Cache
        	cache_disable();
 	// We Update the Microcode of the CPU
@@ -145,7 +143,6 @@ extern void BootResetAction ( void ) {
 			&jpegBackdrop
 		);
 	}
-	//bprintf("BOOT: backdrop unpacked\n\r");
         
 	// display solid red frontpanel LED while we start up
 	I2cSetFrontpanelLed(I2C_LED_RED0 | I2C_LED_RED1 | I2C_LED_RED2 | I2C_LED_RED3 );
@@ -162,9 +159,8 @@ extern void BootResetAction ( void ) {
        
 	I2CTransmitWord(0x10, 0x1a01); // unknown, done immediately after reading out eeprom data
 	I2CTransmitWord(0x10, 0x1b04); // unknown
-
-	// Audio Section
 	/*
+	// Audio Section
 	BootAudioInit(&ac97device);
 	ConstructAUDIO_ELEMENT_SINE(&aesTux, 1000);  // constructed silent, manipulated in video IRQ that moves tux
 	BootAudioAttachAudioElement(&ac97device, (AUDIO_ELEMENT *)&aesTux);
@@ -178,7 +174,6 @@ extern void BootResetAction ( void ) {
 	BootAudioAttachAudioElement(&ac97device, (AUDIO_ELEMENT *)&aenTux);
 	BootAudioPlayDescriptors(&ac97device);
 	*/
-
 	/* Here, the interrupts are Switched on now */
 	BootPciInterruptEnable();
         /* We allow interrupts */
@@ -186,14 +181,11 @@ extern void BootResetAction ( void ) {
 	
 
 	I2CTransmitWord(0x10, 0x1901); // no reset on eject
-        //I2CTransmitWord(0x10, 0x0c01); // close DVD tray
-     //   I2CTransmitWord(0x10, 0x0c00); // eject DVD tray
-       // while(1);
          
 	VIDEO_CURSOR_POSY=vmode.ymargin;
 	VIDEO_CURSOR_POSX=(vmode.xmargin/*+64*/)*4;
 	
-	if (cromwell_config==XROMWELL) 	printk("\2Xbox Linux XROMWELL  " VERSION "\2\n" );
+	if (cromwell_config==XROMWELL) 	printk("\2Xbox Linux Xromwell  " VERSION "\2\n" );
 	if (cromwell_config==CROMWELL)	printk("\2Xbox Linux Cromwell BIOS  " VERSION "\2\n" );
 	VIDEO_CURSOR_POSY=vmode.ymargin+32;
 	VIDEO_CURSOR_POSX=(vmode.xmargin/*+64*/)*4;
@@ -206,7 +198,6 @@ extern void BootResetAction ( void ) {
 		if (cromwell_Biostype == 1) printk("Bios: 1MB)");
 	}
         printk("\n");
-
     
 	// capture title area
 	VIDEO_ATTR=0xffc8c8c8;
@@ -242,18 +233,7 @@ extern void BootResetAction ( void ) {
 
 		I2cSetFrontpanelLed(I2C_LED_GREEN0 | I2C_LED_GREEN1 | I2C_LED_GREEN2);
 
-
-#ifdef DO_ETHERNET
-				// init Ethernet
-		printk("Initializing Ethernet... ");
-		{
-			int n=BootStartUpEthernet();
-			if(n) { printk("Error %d\n", n); } else { printk("OK\n"); }
-		}
-#endif
-
 		// set Ethernet MAC address from EEPROM
-	        
 	        {
 		volatile BYTE * pb=(BYTE *)0xfef000a8;  // Ethernet MMIO base + MAC register offset (<--thanks to Anders Gustafsson)
 		int n;
@@ -261,8 +241,6 @@ extern void BootResetAction ( void ) {
 	        }
 
 		BootEepromPrintInfo();
-
-		
 #ifdef FLASH
 		{
 		OBJECT_FLASH of;
@@ -276,25 +254,18 @@ extern void BootResetAction ( void ) {
 		printk("%s\n", of.m_szFlashDescription);
 		}
 #endif
-
-
-	
 		printk("BOOT: start USB init\n");
 		BootStartUSB();
 
-			// init the HDD and DVD
+		// init the IDE devices
 		VIDEO_ATTR=0xffc8c8c8;
 		printk("Initializing IDE Controller\n");
-
-			// wait around for HDD to become ready
-		
-
 		BootIdeWaitNotBusy(0x1f0);
                 wait_ms(200);
 		
 		printk("Ready\n");
-
-					// reuse BIOS status area
+		
+		// reuse BIOS status area
 
 #ifndef DEBUG_MODE
 		BootVideoClearScreen(&jpegBackdrop, nTempCursorY, VIDEO_CURSOR_POSY+1);  // blank out volatile data area
@@ -397,11 +368,6 @@ extern void BootResetAction ( void ) {
 		);
 
 //	printk("i2C=%d SMC=%d, IDE=%d, tick=%d una=%d unb=%d\n", nCountI2cinterrupts, nCountInterruptsSmc, nCountInterruptsIde, BIOS_TICK_COUNT, nCountUnusedInterrupts, nCountUnusedInterruptsPic2);
-
-
-
-	// Used to start Bochs; now a misnomer as it runs vmlinux
-	// argument 0 for hdd and 1 for from CDROM
 
 //#ifndef IS_XBE_CDLOADER
 	
