@@ -24,30 +24,39 @@ int ParseConfig(char *szBuffer, CONFIGENTRY *entry, EEPROMDATA *eeprom, char *sz
 		if(strlen(ptr) < MAX_LINE) {
 			if(_strncmp(ptr,"kernel",strlen("kernel")) == 0)  {
 				HelpGetParm(szTmp, ptr);
-				if(strlen(szPath) > 0) 
-					sprintf(entry->szKernel,"%s",szPath);
-				if(szTmp[0] != '/')
-					sprintf(entry->szKernel,"%s%s",entry->szKernel,"/");
+				
+				if (szPath!= NULL) 	sprintf(entry->szKernel,"%s",szPath);
+				
+				if (szTmp[0] != '/') sprintf(entry->szKernel,"%s%s",entry->szKernel,"/");
+				
 				sprintf(entry->szKernel,"%s%s",entry->szKernel,szTmp);
 			}
+			
 			if(_strncmp(ptr,"initrd",strlen("initrd")) == 0) {
 				HelpGetParm(szTmp, ptr);
-				if((strlen(szPath) > 0) &&
+				
+				if (( szPath!= NULL) &&
 					(_strncmp(szTmp, "no", strlen("no")) != 0))
 					sprintf(entry->szInitrd,"%s",szPath);
-				if(szTmp[0] != '/')
+				
+				if (szTmp[0] != '/')
 					sprintf(entry->szInitrd,"%s%s",entry->szInitrd,"/");
+				
 				sprintf(entry->szInitrd,"%s%s",entry->szInitrd,szTmp);
 			}
+			
 			if(_strncmp(ptr,"rivafb",strlen("rivafb")) == 0) {
 				entry->nRivaFB = 1;
 			}
+			
 			if(_strncmp(ptr,"xboxfb",strlen("xboxfb")) == 0) {
 				entry->nXboxFB = 1;
 			}
+			
 			if(_strncmp(ptr,"vesafb",strlen("vesafb")) == 0) {
 				entry->nVesaFB = 1;
 			}
+			
 			if(_strncmp(ptr,"append",strlen("append")) == 0)
 				sprintf(entry->szAppend,"%s",ptr);
 		} else {
