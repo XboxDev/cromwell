@@ -35,7 +35,7 @@
 #endif
 #include "BootUsbOhci.h"
 
-#define DO_USB
+//#define DO_USB
 
 extern DWORD dwaTitleArea[1024*64];
 JPEG jpegBackdrop;
@@ -455,7 +455,7 @@ extern void BootResetAction ( void ) {
 //		BootPciInterruptEnable();
 		BootEepromPrintInfo();
 
-//#ifndef XBE
+#ifndef XBE
 		{
 			OBJECT_FLASH of;
 			memset(&of,0x00,sizeof(of));
@@ -468,7 +468,7 @@ extern void BootResetAction ( void ) {
 			printk("%s\n", of.m_szFlashDescription);
 		}
 
-//#endif
+#endif
 	
 	// init USB
 #ifdef DO_USB
