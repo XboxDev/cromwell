@@ -141,14 +141,22 @@ void BootVgaInitializationKernelNG(CURRENT_VIDEO_MODE_DETAILS * pvmode) {
 	unlockCrtNv(&riva,0);
 
 	if (xbox_ram == 128) {
-		MMIO_H_OUT32(riva.PFB    ,0,0x200,0x03070103);
+		MMIO_H_OUT32(riva.PFB,0,0x200,0x03070103);
 	} else {
-		MMIO_H_OUT32(riva.PFB    ,0,0x200,0x03070003);
+		MMIO_H_OUT32(riva.PFB,0,0x200,0x03070003);
 	}
 
 	MMIO_H_OUT32 (riva.PCRTC, 0, 0x800, pvmode->m_dwFrameBufferStart);
 
 	IoOutputByte(0x80d3, 5);  // Kill all video out using an ACPI control pin
+	
+	MMIO_H_OUT32(riva.PRAMDAC,0,0x884,0x0);
+	MMIO_H_OUT32(riva.PRAMDAC,0,0x888,0x0);
+	MMIO_H_OUT32(riva.PRAMDAC,0,0x88c,0x10001000);
+	MMIO_H_OUT32(riva.PRAMDAC,0,0x890,0x10000000);
+	MMIO_H_OUT32(riva.PRAMDAC,0,0x894,0x10000000);
+	MMIO_H_OUT32(riva.PRAMDAC,0,0x898,0x10000000);
+	MMIO_H_OUT32(riva.PRAMDAC,0,0x89c,0x10000000);
 
 	if (video_encoder==ENCODER_XCALIBUR) {
         	MMIO_H_OUT32(riva.PRAMDAC,0,0x880,0x21101100);
@@ -159,15 +167,11 @@ void BootVgaInitializationKernelNG(CURRENT_VIDEO_MODE_DETAILS * pvmode) {
 	}
 	else {
 		MMIO_H_OUT32(riva.PRAMDAC,0,0x880,0);
+		//Other encoders use RGB	
+		MMIO_H_OUT32(riva.PRAMDAC,0,0x630,0x0);
+		MMIO_H_OUT32(riva.PRAMDAC,0,0x84c,0x0);
+		MMIO_H_OUT32(riva.PRAMDAC,0,0x8c4,0x0);
 	}
-	
-	MMIO_H_OUT32(riva.PRAMDAC,0,0x884,0x0);
-	MMIO_H_OUT32(riva.PRAMDAC,0,0x888,0x0);
-	MMIO_H_OUT32(riva.PRAMDAC,0,0x88c,0x10001000);
-	MMIO_H_OUT32(riva.PRAMDAC,0,0x890,0x10000000);
-	MMIO_H_OUT32(riva.PRAMDAC,0,0x894,0x10000000);
-	MMIO_H_OUT32(riva.PRAMDAC,0,0x898,0x10000000);
-	MMIO_H_OUT32(riva.PRAMDAC,0,0x89c,0x10000000);
 	
 	writeCrtNv (&riva, 0, 0x14, 0x00);
 	writeCrtNv (&riva, 0, 0x17, 0xe3); // Set CRTC mode register
@@ -361,14 +365,21 @@ void BootVgaInitializationKernelNG(CURRENT_VIDEO_MODE_DETAILS * pvmode) {
 		else if (video_encoder == ENCODER_XCALIBUR) {
 			//Xlb init
 			unsigned long *XCal_Reg = (unsigned long*)newmode.encoder_regs;
+			unsigned char mode[4];	
+			
 			ReadfromSMBus(0x70,4,4,&i);
 			WriteToSMBus(0x70,4,4,0x0F000000);
 			ReadfromSMBus(0x70,0,4,&i);
 			WriteToSMBus(0x70,0,4,0x00000000);
-			MMIO_H_OUT32(riva.PRAMDAC, 0, 0x630, 0x2);
-				
-			for (i=0; i<0x90; i++) {
-				WriteToSMBus(0x70, i, 4, XCal_Reg[i]);
+			               
+			for(i = 0; i < 0x90; i++) {
+				//Endianness.
+				memcpy(&mode[0],(unsigned char*)(&XCal_Reg[i])+3,0x01);
+				memcpy(&mode[1],(unsigned char*)(&XCal_Reg[i])+2,0x01);
+				memcpy(&mode[2],(unsigned char*)(&XCal_Reg[i])+1,0x01);
+				memcpy(&mode[3],(unsigned char*)(&XCal_Reg[i]),0x01);
+			
+				WriteToSMBus(0x70, i, 4, *(unsigned long*)&mode[0]);
 				wait_us(500);
 			}
 		}
@@ -387,7 +398,7 @@ void BootVgaInitializationKernelNG(CURRENT_VIDEO_MODE_DETAILS * pvmode) {
 	NVVertIntrEnabled (&riva,0);
 	NVSetFBStart (&riva, 0, pvmode->m_dwFrameBufferStart);
 	IoOutputByte(0x80d3, 4);  // ACPI IO video enable REQUIRED <-- particularly crucial to get composite out
-	// We dimm the Video OFF - focus video is implicitly disabled.
+	// We dim the Video out - focus video is implicitly disabled.
 	if (video_encoder == ENCODER_CONEXANT) {
 		I2CTransmitWord(0x45, (0xa8<<8)|0);
 		I2CTransmitWord(0x45, (0xaa<<8)|0);

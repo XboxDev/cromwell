@@ -30,19 +30,10 @@ int WriteToSMBus(BYTE Address,BYTE bRegister,BYTE Size,DWORD Data_to_smbus)
 
 		switch (Size) {
 			case 4:
-				/*
 				IoOutputByte(I2C_IO_BASE+9, Data_to_smbus&0xff);
 				IoOutputByte(I2C_IO_BASE+9, (Data_to_smbus >> 8) & 0xff );
 				IoOutputByte(I2C_IO_BASE+9, (Data_to_smbus >> 16) & 0xff );
 				IoOutputByte(I2C_IO_BASE+9, (Data_to_smbus >> 24) & 0xff );
-				*/
-				// Reversed
-				
-				IoOutputByte(I2C_IO_BASE+9, (Data_to_smbus >> 24) & 0xff );
-				IoOutputByte(I2C_IO_BASE+9, (Data_to_smbus >> 16) & 0xff );
-				IoOutputByte(I2C_IO_BASE+9, (Data_to_smbus >> 8) & 0xff );				
-				IoOutputByte(I2C_IO_BASE+9, Data_to_smbus&0xff);
-								
 				IoOutputWord(I2C_IO_BASE+6, 4);
 				break;
 			case 2:
