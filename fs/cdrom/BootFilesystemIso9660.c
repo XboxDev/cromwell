@@ -34,7 +34,7 @@ void BootIso9660DescriptorToString(const char * szcDescriptor, int nLength, char
 // this is a helper function for BootIso9660GetFileDetails() below
 // returns zero if error, 1 if file, 2 if directory
 
-int BootIso9660GoDownOneLevelOrHit(DWORD dwSector, DWORD dwBytesToScan, const char * szcName, ISO_SYSTEM_DIRECTORY_RECORD * pisdrForFile)
+int BootIso9660GoDownOneLevelOrHit(int driveId, DWORD dwSector, DWORD dwBytesToScan, const char * szcName, ISO_SYSTEM_DIRECTORY_RECORD * pisdrForFile)
 {
 	BYTE *ba=malloc(dwBytesToScan);  // enough for 50 sectors
 	
@@ -52,7 +52,7 @@ int BootIso9660GoDownOneLevelOrHit(DWORD dwSector, DWORD dwBytesToScan, const ch
 
 		if(dwBytesToScan>=0x800) dwBytesToScan-=0x800; else dwBytesToScan=0;
 
-		if(BootIdeReadSector(1, &ba[nPos], dwSector, 0, 2048)) return 0;
+		if(BootIdeReadSector(driveId, &ba[nPos], dwSector, 0, 2048)) return 0;
 		nPos+=2048;
 		dwSector++;
 	}
@@ -188,7 +188,7 @@ int BootIso9660GoDownOneLevelOrHit(DWORD dwSector, DWORD dwBytesToScan, const ch
 // note that you must use 8.3 names, the lowest common denominator
 // return 0 if found, otherwise an error index
 
-int BootIso9660GetFileDetails(const char * szcPath, ISO_SYSTEM_DIRECTORY_RECORD * pisdr)
+int BootIso9660GetFileDetails(int driveId, const char * szcPath, ISO_SYSTEM_DIRECTORY_RECORD * pisdr)
 {
 	char szPathElement[MAX_PATH_ELEMENT_SIZE];
 	const char * szc=&szcPath[0];
@@ -208,9 +208,9 @@ int BootIso9660GetFileDetails(const char * szcPath, ISO_SYSTEM_DIRECTORY_RECORD 
 			}
 			szPathElement[n]='\0';
 			if(n==0) {
-				nReturn=BootIso9660GoDownOneLevelOrHit(ROOT_SECTOR, 0x800, szPathElement, pisdr);
+				nReturn=BootIso9660GoDownOneLevelOrHit(driveId, ROOT_SECTOR, 0x800, szPathElement, pisdr);
 			} else {
-				nReturn=BootIso9660GoDownOneLevelOrHit(
+				nReturn=BootIso9660GoDownOneLevelOrHit(driveId,
 					pisdr->m_dwrExtentLocation.m_dwLittleEndian,
 					pisdr->m_dwrDataLength.m_dwLittleEndian,
 					szPathElement,
@@ -231,10 +231,10 @@ int BootIso9660GetFileDetails(const char * szcPath, ISO_SYSTEM_DIRECTORY_RECORD 
 }
 
 
-int BootIso9660GetFile(const char *szcPath, BYTE *pbaFile, DWORD dwFileLengthMax, DWORD dwOffset)
+int BootIso9660GetFile(int driveId, const char *szcPath, BYTE *pbaFile, DWORD dwFileLengthMax, DWORD dwOffset)
 {
 	ISO_SYSTEM_DIRECTORY_RECORD isdr;
-	int nReturn=BootIso9660GetFileDetails(szcPath, &isdr);
+	int nReturn=BootIso9660GetFileDetails(driveId,szcPath, &isdr);
 	DWORD dwSector;
 	DWORD dwFileLengthTaken;
 
@@ -257,11 +257,11 @@ int BootIso9660GetFile(const char *szcPath, BYTE *pbaFile, DWORD dwFileLengthMax
 		if(dwOffset || (dwLengthThisTime<2048)) {
 			BYTE ba[2048];
 			dwLengthThisTime-=dwOffset;
-			if(BootIdeReadSector(1, &ba[0], dwSector, 0, 2048)) return -6;
+			if(BootIdeReadSector(driveId, &ba[0], dwSector, 0, 2048)) return -6;
 			memcpy(pbaFile, &ba[dwOffset], dwLengthThisTime);
 			dwOffset=0;
 		} else {
-			if(BootIdeReadSector(1, pbaFile, dwSector, 0, 2048)) return -6;
+			if(BootIdeReadSector(driveId, pbaFile, dwSector, 0, 2048)) return -6;
 		}
 		dwSector++;
 		dwFileLengthMax-=dwLengthThisTime;

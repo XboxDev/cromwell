@@ -396,7 +396,7 @@ int BootIdeDriveInit(unsigned uIoBase, int nIndexDrive)
 	if(BootIdeIssueAtaCommand(uIoBase, IDE_CMD_IDENTIFY, &tsicp)) {
 		BootIdeIssueAtaCommand(uIoBase, ATAPI_SOFT_RESET, &tsicp);
 		if (BootIdeIssueAtaCommand(uIoBase,IDE_CMD_PACKET_IDENTIFY,&tsicp)) {
-			printk("Failed to init drive as IDE or ATAPI");
+			printk(" Drive %d: Not detected\n");
 			return 1;
 		}
 		tsaHarddiskInfo[nIndexDrive].m_fAtapi=true;
@@ -457,11 +457,10 @@ int BootIdeDriveInit(unsigned uIoBase, int nIndexDrive)
 		printk("hd%c: ", nIndexDrive+'a');
 		VIDEO_ATTR=0xffc8c800;
 
-		printk("%s %s %s\n",tsaHarddiskInfo[nIndexDrive].m_szIdentityModelNumber,
+		printk("%s %s %s - ATAPI\n",tsaHarddiskInfo[nIndexDrive].m_szIdentityModelNumber,
 			tsaHarddiskInfo[nIndexDrive].m_szIdentityModelNumber,
 			tsaHarddiskInfo[nIndexDrive].m_szSerial,
 			tsaHarddiskInfo[nIndexDrive].m_szFirmware);
-
 
 		if (cromwell_config==CROMWELL) 
 		{
@@ -495,29 +494,19 @@ int BootIdeDriveInit(unsigned uIoBase, int nIndexDrive)
         
 	if (!tsaHarddiskInfo[nIndexDrive].m_fAtapi) {
 		unsigned long ulDriveCapacity1024=((tsaHarddiskInfo[nIndexDrive].m_dwCountSectorsTotal /1000)*512)/1000;
-/*
-		int nAta=0;
-		if(tsaHarddiskInfo[nIndexDrive].m_wAtaRevisionSupported&2) nAta=1;
-		if(tsaHarddiskInfo[nIndexDrive].m_wAtaRevisionSupported&4) nAta=2;
-		if(tsaHarddiskInfo[nIndexDrive].m_wAtaRevisionSupported&8) nAta=3;
-		if(tsaHarddiskInfo[nIndexDrive].m_wAtaRevisionSupported&16) nAta=4;
-		if(tsaHarddiskInfo[nIndexDrive].m_wAtaRevisionSupported&32) nAta=5;
-*/
+		
 		printk("hd%c: ", nIndexDrive+'a');
 		VIDEO_ATTR=0xffc8c800;
 
-		printk("%s %s %u.%uGB ",
+		printk("%s %s %u.%uGB - HDD\n",
 			tsaHarddiskInfo[nIndexDrive].m_szIdentityModelNumber,
 			tsaHarddiskInfo[nIndexDrive].m_szFirmware,
 //			tsaHarddiskInfo[nIndexDrive].m_szSerial,
-//			nAta,
 // 			tsaHarddiskInfo[nIndexDrive].m_wCountHeads,
 //  		tsaHarddiskInfo[nIndexDrive].m_wCountCylinders,
 //   		tsaHarddiskInfo[nIndexDrive].m_wCountSectorsPerTrack,
-			ulDriveCapacity1024/1000, ulDriveCapacity1024%1000 //,
-//			drive_info[128]
+			ulDriveCapacity1024/1000, ulDriveCapacity1024%1000 
 		);
-
 		if (cromwell_config==CROMWELL) {
 			// Cromwell Mode
 			if((drive_info[128]&0x0004)==0x0004) 
@@ -628,11 +617,6 @@ int BootIdeDriveInit(unsigned uIoBase, int nIndexDrive)
 		printk("\n");
 	} 
 
-	if (tsaHarddiskInfo[nIndexDrive].m_fAtapi) {
-		// cd/dvd
-//		printk("BootIdeDriveInit() DVD completed ok\n");
-	}
-
 	return 0;
 }
 
@@ -702,8 +686,6 @@ int DriveSecurityChange(unsigned uIoBase, int driveId, ide_command_t ide_cmd, ch
 
 int BootIdeInit(void)
 {
-	int error;
-
 	memset(&tsaHarddiskInfo[0],0x00,sizeof(struct tsHarddiskInfo));
 	memset(&tsaHarddiskInfo[1],0x00,sizeof(struct tsHarddiskInfo));
 	
@@ -923,7 +905,7 @@ int BootIdeReadSector(int nDriveIndex, void * pbBuffer, unsigned int block, int 
 
 		if(n_bytes<2048) 
 		{
-			printk("Must have 2048 byte sector for ATAPI!!!!!\n");
+			printk("Error for drive %i: Must have 2048 byte sector for ATAPI!!!!!\n",nDriveIndex);
 			return 1;
 		}
 
@@ -1280,16 +1262,12 @@ And so at sector 0x125 (in this example only), we finally see the boot code
 
 int get_diskinfo (int drive, struct geometry *geometry)
 {
-//	printk("get_diskinfo for drive %d\n", drive);
 	if(drive>1) return 1; // fail
 	geometry->cylinders=tsaHarddiskInfo[drive].m_wCountCylinders;
 	geometry->heads=tsaHarddiskInfo[drive].m_wCountHeads;
 	geometry->sectors=tsaHarddiskInfo[drive].m_wCountSectorsPerTrack;
 	geometry->total_sectors=tsaHarddiskInfo[drive].m_dwCountSectorsTotal;
 	geometry->flags=0;
-
-//	printk("geometry->total_sectors=0x%X\n", geometry->total_sectors);
-
 	return 0; // success
 }
 
@@ -1299,26 +1277,14 @@ int BootIdeSetTransferMode(int nIndexDrive, int nMode)
 {
 	tsIdeCommandParams tsicp = IDE_DEFAULT_COMMAND;
 	unsigned int uIoBase = tsaHarddiskInfo[nIndexDrive].m_fwPortBase;
-	BYTE b;
-//	DWORD dw;
-
+	
 	tsicp.m_bDrivehead = IDE_DH_DEFAULT | IDE_DH_HEAD(0) | IDE_DH_CHS | IDE_DH_DRIVE(nIndexDrive);
 	IoOutputByte(IDE_REG_DRIVEHEAD(uIoBase), tsicp.m_bDrivehead);
 	
 	IoOutputByte(0xff60+2, 0x62); // DMA possible for both drives
 
-	if(tsaHarddiskInfo[nIndexDrive].m_fAtapi) {
-		IoOutputByte(IDE_REG_CONTROL(uIoBase), 0x08); // enable interrupt,
-		IoOutputByte(IDE_REG_FEATURE(uIoBase), 0x01); // enable DMA
-		return 0;
-	}
-
 	IoOutputByte(IDE_REG_CONTROL(uIoBase), 0x08); // enable interrupt
 	IoOutputByte(IDE_REG_FEATURE(uIoBase), 0x01); // enable DMA
-
-	if(tsaHarddiskInfo[nIndexDrive].m_bCableConductors==80) {
-
-	}
 
 	if(BootIdeWaitNotBusy(uIoBase)) {
 			printk("  Drive %d: Not Ready\n", nIndexDrive);
@@ -1326,36 +1292,9 @@ int BootIdeSetTransferMode(int nIndexDrive, int nMode)
 	}
 	{
 		int nReturn=0;
-
 		tsicp.m_bCountSector = (BYTE)nMode;
 		IoOutputByte(IDE_REG_FEATURE(uIoBase), 3); // set transfer mode subcmd
-
 		nReturn=BootIdeIssueAtaCommand(uIoBase, IDE_CMD_SET_FEATURES, &tsicp);
-
-//		printk("BootIdeSetTransferMode nReturn = %x/ error %02X\n", nReturn, IoInputByte(IDE_REG_ERROR(uIoBase)) );
-
-		switch(nMode&7) {
-			case 0: b=3; break;
-			case 1: b=1; break;
-			case 2: b=0; break;
-			case 3: b=4; break;
-			case 4: b=5; break;
-			case 5: b=6; break;
-			default: b=6; break;
-		}
-		/*
-		b|=0xc0;
-		dw=PciReadDword(BUS_0, DEV_9, FUNC_0, 0x60);
-		if(nIndexDrive) { // slave
-			dw&=0xff00ff00;
-			dw|=(b<<16) | (b);
-		} else { // primary
-			dw&=0x00ff00ff;
-			dw|=(b<<24) | (b<<8);
-		}
-//		PciWriteDword(BUS_0, DEV_9, FUNC_0, 0x60, dw); // new
-                 */
 		return nReturn;
 	}
-	return 0;
 }
