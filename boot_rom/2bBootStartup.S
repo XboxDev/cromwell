@@ -41,8 +41,17 @@
 
 #define xcode_END(val1) .byte 0xEE; .long val1 ; .long 0x0;
 
-#define SMBUS 0x0000c000
-	
+#define SMBUS 		0x0000c000
+#define MEMORY0		0x00000000	
+#define MEMORY1		0x00000010	
+#define MEMORY2		0x00000020	
+#define MEMORY3		0x00000030	
+#define MEMORY4		0x04000000	
+#define MEMORY5		0x04000010	
+#define MEMORY6		0x04000020	
+#define MEMORY7		0x04000030	
+
+
 .code32
 
 .section .low_rom, "ax"
@@ -88,7 +97,6 @@
 	xcode_pciout(0x80000884, 0x00008001);
 	// Enable IO Bar (this is for 1.0 Boxes);
 	xcode_pciout(0x80000810, 0x00008001);
-
 	// Enable APCI IO space
 	xcode_pciout(0x80000804, 0x00000003);
 	
@@ -116,34 +124,24 @@
 	xcode_pciout(0x8000f004, 0x00000007);
 
 
-// until here
+
 	xcode_poke(0x0f0010b0, 0x07633461);
 	xcode_poke(0x0f0010cc, 0x66660000);
-	
 	xcode_peek(0x0f101000);
 	xcode_bittoggle(0x000c0000,0x00000000);
 	xcode_ifgoto(0x00000000,6);
-	
-	
 	xcode_peek(0x0f101000);
 	xcode_bittoggle(0xe1f3ffff,0x80000000);
-
 	xcode_poke_a(0x0f101000);
 	xcode_poke(0x0f0010b8, 0xeeee0000);
 	xcode_goto(11);
-	
 	xcode_ifgoto(0x000c0000,6);
-
 	xcode_peek(0x0f101000);
 	xcode_bittoggle(0xe1f3ffff,0x860c0000);
 	xcode_poke_a(0x0f101000);
-	
 	xcode_poke(0x0f0010b8, 0xffff0000);
         xcode_goto(5);
 	xcode_peek(0x0f101000);
-	
-
-
 	xcode_bittoggle(0xe1f3ffff,0x820c0000);
 	xcode_poke_a(0x0f101000);
 	
@@ -246,7 +244,7 @@
         // PIC SLAVE Address (Write)
 	xcode_outb(SMBUS+4, 0x00000020);
         
-        // I2Ctransmit(0x8a,0x1,0x0);
+        // I2Ctransmit(0x20,0x1,0x0);
 	xcode_outb(SMBUS+8, 0x00000001);
 	xcode_outb(SMBUS+6, 0x00000000);
 	xcode_outb(SMBUS+2, 0x0000000a);
@@ -287,8 +285,6 @@
 	xcode_poke(0x0f001214, 0x09090909);
 	xcode_poke(0x0f00122c, 0xaaaaaaaa);
 	xcode_goto(3);
-     
-
 	xcode_poke(0x0f001214, 0x09090909);
 	xcode_poke(0x0f00122c, 0xaaaaaaaa);
 	xcode_poke(0x0f001230, 0xffffffff);
@@ -314,14 +310,9 @@
 	xcode_poke(0x0f001250, 0x0000aa8b);
 	xcode_poke(0x0f100228, 0x081205ff);
 	xcode_poke(0x0f001218, 0x00010000);
-	
 	xcode_pciin_a(0x80000860);
 	xcode_bittoggle(0xffffffff,0x00000400);   
-	
-
 	xcode_pciout_a(0x80000860);
-	
-
 	xcode_pciout(0x8000084c, 0x0000fdde);
 	xcode_pciout(0x8000089c, 0x871cc707);
 	xcode_pciin_a(0x800008b4);
@@ -336,10 +327,211 @@
 	xcode_goto(1);
 	xcode_poke(0x0f100200, 0x03070103);
 	xcode_poke(0x0f100204, 0x11448000);
-	xcode_pciout(0x8000103c, 0x00000000);
-
-	xcode_outb(SMBUS, 0x00000010);
 	
+	// Clear the Memory Test registers
+	xcode_pciout(0x8000103c, 0x00000000);
+       	xcode_pciout(0x8000183c, 0x00000000); 
+        // REV Point 1      
+
+/* ------------- DRAM 0 TEST ----------------- */
+        //Write Mem test patterns
+	xcode_poke(MEMORY0+0x00555548, 0xaaaaaaaa);
+	xcode_poke(MEMORY0+0x02555548, 0x5a5a5a5a);
+	// Did the Dram store the information ?
+	xcode_peek(MEMORY0+0x02555548);
+	xcode_ifgoto(0x5a5a5a5a,10); 
+	xcode_peek(MEMORY0+0x00555548);
+	xcode_ifgoto(0xaaaaaaaa,4); 
+	xcode_pciin_a(0x8000103c);
+	xcode_bittoggle(0xffffffff,0x00000001);
+	xcode_pciout_a(0x8000103c);
+	xcode_poke(MEMORY0+0x00555548, 0x55555555);
+	xcode_peek(MEMORY0+0x00555548);
+	xcode_ifgoto(0x55555555,2); 
+	xcode_goto(4);
+	// Error
+	xcode_pciin_a(0x8000183c);
+	xcode_bittoggle(0xffffffff,0x00000001);
+	xcode_pciout_a(0x8000183c);
+
+/* ------------- DRAM 1 TEST ----------------- */
+        //Write Mem test patterns
+	xcode_poke(MEMORY1+0x00555548, 0xaaaaaaaa);
+	xcode_poke(MEMORY1+0x02555548, 0x5a5a5a5a);
+	// Did the Dram store the information ?
+	xcode_peek(MEMORY1+0x02555548);
+	xcode_ifgoto(0x5a5a5a5a,10); 
+	xcode_peek(MEMORY1+0x00555548);
+	xcode_ifgoto(0xaaaaaaaa,4); 
+	xcode_pciin_a(0x8000103c);
+	xcode_bittoggle(0xffffffff,0x00000002);
+	xcode_pciout_a(0x8000103c);
+	xcode_poke(MEMORY1+0x00555548, 0x55555555);
+	xcode_peek(MEMORY1+0x00555548);
+	xcode_ifgoto(0x55555555,2); 
+	xcode_goto(4);
+	// Error
+	xcode_pciin_a(0x8000183c);
+	xcode_bittoggle(0xffffffff,0x00000002);
+	xcode_pciout_a(0x8000183c);  
+
+/* ------------- DRAM 2 TEST ----------------- */
+        //Write Mem test patterns
+	xcode_poke(MEMORY2+0x00555548, 0xaaaaaaaa);
+	xcode_poke(MEMORY2+0x02555548, 0x5a5a5a5a);
+	// Did the Dram store the information ?
+	xcode_peek(MEMORY2+0x02555548);
+	xcode_ifgoto(0x5a5a5a5a,10); 
+	xcode_peek(MEMORY2+0x00555548);
+	xcode_ifgoto(0xaaaaaaaa,4); 
+	xcode_pciin_a(0x8000103c);
+	xcode_bittoggle(0xffffffff,0x00000004);
+	xcode_pciout_a(0x8000103c);
+	xcode_poke(MEMORY2+0x00555548, 0x55555555);
+	xcode_peek(MEMORY2+0x00555548);
+	xcode_ifgoto(0x55555555,2); 
+	xcode_goto(4);
+	// Error
+	xcode_pciin_a(0x8000183c);
+	xcode_bittoggle(0xffffffff,0x00000004);
+	xcode_pciout_a(0x8000183c);        
+        
+/* ------------- DRAM 3 TEST ----------------- */
+        //Write Mem test patterns
+	xcode_poke(MEMORY3+0x00555548, 0xaaaaaaaa);
+	xcode_poke(MEMORY3+0x02555548, 0x5a5a5a5a);
+	// Did the Dram store the information ?
+	xcode_peek(MEMORY3+0x02555548);
+	xcode_ifgoto(0x5a5a5a5a,10); 
+	xcode_peek(MEMORY3+0x00555548);
+	xcode_ifgoto(0xaaaaaaaa,4); 
+	xcode_pciin_a(0x8000103c);
+	xcode_bittoggle(0xffffffff,0x00000008);
+	xcode_pciout_a(0x8000103c);
+	xcode_poke(MEMORY3+0x00555548, 0x55555555);
+	xcode_peek(MEMORY3+0x00555548);
+	xcode_ifgoto(0x55555555,2); 
+	xcode_goto(4);
+	// Error
+	xcode_pciin_a(0x8000183c);
+	xcode_bittoggle(0xffffffff,0x00000008);
+	xcode_pciout_a(0x8000183c);        
+        
+/* ------------- DRAM 4 TEST ----------------- */
+        //Write Mem test patterns
+	xcode_poke(MEMORY4+0x00555548, 0xaaaaaaaa);
+	xcode_poke(MEMORY4+0x02555548, 0x5a5a5a5a);
+	// Did the Dram store the information ?
+	xcode_peek(MEMORY4+0x02555548);
+	xcode_ifgoto(0x5a5a5a5a,10); 
+	xcode_peek(MEMORY4+0x00555548);
+	xcode_ifgoto(0xaaaaaaaa,4); 
+	xcode_pciin_a(0x8000103c);
+	xcode_bittoggle(0xffffffff,0x00000010);
+	xcode_pciout_a(0x8000103c);
+	xcode_poke(MEMORY4+0x00555548, 0x55555555);
+	xcode_peek(MEMORY4+0x00555548);
+	xcode_ifgoto(0x55555555,2); 
+	xcode_goto(4);
+	// Error
+	xcode_pciin_a(0x8000183c);
+	xcode_bittoggle(0xffffffff,0x00000010);
+	xcode_pciout_a(0x8000183c);        
+        
+/* ------------- DRAM 5 TEST ----------------- */
+        //Write Mem test patterns
+	xcode_poke(MEMORY5+0x00555548, 0xaaaaaaaa);
+	xcode_poke(MEMORY5+0x02555548, 0x5a5a5a5a);
+	// Did the Dram store the information ?
+	xcode_peek(MEMORY5+0x02555548);
+	xcode_ifgoto(0x5a5a5a5a,10); 
+	xcode_peek(MEMORY5+0x00555548);
+	xcode_ifgoto(0xaaaaaaaa,4); 
+	xcode_pciin_a(0x8000103c);
+	xcode_bittoggle(0xffffffff,0x00000020);
+	xcode_pciout_a(0x8000103c);
+	xcode_poke(MEMORY5+0x00555548, 0x55555555);
+	xcode_peek(MEMORY5+0x00555548);
+	xcode_ifgoto(0x55555555,2); 
+	xcode_goto(4);
+	// Error
+	xcode_pciin_a(0x8000183c);
+	xcode_bittoggle(0xffffffff,0x00000020);
+	xcode_pciout_a(0x8000183c);
+	
+/* ------------- DRAM 6 TEST ----------------- */
+        //Write Mem test patterns
+	xcode_poke(MEMORY6+0x00555548, 0xaaaaaaaa);
+	xcode_poke(MEMORY6+0x02555548, 0x5a5a5a5a);
+	// Did the Dram store the information ?
+	xcode_peek(MEMORY6+0x02555548);
+	xcode_ifgoto(0x5a5a5a5a,10); 
+	xcode_peek(MEMORY6+0x00555548);
+	xcode_ifgoto(0xaaaaaaaa,4); 
+	xcode_pciin_a(0x8000103c);
+	xcode_bittoggle(0xffffffff,0x00000040);
+	xcode_pciout_a(0x8000103c);
+	xcode_poke(MEMORY6+0x00555548, 0x55555555);
+	xcode_peek(MEMORY6+0x00555548);
+	xcode_ifgoto(0x55555555,2); 
+	xcode_goto(4);
+	// Error
+	xcode_pciin_a(0x8000183c);
+	xcode_bittoggle(0xffffffff,0x00000040);
+	xcode_pciout_a(0x8000183c);	
+	
+/* ------------- DRAM 7 TEST ----------------- */
+        //Write Mem test patterns
+	xcode_poke(MEMORY7+0x00555548, 0xaaaaaaaa);
+	xcode_poke(MEMORY7+0x02555548, 0x5a5a5a5a);
+	// Did the Dram store the information ?
+	xcode_peek(MEMORY7+0x02555548);
+	xcode_ifgoto(0x5a5a5a5a,10); 
+	xcode_peek(MEMORY7+0x00555548);
+	xcode_ifgoto(0xaaaaaaaa,4); 
+	xcode_pciin_a(0x8000103c);
+	xcode_bittoggle(0xffffffff,0x00000080);
+	xcode_pciout_a(0x8000103c);
+	xcode_poke(MEMORY7+0x00555548, 0x55555555);
+	xcode_peek(MEMORY7+0x00555548);
+	xcode_ifgoto(0x55555555,2); 
+	xcode_goto(4);
+	// Error
+	xcode_pciin_a(0x8000183c);
+	xcode_bittoggle(0xffffffff,0x00000080);
+	xcode_pciout_a(0x8000183c);	
+/* ---- All DRAMS are now initialized ----- */	
+	        
+/* ---- We finish Memory configuration ---- */
+
+	xcode_poke(0x0f100200, 0x03070003);
+	xcode_pciout(0x80000084, 0x03ffffff);
+	
+	xcode_pciin_a(0x8000103c);
+	xcode_bittoggle(0x000000ff,0x00000000);
+	xcode_outb_a(SMBUS+6);
+	xcode_inb(SMBUS+6);
+	xcode_ifgoto(0x00000000,4);
+	xcode_poke(0x0f100200, 0x03070103);
+	xcode_poke(0x0f100204, 0x11338000);
+        xcode_goto(5);
+
+	xcode_inb(SMBUS+6);
+	xcode_ifgoto(0x000000ff,3);
+	xcode_poke(0x0f100200, 0x03070103);
+	xcode_pciout(0x80000084, 0x07ffffff);
+
+/* ----  Report Memory Test results to PIC scratch register ---- */
+
+	xcode_outb(SMBUS+4, 0x00000020);
+	xcode_outb(SMBUS+8, 0x00000013);
+	xcode_outb(SMBUS+2, 0x0000000a);
+	xcode_inb(SMBUS);
+	xcode_ifgoto(0x00000010,-1)
+	xcode_outb(SMBUS, 0x00000010);
+
+/* ----  Report Memory Size to PIC scratch register ---- */
+
 	xcode_pciin_a(0x8000183c);
 	xcode_bittoggle(0x000000ff,0x00000000);
 
@@ -350,18 +542,18 @@
         xcode_ifgoto(0x00000010,-1);
 	xcode_outb(SMBUS, 0x00000010);
 	
+/* ---- Reload Nvidia Registers  ------------------------*/
+	
 	xcode_pciout(0x8000f020, 0xfdf0fd00);
 	xcode_pciout(0x80010010, 0xfd000000);
-	
+
 	// overflow trick
 	xcode_poke(0x00000000, 0xfc1000ea);
 	xcode_poke(0x00000004, 0x000008ff);
 
        	xcode_END(0x806);
 
-
-
-
+        /**************** FINE **********************/
 
 	// Note: never change this from offset 0x1000 ....
 // This is the Main Entry point ....        
@@ -615,8 +807,12 @@ initaftermemcpy:
 
 	clts
 	fninit
-	
+	jmp 	BootStartBiosLoader
 
+
+
+/* ------------------------ we can clear out everything below ? ------------------ */
+/*
 	movw $0x8026, %dx ;	movw $0x2201, %ax ;	outb %al, %dx // extsmi# able to control power (b0<-0 causes CPU powerdown after couple of seconds)
 
 	mov $0x80000804, %eax ;	movw $0xcf8, %dx ;	outl	%eax, %dx ;	movw $0xcfc, %dx ;	mov	$0x3, %eax ;	outl	%eax, %dx
@@ -818,7 +1014,7 @@ spin3:
 	outl	%eax, %dx
 
 	jmp 	BootStartBiosLoader  // this can be found in BootResetAction.c
-                         
+ */                        
                          
 /*
 
@@ -826,6 +1022,7 @@ We finishes here, the code below is for the upper section of the MCPX swapout
 
 */                         
 
+#ifdef USE_HIGH_SECTION_EXIT
 
 /************************************************************
 	the linker locates this file at the top
@@ -875,4 +1072,5 @@ gdt_ptr:
 
 .equ sizeof_top, (. - start_top)
 
+#endif
 

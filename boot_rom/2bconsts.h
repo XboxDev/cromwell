@@ -15,6 +15,8 @@
  *                                                                         *
  ***************************************************************************/
 
+#undef USE_HIGH_SECTION_EXIT
+
 #define PCI_CFG_ADDR 0x0CF8
 #define PCI_CFG_DATA 0x0CFC
 
@@ -71,9 +73,4 @@
 #define DEV_1f 0x1f
 
 #define FUNC_0 0
-/*
-#define boot_post_macro(value)                     \
-		movb    $(value), %al                           ;\
-		outb    %al, $0x80 
-*/
-/* Filtror debug stuff  4K block used for communications */
+
