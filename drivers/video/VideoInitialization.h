@@ -80,6 +80,7 @@ typedef struct {
 	long crtcvtotal;
     	long nvvtotal;
 	long pixelDepth;
+	xbox_av_type av_type;
 } GPU_PARAMETER;
 
 static const double dPllBaseClockFrequency = 13500000.0;

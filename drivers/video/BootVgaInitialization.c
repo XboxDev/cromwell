@@ -232,6 +232,7 @@ void BootVgaInitializationKernelNG(CURRENT_VIDEO_MODE_DETAILS * pcurrentvideomod
 		gpu.crtchdispend = newmode.ext.width;
 		gpu.crtcvstart = newmode.ext.vsyncstart;
 		gpu.crtcvtotal = newmode.ext.vtotal;
+		gpu.av_type = av_type;
 		
 		SetGPURegister(&gpu, pcurrentvideomodedetails->m_pbBaseAddressVideo);
 		//Load registers into chip
@@ -268,9 +269,6 @@ void BootVgaInitializationKernelNG(CURRENT_VIDEO_MODE_DETAILS * pcurrentvideomod
                         	I2CWriteBytetoRegister(0x6a, i, newmode.encoder_mode[i]);
 				wait_us(800);
                		}
-        		//UGLY - this needs to be moved
-			*((DWORD *)&pcurrentvideomodedetails->m_pbBaseAddressVideo[0x680630]) = 2; // switch GPU to YCrCb
-        		*((DWORD *)&pcurrentvideomodedetails->m_pbBaseAddressVideo[0x68084c]) =0x801080;
 		}
 	}
 

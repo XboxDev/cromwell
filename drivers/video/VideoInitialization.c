@@ -22,9 +22,6 @@
 
 #include "VideoInitialization.h"
 
-#define FALSE 0
-#define TRUE 1
-
 extern BYTE VIDEO_AV_MODE;
 // functions defined elsewhere
 int I2CTransmitByteGetReturn(BYTE bPicAddressI2cFormat, BYTE bDataToWrite);
@@ -90,6 +87,23 @@ xbox_av_type DetectAvType(void) {
 void SetGPURegister(const GPU_PARAMETER* gpu, BYTE *pbRegs) {
 	BYTE b;
 	DWORD m = 0;
+	// Firstly, set up the cable specific parameters
+	switch(gpu->av_type) {
+		case AV_COMPOSITE:
+		case AV_SVIDEO:
+		case AV_HDTV:
+			*((DWORD *)&pbRegs[0x680630]) = 2; // switch GPU to YCrCb
+        		*((DWORD *)&pbRegs[0x68084c]) =0x801080;
+		        break;
+		case AV_SCART_RGB:
+		case AV_VGA:
+		case AV_VGA_SOG:
+			*((DWORD *)&pbRegs[0x680630]) = 0; // switch GPU to RGB
+        		*((DWORD *)&pbRegs[0x68084c]) =0;
+		        break;
+		default:
+			break;
+	}
 
 	// NVHDISPEND
 	*((DWORD *)&pbRegs[0x680820]) = gpu->crtchdispend - 1;
