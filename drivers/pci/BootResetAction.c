@@ -27,6 +27,7 @@
 #include "BootEEPROM.h"
 #include "BootFlash.h"
 #include "BootFATX.h"
+#include "xbox.h"
 
 #ifdef XBE
 #include "config-xbe.h"
@@ -140,7 +141,7 @@ extern void BootResetAction ( void ) {
 
 	// init malloc() and free() structures
 
-	MemoryManagementInitialization((void *)0x1000000, 0x0E00000);
+	MemoryManagementInitialization((void *)MemorymanagerStart, MemorymanagerSize);
 	
 	BootInterruptsWriteIdt();
 	bprintf("BOOT: done interrupts\n\r");

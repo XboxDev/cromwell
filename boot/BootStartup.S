@@ -761,14 +761,14 @@ selfPipeKill:
 
 		.global	IntHandlerTimer0
 IntHandlerTimer0:
+	cli
 	pusha
 	pushf
-	cli
 	call	IntHandlerCTimer0
 	mov	$0x20, %al
 	outb	%al, $0x20
 	popf
-	sti
+//	sti
 	popa
 	iret
 
@@ -783,7 +783,7 @@ IntHandler1:
 	mov	$0x21, %al
 	outb	%al, $0x20
 	popf
-	sti
+//	sti
 	popa
 	iret
 
@@ -791,99 +791,99 @@ IntHandler1:
 
 		.global	IntHandler2
 IntHandler2:
+	cli
 	pusha
 	pushf
-	cli
 	call	IntHandler2C
 	mov	$0x22, %al
 	outb	%al, $0x20
 	popf
-	sti
 	popa
+//	sti
 	iret
 
 		// int 3
 
 		.global	IntHandler3
 IntHandler3:
+	cli
 	pusha
 	pushf
-	cli
 	call	IntHandler3VsyncC
 	mov	$0x23, %al
 	outb	%al, $0x20
 	popf
-	sti
 	popa
+//	sti
 	iret
 
 		// int 4
 
 		.global	IntHandler4
 IntHandler4:
+	cli
 	pusha
 	pushf
-	cli
 	call	IntHandler4C
 	mov	$0x24, %al
 	outb	%al, $0x20
 	popf
-	sti
 	popa
+//	sti
 	iret
 
 		// int 5
 
 		.global	IntHandler5
 IntHandler5:
+	cli
 	pusha
 	pushf
-	cli
 	call	IntHandler5C
 	mov	$0x25, %al
 	outb	%al, $0x20
 	popf
-	sti
 	popa
+//	sti
 	iret
 
 		// int 6
 
 		.global	IntHandler6
 IntHandler6:
+	sti
 	pusha
 	pushf
-	cli
 	call	IntHandler6C
 	mov	$0x26, %al
 	outb	%al, $0x20
 	popf
-	sti
 	popa
+	sti
 	iret
 
 		// int 7
 
 		.global	IntHandler7
 IntHandler7:
+	cli
 	pusha
 	pushf
-	cli
 	call	IntHandler7C
 	mov	$0x27, %al
 	outb	%al, $0x20
 	popf
-	sti
 	popa
+	sti	
 	iret
 
 		// Int 8 interrupts
 
 	.global IntHandler8
 IntHandler8:
+	cli
 	pusha
 	pushf
-	cli
 	call	IntHandler8C
 		// EOI on master and slave needed
 	mov	$0x60, %al
@@ -951,9 +951,10 @@ IntHandlerI2C:
 
 	.global IntHandlerSmc
 IntHandlerSmc:
+	cli
 	pusha
 	pushf
-	cli
+
 	call	IntHandlerCSmc
 
 		// acknowledge EXTSMI# action (from PIC p6)
@@ -976,9 +977,10 @@ IntHandlerSmc:
 
 	.global IntHandler13
 IntHandler13:
+	cli
 	pusha
 	pushf
-	cli
+
 	call	IntHandler13C
 		// EOI on master and slave needed
 	mov	$0x65, %al
@@ -993,9 +995,10 @@ IntHandler13:
 
 	.global IntHandlerIde
 IntHandlerIde:
+	cli
 	pusha
 	pushf
-	cli
+	
 	call	IntHandlerCIde
 
 		// EOI on master and slave needed
@@ -1011,9 +1014,10 @@ IntHandlerIde:
 
 	.global IntHandler15
 IntHandler15:
+	cli
 	pusha
 	pushf
-	cli
+	
 	call	IntHandler15C
 		// EOI on master and slave needed
 	mov	$0x67, %al
@@ -1029,9 +1033,10 @@ IntHandler15:
 
 	.global IntHandlerUnused
 IntHandlerUnused:
+	cli
 	pusha
 	pushf
-	cli
+	
 	call	IntHandlerUnusedC
 	mov	$0x20, %al
 	out	%al, $0x20
@@ -1043,9 +1048,10 @@ IntHandlerUnused:
 
 	.global IntHandlerUnusedPic2
 IntHandlerUnusedPic2:
+	cli
 	pusha
 	pushf
-	cli
+	
 	call	IntHandlerUnusedC2
 	mov $0xffff, %ax
 	mov	$0x8028, %dx
@@ -1065,6 +1071,7 @@ IntHandlerUnusedPic2:
 	.global SpareIntNop
 SpareIntNop:
 	iret
+
 
 		// CPU Exception Interrupts
 
