@@ -293,13 +293,14 @@ int BootLoadConfigCD(int cdromId, CONFIGENTRY *config) {
 	memset((BYTE *)KERNEL_SETUP,0,4096);
 
 	//See if we already have a CDROM in the drive
-
-	for (n=0;n<5;++n) {
+	//Try for 4 seconds.
+	I2CTransmitWord(0x10, 0x0c01); // close DVD tray
+	for (n=0;n<16;++n) {
 		if((BootIso9660GetFile(cdromId,"/linuxboo.cfg", (BYTE *)KERNEL_SETUP, 0x800)) >=0 ) {
 			cdPresent=1;
 			break;
 		}
-		wait_ms(500);
+		wait_ms(250);
 	}
 
 	if (!cdPresent) {
@@ -328,13 +329,13 @@ int BootLoadConfigCD(int cdromId, CONFIGENTRY *config) {
 		// wait until the media is readable
 
 		while(1) {
-			wait_ms(200);
 			if((BootIso9660GetFile(cdromId,"/linuxboo.cfg", (BYTE *)KERNEL_SETUP, 0x800)) >=0 ) {
 				break;
 			}
+			wait_ms(200);
 		}
 	}
-	printk("Cdrom: ");
+	printk("CDROM: ");
 	printk("Loading linuxboot.cfg from CDROM... \n");
 	dwConfigSize=BootIso9660GetFile(cdromId,"/linuxboo.cfg", (BYTE *)KERNEL_SETUP, 0x800);
 
@@ -382,165 +383,94 @@ int BootLoadConfigCD(int cdromId, CONFIGENTRY *config) {
 }
 
 #ifdef FLASH 
-
-/*****************************************
- *                                       *
- * If someone needs this function, it    *
- * needs adoption like the loading linux *
- * from cd                               *
- *                                       *
- *****************************************/
-/*
 int BootLoadFlashCD(CONFIGENTRY *config) {
-
-	DWORD dwConfigSize=0;
-	BYTE ba[2048];
-	BYTE baBackground[640*64*4]; 
-	BYTE bCount=0, bCount1;
-	unsigned char checksum[20];
-	unsigned int n;
-	ISO_PRIMARY_VOLUME_DESCRIPTOR * pipvd;
-	char sz[64];
 	
+	DWORD dwConfigSize=0, dw;
+	int n;
+	int cdPresent=0;
+	int cdromId=0;
 	DWORD dwY=VIDEO_CURSOR_POSY;
 	DWORD dwX=VIDEO_CURSOR_POSX;
+	BYTE* tempBuf;
 	struct SHA1Context context;
-      	unsigned char SHA1_result[20];
+	unsigned char SHA1_result[20];
+	unsigned char checksum[20];
+	 
+	memset((BYTE *)KERNEL_SETUP,0,4096);
 
-	I2CTransmitWord(0x10, 0x0c00); // eject DVD tray
-	wait_ms(2000); // Wait for DVD to become responsive to inject command
-                        	
-selectinsert:
-	BootVideoBlit(
-		(DWORD *)&baBackground[0], 640*4,
-		(DWORD *)(FB_START+(VIDEO_CURSOR_POSY*vmode.width*4)+VIDEO_CURSOR_POSX),
-		vmode.width*4, 64
-	);
+	//See if we already have a CDROM in the drive
+	//Try for 4 seconds.
+	I2CTransmitWord(0x10, 0x0c01); // close DVD tray
+	for (n=0;n<16;++n) {
+		if((BootIso9660GetFile(cdromId,"/image.bin", (BYTE *)KERNEL_SETUP, 0x10)) >=0 ) {
+			cdPresent=1;
+			break;
+		}
+		wait_ms(250);
+	}
 
-
-	while(DVD_TRAY_STATE != DVD_CLOSING) {
-	
+	if (!cdPresent) {
+		//Needs to be changed for non-xbox drives, which don't have an eject line
+		//Need to send ATA eject command.
+		I2CTransmitWord(0x10, 0x0c00); // eject DVD tray
+		wait_ms(2000); // Wait for DVD to become responsive to inject command
+			
+		VIDEO_ATTR=0xffeeeeff;
 		VIDEO_CURSOR_POSX=dwX;
 		VIDEO_CURSOR_POSY=dwY;
-		bCount++;
-		bCount1=bCount; if(bCount1&0x80) { bCount1=(-bCount1)-1; }
-			VIDEO_ATTR=0xff000000|(((bCount1>>1)+64)<<16)|(((bCount1>>1)+64)<<8)|0 ;
-		printk("\2Please insert CD - Flashing Mode\n\2");
-		
-		for (n=0;n<1000000;n++) {;}
-	}
+		printk("Please insert CD with image.bin file on, and press Button A\n");
 
+		while(1) {
+			if (risefall_xpad_BUTTON(TRIGGER_XPAD_KEY_A) == 1) {
+				I2CTransmitWord(0x10, 0x0c01); // close DVD tray
+				wait_ms(500);
+				break;
+			}
+        	        USBGetEvents();
+			wait_ms(10);
+		}						
 
-	VIDEO_ATTR=0xffffffff;
+		VIDEO_ATTR=0xffffffff;
 
-	VIDEO_CURSOR_POSX=dwX;
-	VIDEO_CURSOR_POSY=dwY;
-	BootVideoBlit(
-		(DWORD *)(FB_START+(VIDEO_CURSOR_POSY*vmode.width*4)+VIDEO_CURSOR_POSX),
-		vmode.width*4, (DWORD *)&baBackground[0], 640*4, 64
-	);
-
-	// wait until the media is readable
-
-	{
-		bool fMore=true, fOkay=true;
-		int timeoutcount = 0;
-		
-		while(fMore) {
-			timeoutcount++;
-			// We waited very long now for a Good read sector, but we did not get one, so we
-			// jump back and try again
-			if (timeoutcount>200) {
-				VIDEO_ATTR=0xffffffff;
-				VIDEO_CURSOR_POSX=dwX;
-				VIDEO_CURSOR_POSY=dwY;
-				BootVideoBlit(
-				(DWORD *)(FB_START+(VIDEO_CURSOR_POSY*vmode.width*4)+VIDEO_CURSOR_POSX),
-				vmode.width*4, (DWORD *)&baBackground[0], 640*4, 64
-				);
-				I2CTransmitWord(0x10, 0x0c00); // eject DVD tray	
-				wait_ms(2000); // Wait for DVD to become responsive to inject command
-				goto selectinsert;
+		// wait until the media is readable
+		while(1) {
+			if((BootIso9660GetFile(cdromId,"/image.bin", (BYTE *)KERNEL_SETUP, 0x10)) >=0 ) {
+				break;
 			}
 			wait_ms(200);
-			
-			if(BootIdeReadSector(1, &ba[0], 0x10, 0, 2048)) { // starts at 16
-				VIDEO_CURSOR_POSX=dwX;
-				VIDEO_CURSOR_POSY=dwY;
-				bCount++;
-				bCount1=bCount; if(bCount1&0x80) { bCount1=(-bCount1)-1; }
-
-				VIDEO_ATTR=0xff000000|(((bCount1)+64)<<16)|(((bCount1>>1)+128)<<8)|(((bCount1)+128)) ;
-
+		}
+	}
+	printk("CDROM: ");
+	printk("Loading bios image from CDROM:/image.bin. \n");
+	dwConfigSize=BootIso9660GetFile(cdromId,"/image.bin", (BYTE *)KERNEL_SETUP, 0x800);
+	dwConfigSize=BootIso9660GetFile("/IMAGE.BIN", (BYTE *)KERNEL_PM_CODE, 256*1024);
 	
-			} else {  // read it successfully
-				fMore=false;
-				fOkay=true;
-			}
-		}
-
-		if(!fOkay) {
-			void BootFiltrorDebugShell(void);
-			printk("cdrom unhappy\n");
-			while(1);
-		} else {
-			printk("\n");
-//			printk("HAPPY\n");
-		}
+	if( dwConfigSize < 0 ) { //It's not there
+		printk("image.bin not found on CDROM... Halting\n");
+		while(1) ;
 	}
 
-	VIDEO_CURSOR_POSX=dwX;
-	VIDEO_CURSOR_POSY=dwY;
-	BootVideoBlit(
-		(DWORD *)(FB_START+(VIDEO_CURSOR_POSY*vmode.width*4)+VIDEO_CURSOR_POSX),
-		vmode.width*4, (DWORD *)&baBackground[0], 640*4, 64
-	);
- 
-        
-	pipvd = (ISO_PRIMARY_VOLUME_DESCRIPTOR *)&ba[0];
-	memset(&sz,0x00,sizeof(sz));
-	BootIso9660DescriptorToString(pipvd->m_szSystemIdentifier, sizeof(pipvd->m_szSystemIdentifier), sz);
-	VIDEO_ATTR=0xffeeeeee;
-	printk("Cdrom: ");
-	VIDEO_ATTR=0xffeeeeff;
-	printk("%s", sz);
-	VIDEO_ATTR=0xffeeeeee;
-	printk(" - ");
-	VIDEO_ATTR=0xffeeeeff;
-	BootIso9660DescriptorToString(pipvd->m_szVolumeIdentifier, sizeof(pipvd->m_szVolumeIdentifier), sz);
-	printk("%s\n", sz);
-    
-	dwConfigSize=0;
-	dwConfigSize=BootIso9660GetFile("/IMAGE.BIN", (BYTE *)KERNEL_PM_CODE, 256*1024);   
-	printk("Image size: %i\n", dwConfigSize);   
-	if (dwConfigSize!=256*1024) {
-		printk("Image != 256kbyte image\n");           	
-		return 0;
+	printk("Image size: %i\n", dwConfigSize);
+        if (dwConfigSize!=256*1024) {
+		printk("Image is not a 256kB image\n");
+		while (1) ;
 	}
-	dwConfigSize = 256*1024;
-        
 	SHA1Reset(&context);
 	SHA1Input(&context,(BYTE *)KERNEL_PM_CODE,dwConfigSize);
 	SHA1Result(&context,SHA1_result);
 	memcpy(checksum,SHA1_result,20);
-  
-	
-	printk("Error code: $i\n", BootReflashAndReset((BYTE*) KERNEL_PM_CODE, (DWORD) 0, (DWORD) dwConfigSize));   
-
+	printk("Error code: $i\n", BootReflashAndReset((BYTE*) KERNEL_PM_CODE, (DWORD) 0, (DWORD) dwConfigSize));
 	SHA1Reset(&context);
 	SHA1Input(&context,(void *)LPCFlashadress,dwConfigSize);
 	SHA1Result(&context,SHA1_result);
-	if (_memcmp(&checksum[0],&SHA1_result[0],20)==0) {
-		printk("Checksum in Flash Matching - Success\n");
+	if (memcmp(&checksum[0],&SHA1_result[0],20)==0) {
+		printk("Checksum in flash matching - Flash successful.\nYou should now reboot.");
+		while (1);
 	} else {
-		printk("Checksum in Flash not matching - MISTAKE -Reflashing!\n"); 
-		printk("Error code: $i\n", BootReflashAndReset((BYTE*) KERNEL_PM_CODE, (DWORD) 0, (DWORD) dwConfigSize));   
-	}		
-
-
-	return true;
+		printk("Checksum in Flash not matching - MISTAKE -Reflashing!\n");
+		printk("Error code: %i\n", BootReflashAndReset((BYTE*) KERNEL_PM_CODE, (DWORD) 0, (DWORD) dwConfigSize));
+	}
 }
-*/
 #endif //Flash
 
 
