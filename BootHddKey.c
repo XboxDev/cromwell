@@ -33,13 +33,14 @@ void HMAC_SHA1_calculation(int, unsigned char *HMAC_result, ... );
 
 extern size_t strlen(const char * s);
 
-void quick_SHA1( unsigned char *SHA1_result, ... )
+
+void quick_SHA1( int nVersion, unsigned char *SHA1_result, ... )
 {
 	va_list args;
 	struct SHA1Context context;
 
 	va_start(args,SHA1_result);
-	SHA1Reset(&context);
+	SHA1Reset(nVersion, &context);
 
 	while(1) {
 		unsigned char *buffer = va_arg(args,unsigned char *);
@@ -58,6 +59,7 @@ void quick_SHA1( unsigned char *SHA1_result, ... )
 }
 
 void HMAC_SHA1(
+	int nVersion,
 	BYTE * baResult,
 	BYTE *key,
 	int key_length,
@@ -73,12 +75,12 @@ void HMAC_SHA1(
 	for(n=0x40-1; n>=key_length;--n) baState1[n] = 0x36;
 	for(;n>=0;--n) baState1[n] = key[n] ^ 0x36;
 
-	quick_SHA1 ( &baState2[0x40], baState1, 0x40, baText1, nLengthText1, baText2, nLengthText2, NULL );
+	quick_SHA1 ( nVersion, &baState2[0x40], baState1, 0x40, baText1, nLengthText1, baText2, nLengthText2, NULL );
 
 	for(n=0x40-1; n>=key_length;--n) baState2[n] = 0x5C;
 	for(;n>=0;--n) baState2[n] = key[n] ^ 0x5C;
 
-	quick_SHA1 ( baResult, baState2, 0x40+0x14, NULL );
+	quick_SHA1 ( nVersion, baResult, baState2, 0x40+0x14, NULL );
 }
 
 
@@ -86,7 +88,8 @@ void HMAC_SHA1_calculation(int version,unsigned char *HMAC_result, ... )
 {
 	va_list args;
 	struct SHA1Context context;
-        va_start(args,HMAC_result);
+
+	va_start(args,HMAC_result);
 
 	HMAC1Reset(version, &context);
 	while(1) {
@@ -102,8 +105,8 @@ void HMAC_SHA1_calculation(int version,unsigned char *HMAC_result, ... )
 
 	SHA1Result(&context,&context.Message_Block[0]);
 	HMAC2Reset(version, &context);
-        SHA1Input(&context,&context.Message_Block[0],0x14);
-        SHA1Result(&context,HMAC_result);
+	SHA1Input(&context,&context.Message_Block[0],0x14);
+	SHA1Result(&context,HMAC_result);
 }
 
 DWORD BootHddKeyGenerateEepromKeyData(
@@ -146,12 +149,13 @@ DWORD BootHddKeyGenerateEepromKeyData(
 
 
 void genHDPass(
+		int nVersion,
 		BYTE * pbEEPROMComputedKey,
 		BYTE * pbszHDSerial,
 		BYTE * pbHDModel,
 		BYTE * pbHDPass
 ) {
 
-	HMAC_SHA1 ( pbHDPass, pbEEPROMComputedKey, 0x10, pbHDModel, strlen(pbHDModel), pbszHDSerial, strlen(pbszHDSerial) );
+	HMAC_SHA1 ( nVersion, pbHDPass, pbEEPROMComputedKey, 0x10, pbHDModel, strlen(pbHDModel), pbszHDSerial, strlen(pbszHDSerial) );
 }
 

@@ -448,6 +448,8 @@ void BootVgaInitializationKernel(CURRENT_VIDEO_MODE_DETAILS * pcurrentvidemodede
 	pcurrentvidemodedetails->m_bAvPack=I2CTransmitByteGetReturn(0x10, 0x04);  // the PIC knows the AV pack type
 	b=I2CTransmitByteGetReturn(0x54, 0x5A); // the eeprom defines the TV standard for the box
 
+//	b=0x40;  // uncomment to force NTSC
+
 	if(b != 0x40) {
 		pcurrentvidemodedetails->m_bTvStandard = TV_ENCODING_PAL;
 	} else {
@@ -464,7 +466,7 @@ void BootVgaInitializationKernel(CURRENT_VIDEO_MODE_DETAILS * pcurrentvidemodede
 		}
 
 		while((!fConfirmed) && (pcurrentvidemodedetails->m_nVideoModeIndex)) { // mode 0, 640x480 must be available in every TV_ENCODING
-			if(videomodetables.m_dwaVideoModeNv[pcurrentvidemodedetails->m_bTvStandard][pcurrentvidemodedetails->m_nVideoModeIndex]) { // nonzero indicates supported
+			if(videomodetables.m_dwaVideoModeNv[pcurrentvidemodedetails->m_bTvStandard][pcurrentvidemodedetails->m_nVideoModeIndex][0]) { // nonzero indicates supported
 				fConfirmed=true;
 			} else { // not supported in this TV encoding, step down
 				pcurrentvidemodedetails->m_nVideoModeIndex--;
@@ -642,8 +644,6 @@ void BootVgaInitializationKernel(CURRENT_VIDEO_MODE_DETAILS * pcurrentvidemodede
 					break;
 
 				case TV_ENCODING_NTSC:
-					voutl(0xFD680880, 0x21101100);
-					voutl(0xFD682600,0 /* 0x100030 */);
 					voutl(0xFD682630, 2);
 					voutl(0xFD682634, 0);
 					voutl(0xFD682638, 0);

@@ -475,6 +475,7 @@ static int BootIdeDriveInit(unsigned uIoBase, int nIndexDrive)
 		tsIdeCommandParams tsicp1 = IDE_DEFAULT_COMMAND;
 		DWORD dwMagicFromEEPROM;
 		void genHDPass(
+			int nVersion,
 			BYTE * beepkey,
 			unsigned char *HDSerial,
 			unsigned char *HDModel,
@@ -511,7 +512,7 @@ static int BootIdeDriveInit(unsigned uIoBase, int nIndexDrive)
 				*pword=0;  // try user
 			}
 
-			genHDPass( baKeyFromEEPROM, tsaHarddiskInfo[nIndexDrive].m_szSerial, tsaHarddiskInfo[nIndexDrive].m_szIdentityModelNumber, &baMagic[2]);
+			genHDPass( nVersionHashing, baKeyFromEEPROM, tsaHarddiskInfo[nIndexDrive].m_szSerial, tsaHarddiskInfo[nIndexDrive].m_szIdentityModelNumber, &baMagic[2]);
 
 			if(BootIdeWaitNotBusy(uIoBase)) {
 					printk("  %d:  Not Ready\n", nIndexDrive);
