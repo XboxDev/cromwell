@@ -11,6 +11,8 @@ blows a fuse and craps over your eeprom, don't blame us.
 
 Improvements!
 
+ - If the keyword no is used for an initrd in the linuxconf.cfg
+   then no initrd will load from media
  - *NEW* ISO9660 native support in BIOS - If no MBR on HDD, boots from
    Mandrake 9 install CD to install Linux itself
  - *NEW* honours linuxboot.cfg if found in HDD /boot or CD

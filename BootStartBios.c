@@ -312,7 +312,7 @@ void StartBios(	int nDrive, int nActivePartition ) {
 
 		printk(" -  %d bytes...\n", dwKernelSize);
 
-		if( strlen(szInitrdFile) > 0) {
+		if( _strncmp(szInitrdFile, "/no", strlen("/no")) != 0) {
 			VIDEO_ATTR=0xffd8d8d8;
 			printk("  Loading %s from CDROM ", szInitrdFile);
 			VIDEO_ATTR=0xffa8a8a8;
