@@ -124,7 +124,11 @@ const ISR_PREP isrprep[] = {
 };
 
 
-void BootInterruptsWriteIdt(void) {
+void BootInterruptsWriteIdt(unsigned int mode) {
+
+
+if (mode == 0) {
+	
 	volatile ts_pm_interrupt * ptspmi=(volatile ts_pm_interrupt *)(0xef000);  // ie, start of IDT area
 	int n, n1=0;
 
@@ -172,17 +176,18 @@ void BootInterruptsWriteIdt(void) {
 	IoOutputByte(0xa1, 0x70);  // base interrupt vector address
 	IoOutputByte(0xa1, 0x02);  // am slave, hooked to INT2 on master
 	IoOutputByte(0xa1, 0x01);  // x86 mode normal EOI
-#ifdef XBE
-//	IoOutputByte(0xa1, 0xff);		// enable no ints
+
 	IoOutputByte(0xa1, 0xaf);		// enable int14(IDE) int12(SMI)
-#else
-	IoOutputByte(0xa1, 0x00);		// enable all ints
-#endif
 
 			// enable interrupts
 
 	__asm__ __volatile__("wbinvd; mov $0x1b, %%cx ; rdmsr ; andl $0xfffff7ff, %%eax ; wrmsr; sti" : : : "%ecx", "%eax", "%edx");
-
+       }
+       
+if (mode == 1) {
+	IoOutputByte(0x21, 0x00);		// Enable All ints on PIC 1
+	IoOutputByte(0xa1, 0x00);		// Enable All ints on PIC 1
+	}
 }
 
 

@@ -556,7 +556,7 @@ typedef enum {
 extern volatile TRAY_STATE traystate;
 
 
-void BootInterruptsWriteIdt(void);
+void BootInterruptsWriteIdt(unsigned int mode);
 
 int copy_swap_trim(unsigned char *dst, unsigned char *src, int len);
 void HMAC_SHA1( unsigned char *result,
