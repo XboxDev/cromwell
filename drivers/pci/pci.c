@@ -1,6 +1,4 @@
 #include "boot.h"
-
-
 // by ozpaulb@hotmail.com 2002-07-14
 
 /***************************************************************************
@@ -11,9 +9,6 @@
  *   (at your option) any later version.                                   *
  *                                                                         *
  ***************************************************************************/
-
-
-
 
 BYTE PciReadByte(unsigned int bus, unsigned int dev, unsigned int func, unsigned int reg_off)
 {
@@ -36,9 +31,6 @@ void PciWriteByte (unsigned int bus, unsigned int dev, unsigned int func,
 
 	IoOutputDword(0xcf8, (base_addr + (reg_off & 0xfc)));
 	IoOutputByte(0xcfc + (reg_off & 3), byteval);
-
-//	IoOutputDword(0xcf8, (base_addr + (reg_off & 0xfc)));
-//	IoOutputByte(0xcfc + (reg_off & 3), byteval);
 }
 
 
@@ -61,9 +53,8 @@ void PciWriteWord(unsigned int bus, unsigned int dev, unsigned int func, unsigne
 	base_addr |= ((dev & 0x1F) << 11);	// device #
 	base_addr |= ((func & 0x07) << 8);	// func #
 
-		IoOutputDword(0xcf8, (base_addr + (reg_off & 0xfc)));
-		IoOutputWord(0xcfc + (reg_off & 1), w);
-
+	IoOutputDword(0xcf8, (base_addr + (reg_off & 0xfc)));
+	IoOutputWord(0xcfc + (reg_off & 1), w);
 }
 
 
@@ -116,9 +107,6 @@ DWORD PciWriteDword(unsigned int bus, unsigned int dev, unsigned int func, unsig
 
 
 // access to RTC CMOS memory
-
- 
-
 BYTE CMOS_READ(BYTE addr) { 
 	IoOutputByte(0x70,addr); 
 	return IoInputByte(0x71); 
@@ -128,7 +116,6 @@ void CMOS_WRITE(BYTE val, BYTE addr) {
 	IoOutputByte(0x70,addr);
 	IoOutputByte(0x71,val); 
 }
-
 
 void BiosCmosWrite(BYTE bAds, BYTE bData) {
 	IoOutputByte(0x70, bAds);
@@ -143,7 +130,6 @@ BYTE BiosCmosRead(BYTE bAds)
 	IoOutputByte(0x72, bAds);
 	return IoInputByte(0x73);
 }
-
 
 int rtc_checksum_valid(int range_start, int range_end, int cks_loc)
 {
@@ -171,8 +157,6 @@ void rtc_set_checksum(int range_start, int range_end, int cks_loc)
 	CMOS_WRITE(((sum >> 0) & 0x0ff), cks_loc+1);
 }
 
-
-
 void BootAGPBUSInitialization(void)
 {
 	DWORD temp;
@@ -190,9 +174,6 @@ void BootAGPBUSInitialization(void)
 
 void BootDetectMemorySize(void)
 {
-	//xbox_ram = 64;
-	//PciWriteDword(BUS_0, DEV_0, FUNC_0, 0x84, 0x3FFFFFF);  // 64 MB
-	
 	int i;
 	int result;
 	unsigned char *fillstring;
@@ -210,24 +191,19 @@ void BootDetectMemorySize(void)
 	memset(membasetop,0xAA,0x200);
 	asm volatile ("wbinvd\n");
 	
-	if (memcmp(membasetop,fillstring,0x200) == 0) {
+	if (!memcmp(membasetop,fillstring,0x200)) {
 		// Looks like there is memory .. maybe a 128MB box 
-
 		memset(fillstring,0x55,0x200);
 		memset(membasetop,0x55,0x200);
 		asm volatile ("wbinvd\n");
-
-		if (memcmp(membasetop,fillstring,0x200) == 0) {
+		if (!memcmp(membasetop,fillstring,0x200)) {
 			// Looks like there is memory 
 			// now we are sure, we set memory
-  			
                         if (memcmp(membaselow,fillstring,0x200) == 0) {
                              	// Hell, we find the Test-string at 0x0 too !
                              	xbox_ram = 64;
                         } else {
                         	xbox_ram = 128;
-                        	//(*(unsigned int*)(0xFD000000 + 0x100200)) = 0x03070103 ;
-				//(*(unsigned int*)(0xFD000000 + 0x100204)) = 0x11448000 ;
                         }
 		}		
 		
@@ -235,13 +211,10 @@ void BootDetectMemorySize(void)
 	if (xbox_ram == 64) {
 		PciWriteDword(BUS_0, DEV_0, FUNC_0, 0x84, 0x3FFFFFF);  // 64 MB
 	}
-
-	if (xbox_ram == 128) {
+	else if (xbox_ram == 128) {
 		PciWriteDword(BUS_0, DEV_0, FUNC_0, 0x84, 0x7FFFFFF);  // 128 MB
 	}
-
         free(fillstring);
-
 }
 
 void BootPciPeripheralInitialization()
@@ -255,32 +228,21 @@ void BootPciPeripheralInitialization()
 	}
 
 	// Bus 0, Device 0, Function 0 = PCI Bridge Device - Host Bridge
-   
 	PciWriteDword(BUS_0, DEV_0, FUNC_0, 0x48, 0x00000114);
 	PciWriteDword(BUS_0, DEV_0, FUNC_0, 0x44, 0x80000000); // new 2003-01-23 ag  trying to get single write actions on TSOP
-
 	PciWriteByte(BUS_0, DEV_0, FUNC_0, 0x87, 3); // kern 8001FC21
-	
 	PciWriteByte(BUS_0, DEV_0, 8, 0, 0x42);       // Xbeboot-compare
-	
 	
 	IoOutputByte(0x2e, 0x55);
 	IoOutputByte(0x2e, 0x26);
-
 	IoOutputByte(0x61, 0xff);
 	IoOutputByte(0x92, 0x01);
-
 	IoOutputByte(0xcf9, 0x0);	// Reset Port
-
-          
-                
-        
         IoOutputByte(0x43, 0x36);         	// Timer 0 (system time): mode 3
         IoOutputByte(0x40, 0xFF);              // 18.2Hz (1.19318MHz/65535)
         IoOutputByte(0x40, 0xFF);
         IoOutputByte(0x43, 0x54);         	// Timer 1 (ISA refresh): mode 2
         IoOutputByte(0x41, 18);                // 64KHz (1.19318MHz/18)
-
         IoOutputByte(0x00, 0);                 // clear base address 0
         IoOutputByte(0x00, 0);
         IoOutputByte(0x01, 0);                 // clear count 0
@@ -302,7 +264,6 @@ void BootPciPeripheralInitialization()
         IoOutputByte(0x0B, 0x42);         	// set channel 2 to single mode, verify transfer
         IoOutputByte(0x0B, 0x43);         	// set channel 3 to single mode, verify transfer
         IoOutputByte(0x08, 0);                 // enable controller
-
         IoOutputByte(0xC0, 0);                 // clear base address 0
         IoOutputByte(0xC0, 0);
         IoOutputByte(0xC2, 0);                 // clear count 0
@@ -324,27 +285,22 @@ void BootPciPeripheralInitialization()
         IoOutputByte(0xD6, 0xC2);         // set channel 2 to single mode, verify transfer
         IoOutputByte(0xD6, 0xC3);         // set channel 3 to single mode, verify transfer
         IoOutputByte(0xD0, 0);                 // enable controller
-        
         IoOutputByte(0x0E, 0);                 // enable DMA0 channels
         IoOutputByte(0xD4, 0);                 // clear chain 4 mask
 
-
 	/* Setup the real time clock */
 	CMOS_WRITE(RTC_CONTROL_DEFAULT, RTC_CONTROL);
+	
 	/* Setup the frequency it operates at */
 	CMOS_WRITE(RTC_FREQ_SELECT_DEFAULT, RTC_FREQ_SELECT);
+	
 	/* Make certain we have a valid checksum */
-//	rtc_set_checksum(PC_CKS_RANGE_START,
-  //                      PC_CKS_RANGE_END,PC_CKS_LOC);
+	//rtc_set_checksum(PC_CKS_RANGE_START,
+  	//PC_CKS_RANGE_END,PC_CKS_LOC);
 	/* Clear any pending interrupts */
 	(void) CMOS_READ(RTC_INTR_FLAGS);
 
-
-
-
-        
 	// configure ACPI hardware to generate interrupt on PIC-chip pin6 action (via EXTSMI#)
-
 	IoOutputByte(0x80ce, 0x08);  // from 2bl RI#
 	IoOutputByte(0x80c0, 0x08);  // from 2bl SMBUSC
 	IoOutputByte(0x8004, IoInputByte(0x8004)|1);  // KERN: SCI enable == SCI interrupt generated
@@ -354,36 +310,30 @@ void BootPciPeripheralInitialization()
 	IoOutputWord(0x8028, IoInputByte(0x8028)|1);  // KERN: setting readonly trap event???
  
 	I2CTransmitWord(0x10, 0x0b00); // Allow audio
-//	I2CTransmitWord(0x10, 0x0b01); // GAH!!!  Audio Mute!
-
+	//I2CTransmitWord(0x10, 0x0b01); // GAH!!!  Audio Mute!
+	
 	// Bus 0, Device 1, Function 0 = nForce HUB Interface - ISA Bridge
-
 	PciWriteDword(BUS_0, DEV_1, FUNC_0, 0x6c, 0x0e065491);
 	PciWriteByte(BUS_0, DEV_1, FUNC_0, 0x6a, 0x0003); // kern ??? gets us an int3?  vsync req
 	PciWriteDword(BUS_0, DEV_1, FUNC_0, 0x64, 0x00000b0c);
 	PciWriteByte(BUS_0, DEV_1, FUNC_0, 0x81, PciReadByte(BUS_0, DEV_1, FUNC_0, 0x81)|8);
-
 	PciWriteDword(BUS_0, DEV_1, FUNC_0, 0x4c, 0x000f0000); // RTC clocks enable?  2Hz INT8?
 
 
 	// Bus 0, Device 9, Function 0 = nForce ATA Controller
-
 	PciWriteDword(BUS_0, DEV_9, FUNC_0, 0x20, 0x0000ff61);	// (BMIBA) Set Busmaster regs I/O base address 0xff60
 	PciWriteDword(BUS_0, DEV_9, FUNC_0, 4, PciReadDword(BUS_0, DEV_9, FUNC_0, 4)|5); // 0x00b00005 );
 	PciWriteDword(BUS_0, DEV_9, FUNC_0, 8, PciReadDword(BUS_0, DEV_9, FUNC_0, 8)&0xfffffeff); // 0x01018ab1 ); // was fffffaff
-
 	PciWriteDword(BUS_0, DEV_9, FUNC_0, 0x58, 0x20202020); // kern1.1
 	PciWriteDword(BUS_0, DEV_9, FUNC_0, 0x60, 0x00000000); // kern1.1
-
 	PciWriteDword(BUS_0, DEV_9, FUNC_0, 0x50, 0x00000002);  // without this there is no register footprint at IO 1F0
-
 	PciWriteDword(BUS_0, DEV_9, FUNC_0, 0x2c, 0x00000000); // frankenregister from xbe boot
 	PciWriteDword(BUS_0, DEV_9, FUNC_0, 0x40, 0x00000000); // frankenregister from xbe boot
+	
 	// below reinstated by frankenregister compare with xbe boot
 	PciWriteDword(BUS_0, DEV_9, FUNC_0, 0x60, 0xC0C0C0C0); // kern1.1 <--- this was in kern1.1 but is FATAL for good HDD access
 
 	// Bus 0, Device 4, Function 0 = nForce MCP Networking Adapter - all verified with kern1.1
-
 	PciWriteDword(BUS_0, DEV_4, FUNC_0, 4, PciReadDword(BUS_0, DEV_4, FUNC_0, 4) | 7 );
 	PciWriteDword(BUS_0, DEV_4, FUNC_0, 0x10, 0xfef00000); // memory base address 0xfef00000
 	PciWriteDword(BUS_0, DEV_4, FUNC_0, 0x14, 0x0000e001); // I/O base address 0xe000
@@ -391,67 +341,52 @@ void BootPciPeripheralInitialization()
 
 
 	// Bus 0, Device 2, Function 0 = nForce OHCI USB Controller - all verified with kern 1.1
-
 	PciWriteDword(BUS_0, DEV_2, FUNC_0, 4, PciReadDword(BUS_0, DEV_2, FUNC_0, 4) | 7 );
 	PciWriteDword(BUS_0, DEV_2, FUNC_0, 0x10, 0xfed00000);	// memory base address 0xfed00000
 	PciWriteDword(BUS_0, DEV_2, FUNC_0, 0x3c, (PciReadDword(BUS_0, DEV_2, FUNC_0, 0x3c) &0xffff0000) | 0x0001 );
 	PciWriteDword(BUS_0, DEV_2, FUNC_0, 0x50, 0x0000000f);
 
 	// Bus 0, Device 3, Function 0 = nForce OHCI USB Controller - verified with kern1.1
-
 	PciWriteDword(BUS_0, DEV_3, FUNC_0, 4, PciReadDword(BUS_0, DEV_3, FUNC_0, 4) | 7 );
 	PciWriteDword(BUS_0, DEV_3, FUNC_0, 0x10, 0xfed08000);	// memory base address 0xfed08000
 	PciWriteDword(BUS_0, DEV_3, FUNC_0, 0x3c, (PciReadDword(BUS_0, DEV_3, FUNC_0, 0x3c) &0xffff0000) | 0x0009 );
 	PciWriteDword(BUS_0, DEV_3, FUNC_0, 0x50, 0x00000030);  // actually BYTE?
 
 	// Bus 0, Device 6, Function 0 = nForce Audio Codec Interface - verified with kern1.1
-
 	PciWriteDword(BUS_0, DEV_6, FUNC_0, 4, PciReadDword(BUS_0, DEV_6, FUNC_0, 4) | 7 );
 	PciWriteDword(BUS_0, DEV_6, FUNC_0, 0x10, (PciReadDword(BUS_0, DEV_6, FUNC_0, 0x10) &0xffff0000) | 0xd001 );  // MIXER at IO 0xd000
 	PciWriteDword(BUS_0, DEV_6, FUNC_0, 0x14, (PciReadDword(BUS_0, DEV_6, FUNC_0, 0x14) &0xffff0000) | 0xd201 );  // BusMaster at IO 0xD200
 	PciWriteDword(BUS_0, DEV_6, FUNC_0, 0x18, 0xfec00000);	// memory base address 0xfec00000
 
 	// frankenregister from working Linux driver
-
 	PciWriteDword(BUS_0, DEV_6, FUNC_0, 8, 0x40100b1 );
 	PciWriteDword(BUS_0, DEV_6, FUNC_0, 0xc, 0x800000 );
 	PciWriteDword(BUS_0, DEV_6, FUNC_0, 0x3c, 0x05020106 );
 	PciWriteDword(BUS_0, DEV_6, FUNC_0, 0x44, 0x20001 );
 	PciWriteDword(BUS_0, DEV_6, FUNC_0, 0x4c, 0x107 );
 
-
 	// Bus 0, Device 5, Function 0 = nForce MCP APU
-
 	PciWriteDword(BUS_0, DEV_5, FUNC_0, 4, PciReadDword(BUS_0, DEV_5, FUNC_0, 4) | 7 );
 	PciWriteDword(BUS_0, DEV_5, FUNC_0, 0x3c, (PciReadDword(BUS_0, DEV_5, FUNC_0, 0x3c) &0xffff0000) | 0x0005 );
 	PciWriteDword(BUS_0, DEV_5, FUNC_0, 0x10, 0xfe800000);	// memory base address 0xfe800000
 
 	// Bus 0, Device 1, Function 0 = nForce HUB Interface - ISA Bridge
-
 	PciWriteDword(BUS_0, DEV_1, FUNC_0, 0x8c, (PciReadDword(BUS_0, DEV_1, FUNC_0, 0x8c) &0xfbffffff) | 0x08000000 );
 
 	// ACPI pin init
-
-
 	IoOutputDword(0x80b4, 0xffff);  // any interrupt resets ACPI system inactivity timer
 	IoOutputByte(0x80cc, 0x08); // Set EXTSMI# pin to be pin function
 	IoOutputByte(0x80cd, 0x08); // Set PRDY pin on ACPI to be PRDY function
 	IoOutputByte(0x80cf, 0x08); // Set C32KHZ pin to be pin function
-
 	IoOutputWord(0x8020, IoInputWord(0x8020)|0x200); // ack any preceding ACPI int
-
-
 	
 	// Bus 0, Device 1e, Function 0 = nForce AGP Host to PCI Bridge
-
 	PciWriteDword(BUS_0, DEV_1e, FUNC_0, 4, PciReadDword(BUS_0, DEV_1e, FUNC_0, 4) | 7 );
 	PciWriteDword(BUS_0, DEV_1e, FUNC_0, 0x18, (PciReadDword(BUS_0, DEV_1e, FUNC_0, 0x18) &0xffffff00));
-
 	PciWriteDword(BUS_0, DEV_1e, FUNC_0, 0x3c, 7);  // trying to get video irq
 
 	// frankenregister xbe load correction to match cromwell load
 	// controls requests for memory regions
-   
 	PciWriteDword(BUS_0, DEV_1e, FUNC_0, 0x0c, 0xff019ee7);
 	PciWriteDword(BUS_0, DEV_1e, FUNC_0, 0x10, 0xbcfaf7e7);
 	PciWriteDword(BUS_0, DEV_1e, FUNC_0, 0x14, 0x0101fafa);
@@ -463,17 +398,12 @@ void BootPciPeripheralInitialization()
 	PciWriteDword(BUS_0, DEV_1e, FUNC_0, 0x30, 0xdf758fa3);
 	PciWriteDword(BUS_0, DEV_1e, FUNC_0, 0x38, 0xb785fccc);
 
-      
 	// Bus 1, Device 0, Function 0 = NV2A GeForce3 Integrated GPU
-
 	PciWriteDword(BUS_1, DEV_0, FUNC_0, 4, PciReadDword(BUS_1, DEV_0, FUNC_0, 4) | 7 );
 	PciWriteDword(BUS_1, DEV_0, FUNC_0, 0x3c, (PciReadDword(BUS_1, DEV_0, FUNC_0, 0x3c) &0xffff0000) | 0x0103 );  // should get vid irq!!
 	PciWriteDword(BUS_1, DEV_0, FUNC_0, 0x4c, 0x00000114);
 
 	// frankenregisters so Xromwell matches Cromwell
-	
 	PciWriteDword(BUS_1, DEV_0, FUNC_0, 0x0c, 0x0);
 	PciWriteDword(BUS_1, DEV_0, FUNC_0, 0x18, 0x08);
-        
-        
 }
