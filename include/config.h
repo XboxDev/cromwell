@@ -48,3 +48,14 @@
 
 #undef DEBUG_MODE
 //#define XPAD_VIBRA_STARTUP
+
+// filtror is a debugging device designed to make code available over LPC and allow a debug shell
+// details are at http://warmcat.com/milksop
+// if you don't have one, or are building a final ROM image, keep this at zero
+#define INCLUDE_FILTROR 0
+
+// enable logging to serial port.  You probably don't have this.
+#define INCLUDE_SERIAL 0
+
+// enable trace message printing for debugging - with filtror or serial only
+#define PRINT_TRACE 0

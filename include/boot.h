@@ -1,6 +1,8 @@
 #ifndef _Boot_H_
 #define _Boot_H_
 
+#include "config.h"
+
 /***************************************************************************
       Includes used by XBox boot code
  ***************************************************************************/
@@ -16,11 +18,9 @@
 /////////////////////////////////
 // configuration
 
-
-#include <stdarg.h>
-#include <stdio.h>
 #include "consts.h"
-#include "jpeglib.h"
+#include "stdint.h"
+#include "cromwell_types.h"
 
 unsigned int cromwell_config;
 unsigned int cromwell_retryload;
@@ -28,12 +28,7 @@ unsigned int cromwell_loadbank;
 unsigned int cromwell_Biostype;
 unsigned int cromwell_haverombios;
 
-
-
 unsigned int xbox_ram;
-
-//#define VIDEO_CONEXANT	0
-//#define VIDEO_FOCUS	1
 
 #define XROMWELL	0
 #define CROMWELL	1
@@ -50,49 +45,6 @@ static inline double max (double a, double b)
 {
 	if (a > b) return a; else return b;
 }
-
-// filtror is a debugging device designed to make code available over LPC and allow a debug shell
-// details are at http://warmcat.com/milksop
-// if you don't have one, or are building a final ROM image, keep this at zero
-
-#define INCLUDE_FILTROR 0
-
-// enable logging to serial port.  You probably don't have this.
-
-#define INCLUDE_SERIAL 0
-
-// enable trace message printing for debugging - with filtror or serial only
-#define PRINT_TRACE 0
-#if PRINT_TRACE
-#define TRACE bprintf(__FILE__ " :%d\n\r",__LINE__);
-#else
-#define TRACE
-#endif
-
-#define INITRD_POS 0x02000000
-
-/////////////////////////////////
-// some typedefs to make for easy sizing
-
-typedef unsigned long ULONG;
-typedef unsigned int DWORD;
-typedef unsigned short WORD;
-typedef unsigned char BYTE;
-#ifndef bool_already_defined_
-	typedef int bool;
-#endif
-typedef unsigned long RGBA; // LSB=R -> MSB = A
-typedef long long __int64;
-
-#define guint int
-#define guint8 unsigned char
-
-#define true 1
-#define false 0
-
-#ifndef NULL
-#define NULL ((void *)0)
-#endif
 
 #define ASSERT(exp) { if(!(exp)) { bprintf("Assert failed file " __FILE__ " line %d\n", __LINE__); } }
 
@@ -167,31 +119,6 @@ typedef struct tsHarddiskInfo {  // this is the retained knowledge about an IDE 
     unsigned char m_length;
     unsigned char m_fHasMbr;
 } tsHarddiskInfo;
-
-
-/* a retail Xbox has 64 MB of RAM */
-#define RAMSIZE (64 * 1024*1024)
-/* the size of the framebuffer (defaults to 4 MB) */
-#define FRAMEBUFFER_SIZE 0x00400000
-/* the start of the framebuffer */
-#define FRAMEBUFFER_START (0xf0000000 | (RAMSIZE - FRAMEBUFFER_SIZE))
-/* the protected mode part of the kernel has to reside at 1 MB in RAM */
-#define PM_KERNEL_DEST 0x100000
-/* parameters for the kernel have to be here */
-#define KERNEL_SETUP   0x90000
-/* the GDT must not be overwritten, so we place it into an unused
-   area within KERNEL_SETUP */
-#define GDT_LOC (KERNEL_SETUP+0x800)
-/* same with the command line */
-#define CMD_LINE_LOC (KERNEL_SETUP+0x1000)
-
-/* let's reserve 4 MB at the top for the framebuffer */
-#define RAMSIZE_USE (RAMSIZE - FRAMEBUFFER_SIZE)
-/* the initrd resides at 1 MB from the top of RAM */
-#define INITRD_DEST (RAMSIZE_USE - 1024*1024)
-
-//#define LPCFlashadress 0xFFF00000
-#define LPCFlashadress 0xFF000000
 
 /////////////////////////////////
 // LED-flashing codes
@@ -283,43 +210,26 @@ int BootPerformPicChallengeResponseAction(void);
 	// LED control (see associated enum above)
 int I2cSetFrontpanelLed(BYTE b);
 
-//////// filtror.c
+
+#if PRINT_TRACE
+#define TRACE bprintf(__FILE__ " :%d\n\r",__LINE__);
+#else
+#define TRACE
+#endif
+
+#if INCLUDE_SERIAL
+	int serialprint(const char *szFormat, ...);
+#endif
 
 #if INCLUDE_FILTROR
-
-	typedef struct {
-		DWORD m_dwBlocksFromPc;
-		DWORD m_dwCountChecksumErrorsSeenFromPc;
-		DWORD m_dwBlocksToPc;
-		DWORD m_dwCountTimeoutErrorsSeenToPc; // this member should be incremented by the higher-level protocol when expected response does not happen
-	} BOOTFILTROR_CHANNEL_QUALITY_STATS;
-
-	extern BOOTFILTROR_CHANNEL_QUALITY_STATS bfcqs;
-
-		// helpers
-	int BootFiltrorGetIncomingMessageLength(void);
-	void BootFiltrorMarkIncomingMessageAsHavingBeenRead(void) ;
-	bool BootFiltrorDoesPcHaveAMessageWaitingForItToRead(void);
-	void BootFiltrorSetMessageLengthForPcToRead(WORD wChecksum, WORD wLength) ;
-	int DumpAddressAndData(DWORD dwAds, const BYTE * baData, DWORD dwCountBytesUsable);
-		// main functions
-	int BootFiltrorSendArrayToPc(const BYTE * pba, WORD wLength);
-	int BootFiltrorGetArrayFromPc( BYTE * pba, WORD wLengthMax);
-	int BootFiltrorSendArrayToPcModal(const BYTE * pba, WORD wLength);
-	int BootFiltrorSendStringToPcModal(const char *szFormat, ...);
-		// alias
 #define bprintf BootFiltrorSendStringToPcModal
 #else
 #if INCLUDE_SERIAL
 #define bprintf serialprint
 #else
 #define bprintf(...)
-#endif
-#endif
-
-#if INCLUDE_SERIAL
-	int serialprint(const char *szFormat, ...);
-#endif
+#endif /* INCLUDE_SERIAL */
+#endif /* INCLUDE_FILTROR */
 
 #define SPAMI2C() 				__asm__ __volatile__ (\
 	"retry: ; "\
@@ -431,150 +341,10 @@ void USBGetEvents(void);
 extern struct xpad_data XPAD_current[4];
 extern struct xpad_data XPAD_last[4];
 
-///////// BootEthernet.c
-
-int BootStartUpEthernet(void);
-
-///////// BootAudio.c
-
-typedef struct {
-	WORD m_wTimeStartmS;
-	WORD m_wTimeDurationmS;
-	DWORD m_dwFrequency;
-} SONG_NOTE;
-
-
-typedef enum {
-	AET_SINE=0,
-	AET_NOISE
-} AUDIO_ELEMENT_TYPES;
-
-typedef void (*CALLBACK_AFTER_BLOCK)(void * pvoidAc97Device, void * pvoidaudioelement);
-
-
-typedef struct _AUDIO_ELEMENT {  // represents a kind of generated sound, needs a derived object to be usable
-	struct _AUDIO_ELEMENT * m_paudioelementNext;
-	short m_sPanZeroIsAllLeft7FFFIsAllRight;
-	AUDIO_ELEMENT_TYPES m_aetType;
-	DWORD m_dwVolumeElementMaster7fff0000Max;
-	DWORD m_dwVolumeAttackRate;
-	DWORD m_dwVolumeAttackLimit;
-	DWORD m_dwVolumeSustainRate;
-	DWORD m_dwVolumeSustainLimit;
-	DWORD m_dwVolumeDecayRate;
-	BYTE m_bStageZeroIsAttack;
-	void * m_pvPayload;
-	DWORD m_dwPayload2;
-	CALLBACK_AFTER_BLOCK m_callbackEveryBufferFill;
-	DWORD m_dwCount48kHzSamplesRendered;
-} AUDIO_ELEMENT;
-
-typedef struct _AUDIO_ELEMENT_SINE {  // derived object composed from base object AUDIO_ELEMENT represents a sine wave with harmonics
-	AUDIO_ELEMENT m_paudioelement;
-	DWORD m_dwComputedFundamentalPhaseIncrementFor48kHzSamples;
-	short m_saVolumePerHarmonicZeroIsNone7FFFIsFull[5]; // first entry is fundamental, then 2nd harmonic, etc
-	DWORD m_dwPhaseAccumilator[5];
-} AUDIO_ELEMENT_SINE;
-
-typedef struct _AUDIO_ELEMENT_NOISE {  // derived object composed from base object AUDIO_ELEMENT represents a whitish noise source
-	AUDIO_ELEMENT m_paudioelement;
-	short m_sVolumeZeroIsNone7FFFIsFull;
-	union {
-		DWORD m_dwShifter;
-		short m_saSamples[2];
-	} shifter;
-	short m_sLastSample;
-} AUDIO_ELEMENT_NOISE;
-
-typedef struct {  // descriptor from AC97 specification
-	DWORD m_dwBufferStartAddress;
-	WORD m_wBufferLengthInSamples;  // 0=no smaples
-	WORD m_wBufferControl;  // b15=1=issue IRQ on completion, b14=1=last in stream
-} AC97_DESCRIPTOR __attribute__ ((aligned (8)));
-
-
-typedef struct {
-	AC97_DESCRIPTOR m_aac97descriptorPcmSpdif[32];
-	AC97_DESCRIPTOR m_aac97descriptorPcmOut[32];
-	volatile DWORD * m_pdwMMIO;
-	volatile DWORD m_dwCount48kHzSamplesRendered;
-	volatile DWORD m_dwNextDescriptorMod31;
-	AUDIO_ELEMENT * m_paudioelementFirst;
-} AC97_DEVICE  __attribute__ ((aligned (8))) ;
-
 void wait_ms(DWORD ticks);
 void wait_us(DWORD ticks);
 void wait_smalldelay(void);
-void BootAudioInit(volatile AC97_DEVICE * pac97device);
-void BootAudioInterrupt(volatile AC97_DEVICE * pac97device);
-void BootAudioSilence(volatile AC97_DEVICE * pac97device);
-void BootAudioOutBufferToDescriptor(volatile AC97_DEVICE * pac97device, DWORD * pdwBuffer, WORD wLengthInSamples, bool fFinal);
-short BootAudioInterpolatedSine(DWORD dwPhase4GIs2PiRadians);
-void BootAudioPlayDescriptors(volatile AC97_DEVICE * pac97device);
-void BootAudioAttachAudioElement(volatile AC97_DEVICE * pac97device, AUDIO_ELEMENT * paudioelement);
-void BootAudioDetachAudioElement(volatile AC97_DEVICE * pac97device, AUDIO_ELEMENT * paudioelement);
-void ConstructAUDIO_ELEMENT_SINE(volatile AUDIO_ELEMENT_SINE *, int nFrequencyFundamental);
-void DestructAUDIO_ELEMENT_SINE(volatile AC97_DEVICE * pac97device, AUDIO_ELEMENT_SINE * paes);
-void ConstructAUDIO_ELEMENT_NOISE(volatile AUDIO_ELEMENT_NOISE *);
-void DestructAUDIO_ELEMENT_NOISE(volatile AC97_DEVICE * pac97device, AUDIO_ELEMENT_NOISE * paen);
-WORD BootAudioGetMixerSetting(volatile AC97_DEVICE * pac97device, int nSettingIndex);
-void BootAudioSetMixerSetting(volatile AC97_DEVICE * pac97device, int nSettingIndex, WORD wValue);
 
-
-	// video helpers
-
-void BootVideoBlit(
-	DWORD * pdwTopLeftDestination,
-	DWORD dwCountBytesPerLineDestination,
-	DWORD * pdwTopLeftSource,
-	DWORD dwCountBytesPerLineSource,
-	DWORD dwCountLines
-);
-
-void BootVideoVignette(
-	DWORD * pdwaTopLeftDestination,
-	DWORD m_dwCountBytesPerLineDestination,
-	DWORD m_dwCountLines,
-	RGBA rgbaColour1,
-	RGBA rgbaColour2,
-	DWORD dwStartLine,
-	DWORD dwEndLine
-);
-
-
-typedef struct {
-	BYTE * m_pBitmapData;
-	int m_nWidth;
-	int m_nHeight;
-	int m_nBytesPerPixel;
-} JPEG;
-
-int BootVideoOverlayString(DWORD * pdwaTopLeftDestination, DWORD m_dwCountBytesPerLineDestination, RGBA rgbaOpaqueness, const char * szString);
-void BootVideoChunkedPrint(const char * szBuffer);
-int VideoDumpAddressAndData(DWORD dwAds, const BYTE * baData, DWORD dwCountBytesUsable);
-unsigned int BootVideoGetStringTotalWidth(const char * szc);
-void BootVideoClearScreen(JPEG * pJpeg, int nStartLine, int nEndLine);
-void BootVideoJpegBlitBlend(
-	DWORD * pdwTopLeftDestination,
-	DWORD dwCountBytesPerLineDestination,
-	JPEG * pJpeg,
-	DWORD * pdwTopLeftInJpegBitmap,
-	RGBA m_rgbaTransparent,
-	DWORD * pdwTopLeftBackground,
-	DWORD dwCountBytesPerLineBackground,
-	DWORD dwCountBytesPerPixelBackground,
-	int x,
-	int y
-);
-
-bool BootVideoJpegUnpackAsRgb(
-	BYTE *pbaJpegFileImage,
-	int nFileLength,
-	JPEG * pJpeg
-);
-
-void BootVideoEnableOutput(BYTE bAvPack);
-BYTE * BootVideoGetPointerToEffectiveJpegTopLeft(JPEG * pJpeg);
 
 void * memcpy(void *dest, const void *src,  size_t size);
 void * memset(void *dest, int data,  size_t size);
@@ -592,12 +362,8 @@ void MemoryManagementInitialization(void * pvStartAddress, DWORD dwTotalMemoryAl
 void * malloc(size_t size);
 void free(void *);
 
-
-
 extern volatile int nCountI2cinterrupts, nCountUnusedInterrupts, nCountUnusedInterruptsPic2, nCountInterruptsSmc, nCountInterruptsIde;
 extern volatile bool fSeenPowerdown;
-extern BYTE baBackdrop[60*72*4];
-extern JPEG jpegBackdrop;
 typedef enum {
 	ETS_OPEN_OR_OPENING=0,
 	ETS_CLOSING,
