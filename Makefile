@@ -109,6 +109,7 @@ OBJECTS-CROM += $(TOPDIR)/obj/usbwrapper.o
 OBJECTS-CROM += $(TOPDIR)/obj/linuxwrapper.o
 OBJECTS-CROM += $(TOPDIR)/obj/xpad.o
 OBJECTS-CROM += $(TOPDIR)/obj/xremote.o
+OBJECTS-CROM += $(TOPDIR)/obj/usbkey.o
 
 RESOURCES = $(TOPDIR)/obj/backdrop.elf
 RESOURCES += $(TOPDIR)/obj/pcrombios.elf

@@ -50,6 +50,8 @@ void BootStartUSB(void)
 	XPADInit();
 	
 	XRemoteInit();
+	
+	UsbKeyBoardInit();
 		
 	// Find a few connected devices first...
 	for(n=0;n<3000;n++)
