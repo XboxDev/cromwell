@@ -714,12 +714,10 @@ void BootIcons(int nXOffset, int nYOffset, int nTextOffsetX, int nTextOffsetY) {
 	icon[ICON_FLASH].nSrcHeight = ICON_HEIGH;
 	icon[ICON_FLASH].nTextX = (nTextOffsetX+440)<<2;
 	icon[ICON_FLASH].nTextY = nTextOffsetY;
-	#ifdef FLASH
 	icon[ICON_FLASH].szCaption = "Flash";
-	#endif
-	#ifndef FLASH
-	icon[ICON_FLASH].szCaption = "BIOS";	
-	#endif
+
+	if (cromwell_haverombios==1) icon[ICON_FLASH].szCaption = "BIOS";	
+	
 }
 
 void BootStartBiosDoIcon(ICON *icon, BYTE bOpaqueness)
@@ -821,10 +819,17 @@ int BootMenue(CONFIGENTRY *config,int nDrive,int nActivePartition, int nFATXPres
 				break;
 	
 			case ICON_FLASH:
-				//#ifdef FLASH
-				icon[menu].nEnabled = 1;
-				if(nSelected == -1) nSelected = menu;
-				//#endif
+				#ifdef FLASH
+					icon[menu].nEnabled = 1;
+					if(nSelected == -1) nSelected = menu;
+				#endif
+				#ifndef FLASH				
+					if (cromwell_haverombios==1) 
+					{
+						icon[menu].nEnabled = 1;
+						if(nSelected == -1) nSelected = menu;
+					}
+				#endif
 				break;
 		}
 	}	
@@ -1015,8 +1020,9 @@ void StartBios(CONFIGENTRY *config, int nActivePartition , int nFATXPresent,int 
 			BootLoadFlashCD(config);
 
 #endif                  
-#ifndef FLASH
-			ExittoRomBios();
+#ifndef FLASH           
+			if (cromwell_haverombios==1) ExittoRomBios();
+			
 #endif
 			break;
 		default:
@@ -1160,8 +1166,22 @@ int ExittoLinux(CONFIGENTRY *config) {
 
 int ExittoRomBios(void) {
 	
+	unsigned int haverombiostemp;
+	unsigned int romstarttemp;
+	unsigned int romsizetemp;
 	
+	
+	// turn off USB
+	BootStopUSB();
 
+	{
+		char *sz="\2Starting BOCHS-BIOS\2";
+		VIDEO_CURSOR_POSX=((currentvideomodedetails.m_dwWidthInPixels-BootVideoGetStringTotalWidth(sz))/2)*4;
+		VIDEO_CURSOR_POSY=currentvideomodedetails.m_dwHeightInLines-64;
+
+		VIDEO_ATTR=0xff9f9fbf;
+		printk(sz);
+	}
 
 
 //		int n=0;
@@ -1173,21 +1193,48 @@ int ExittoRomBios(void) {
 
 	//	I2cSetFrontpanelLed(0x77);
 
-			// copy the 64K 16-bit BIOS code into memory at 0xF0000, this is where a BIOS
-			// normally appears in 16-bit mode
+	// copy the 64K 16-bit BIOS code into memory at 0xF0000, this is where a BIOS
+	// normally appears in 16-bit mode
 
 
 	// here we should copy .. disabled for the moment
-//D1	memcpy((void *)0xf0000, ((BYTE *)&rombios), 0x10000);
 
 
+		
+	memcpy((void *)0xf0000, (void *)(cromwell_rombiosstart+0x03A00000), cromwell_rombiossize);
+        	
+        // Test code for integrity check
+	
+	/*
+	{
+	unsigned char state2[20];
+	unsigned int i;
+	struct SHA1Context context;
+
+	SHA1Reset(&context);
+	
+	SHA1Input(&context,(void *)0xf0000,cromwell_rombiossize);
+	SHA1Result(&context,state2);
+	VIDEO_CURSOR_POSY= 200;
+	VIDEO_CURSOR_POSX = 100;
+	printk(" %08x\n",cromwell_rombiosstart);
+	printk(" %08x\n",cromwell_rombiossize);
+	for (i=0;i<20;i++) printk(" %02x",state2[i]); 
+
+	//memcpy(&i, (void *)(0x1e0+0x03A00000), 4);
+	//printk(" %08x",i); 	
+	}
+	*/
+	
+	
 	// LEDs to yellow
 
-			// copy a 16-bit LJMP stub into a safe place that is visible in 16-bit mode
-			// (the BIOS isn't visible in 1MByte address space)
+	// copy a 16-bit LJMP stub into a safe place that is visible in 16-bit mode
+	// (the BIOS isn't visible in 1MByte address space)
 
 	__asm __volatile__ (
 		
+		"cli \n"
 		"mov  $code_start, %esi \n"
 		"mov  $0x600, %edi       \n"
 		"mov  $0x100, %ecx   \n"
@@ -1221,7 +1268,7 @@ int ExittoRomBios(void) {
 		"mov $0x0000,%ax \n"
 		"mov  %ax, %ds \n"
 		"mov  %ax, %es \n"
-#if 0
+#if 1
 		"mov $0xc004, %dx \n"
 		"mov $0x20, %al \n"
 		"out %al, %dx \n"

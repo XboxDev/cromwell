@@ -190,6 +190,8 @@
 
 
 #asm
+
+.section .rombios_start, "ax"
 .rom
 
 .org 0x0000

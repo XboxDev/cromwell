@@ -22,11 +22,16 @@
          
 .global	Cromwellconfig
 Cromwellconfig:      	
-        .org 0x20       
-        .long 0x0	// if XBE, then this bit is 0, if Cromwell mode, the bit is set to 1 by the Startuploader
-        .long 0x0	// ImageRetryLoads
-        .long 0x0	// Bank, from where Loaded
-        .long 0x0	// 0 .. Bios = 256 k, 1 .. Bios = 1MB
+        .org 0x20   
+
+        // The Value positions are fixed, do never change them, used everywhere
+        .long 0x0	// 0x20 if XBE, then this bit is 0, if Cromwell mode, the bit is set to 1 by the Startuploader
+        .long 0x0	// 0x24 ImageRetryLoads
+        .long 0x0	// 0x28 Bank, from where Loaded
+        .long 0x0	// 0x2C 0 .. Bios = 256 k, 1 .. Bios = 1MB 
+        .long 0x0	// 0x30 Do we have a PC bios ?
+        .long _end_compleate_rom       // 0x34 where does the PC bios start (where cromwell ends, sizeof cromwell) (dumped by imagebld-pcbios mode)
+        .long 0x0       // 0x38 size of PC bios (dumped by imagebld-pcbios mode)
         
 	
 .align 16

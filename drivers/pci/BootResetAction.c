@@ -82,11 +82,16 @@ extern void BootResetAction ( void ) {
 	int nTempCursorX, nTempCursorY;
         int temp;
 
-        memcpy(&cromwell_config,(void*)(0x03A00000+20),4);
-        memcpy(&cromwell_retryload,(void*)(0x03A00000+24),4);
-	memcpy(&cromwell_loadbank,(void*)(0x03A00000+28),4);
-        memcpy(&cromwell_Biostype,(void*)(0x03A00000+32),4);
-  
+        memcpy(&cromwell_config,(void*)(0x03A00000+0x20),4);
+        memcpy(&cromwell_retryload,(void*)(0x03A00000+0x24),4);
+	memcpy(&cromwell_loadbank,(void*)(0x03A00000+0x28),4);
+        memcpy(&cromwell_Biostype,(void*)(0x03A00000+0x2C),4);
+ 	
+ 	memcpy(&cromwell_haverombios,(void*)(0x03A00000+0x30),4);
+        memcpy(&cromwell_rombiosstart,(void*)(0x03A00000+0x34),4);
+        memcpy(&cromwell_rombiossize,(void*)(0x03A00000+0x38),4);
+        
+         
 	VIDEO_AV_MODE = 0xff;
         CACHE_VSYNC_WRITEBACK = 0;
 	nInteruptable = 0;	

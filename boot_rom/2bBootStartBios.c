@@ -183,10 +183,10 @@ extern void BootStartBiosLoader ( void ) {
 					
 			// This is a config bit in Cromwell, telling the Cromwell, that it is a Cromwell and not a Xromwell
 			flashbank++; // As counting starts with 0, we increase +1
-			memcpy((void*)(CROMWELL_Memory_pos+20),&cromwellidentify,4);
-			memcpy((void*)(CROMWELL_Memory_pos+24),&cromloadtry,4);
-		 	memcpy((void*)(CROMWELL_Memory_pos+28),&flashbank,4);
-		 	memcpy((void*)(CROMWELL_Memory_pos+32),&Biossize_type,4);
+			memcpy((void*)(CROMWELL_Memory_pos+0x20),&cromwellidentify,4);
+			memcpy((void*)(CROMWELL_Memory_pos+0x24),&cromloadtry,4);
+		 	memcpy((void*)(CROMWELL_Memory_pos+0x28),&flashbank,4);
+		 	memcpy((void*)(CROMWELL_Memory_pos+0x2C),&Biossize_type,4);
 		 	validimage=1;
 		 	
 		 	break;
