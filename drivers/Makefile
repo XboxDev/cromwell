@@ -1,3 +1,3 @@
-subdir +=  ide audio pci usb video flash filtror cpu # ethernet
+subdir +=  ide audio pci video flash filtror cpu # ethernet usb
 
 include $(TOPDIR)/Rules.make

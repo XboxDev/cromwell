@@ -32,8 +32,8 @@
 
 extern EEPROMDATA eeprom;
 
-#include "BootUsbOhci.h"
-extern volatile ohci_t usbcontroller[2];
+
+
 extern volatile AC97_DEVICE ac97device;
 
 #undef strcpy
@@ -83,25 +83,6 @@ ICON icon[ICONCOUNT];
 const int naChimeFrequencies[] = {
 	329, 349, 392, 440
 };
-/*
-static DWORD ReadCrx(unsigned char where ) {
-	unsigned int tmp=0;
-	if (where == 0) {
-		asm volatile ("movl  %%cr0, %0\n\t"
-		      :"=r" (tmp) : : "memory");
-		      }
-	if (where == 3) {
-		asm volatile ("movl  %%cr3, %0\n\t"
-		      :"=r" (tmp) : : "memory");
-		      }
-	if (where == 4) {
-		asm volatile ("movl  %%cr4, %0\n\t"
-		      :"=r" (tmp) : : "memory");
-		      }
-  
-  return tmp;
-}
- */
 
 void BootPrintConfig(CONFIGENTRY *config) {
 	//int i;
@@ -220,20 +201,19 @@ int BootTryLoadConfigFATX(CONFIGENTRY *config) {
 	static FATXPartition *partition = NULL;
 	static FATXFILEINFO fileinfo;
 	static FATXFILEINFO infokernel;
-
-
+       
 	partition = OpenFATXPartition(0,
 			SECTOR_STORE,
 			STORE_SIZE);
 	if(partition != NULL) {
 		if(LoadFATXFile(partition,"/linuxboot.cfg",&fileinfo) ) {
 			ParseConfig(fileinfo.buffer,config,&eeprom);
-			free(fileinfo.buffer);
 		}
 	} else {
 		 return 0;
 	}
-
+     //   printk("BootTryLoadConfigFATX"); while(1);
+        
 	// We use the INITRD_POS as temporary location for the Loading of the Kernel into intermediate Ram
 	
 	if(! LoadFATXFilefixed(partition,config->szKernel,&infokernel,(BYTE*)INITRD_POS)) {
@@ -272,7 +252,7 @@ int BootLodaConfigFATX(CONFIGENTRY *config) {
 		} else {
 			wait_ms(50);
 			ParseConfig(fileinfo.buffer,config,&eeprom);
-			free(fileinfo.buffer);
+			//free(fileinfo.buffer);
 		}
 	} 
 
@@ -944,8 +924,7 @@ void StartBios(CONFIGENTRY *config, int nActivePartition , int nFATXPresent,int 
 	// turn off USB
 
 	#ifdef DO_USB
-	BootUsbTurnOff((ohci_t *)&usbcontroller[0]);
-	BootUsbTurnOff((ohci_t *)&usbcontroller[1]);
+
 	#endif
 	
 	// silence the audio

@@ -14,7 +14,6 @@
 
 #include "boot.h"
 #include "config.h"
-#include "BootUsbOhci.h"
 #include "cpu.h"
 
 volatile int nCountI2cinterrupts, nCountUnusedInterrupts, nCountUnusedInterruptsPic2, nCountInterruptsSmc, nCountInterruptsIde;
@@ -399,7 +398,7 @@ void IntHandlerUnusedC2(void)
 void IntHandlerCTimer0(void)
 {
 #ifdef DEBUG_MODE
-        extern volatile ohci_t usbcontroller[2];
+        //extern volatile ohci_t usbcontroller[2];
 #endif
 	
 	BIOS_TICK_COUNT++;
@@ -408,8 +407,8 @@ void IntHandlerCTimer0(void)
 #ifdef DEBUG_MODE
         if(!nInteruptable) return;
 
-        BootUsbDebugOut((ohci_t *)&usbcontroller[0]);
-        BootUsbInterrupt((ohci_t *)&usbcontroller[0]);
+//        BootUsbDebugOut((ohci_t *)&usbcontroller[0]);
+  //      BootUsbInterrupt((ohci_t *)&usbcontroller[0]);
 #endif
 }
 
@@ -417,11 +416,11 @@ void IntHandlerCTimer0(void)
 
 void IntHandler1C(void)
 {
-        extern volatile ohci_t usbcontroller[2];
+    //    extern volatile ohci_t usbcontroller[2];
 	
 	if(!nInteruptable) return;
 
-	BootUsbInterrupt((ohci_t *)&usbcontroller[0]);
+	//BootUsbInterrupt((ohci_t *)&usbcontroller[0]);
 }
 
 
@@ -647,11 +646,11 @@ void IntHandler8C(void)
 
 void IntHandler9C(void)
 {
-        extern volatile ohci_t usbcontroller[2];
+    //    extern volatile ohci_t usbcontroller[2];
 	
-	if(!nInteruptable) return;
+//	if(!nInteruptable) return;
 	
-	BootUsbInterrupt((ohci_t *)&usbcontroller[1]);
+//	BootUsbInterrupt((ohci_t *)&usbcontroller[1]);
 }
 
 void IntHandler10C(void)

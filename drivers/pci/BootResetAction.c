@@ -30,7 +30,7 @@
 #include "xbox.h"
 #include "cpu.h"
 #include "config.h"
-#include "BootUsbOhci.h"
+
 
 
 
@@ -44,7 +44,7 @@ int nTempCursorMbrX, nTempCursorMbrY;
 extern volatile int nInteruptable;
 
 volatile CURRENT_VIDEO_MODE_DETAILS currentvideomodedetails;
-volatile ohci_t usbcontroller[2];
+
 
 volatile AC97_DEVICE ac97device;
 
@@ -112,7 +112,8 @@ extern void BootResetAction ( void ) {
 	int nFATXPresent=false;
 	int nTempCursorX, nTempCursorY;
         int temp;
-
+      
+       	
         memcpy(&cromwell_config,(void*)(0x03A00000+20),4);
         memcpy(&cromwell_retryload,(void*)(0x03A00000+24),4);
 	memcpy(&cromwell_loadbank,(void*)(0x03A00000+28),4);
@@ -162,10 +163,6 @@ extern void BootResetAction ( void ) {
 	bprintf("BOOT: done with PCI initialization\n\r");
   	
 
-	memset((ohci_t *)&usbcontroller[0],0,sizeof(ohci_t));
-	memset((ohci_t *)&usbcontroller[1],0,sizeof(ohci_t));
-
-	
 	BootEepromReadEntireEEPROM();
 	bprintf("BOOT: Read EEPROM\n\r");
 //	DumpAddressAndData(0, (BYTE *)&eeprom, 256);
@@ -421,24 +418,10 @@ extern void BootResetAction ( void ) {
 	// init USB
 #ifdef DO_USB
 	
-		printk("BOOT: start USB init\n");
-           
-	//	BootUsbInit((ohci_t *)&usbcontroller[0], "USB1", (void *)0xfed00000);
-//		BootUsbInit((ohci_t *)&usbcontroller[1], "USB1", (void *)0xfed08000);
-		printk("BOOT: done USB init\n");
-	
 
-		
-		VIDEO_ATTR=0xffc8c8c8;
-		printk("USB: ");
-		VIDEO_ATTR=0xffc8c800;
-
-//		BootUsbPrintStatus((USB_CONTROLLER_OBJECT *)&usbcontroller[0]);
-//		BootUsbPrintStatus((USB_CONTROLLER_OBJECT *)&usbcontroller[1]);
-//		BootUsbDump((USB_CONTROLLER_OBJECT *)&usbcontroller[0]);
-//		BootUsbDump((USB_CONTROLLER_OBJECT *)&usbcontroller[1]);
-		
 #endif
+
+
 
 			// init the HDD and DVD
 		VIDEO_ATTR=0xffc8c8c8;

@@ -106,30 +106,7 @@ typedef struct {
 MEM_MGT * pmemmgtStartAddressMemoryMangement;
 #define SENTINEL_CONST 0xaa556b2
 #define MERGE_IF_LESS_THAN_THIS_LEFT_OVER 0x100
-/*
-unsigned int free_mem_ptr = 0;
 
-void MemoryManagementInitialization(void * pvStartAddress, DWORD dwTotalMemoryAllocLength)
-{
-	free_mem_ptr = MEMORYMANAGERSTART;
-	
-}
-void * malloc(size_t size)
-   { 
-           void *p; 
-    
-           free_mem_ptr = (free_mem_ptr + 3) & ~3; 
-           p = (void *) free_mem_ptr; 
-           free_mem_ptr += size; 
-           return p; 
-   } 
-    
-void free (void *ptr) 
-   { 
-    
-   } 
-
-  */
 
 
 void MemoryManagementInitialization(void * pvStartAddress, DWORD dwTotalMemoryAllocLength)
@@ -141,7 +118,7 @@ void MemoryManagementInitialization(void * pvStartAddress, DWORD dwTotalMemoryAl
 	pmemmgtStartAddressMemoryMangement->m_nLength=dwTotalMemoryAllocLength;
 }
 
-void * malloc(size_t size) {
+void * t_malloc(size_t size) {
 	MEM_MGT * pmemmgt=pmemmgtStartAddressMemoryMangement;
 	
 	
@@ -180,7 +157,7 @@ void * malloc(size_t size) {
 	return NULL; // screwed, not enough memory
 }
 
-void free (void *ptr) {
+void t_free (void *ptr) {
 	MEM_MGT * pmemmgt=(MEM_MGT *)(((BYTE *)ptr)-sizeof(MEM_MGT));
 	MEM_MGT * pmemmgtPrev=(MEM_MGT *)pmemmgt->m_pvPrev;
 	MEM_MGT * pmemmgtNext=(MEM_MGT *)pmemmgt->m_pvNext;
@@ -218,6 +195,46 @@ void free (void *ptr) {
 
 }
 
+
+
+void * malloc(size_t size) {
+
+	size_t temp;
+	unsigned char *tempmalloc;
+	unsigned int *tempmalloc1;
+	unsigned int *tempmalloc2;
+
+	temp = (size+0x100) & 0xffFFff00;
+
+	tempmalloc = t_malloc(temp);
+	tempmalloc2 = (unsigned int*)tempmalloc;
+
+	tempmalloc = (unsigned char*)((unsigned int)(tempmalloc+0x100) & 0xffFFff00);
+	tempmalloc1 = (unsigned int*)tempmalloc;
+	tempmalloc1--;
+	tempmalloc1--;
+	tempmalloc1[0] = (unsigned int)tempmalloc2;
+	tempmalloc1[1] = 0x1234567;
+	
+	return tempmalloc;
+}
+
+void free(void *ptr) {
+
+	unsigned int *tempmalloc1;
+	tempmalloc1 = ptr;
+	tempmalloc1--;
+	tempmalloc1--;
+	ptr = (unsigned int*)tempmalloc1[0];
+        if (tempmalloc1[1]!= 0x1234567) {
+        	//printk("free return-- %08x\n ",ptr);
+        	return ;
+	}        
+	//printk("free -- %08x\n ",ptr);
+	t_free(ptr);
+
+
+}
  
  
 int grub_strlen(const char *sz) {

@@ -1,9 +1,11 @@
 CC	= gcc
 INCLUDE = -I$(TOPDIR)/grub -I$(TOPDIR)/include -I$(TOPDIR)/ -I./ -I$(TOPDIR)/fs/cdrom \
-	-I$(TOPDIR)/fs/fatx -I$(TOPDIR)/lib/eeprom -I$(TOPDIR)/lib/crypt -I$(TOPDIR)/drivers/usb \
+	-I$(TOPDIR)/fs/fatx -I$(TOPDIR)/lib/eeprom -I$(TOPDIR)/lib/crypt \
 	-I$(TOPDIR)/drivers/video -I$(TOPDIR)/drivers/flash -I$(TOPDIR)/lib/misc \
 	-I$(TOPDIR)/boot_xbe/ -I$(TOPDIR)/fs/grub -I$(TOPDIR)/lib/font -I$(TOPDIR)/lib/jpeg-6b \
-	-I$(TOPDIR)/startuploader -I$(TOPDIR)/drivers/cpu  -I$(TOPDIR)/lib/lzo
+	-I$(TOPDIR)/startuploader -I$(TOPDIR)/drivers/cpu  -I$(TOPDIR)/lib/lzo 
+
+#	 -I$(TOPDIR)/drivers/usb 
 
 
 CFLAGS	= -O2 -mcpu=pentium -Wall -Werror $(INCLUDE) -Wstrict-prototypes -fomit-frame-pointer -pipe -mpreferred-stack-boundary=2
@@ -91,7 +93,7 @@ OBJECTS-CROM += $(TOPDIR)/obj/BootFlashUi.o
 OBJECTS-CROM += $(TOPDIR)/obj/BootEEPROM.o
 OBJECTS-CROM += $(TOPDIR)/obj/BootParser.o
 OBJECTS-CROM += $(TOPDIR)/obj/BootFATX.o
-OBJECTS-CROM += $(TOPDIR)/obj/BootUsbOhci.o
+#OBJECTS-CROM += $(TOPDIR)/obj/BootUsbOhci.o
 
 
 RESOURCES = $(TOPDIR)/obj/backdrop.elf
