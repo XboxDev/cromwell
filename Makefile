@@ -227,6 +227,6 @@ bin/imagebld: lib/imagebld/imagebld.c lib/imagebld/lzari.c lib/crypt/sha1.c
 	
 imagecompress: obj/image-crom.bin bin/imagebld
 	bin/imagebld -rom obj/2blimage.bin obj/image-crom.bin image/image.bin image/image_1024.bin
-	bin/imagebld -xbe /xbe/default.xbe obj/image-crom.bin
+	bin/imagebld -xbe xbe/default.xbe obj/image-crom.bin
 	bin/imagebld -vml boot_vml/disk/vmlboot obj/image-crom.bin 
 
