@@ -102,10 +102,10 @@ void EepromSetWidescreen(int enable) {
 	}
 
 	EepromCRC(sum,eeprom.TimeZoneBias,0x5b);
-	WriteToSMBus(0x54, 0x60, 0, sum[0]);
-	WriteToSMBus(0x54, 0x61, 0, sum[1]);
-	WriteToSMBus(0x54, 0x62, 0, sum[2]);
-	WriteToSMBus(0x54, 0x63, 0, sum[3]);
+	WriteToSMBus(0x54, 0x60, 1, sum[0]);
+	WriteToSMBus(0x54, 0x61, 1, sum[1]);
+	WriteToSMBus(0x54, 0x62, 1, sum[2]);
+	WriteToSMBus(0x54, 0x63, 1, sum[3]);
 }
 
 void EepromSetVideoStandard(VIDEO_STANDARD standard) {
@@ -116,7 +116,7 @@ void EepromSetVideoStandard(VIDEO_STANDARD standard) {
 
 	//Write the four bytes to the EEPROM
 	for (i=0; i<4; ++i) {
-		WriteToSMBus(0x54,0x58+i, 0, (standard>>(8*i))&0xff);
+		WriteToSMBus(0x54,0x58+i, 1, (u8)(standard>>(8*i))&0xff);
 	}
 
 	memcpy(eeprom.VideoStandard, &standard, 0x04);
