@@ -42,23 +42,7 @@ volatile AUDIO_ELEMENT_SINE aesTux;
 volatile AUDIO_ELEMENT_SINE aesSong;
 volatile AUDIO_ELEMENT_NOISE aenTux;
 
-const KNOWN_FLASH_TYPE aknownflashtypesDefault[] = {
-	  // default flash types used if /etc/raincoat.conf not available
-	
-	{ 0xbf, 0x61, "SST49LF020", 0x40000 }, 
-	{ 0x01, 0xd5, "Am29F080B", 0x100000 }, 
-	{ 0x04, 0xd5, "Fujitsu MBM29F080A", 0x100000 }, 
-	{ 0xad, 0xd5, "Hynix HY29F080", 0x100000 },
-	{ 0x20, 0xf1, "ST M29F080A", 0x100000 },
-	{ 0x89, 0xa6, "Sharp LHF08CH1",0x100000 },
-	{ 0xda, 0x8c, "Winbond W49F020",0x40000 },
-	{ 0x01, 0xa4, "AMD - Am29F040B",0x80000 },
-	{ 0xda, 0x0b, "Winbond - W49F002U",0x40000 },
-	{ 0xc2, 0x36, "MACRONIX - MX29F022NTPC",0x40000 },
-	{ 0x20, 0xb0, "ST M29f002BT",0x40000 },
-
-	{ 0, 0, "", 0 } // terminator
-};
+extern KNOWN_FLASH_TYPE aknownflashtypesDefault[];
 
 
 const SONG_NOTE songnoteaIntro[] = {

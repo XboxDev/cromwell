@@ -68,4 +68,3 @@ bool BootFlashGetDescriptor( OBJECT_FLASH *pof, KNOWN_FLASH_TYPE * pkft );
 bool BootFlashEraseMinimalRegion( OBJECT_FLASH *pof);
 bool BootFlashProgram( OBJECT_FLASH *pof, BYTE *pba );
 
-
