@@ -6,6 +6,9 @@
  * and work by Johan Rydberg and Daniel Kahlin.
  *
  * $Log$
+ * Revision 1.4  2003/04/25 11:32:09  hamtitampti
+ * switched on the FPU on cromwell startup, compiler now to -mpentium
+ *
  * Revision 1.3  2003/04/19 17:49:28  huceke
  * Cramwell now working on my v1.0 Xbox. ( Just a complete
  * of Micheals work ).
@@ -109,6 +112,7 @@ SECTIONS {
 			*(.rodata.str1.1);
 			*(.rodata.str1.32);
 			*(.rodata.cst4);
+			*(.rodata.cst8);
 	_start_backdrop = .;
 			*(.backdrop);
 	_end_backdrop = .;

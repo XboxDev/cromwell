@@ -6,6 +6,9 @@
  * and work by Johan Rydberg and Daniel Kahlin.
  *
  * $Log$
+ * Revision 1.5  2003/04/23 11:03:56  hamtitampti
+ * First Step of .xbe 4 times linker fixing
+ *
  * Revision 1.4  2003/04/23 10:11:54  hamtitampti
  * fixed due to compiler warnings
  *
@@ -106,6 +109,7 @@ SECTIONS {
 		*(.rodata.str1.1);
 		*(.rodata.str1.32);
 		*(.rodata.cst4);
+		*(.rodata.cst8);
 		_start_backdrop = .;
 		*(.backdrop);
 		_end_backdrop = .;
