@@ -81,10 +81,12 @@ void TextMenuBack(void) {
 }
 
 void TextMenuDraw(void) {
-	VIDEO_CURSOR_POSX=75;
-	VIDEO_CURSOR_POSY=125;
 	TEXTMENUITEM *item=0l;
 	int menucount;
+	
+	VIDEO_CURSOR_POSX=75;
+	VIDEO_CURSOR_POSY=125;
+	
 	if (currentMenu==0l) currentMenu = firstMenu;
 	if (selectedMenuItem==0l) selectedMenuItem = currentMenu->firstMenuItem;
 	if (firstVisibleMenuItem==0l) firstVisibleMenuItem = currentMenu->firstMenuItem;

@@ -70,13 +70,14 @@ void AddIcon(ICON *newIcon) {
 void IconMenuDraw(int nXOffset, int nYOffset) {
 	ICON *iconPtr = firstVisibleIcon;
 	int iconcount;
+	if (selectedIcon==0l) selectedIcon = firstIcon;
 	//There are max four 'bays' for displaying icons in - we only draw the four.
 	for (iconcount=0; iconcount<4; iconcount++) {
+		BYTE opaqueness;
 		if (iconPtr==0l) {
 			//No more icons to draw
 			return;
 		}
-		BYTE opaqueness;
 		if (iconPtr==selectedIcon) {
 			//Selected icon has less transparency
 			//and has a caption drawn underneath it
@@ -102,6 +103,7 @@ void IconMenuDraw(int nXOffset, int nYOffset) {
 
 int BootIconMenu(CONFIGENTRY *config,int nDrive,int nActivePartition, int nFATXPresent){
 	extern int nTempCursorMbrX, nTempCursorMbrY;
+	extern void BootTextMenu(void);
 	int change=0;
 
 	int nTempCursorResumeX, nTempCursorResumeY ;
@@ -111,7 +113,8 @@ int BootIconMenu(CONFIGENTRY *config,int nDrive,int nActivePartition, int nFATXP
         
         DWORD COUNT_start;
         DWORD temp=1;
-        
+	ICON *iconPtr=0l;
+	
 	nTempCursorResumeX=nTempCursorMbrX;
 	nTempCursorResumeY=nTempCursorMbrY;
 
@@ -128,17 +131,17 @@ int BootIconMenu(CONFIGENTRY *config,int nDrive,int nActivePartition, int nFATXP
 	VIDEO_ATTR=0xffc8c8c8;
 	printk("Select from Menu\n");
 	VIDEO_ATTR=0xffffffff;
-	
+
 	//Add the icons we want.
 	if (nFATXPresent) {
 		//Need to check linuxboot.cfg presence, not just fatx.
 		
 		//FATX icon
-		ICON *icon1 = (ICON *)malloc(sizeof(ICON));
-		icon1->iconSlot = ICON_SOURCE_SLOT4;
-		icon1->szCaption = "FatX (E:)";
-		icon1->functionPtr = BootFromFATX;
-		AddIcon(icon1);
+		iconPtr = (ICON *)malloc(sizeof(ICON));
+		iconPtr->iconSlot = ICON_SOURCE_SLOT4;
+		iconPtr->szCaption = "FatX (E:)";
+		iconPtr->functionPtr = BootFromFATX;
+		AddIcon(iconPtr);
 	}
 		
 	if (nActivePartition) {
@@ -146,40 +149,39 @@ int BootIconMenu(CONFIGENTRY *config,int nDrive,int nActivePartition, int nFATXP
 		//the 'acceptable' places.
 		
 		//Native icon
-		ICON *icon2 = (ICON *)malloc(sizeof(ICON));
-		icon2->iconSlot = ICON_SOURCE_SLOT1;
-		icon2->szCaption = "HDD";
-		icon2->functionPtr = BootFromNative;
-		AddIcon(icon2);
+		iconPtr = (ICON *)malloc(sizeof(ICON));
+		iconPtr->iconSlot = ICON_SOURCE_SLOT1;
+		iconPtr->szCaption = "HDD";
+		iconPtr->functionPtr = BootFromNative;
+		AddIcon(iconPtr);
 	}
 	
 	if (tsaHarddiskInfo[0].m_fAtapi || tsaHarddiskInfo[1].m_fAtapi) {	
 		//CD-ROM icon
-		ICON *icon3 = (ICON *)malloc(sizeof(ICON));
-		icon3->iconSlot = ICON_SOURCE_SLOT2;
-		icon3->szCaption = "CDROM";
-		icon3->functionPtr = BootFromCD;
-		AddIcon(icon3);
+		iconPtr = (ICON *)malloc(sizeof(ICON));
+		iconPtr->iconSlot = ICON_SOURCE_SLOT2;
+		iconPtr->szCaption = "CDROM";
+		iconPtr->functionPtr = BootFromCD;
+		AddIcon(iconPtr);
 	}
 
 #ifdef ETHERBOOT
 	//Etherboot icon
-	ICON *icon4 = (ICON *)malloc(sizeof(ICON));
-	icon4->iconSlot = ICON_SOURCE_SLOT3;
-	icon4->szCaption = "Etherboot";
-	icon4->functionPtr = BootFromEtherboot;
-	AddIcon(icon4);
+	iconPtr = (ICON *)malloc(sizeof(ICON));
+	iconPtr->iconSlot = ICON_SOURCE_SLOT3;
+	iconPtr->szCaption = "Etherboot";
+	iconPtr->functionPtr = BootFromEtherboot;
+	AddIcon(iconPtr);
 #endif	
 	
 	//Uncomment this one to test the new text menu system.
 	//It's NOT production ready.
 	/*
-	ICON *icon5 = (ICON *)malloc(sizeof(ICON));
-	icon5->iconSlot = ICON_SOURCE_SLOT0;
-	icon5->szCaption = "Advanced";
-	extern void BootTextMenu(void);
-	icon5->functionPtr = BootTextMenu;
-	AddIcon(icon5);
+	iconPtr = (ICON *)malloc(sizeof(ICON));
+	iconPtr->iconSlot = ICON_SOURCE_SLOT0;
+	iconPtr->szCaption = "Advanced";
+	iconPtr->functionPtr = BootTextMenu;
+	AddIcon(iconPtr);
 	*/
 
 	//For now, mark the first icon as selected.
