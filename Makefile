@@ -42,6 +42,7 @@ OBJECTS-CROM += $(TOPDIR)/obj/BootPerformPicChallengeResponseAction.o
 OBJECTS-CROM += $(TOPDIR)/obj/BootPciPeripheralInitialization.o
 OBJECTS-CROM += $(TOPDIR)/obj/BootVgaInitialization.o
 OBJECTS-CROM += $(TOPDIR)/obj/VideoInitialization.o
+OBJECTS-CROM += $(TOPDIR)/obj/focus.o
 OBJECTS-CROM += $(TOPDIR)/obj/BootIde.o
 OBJECTS-CROM += $(TOPDIR)/obj/BootHddKey.o
 OBJECTS-CROM += $(TOPDIR)/obj/rc4.o
