@@ -35,8 +35,7 @@ int nTempCursorMbrX, nTempCursorMbrY;
 extern volatile int nInteruptable;
 
 volatile CURRENT_VIDEO_MODE_DETAILS currentvideomodedetails;
-
-
+extern unsigned int CACHE_VSYNC_WRITEBACK;
 volatile AC97_DEVICE ac97device;
 
 volatile AUDIO_ELEMENT_SINE aesTux;
@@ -112,7 +111,7 @@ extern void BootResetAction ( void ) {
         // We Enable The CPU Cache
         cache_enable();
         setup_ioapic();
-        
+        CACHE_VSYNC_WRITEBACK = 0;
 	nInteruptable = 0;	
 	
 #if INCLUDE_FILTROR
@@ -158,6 +157,7 @@ extern void BootResetAction ( void ) {
         
         // clear the Video Ram
 	memset((void *)FRAMEBUFFER_START,0x00,0x400000);
+	CACHE_VSYNC_WRITEBACK=1;
 	
 	BootVgaInitializationKernelNG((CURRENT_VIDEO_MODE_DETAILS *)&currentvideomodedetails);
 

@@ -17,6 +17,7 @@ volatile int nCountI2cinterrupts, nCountUnusedInterrupts, nCountUnusedInterrupts
 volatile bool fSeenPowerdown;
 volatile TRAY_STATE traystate;
 unsigned int wait_ms_time;
+unsigned int CACHE_VSYNC_WRITEBACK;
 
 volatile int nInteruptable = 0;
 
@@ -425,20 +426,22 @@ void IntHandler2C(void)
 void IntHandler3VsyncC(void)  // video VSYNC
 {
 
-	int i;
+//	int i;
         
 	VIDEO_VSYNC_COUNT++;
 	
 	// We write back the CPU cache to the Memory
-	asm volatile ("wbinvd\n");
+	
+	if (CACHE_VSYNC_WRITEBACK==1)	asm volatile ("wbinvd\n");
         
-        i=1000;
+//        i=1000;
 	*((volatile DWORD *)0xfd600100)=0x1;  // clear VSYNC int
+/*
 	while ( ((*((volatile DWORD *)0xfd600100)) & 0x1)) {
 		i--;
 		if (i==0) break;
 		}  // We wait, until the Vsync IRQ has been deleted / or the Timeout kills us
-	
+*/	
 	
 } 
 

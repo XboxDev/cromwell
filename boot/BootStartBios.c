@@ -32,7 +32,7 @@ unsigned long saved_partition;
 grub_error_t errnum;
 unsigned long boot_drive;
 
-
+extern unsigned int CACHE_VSYNC_WRITEBACK;
 extern int nTempCursorMbrX, nTempCursorMbrY;
 
 void console_putchar(char c) { printk("%c", c); }
@@ -129,10 +129,20 @@ int BootLodaConfigNative(int nActivePartition, CONFIGENTRY *config, bool fJustTe
         
 	memset((BYTE *)0x90000,0,4096);
 
-	szGrub[0]=0xff; szGrub[1]=0xff; szGrub[2]=nActivePartition; szGrub[3]=0x00;
+	szGrub[0]=0xff;
+	szGrub[1]=0xff;
+	szGrub[2]=nActivePartition;
+	szGrub[3]=0x00;
 
-	errnum=0; boot_drive=0; saved_drive=0; saved_partition=0x0001ffff; buf_drive=-1;
-	current_partition=0x0001ffff; current_drive=0xff; buf_drive=-1; fsys_type = NUM_FSYS;
+	errnum=0;
+	boot_drive=0;
+	saved_drive=0;
+	saved_partition=0x0001ffff;
+	buf_drive=-1;
+	current_partition=0x0001ffff;
+	current_drive=0xff;
+	buf_drive=-1;
+	fsys_type = NUM_FSYS;
 	disk_read_hook=NULL;
 	disk_read_func=NULL;
 
@@ -143,11 +153,13 @@ int BootLodaConfigNative(int nActivePartition, CONFIGENTRY *config, bool fJustTe
 
 	dwConfigSize=filemax;
 	if(nRet!=1 || (errnum)) {
-				if(!fJustTestingForPossible) printk("linuxboot.cfg not found, using defaults\n");
+		if(!fJustTestingForPossible) printk("linuxboot.cfg not found, using defaults\n");
 	} else {
 		if(fJustTestingForPossible) return 1; // if there's a linuxboot.cfg it must be worth trying to boot
 		{
-			int nLen=grub_read((void *)0x90000, filemax);
+			int nLen;
+			CACHE_VSYNC_WRITEBACK=0;
+			nLen=grub_read((void *)0x90000, filemax);
 			if(nLen>0) { ((char *)0x90000)[nLen]='\0'; }  // needed to terminate incoming string, reboot in ParseConfig without it
 		}
 		ParseConfig((char *)0x90000,config,&eeprom);
@@ -155,7 +167,8 @@ int BootLodaConfigNative(int nActivePartition, CONFIGENTRY *config, bool fJustTe
 		printf("linuxboot.cfg is %d bytes long.\n", dwConfigSize);
 	}
 	grub_close();
-
+	CACHE_VSYNC_WRITEBACK=1;
+	
 	//strcpy(&szGrub[4], config->szKernel);
         _strncpy(&szGrub[4], config->szKernel,sizeof(config->szKernel));
 
@@ -167,14 +180,15 @@ int BootLodaConfigNative(int nActivePartition, CONFIGENTRY *config, bool fJustTe
 		while(1) ;
 	}
 	if(fJustTestingForPossible) return 1; // if there's a default kernel it must be worth trying to boot
-
+        
+        CACHE_VSYNC_WRITEBACK=0;
 	dwKernelSize=grub_read((void *)0x90000, 0x400);
 	nSizeHeader=((*((BYTE *)0x901f1))+1)*512;
 	dwKernelSize+=grub_read((void *)0x90400, nSizeHeader-0x400);
 	dwKernelSize+=grub_read((void *)0x00100000, filemax-nSizeHeader);
 	grub_close();
 	printk(" -  %d bytes...\n", dwKernelSize);
-
+        CACHE_VSYNC_WRITEBACK=1;
 
 	if( (_strncmp(config->szInitrd, "/no", strlen("/no")) != 0) && config->szInitrd[0]) {
 		VIDEO_ATTR=0xffd8d8d8;
@@ -1062,7 +1076,8 @@ void StartBios(CONFIGENTRY *config, int nActivePartition , int nFATXPresent,int 
 		VIDEO_ATTR=0xff9f9fbf;
 		printk(sz);
 	}
-    
+        CACHE_VSYNC_WRITEBACK = 0;
+        
         I2cSetFrontpanelLed(I2C_LED_RED0 | I2C_LED_RED1 | I2C_LED_RED2 | I2C_LED_RED3 );
 
 	setup( (void *)0x90000, (void *)INITRD_POS, (void *)dwInitrdSize, config->szAppend);
@@ -1093,18 +1108,74 @@ void StartBios(CONFIGENTRY *config, int nActivePartition , int nFATXPresent,int 
 	);
          
 
+	
 	asm volatile ("wbinvd\n");
 	
-	wait_ms(200);
+	//wait_ms(200);
+	BootPciPeripheralInitialization();
+	
+	memset((void*)0x00700000,0x0,1024*8);
 	
 	__asm __volatile__ (
        	"cli \n"
+	
+	// Flush the TLB
+	"xor %eax, %eax \n"
+	"mov %eax, %cr3 \n"
+	
+	// We kill the Local Descriptor Table        
+        "xor	%eax, %eax \n"
+	"lldt	%ax	\n"
+	
+	// We clear the IDT table (the first 8 bytes of the GDT are 0x0)
+	"lidt 	0x00700000\n"		
+	
+	// DR6/DR7: Clear the debug registers
+	"xor %eax, %eax \n"
+	"mov %eax, %dr6 \n"
+	"mov %eax, %dr7 \n"
+	"mov %eax, %dr0 \n"
+	"mov %eax, %dr1 \n"
+	"mov %eax, %dr2 \n"
+	"mov %eax, %dr3 \n"
+	
+	// IMPORTANT!  Linux expects the GDT located at a specific position,
+	// 0xA0000, so we have to move it there.
+	
+	// Kill the LDT, if any
+	"xor	%eax, %eax \n"
+	"lldt %ax \n"
+        
+	// Reload CS as 0010 from the new GDT using a far jump
+	".byte 0xEA       \n"   // jmp far 0010:reload_cs
+	".long reload_cs_exit  \n"
+	".word 0x0010  \n"
+	
+	".align 16  \n"
+	"reload_cs_exit: \n"
+
+	// CS is now a valid entry in the GDT.  Set SS, DS, and ES to valid
+	// descriptors, but clear FS and GS as they are not necessary.
+
+	// Set SS, DS, and ES to a data32 segment with maximum limit.
+	"movw $0x0018, %ax \n"
+	"mov %eax, %ss \n"
+	"mov %eax, %ds \n"
+	"mov %eax, %es \n"
+
+	// Clear FS and GS
+	"xor %eax, %eax \n"
+	"mov %eax, %fs \n"
+	"mov %eax, %gs \n"
+
+	// Set the stack pointer to give us a valid stack
+	"movl $0x03BFFFFC, %esp \n"
+	
 	"xor 	%ebx, %ebx \n"
 	"xor 	%eax, %eax \n"
 	"xor 	%ecx, %ecx \n"
 	"xor 	%edx, %edx \n"
 	"xor 	%edi, %edi \n"
-	"lidt 	0xa0000\n"		// We clear the IDT table (the first 8 bytes of the GDT are 0x0)
 	"movl 	$0x90000, %esi\n"       // Offset of the GRUB
   	"ljmp 	$0x10, $0x100000\n"	// Jump to Kernel
 	);
