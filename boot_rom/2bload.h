@@ -93,7 +93,7 @@ int I2CTransmitByteGetReturn(BYTE bPicAddressI2cFormat, BYTE bDataToWrite);
 
 void *memcpy(void *dest, const void *src,  size_t size);
 void *memset(void *dest, int data,  size_t size);
-int _memcmp(const BYTE *pb, const BYTE *pb1, int n);
+int memcmp(const void *pb, const void *pb1, size_t n);
 
 unsigned char *BufferIN;
 int BufferINlen;

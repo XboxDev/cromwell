@@ -98,7 +98,7 @@ extern void BootStartBiosLoader ( void ) {
 	SHA1Input(&context,(void*)(PROGRAMM_Memory_2bl+20),bootloadersize-20);
 	SHA1Result(&context,SHA1_result);
 	        
-        if (_memcmp(&bootloaderChecksum[0],&SHA1_result[0],20)==0) {
+        if (memcmp(&bootloaderChecksum[0],&SHA1_result[0],20)==0) {
 		// HEHE, the Image we copy'd into ram is SHA-1 hash identical, this is Optimum
 		BootPerformPicChallengeResponseAction();
 		                                      
@@ -159,7 +159,7 @@ extern void BootStartBiosLoader ( void ) {
 		SHA1Input(&context,(void*)(CROMWELL_compress_temploc),compressed_image_size);
 		SHA1Result(&context,SHA1_result);
 		
-		if (_memcmp(&bootloaderChecksum[0],SHA1_result,20)==0) {
+		if (memcmp(&bootloaderChecksum[0],SHA1_result,20)==0) {
 			// The Checksum is good                          
 			// We start the Cromwell immediatly
                         

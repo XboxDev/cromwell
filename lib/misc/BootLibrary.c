@@ -9,7 +9,7 @@
  ***************************************************************************
 */
 // 20040924 - Updated by dmp to include more str functions, and use ASM
-// where possible. ASM shamelessly stolen from linux-2.8.1
+// where possible. ASM shamelessly stolen from linux-2.6.8.1
 // include/asm-i386/string.h
 #include "boot.h"
 
