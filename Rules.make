@@ -2,6 +2,8 @@
 # This file contains rules which are shared between multiple Makefiles.
 #
 
+EXTRA_CFLAGS += -I$(TOPDIR)/include -I$(TOPDIR)/fs/cdrom -I$(TOPDIR)/drivers/video -I$(TOPDIR)/lib/eeprom -I$(TOPDIR)/lib/misc
+
 #
 # False targets.
 #
@@ -35,7 +37,7 @@ BootPerformPicChallengeResponseAction.o: BootPerformPicChallengeResponseAction.c
 	$(CC) $(CFLAGS) $(EXTRA_CFLAGS) -o $(TOPDIR)/obj/$@ -c $<
 
 %.o     : %.S
-	$(CC) -DASSEMBLER $(CFLAGS) -o $(TOPDIR)/obj/$@ -c $<
+	$(CC) -DASSEMBLER $(CFLAGS) $(EXTRA_CFLAGS) -o $(TOPDIR)/obj/$@ -c $<
 
 all_targets: $(O_TARGET)
 
