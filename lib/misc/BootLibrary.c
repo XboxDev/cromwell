@@ -7,10 +7,6 @@
  *   (at your option) any later version.                                   *
  *                                                                         *
  ***************************************************************************
-
-	2003-01-12 andy@warmcat.com  Created from other files, enhanced malloc
-	                             greatly so it is more like a stdc one
-
 */
 
 #include "boot.h"
@@ -18,69 +14,110 @@
 
 void BootPciInterruptEnable()  {	__asm__ __volatile__  (  "sti" ); }
 
-void * memcpy(void *dest, const void *src,  size_t size) {
-//    bprintf("memcpy(0x%x,0x%x,0x%x);\n",dest,src,size);
-#if 0
-	BYTE * pb=(BYTE *)src, *pbd=(BYTE *)dest;
-	while(size--) *pbd++=*pb++;
 
-#else
-		__asm__ __volatile__ (
-              "    push %%esi    \n"
-              "    push %%edi    \n"
-              "    push %%ecx    \n"
-              "    cld    \n"
-              "    mov %0, %%esi \n"
-              "    mov %1, %%edi \n"
-              "    mov %2, %%ecx \n"
-              "    push %%ecx    \n"
-              "    shr $2, %%ecx \n"
-              "    rep movsl     \n"
-              "    pop %%ecx     \n"
-              "    and $3, %%ecx \n"
-              "    rep movsb     \n"
-              : :"S" (src), "D" (dest), "c" (size)
-		);
 
-		__asm__ __volatile__ (
-	      "    pop %ecx     \n"
-              "    pop %edi     \n"
-              "    pop %esi     \n"
-		);
-#endif
-//	I2cSetFrontpanelLed(0x0f);
-//    bprintf("memcpy done\n");
-//		DumpAddressAndData(0xf0000, (BYTE *)0xf0000, 0x100);
-
-	 return dest;
+void * memcpy(void *dest, const void *src,  size_t size) 
+{
+  	register char *d=dest;
+  	register const char *s=src;
+  	++size;	/* this actually produces better code than using count-- */
+  	while (--size) 
+  	{
+    		*d = *s;
+    		++d; ++s;
+  	}
+ 	return dest;
 }
 
-// int strlen(const char * sz) { int n=0; while(sz[n]) n++; return n; }
-size_t strlen(const char * s)
+size_t strlen(const char *s) 
 {
-int d0;
-register int __res;
-__asm__ __volatile__(
-	"repne\n\t"
-	"scasb\n\t"
-	"notl %0\n\t"
-	"decl %0"
-	:"=c" (__res), "=&D" (d0) :"1" (s),"a" (0), "0" (0xffffffff));
-return __res;
+  	register size_t i;
+  	if (!s) return 0;
+  	for (i=0; *s; ++s) ++i;
+  	return i;
+}
+
+int tolower(int ch) 
+{
+  	if ( (unsigned int)(ch - 'A') < 26u )
+    		ch += 'a' - 'A';
+  	return ch;
+}
+
+int isspace (int c)
+{
+  	if (c == ' ' || c == '\t' || c == '\r' || c == '\n') return 1;
+  	return 0;
 }
 
 void * memset(void *dest, int data,  size_t size)
 {
   	char *p = dest;
-	while (size -- > 0){
+	while (size -- > 0)
+	{
 		*p ++ = data;
 	}
 }
-
-int _memcmp(const BYTE *pb, const BYTE *pb1, int n) {
-	while(n--) { if(*pb++ != *pb1++) return 1; }
-	return 0;
+                              
+int memcmp(const void *buffer1, const void *buffer2, size_t num) 
+{
+  	register int r;
+  	register const char *d=buffer1;
+  	register const char *s=buffer2;
+  	while (num--) {
+    		if ((r=(*d - *s))) return r;
+    		++d;
+    		++s;
+  	}
+  	return 0;
 }
+
+char * strcpy(char *sz, const char *szc)
+{
+	char *szStart=sz;
+	while(*szc) *sz++=*szc++;
+	*sz='\0';
+	return szStart;
+}
+
+char * _strncpy (char * dest,char * src, size_t n)
+{
+	char *szStart=dest;
+	while((*src) && (n--)) *dest++=*src++;
+	*dest='\0';
+	return szStart;
+}
+
+
+int _strncmp(const char *sz1, const char *sz2, int nMax) 
+{
+
+	while((*sz1) && (*sz2) && nMax--) {
+		if(*sz1 != *sz2) return (*sz1 - *sz2);
+		sz1++; sz2++;
+	}
+	if(nMax==0) return 0;
+	if((*sz1) || (*sz2)) return 0;
+	return 0; // used up nMax
+}
+
+char *strrchr0(char *string, char ch) 
+{
+        char *ptr = string;
+	while(*ptr != 0) {
+		if(*ptr == ch) {
+			return ptr;
+		} else {
+			ptr++;
+		}
+	}
+	return NULL;
+}
+
+
+
+/* -------------------------------------------------------------------- */
+
 
 	// this is the memory managemnt struct stored behind every allocation
 
@@ -225,61 +262,8 @@ void free(void *ptr) {
 }
  
  
-int grub_strlen(const char *sz) {
-	int n=0; while(*sz++) n++;
-	return n;
-}
-
-char * strcpy(char *sz, const char *szc)
-{
-	char *szStart=sz;
-	while(*szc) *sz++=*szc++;
-	*sz='\0';
-	return szStart;
-}
-
-char * _strncpy(char *sz, const char *szc, int nLenMax)
-{
-	char *szStart=sz;
-	while((*szc) && (nLenMax--)) *sz++=*szc++;
-	*sz='\0';
-	return szStart;
-}
 
 
-int _strncmp(const char *sz1, const char *sz2, int nMax) {
-
-	while((*sz1) && (*sz2) && nMax--) {
-		if(*sz1 != *sz2) return (*sz1 - *sz2);
-		sz1++; sz2++;
-	}
-	if(nMax==0) return 0;
-	if((*sz1) || (*sz2)) return 0;
-	return 0; // used up nMax
-}
-
-
-unsigned long GetMillisecondCount(void)
-{
-	DWORD dw1, dw2, * pdw;
-	unsigned long ul[2];
-
-	__asm__ __volatile__ (
-		"rdtsc " : "=a" (dw1), "=d" (dw2)
-	);
-	pdw=(DWORD *)&ul;
-	*pdw++=dw1;
-	return ul[0];
-}
-
-void Sleep(int nMicroseconds)
-{
-	unsigned long ul=GetMillisecondCount();
-
-	while(nMicroseconds--) {
-		while((GetMillisecondCount()/733)==(ul/733)) ;
-	}
-}
 
 void ListEntryInsertAfterCurrent(LIST_ENTRY *plistentryCurrent, LIST_ENTRY *plistentryNew)
 {
@@ -334,14 +318,4 @@ void HelpGetParm(char *szBuffer, char *szOrig) {
 	*copy = 0;
 }
 
-char *strrchr0(char *string, char ch) {
-        char *ptr = string;
-	while(*ptr != 0) {
-		if(*ptr == ch) {
-			return ptr;
-		} else {
-			ptr++;
-		}
-	}
-	return NULL;
-}
+

@@ -919,24 +919,6 @@ int BootMenue(CONFIGENTRY *config,int nDrive,int nActivePartition, int nFATXPres
 
 }
 
-/*
-int hddclone(void) {
-	
-	unsigned char buffer[512];
-	unsigned int blockcount;
-	int BootIdeReadSector(int nDriveIndex, void * pbBuffer, unsigned int block, int byte_offset, int n_bytes) ;
-	int BootIdeWriteSector(int nDriveIndex, void * pbBuffer, unsigned int block) ;
-	
-	printk("STARTING\n");
-	for (blockcount = 0; blockcount<3400000;blockcount++) {
-	  	BootIdeReadSector(0,buffer,blockcount,0,512);
-	  	BootIdeWriteSector(1,buffer,blockcount);
-	  	if ((blockcount%2048)==2047) printk("*");
-	}
-        printk("READY\n");
-	
-}
-*/
 
 int ExittoLinux(CONFIGENTRY *config);
 int ExittoRomBios(void);

@@ -210,18 +210,18 @@ void BootDetectMemorySize(void)
 	memset(membasetop,0xAA,0x200);
 	asm volatile ("wbinvd\n");
 	
-	if (_memcmp(membasetop,fillstring,0x200) == 0) {
+	if (memcmp(membasetop,fillstring,0x200) == 0) {
 		// Looks like there is memory .. maybe a 128MB box 
 
 		memset(fillstring,0x55,0x200);
 		memset(membasetop,0x55,0x200);
 		asm volatile ("wbinvd\n");
 
-		if (_memcmp(membasetop,fillstring,0x200) == 0) {
+		if (memcmp(membasetop,fillstring,0x200) == 0) {
 			// Looks like there is memory 
 			// now we are sure, we set memory
   			
-                        if (_memcmp(membaselow,fillstring,0x200) == 0) {
+                        if (memcmp(membaselow,fillstring,0x200) == 0) {
                              	// Hell, we find the Test-string at 0x0 too !
                              	xbox_ram = 64;
                         } else {

@@ -35,7 +35,7 @@ int LoadFATXFilefixed(FATXPartition *partition,char *filename, FATXFILEINFO *fil
 			printk("fileSize  : %d\n",fileinfo->fileSize);
 #endif
 			fileinfo->buffer = Position;
-			memset(fileinfo->buffer,0xff,fileinfo->fileSize+60);
+			memset(fileinfo->buffer,0xff,fileinfo->fileSize);
 			
 			if(FATXLoadFromDisk(partition, fileinfo)) {
 				return true;
@@ -245,7 +245,7 @@ void _DumpFATXTree(FATXPartition* partition, int clusterId, int nesting) {
 	u_int32_t filenameSize;
 	u_int32_t fileSize;
 	u_int32_t entryClusterId;
-	u_int32_t flags;
+	unsigned char flags;
 	char flagsStr[5];
 
 	// OK, output all the directory entries

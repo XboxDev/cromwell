@@ -576,16 +576,21 @@ BYTE * BootVideoGetPointerToEffectiveJpegTopLeft(JPEG * pJpeg);
 
 void * memcpy(void *dest, const void *src,  size_t size);
 void * memset(void *dest, int data,  size_t size);
-int _memcmp(const BYTE *pb, const BYTE *pb1, int n);
+int memcmp(const void *buffer1, const void *buffer2, size_t num);
 int _strncmp(const char *sz1, const char *sz2, int nMax);
 char * strcpy(char *sz, const char *szc);
-char * _strncpy(char *sz, const char *szc, int nLenMax);
+char * _strncpy (char * dest,char * src, size_t n);
+
+#define printf printk
+#define sleep wait_ms
+int tolower(int ch);
+int isspace (int c);
 
 void MemoryManagementInitialization(void * pvStartAddress, DWORD dwTotalMemoryAllocLength);
 void * malloc(size_t size);
 void free(void *);
 
-void Sleep(int nMicroseconds);
+
 
 extern volatile int nCountI2cinterrupts, nCountUnusedInterrupts, nCountUnusedInterruptsPic2, nCountInterruptsSmc, nCountInterruptsIde;
 extern volatile bool fSeenPowerdown;

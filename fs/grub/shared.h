@@ -345,19 +345,19 @@ extern char *grub_scratch_mem;
 /* Remap some libc-API-compatible function names so that we prevent
    circularararity. */
 #ifndef WITHOUT_LIBC_STUBS
-#define memmove grub_memmove
+//#define memmove grub_memmove
 //#define memcpy grub_memmove	/* we don't need a separate memcpy */
 //#define memset grub_memset
-#define isspace grub_isspace
-#define printf grub_printf
+//#define isspace grub_isspace
+//#define printf grub_printf
 //#define sprintf grub_sprintf
 #undef putchar
-#define putchar grub_putchar
-#define strncat grub_strncat
-#define strstr grub_strstr
-#define memcmp grub_memcmp
-#define strcmp grub_strcmp
-#define tolower grub_tolower
+//#define putchar grub_putchar
+//#define strncat grub_strncat
+//#define strstr grub_strstr
+//#define memcmp grub_memcmp
+//#define strcmp grub_strcmp
+//#define tolower grub_tolower
 //#define strlen grub_strlen
 //#define strcpy grub_strcpy
 #endif /* WITHOUT_LIBC_STUBS */
