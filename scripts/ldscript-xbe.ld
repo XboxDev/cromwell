@@ -6,6 +6,9 @@
  * and work by Johan Rydberg and Daniel Kahlin.
  *
  * $Log$
+ * Revision 1.1  2003/03/18 18:08:48  huceke
+ * *** empty log message ***
+ *
  * Revision 1.3  2003/01/14 17:46:57  huceke
  * Xromwell should work again.
  *
@@ -78,6 +81,7 @@ SECTIONS {
 
 	.text ( 0x02fc0c80 ) : AT ( 0xc80 )  { /* was 0xfffc0c80  0xc80 */
 		_start_text = . ;
+		*(rom);
 		*(.text);
 		_end_text = . ;
 	}

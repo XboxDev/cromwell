@@ -15,13 +15,6 @@
 
 // this is a ROM-resident wrapper for the function below
 
-int BootReflashAndReset(BYTE *pbNewData, DWORD dwStartOffset, DWORD dwLength)
-{
-	BootFlashCopyCodeToRam();
-	return BootReflashAndReset_RAM(pbNewData, dwStartOffset, dwLength);
-}
-
-
  // callback to show progress
 
 bool BootFlashUserInterface(void * pvoidObjectFlash, ENUM_EVENTS ee, DWORD dwPos, DWORD dwExtent) __attribute__ ((section ("RamCopy"))) ;
@@ -34,7 +27,7 @@ bool BootFlashUserInterface(void * pvoidObjectFlash, ENUM_EVENTS ee, DWORD dwPos
 	// note this is copied to RAM, and the flash will be changed during its operation
 	// therefore no library code nor interrupts can be had
 
-int BootReflashAndReset_RAM(BYTE *pbNewData, DWORD dwStartOffset, DWORD dwLength)
+int BootReflashAndReset(BYTE *pbNewData, DWORD dwStartOffset, DWORD dwLength)
 {
 	OBJECT_FLASH of;
 	bool fMore=true;
@@ -45,7 +38,6 @@ int BootReflashAndReset_RAM(BYTE *pbNewData, DWORD dwStartOffset, DWORD dwLength
 	of.m_dwStartOffset=dwStartOffset;
 	of.m_dwLengthUsedArea=dwLength;
 	of.m_pcallbackFlash=BootFlashUserInterface;
-	BootFlashCopyCodeToRam();
 
 		// check device type and parameters are sane
 

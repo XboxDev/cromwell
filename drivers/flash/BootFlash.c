@@ -19,16 +19,6 @@
 #include <stdio.h>
 #include <string.h>
 
-void BootFlashCopyCodeToRam(void)
-{ // copy the erase and program functions into RAM - otherwise they would erase and reprogram themselves :-)
-#ifdef CROMWELL
-		extern int _end_ramcopy, _start_ramcopy;
-//		bprintf("_start_ramcopy=%x, _end_ramcopy=%x\n", 0xfffc0000+ (DWORD)&_start_ramcopy, &_end_ramcopy);
-		memcpy((void *)MEM_ADDRESS_RAM_EXEC_FLASH, (void *)(0xfffc0000+(DWORD)&_start_ramcopy), (DWORD)((BYTE *)&_end_ramcopy)-MEM_ADDRESS_RAM_EXEC_FLASH);
-#endif
-}
-
-
 	// gets device ID, sets pof up accordingly
 	// returns true if device okay or false for unrecognized device
 

@@ -6,6 +6,12 @@
  * and work by Johan Rydberg and Daniel Kahlin.
  *
  * $Log$
+ * Revision 1.1.1.1  2003/04/15 10:52:16  mist
+ * SF version 14 Apr 2003
+ *
+ * Revision 1.1  2003/03/18 18:08:48  huceke
+ * *** empty log message ***
+ *
  * Revision 1.6  2003/01/14 15:24:33  warmcat
  * New menu UI.  VSYNC IRQ up.  Franz's I2C check added.  Flashtype and Ed's EEPROM report added.
  *
@@ -46,6 +52,8 @@ MEMORY
 	rom (rx)  : ORIGIN = 0xFFFC0000, LENGTH = 256K
 }
 
+//RAM_CODE = 0x3F00000;
+RAM_CODE = 0x10000; /* 64 KB */
 RAM_BASE = 0x300000;  /* was 0x400000 */
 
 /* this should be changed depending the actual size of the rom */
@@ -74,20 +82,20 @@ SECTIONS {
 		_end_xcodes11 = . ;
 	}
 
-		.text ( 0xfffc0c80 ) : AT ( 0xc80 )  { /* was 0xfffc0c80  0xc80 */
-		_start_text = . ;
-		*(.text);
-		_end_text = . ;
+	.rom ( 0xfffc0c80 ) : AT ( 0xc80 )  { /* was 0xfffc0c80  0xc80 */
+		_start_rom = . ;
+		*(rom);
+                _end_rom = . ;
 	}
-
+/*
 	.amended2bl (0xffffd400) : AT (ROM_SIZE - 0x2c00) {
 		_start_amended2bl = . ;
 		*(.amended2bl);
 		_end_amended2bl = . ;
 	}
+*/
 
-
-	.rodata (0xfffc0c80 + SIZEOF(.text)) : AT ( 0xc80 + SIZEOF(.text)) {
+	.rodata (0xfffc0c80 + SIZEOF(.rom)) : AT ( 0xc80 + SIZEOF(.rom)) {
 			*(.rodata);
 			*(.rodata.str1.1);
 			*(.rodata.str1.32);
@@ -101,7 +109,7 @@ SECTIONS {
 
 		/* ram allocations */
 
-	.data (RAM_BASE) : AT( 0xc80 + SIZEOF(.text)+ SIZEOF(.rodata) ) {
+	.data (RAM_BASE) : AT( 0xc80 + SIZEOF(.rom)+ SIZEOF(.rodata) ) {
 			_start_data = .;
 				*(.data);
 		*(.sdata);
@@ -110,11 +118,14 @@ SECTIONS {
 		_end_data = .;
 		}
 
-	RamCopy (0x90000) : AT( 0xc80 + SIZEOF(.text)+ SIZEOF(.rodata) +SIZEOF(.data)) {
-			_start_ramcopy = . - 0x90000 + 0xc80 + SIZEOF(.text)+ SIZEOF(.rodata) +SIZEOF(.data);
+	RamCopy (RAM_CODE) : AT( 0xc80 + SIZEOF(.rom)+ SIZEOF(.rodata) +SIZEOF(.data)) {
+		_ram_location = .;
+		_start_ramcopy = 0xc80 + SIZEOF(.rom)+ SIZEOF(.rodata) +SIZEOF(.data) - RAM_CODE + 0xFFFC0000;
+                                *(.text);
 				*(RamCopy);
 		_end_ramcopy = .;
-		}
+		_size_ramcopy = . - RAM_CODE;
+	}
 
 
 	/* the data (initialized globals) is moved to ram by the startup code */

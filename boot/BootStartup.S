@@ -47,8 +47,9 @@ mcpx_magic:  // needs to be DWORD aligned
 		.byte 0x0f, 0x00, 0x00, 0x00, 0x00, 0x44, 0x00, 0x40
 		.byte 0x70, 0x00, 0xd1, 0x12, 0x90, 0x0c, 0x00, 0x00
 
-	.section .text, "ax"
-	.text
+	//.section .text, "ax"
+	//.text
+        .section rom, "ax"
 
 
 	/*
@@ -91,8 +92,8 @@ tableIdtDescriptor:
 
 	.globl start_linux
 start_linux:
-	
-	
+
+
 	// NOTE:
 	/*
 		Xromwell & Cromwell is sarting here
@@ -101,19 +102,12 @@ start_linux:
         // Clear Intel Interrupts in Processor Register
 	// Everytime very good, specially when comming out of a running envoronment
 		
-
 	movl	$0x1b, %ecx
 	xor	%eax, %eax
 	xor	%edx, %edx
 	wrmsr
+	
 	// Interrupts now Dead
-
-//	movl	$0xff, %ecx
-//	movl	$0x00000806, %eax
-//	xor	%edx, %edx
-//	wrmsr
-
-	// MSR registers Cleared
 	
 
 	lidt tableIdtDescriptor
@@ -145,10 +139,10 @@ entrypoint_end:
 	outl	%eax, %dx 
 	
 	mov $0x8000006c, %eax 
-	movw $0xcf8, %dx 
+	movw $0xcf8, %dx
 	outl	%eax, %dx 
 	movw $0xcfc, %dx 
-	inl %dx, %eax 
+	inl %dx, %eax
 	push %eax 
 	andl $0xfffffffe, %eax 
 	outl	%eax, %dx 
@@ -178,11 +172,11 @@ entrypoint_end:
 	// We jump out of the rest of init, 
 	// as we expect, this is all done when we are starting from the .xbe file
 	// this Jump can be found in BootResetAction.c
-	jmp BootResetAction  
+	jmp BootResetAction
 #endif
        
        
-       
+
 
 //	mov	$0, %al
 //	mov	$0x72, %dx
@@ -427,6 +421,15 @@ spin3:
 	mov $0x80010010, %eax ;	movw $0xcf8, %dx ;	outl	%eax, %dx ;	movw $0xcfc, %dx ;	mov	$0xfd000000, %eax ;	outl	%eax, %dx
 
 #endif
+
+#ifndef XBE
+// copy everything into RAM
+            mov $_ram_location, %edi
+            mov $_start_ramcopy, %esi
+	    //add $0xfffc0000, %esi
+            mov $_size_ramcopy, %ecx
+	    rep movsb
+#endif
         jmp BootResetAction  // this can be found in BootResetAction.c
 
 
@@ -483,7 +486,7 @@ entrypoint_start:
 	movl	$0x00000000, %edx 	// 0x00
 	movl	$0xFFF00006, %eax 	// == WB cache  NOTE SIZING!  Only last 1M cached!
 	wrmsr
-        
+
         // MASK0 set to 0xff0000[000] == 16M
         movl	$0x203, %ecx             // IA32_MTRR_PHYS_MASK 1
 	movl	$0x0000000f, %edx // 0x0f
@@ -527,10 +530,10 @@ entrypoint_start:
 	movl	$0x20c, %ecx		// IA32_MTRR_PHYS Base 6
         wrmsr                                                   
 	movl	$0x20d, %ecx		// IA32_MTRR_PHYS_MASK 6
-        wrmsr                                                   
+        wrmsr
 
 	movl	$0x20e, %ecx		// IA32_MTRR_PHYS Base 7
-        wrmsr                                                   
+        wrmsr
 	movl	$0x20f, %ecx		// IA32_MTRR_PHYS_MASK 7
         wrmsr                                                   
         
@@ -738,7 +741,16 @@ selfPipeKill:
 
 
 
-	
+
+
+
+
+
+
+
+
+
+.section .text, "ax"
 
 ///////////////////////////////////////////
 //
@@ -749,14 +761,14 @@ selfPipeKill:
 
 		.global	IntHandlerTimer0
 IntHandlerTimer0:
-	cli
 	pusha
 	pushf
+	cli
 	call	IntHandlerCTimer0
 	mov	$0x20, %al
 	outb	%al, $0x20
 	popf
-//	sti
+	sti
 	popa
 	iret
 
@@ -771,7 +783,7 @@ IntHandler1:
 	mov	$0x21, %al
 	outb	%al, $0x20
 	popf
-//	sti
+	sti
 	popa
 	iret
 
@@ -779,99 +791,99 @@ IntHandler1:
 
 		.global	IntHandler2
 IntHandler2:
-	cli
 	pusha
 	pushf
+	cli
 	call	IntHandler2C
 	mov	$0x22, %al
 	outb	%al, $0x20
 	popf
+	sti
 	popa
-//	sti
 	iret
 
 		// int 3
 
 		.global	IntHandler3
 IntHandler3:
-	cli
 	pusha
 	pushf
+	cli
 	call	IntHandler3VsyncC
 	mov	$0x23, %al
 	outb	%al, $0x20
 	popf
+	sti
 	popa
-//	sti
 	iret
 
 		// int 4
 
 		.global	IntHandler4
 IntHandler4:
-	cli
 	pusha
 	pushf
+	cli
 	call	IntHandler4C
 	mov	$0x24, %al
 	outb	%al, $0x20
 	popf
+	sti
 	popa
-//	sti
 	iret
 
 		// int 5
 
 		.global	IntHandler5
 IntHandler5:
-	cli
 	pusha
 	pushf
+	cli
 	call	IntHandler5C
 	mov	$0x25, %al
 	outb	%al, $0x20
 	popf
+	sti
 	popa
-//	sti
 	iret
 
 		// int 6
 
 		.global	IntHandler6
 IntHandler6:
-	sti
 	pusha
 	pushf
+	cli
 	call	IntHandler6C
 	mov	$0x26, %al
 	outb	%al, $0x20
 	popf
-	popa
 	sti
+	popa
 	iret
 
 		// int 7
 
 		.global	IntHandler7
 IntHandler7:
-	cli
 	pusha
 	pushf
+	cli
 	call	IntHandler7C
 	mov	$0x27, %al
 	outb	%al, $0x20
 	popf
+	sti
 	popa
-	sti	
 	iret
 
 		// Int 8 interrupts
 
 	.global IntHandler8
 IntHandler8:
-	cli
 	pusha
 	pushf
+	cli
 	call	IntHandler8C
 		// EOI on master and slave needed
 	mov	$0x60, %al
@@ -939,10 +951,9 @@ IntHandlerI2C:
 
 	.global IntHandlerSmc
 IntHandlerSmc:
-	cli
 	pusha
 	pushf
-
+	cli
 	call	IntHandlerCSmc
 
 		// acknowledge EXTSMI# action (from PIC p6)
@@ -965,10 +976,9 @@ IntHandlerSmc:
 
 	.global IntHandler13
 IntHandler13:
-	cli
 	pusha
 	pushf
-
+	cli
 	call	IntHandler13C
 		// EOI on master and slave needed
 	mov	$0x65, %al
@@ -983,10 +993,9 @@ IntHandler13:
 
 	.global IntHandlerIde
 IntHandlerIde:
-	cli
 	pusha
 	pushf
-	
+	cli
 	call	IntHandlerCIde
 
 		// EOI on master and slave needed
@@ -1002,10 +1011,9 @@ IntHandlerIde:
 
 	.global IntHandler15
 IntHandler15:
-	cli
 	pusha
 	pushf
-	
+	cli
 	call	IntHandler15C
 		// EOI on master and slave needed
 	mov	$0x67, %al
@@ -1021,10 +1029,9 @@ IntHandler15:
 
 	.global IntHandlerUnused
 IntHandlerUnused:
-	cli
 	pusha
 	pushf
-	
+	cli
 	call	IntHandlerUnusedC
 	mov	$0x20, %al
 	out	%al, $0x20
@@ -1036,10 +1043,9 @@ IntHandlerUnused:
 
 	.global IntHandlerUnusedPic2
 IntHandlerUnusedPic2:
-	cli
 	pusha
 	pushf
-	
+	cli
 	call	IntHandlerUnusedC2
 	mov $0xffff, %ax
 	mov	$0x8028, %dx
@@ -1333,16 +1339,5 @@ gdt_ptr:
 */
 
 .equ sizeof_top, (. - start_top)
-
-
-
-
-
-
-
-
-
-
-	
 
 

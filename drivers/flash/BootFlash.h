@@ -61,8 +61,6 @@ typedef struct {
 
  	// requires pof->m_pbMemoryMappedStartAddress set to start address of flash in memory on entry
 
-void BootFlashCopyCodeToRam(void);
-
 void BootReflashAndReset(BYTE *pbNewData, DWORD dwStartOffset, DWORD dwLength);
 void BootReflashAndReset_RAM(BYTE *pbNewData, DWORD dwStartOffset, DWORD dwLength)
 #ifdef CROMWELL
