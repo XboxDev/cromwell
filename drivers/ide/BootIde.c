@@ -613,7 +613,7 @@ int BootIdeDriveInit(unsigned uIoBase, int nIndexDrive,int drivetype)
 				// 'security' is in force, unlock the drive (was 0x104/0x104)
 				BYTE baMagic[0x200], baKeyFromEEPROM[0x10], baEeprom[0x30];
 				bool fUnlocked=false;
-				int n,nVersionHashing;
+				int nVersionHashing;
 				tsIdeCommandParams tsicp1 = IDE_DEFAULT_COMMAND;
 				DWORD dwMagicFromEEPROM;
 				DWORD BootHddKeyGenerateEepromKeyData(BYTE *eeprom_data,BYTE *HDKey);
@@ -629,12 +629,11 @@ int BootIdeDriveInit(unsigned uIoBase, int nIndexDrive,int drivetype)
 	 			nVersionHashing = 0;
 	
 				memcpy(&baEeprom[0], &eeprom, 0x30); // first 0x30 bytes from EEPROM image we picked up earlier
-	
-				for(n=0;n<0x10;n++) baKeyFromEEPROM[n]=0;
+
+				memset(&baKeyFromEEPROM,0x00,0x10);
 				nVersionHashing = BootHddKeyGenerateEepromKeyData( &baEeprom[0], &baKeyFromEEPROM[0]);
-	
-				for(n=0;n<0x200;n++) baMagic[n]=0;
-	
+
+				memset(&baMagic,0x00,0x200);
 		#ifdef HDD_DEBUG
 				printk("Model='%s', Serial='%s'\n", tsaHarddiskInfo[nIndexDrive].m_szIdentityModelNumber, tsaHarddiskInfo[nIndexDrive].m_szSerial);
 				VideoDumpAddressAndData(0, &baKeyFromEEPROM[0], 0x10);
