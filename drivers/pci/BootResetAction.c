@@ -142,7 +142,7 @@ extern void BootResetAction ( void ) {
 #endif
 
 	// init malloc() and free() structures
-        //memset((void *)0x03B40000,0x00,0xC0000); // Experimantal code, cleans the other 3 ram location copy's
+      
         
 	MemoryManagementInitialization((void *)MEMORYMANAGERSTART, MEMORYMANAGERSIZE);
 	

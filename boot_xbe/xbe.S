@@ -1,5 +1,5 @@
 #define BASE_ADDRESS 0x10000
-#define FILE_SIZE (1100*1024)
+#define FILE_SIZE (0x4000+0x40000)
 header_start:
   .ascii "XBEH"
 
@@ -11,7 +11,7 @@ header_start:
 
   .long BASE_ADDRESS                    // base address
   .long headers_end - header_start      // size of headers
-  .long FILE_SIZE+32*1024               // size of image
+  .long FILE_SIZE+1024               // size of image
   .long header_end - header_start       // size of image header
   .long 0                               // time date stamp                 *unimportant*
   .long certificate                     // certificate address

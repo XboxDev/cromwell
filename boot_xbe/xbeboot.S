@@ -30,7 +30,8 @@
 // Minimum physical address at which the kernel can reside temporarily
 #define MIN_KERNEL_ADDRESS		KERNEL_ADDRESS
 // Memory reserved to the kernel (1 MB at the moment)
-#define KERNEL_SIZE        		0x00100000
+
+#define KERNEL_SIZE        		0x00040000
 
 // Location of kernel in RAM
 #define KERNEL_RAM_ADDRESS		0x03B00000
@@ -153,8 +154,8 @@ _start:
         push	PAGE_READWRITE
         push	0
         push	RETAIL_RAM_SIZE / 2 - 1
-        push	MIN_KERNEL_ADDRESS + KERNEL_SIZE // at 2 MB
-        push	KERNEL_SIZE
+        push	MIN_KERNEL_ADDRESS + (KERNEL_SIZE) 
+        push	(KERNEL_SIZE)
         call	dword ptr [MmAllocateContiguousMemoryEx]
         mov	[kernelram], eax
 
@@ -184,8 +185,8 @@ _start:
     push ecx
     mov esi, offset kernel
     mov edi, dword ptr [kernelram]
-    mov ecx, KERNEL_SIZE /2   //KERNEL_SIZE / 2 TODO
-    rep movsw
+    mov ecx, KERNEL_SIZE    
+    rep movsb
     pop ecx
 
 // 4. use MmAllocateContiguousMemoryEx to allocate 4096 bytes of memory
@@ -365,14 +366,16 @@ newloc:
         
 	// copy the Cromwell to it's new position
 	mov	edi, KERNEL_RAM_ADDRESS 
-	mov	ecx, KERNEL_SIZE 	// div 4 ???
-	.byte	0xF3, 0xA5  // rep movsd
+	mov	ecx, KERNEL_SIZE 
+	rep 	movsb
+	//.byte	0xF3, 0xA5  // rep movsw
 
 	//jmp newflash
-	// start kernel
+	// Jump into Cromwell & start Kernel
 	.byte	0xea //  = ljmp
 
-	.long	KERNEL_RAM_ADDRESS+0xffe00
+//	.long	KERNEL_RAM_ADDRESS+0xffe00
+	.long	KERNEL_RAM_ADDRESS+0x3fe00
 	.word	0x0008
 
 newflash:

@@ -103,8 +103,8 @@ default.elf: ${OBJECTS-XBE}
 	
 default.xbe: default.elf
 	${OBJCOPY} --output-target=binary --strip-all $(TOPDIR)/obj/default.elf $(TOPDIR)/xbe/$@
-	cat $(TOPDIR)/obj/image-xbe.bin $(TOPDIR)/obj/image-xbe.bin $(TOPDIR)/obj/image-xbe.bin $(TOPDIR)/obj/image-xbe.bin >> $(TOPDIR)/xbe/default.xbe
-	dd if=/dev/zero bs=1024 count=200 >> $(TOPDIR)/xbe/default.xbe
+	cat $(TOPDIR)/obj/image-xbe.bin >> $(TOPDIR)/xbe/default.xbe
+	dd if=/dev/zero bs=1024 count=10 >> $(TOPDIR)/xbe/default.xbe
 	#$(TOPDIR)/xbe/xbe $(TOPDIR)/xbe/default.xbe -sign
 	#mv $(TOPDIR)/out.xbe $(TOPDIR)/xbe/default.xbe -f
 	@ls -l $(TOPDIR)/xbe/$@

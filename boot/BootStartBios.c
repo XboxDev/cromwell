@@ -676,7 +676,7 @@ void StartBios(	int nDrive, int nActivePartition , int nFATXPresent) {
 	}
 
 #ifdef DEFAULT_FATX
-//nDrive=0;
+nDrive=0;
 #endif
 
 	if(nIcon >= ICONCOUNT) {
@@ -737,8 +737,42 @@ void StartBios(	int nDrive, int nActivePartition , int nFATXPresent) {
 		}	
 		*/
 		
-		//printk("%08X",BootResetAction)	;
-		
+		//printk("%08X",BootResetAction)	;    
+		/*
+		{
+		unsigned char SHA1_result[SHA1HashSize];
+		struct SHA1Context context;
+	        int i;
+	        VIDEO_CURSOR_POSY=200;
+	        VIDEO_CURSOR_POSX=0;
+       		SHA1Reset(&context);   
+		SHA1Input(&context,(void*)0x03B00000,0x40000);
+		SHA1Result(&context,SHA1_result);	
+		for (i=0;i<20;i++) printk("%02x",SHA1_result[i]);
+
+	        VIDEO_CURSOR_POSY=220;
+	        VIDEO_CURSOR_POSX=0;
+       		SHA1Reset(&context);   
+		SHA1Input(&context,(void*)0x03B40000,0x40000);
+		SHA1Result(&context,SHA1_result);	
+		for (i=0;i<20;i++) printk("%02x",SHA1_result[i]);
+
+	        VIDEO_CURSOR_POSY=240;
+	        VIDEO_CURSOR_POSX=0;
+       		SHA1Reset(&context);   
+		SHA1Input(&context,(void*)0x03B80000,0x40000);
+		SHA1Result(&context,SHA1_result);	
+		for (i=0;i<20;i++) printk("%02x",SHA1_result[i]);
+
+	        VIDEO_CURSOR_POSY=280;
+	        VIDEO_CURSOR_POSX=0;
+       		SHA1Reset(&context);   
+		SHA1Input(&context,(void*)0x03Bc0000,0x40000);
+		SHA1Result(&context,SHA1_result);	
+		for (i=0;i<20;i++) printk("%02x",SHA1_result[i]);
+			
+		}
+		 */
 		}
 	}
 
