@@ -72,49 +72,20 @@ ICON icon[ICONCOUNT];
 const int naChimeFrequencies[] = {
 	329, 349, 392, 440
 };
-/*
-static DWORD ReadCrx(unsigned char where ) {
-	unsigned int tmp=0;
-	if (where == 0) {
-		asm volatile ("movl  %%cr0, %0\n\t"
-		      :"=r" (tmp) : : "memory");
-		      }
-	if (where == 3) {
-		asm volatile ("movl  %%cr3, %0\n\t"
-		      :"=r" (tmp) : : "memory");
-		      }
-	if (where == 4) {
-		asm volatile ("movl  %%cr4, %0\n\t"
-		      :"=r" (tmp) : : "memory");
-		      }
-  
-  return tmp;
-}
- */
+
 
 void BootPrintConfig(CONFIGENTRY *config) {
-	//int i;
 	
 	printk("  Bootconfig : Kernel  %s \n", config->szKernel);
 	VIDEO_ATTR=0xffa8a8a8;
 	printk("  Bootconfig : Initrd  %s \n", config->szInitrd);
 	VIDEO_ATTR=0xffa8a8a8;
-	//i = strlen(config->szAppend);
-	//if (i>40){
-		 printk("  Bootconfig :\n %s \n", config->szAppend);
-	/*
-	} else {
-		char temp[40];
-		_strncpy(temp,config->szAppend,40);
-		printk("  Bootconfig : \n %s \n", &temp);
-		_strncpy(temp,&config->szAppend[40],40);
-		printk("  %s \n", &temp);
-	} 
-	*/
+	printk("  Bootconfig :\n %s \n", config->szAppend);
+
 	VIDEO_ATTR=0xffa8a8a8;
 }
 
-// if fJustTestingForPossible is true, returns 0 if this kind of boot not possible, 1 if it is worth trying
+
 
 int BootLodaConfigNative(int nActivePartition, CONFIGENTRY *config, bool fJustTestingForPossible) {
 	DWORD dwConfigSize=0;
@@ -915,6 +886,10 @@ int BootMenue(CONFIGENTRY *config,int nDrive,int nActivePartition, int nFATXPres
                         	I2CTransmitWord(0x10, 0x0c00); // eject DVD tray
                         	wait_ms(500);
                         	}
+        		if (menu == ICON_NATIVE) {
+				strcpy(config->szKernel, "/boot/vmlinuz");  // Ext2 default kernel, looked for to detect fs
+				}
+					
         		// We return the selected Menue 
 			return menu;			
 			
