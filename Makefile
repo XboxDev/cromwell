@@ -122,13 +122,10 @@ OBJECTS-CROM += $(TOPDIR)/obj/risefall.o
 OBJECTS-CROM += $(TOPDIR)/obj/nfs.o
 OBJECTS-CROM += $(TOPDIR)/obj/nic.o
 #OBJECTS-CROM += $(TOPDIR)/obj/osloader.o
-OBJECTS-CROM += $(TOPDIR)/obj/xbox_osloader.o
+OBJECTS-CROM += $(TOPDIR)/obj/xbox.o
 OBJECTS-CROM += $(TOPDIR)/obj/forcedeth.o
-OBJECTS-CROM += $(TOPDIR)/obj/xbox_timer.o
 OBJECTS-CROM += $(TOPDIR)/obj/xbox_misc.o
-OBJECTS-CROM += $(TOPDIR)/obj/xbox_mem.o
 OBJECTS-CROM += $(TOPDIR)/obj/xbox_pci.o
-OBJECTS-CROM += $(TOPDIR)/obj/xbox_pci_io.o
 OBJECTS-CROM += $(TOPDIR)/obj/etherboot_config.o
 
 RESOURCES = $(TOPDIR)/obj/backdrop.elf
