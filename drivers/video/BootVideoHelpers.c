@@ -225,7 +225,8 @@ bool BootVideoJpegUnpackAsRgb(u8 *pbaJpegFileImage, JPEG * pJpeg) {
 	if((jpeg_decode(pbaJpegFileImage, pJpeg->pData, 
 		((width + 15) & ~15), ((height + 15) & ~15), depth, decdata)) != 0) {
 		printk("Error decode picture\n");
-		while(1);
+		// We dont really want this to lockup - those poor TSOPers!
+		//while(1);
 	}
 	
 	pJpeg->pBackdrop = BootVideoGetPointerToEffectiveJpegTopLeft(pJpeg);
