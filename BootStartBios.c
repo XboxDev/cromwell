@@ -243,6 +243,7 @@ void StartBios(	int nDrive, int nActivePartition ) {
 				sz++;
 			}
 		}
+		if(szCommandline[0] == '/') szCommandline[0] = ' ';
 	}
 
 
@@ -285,6 +286,12 @@ void StartBios(	int nDrive, int nActivePartition ) {
 
 	} else {  // ISO9660 traversal on CDROM
 
+		printk("  Bootconfig : Kernel  %s\n", szKernelFile);
+		VIDEO_ATTR=0xffa8a8a8;
+		printk("  Bootconfig : Initrd  %s\n", szInitrdFile);
+		VIDEO_ATTR=0xffa8a8a8;
+		printk("  Bootconfig : Command %s\n", szCommandline);
+		VIDEO_ATTR=0xffa8a8a8;
 		printk("  Loading %s from CDROM ", szKernelFile);
 		VIDEO_ATTR=0xffa8a8a8;
 
@@ -295,12 +302,20 @@ void StartBios(	int nDrive, int nActivePartition ) {
 
 		printk(" -  %d bytes...\n", dwKernelSize);
 
-		VIDEO_ATTR=0xffd8d8d8;
-		printk("  Loading %s from CDROM ", szInitrdFile);
-		VIDEO_ATTR=0xffa8a8a8;
+		if( strlen(szInitrdFile) > 0) {
+			VIDEO_ATTR=0xffd8d8d8;
+			printk("  Loading %s from CDROM ", szInitrdFile);
+			VIDEO_ATTR=0xffa8a8a8;
 
-		dwInitrdSize=BootIso9660GetFile(szInitrdFile, (void *)0x03000000, 4096*1024, 0);
-		printk(" - %d bytes\n", dwInitrdSize);
+			dwInitrdSize=BootIso9660GetFile(szInitrdFile, (void *)0x03000000, 4096*1024, 0);
+			printk(" - %d bytes\n", dwInitrdSize);
+		} else {
+			VIDEO_ATTR=0xffd8d8d8;
+			printk("  No initrd from config file");
+			VIDEO_ATTR=0xffa8a8a8;
+			dwInitrdSize=0;
+			printk("");
+		}
 
 	}
 
