@@ -34,13 +34,15 @@
 #endif
 #include "BootUsbOhci.h"
 
+// #define DO_USB
+
 extern DWORD dwaTitleArea[1024*64];
 JPEG jpegBackdrop;
 
 int nTempCursorMbrX, nTempCursorMbrY;
 
 volatile CURRENT_VIDEO_MODE_DETAILS currentvideomodedetails;
-volatile USB_CONTROLLER_OBJECT usbcontroller;
+volatile USB_CONTROLLER_OBJECT usbcontroller[2];
 
 
 const KNOWN_FLASH_TYPE aknownflashtypesDefault[] = {
@@ -129,7 +131,11 @@ extern void BootResetAction ( void ) {
 	bprintf("BOOT: Read EEPROM\n\r");
 //	DumpAddressAndData(0, (BYTE *)&eeprom, 256);
 
-	currentvideomodedetails.m_nVideoModeIndex=VIDEO_PREFERRED_MODE;
+	if(((BYTE *)&eeprom)[0x96]&0x01) { // widescreen
+		currentvideomodedetails.m_nVideoModeIndex=VIDEO_MODE_1024x576;
+	} else {
+		currentvideomodedetails.m_nVideoModeIndex=VIDEO_PREFERRED_MODE;
+	}
 	currentvideomodedetails.m_pbBaseAddressVideo=(BYTE *)0xfd000000;
 #ifdef XBE
 	currentvideomodedetails.m_fForceEncoderLumaAndChromaToZeroInitially=0;
@@ -175,15 +181,17 @@ extern void BootResetAction ( void ) {
 	}
 
 		// init USB
-
+#ifdef DO_USB
 	{
 		const int nSizeAllocation=0x10000;
 		void * pvHostControllerCommsArea=malloc(nSizeAllocation+0x100); // 64K+256 to ensure alignment
+		void * pvHostControllerCommsArea1=malloc(nSizeAllocation+0x100); // 64K+256 to ensure alignment
 		bprintf("BOOT: start USB init\n\r");
-		BootUsbInit((USB_CONTROLLER_OBJECT *)&usbcontroller, (void *)0xfed00000, (void *)(((DWORD)pvHostControllerCommsArea+0x100)&0xffffff00), nSizeAllocation);
+		BootUsbInit((USB_CONTROLLER_OBJECT *)&usbcontroller[0], "USB1", (void *)0xfed00000, (void *)(((DWORD)pvHostControllerCommsArea+0x100)&0xffffff00), nSizeAllocation);
+		BootUsbInit((USB_CONTROLLER_OBJECT *)&usbcontroller[1], "USB2", (void *)0xfed08000, (void *)(((DWORD)pvHostControllerCommsArea1+0x100)&0xffffff00), nSizeAllocation);
 		bprintf("BOOT: done USB init\n\r");
 	}
-
+#endif
 #endif
 
 
@@ -390,7 +398,7 @@ extern void BootResetAction ( void ) {
 
 			// set Ethernet MAC address from EEPROM
 		{
-			BYTE * volatile pb=(BYTE *)0xfef000a8;  // Ethernet MMIO base + MAC register offset (<--thanks to Anders Gustafsson)
+			volatile BYTE * pb=(BYTE *)0xfef000a8;  // Ethernet MMIO base + MAC register offset (<--thanks to Anders Gustafsson)
 			int n;
 			for(n=5;n>=0;n--) { *pb++=	eeprom.MACAddress[n]; } // send it in backwards, its reversed by the driver
 		}
@@ -410,14 +418,18 @@ extern void BootResetAction ( void ) {
 			printk("%s\n", of.m_szFlashDescription);
 		}
 
-
+#ifdef DO_USB
 		{
 			VIDEO_ATTR=0xffc8c8c8;
 			printk("USB: ");
 			VIDEO_ATTR=0xffc8c800;
-			BootUsbPrintStatus(&usbcontroller);
-		}
 
+			BootUsbPrintStatus((USB_CONTROLLER_OBJECT *)&usbcontroller[0]);
+//			BootUsbPrintStatus((USB_CONTROLLER_OBJECT *)&usbcontroller[1]);
+			BootUsbDump((USB_CONTROLLER_OBJECT *)&usbcontroller[0]);
+//			BootUsbDump((USB_CONTROLLER_OBJECT *)&usbcontroller[1]);
+		}
+#endif
 #endif
 
 			// init the HDD and DVD

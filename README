@@ -11,6 +11,8 @@ using any MS code.  Cromwell cannot launch native games, it can only
 boot into Linux (or more correctly, a file vmlinuz which can
 contain anything, but is usually the Linux kernel).
 
+ - new 1024x576 automatic widescreen support (when widesceen was
+   selected in MS native BIOS settings)
  - the ROM image is now 256KByte, works with all flashable modchips
  - single ROM compatible with v1.0 and v1.1 Xboxes
  - NEW 800x600 overscan-corrected video for PAL
@@ -46,6 +48,8 @@ OTHER NOTES
 
  - COMPOSITE cable only right now if you want the right colours
  - defaults to 800x600 for PAL boxes and 640x480 for NTSC boxes
+ - if you have selected Widescreen in the native MS BIOS settings,
+   then 1024x576 is selected with WSS if you are in PAL
  - in PAL, 640x480, 640x576 and 720x576 are also available
 
 
@@ -82,7 +86,7 @@ Booting into Linux the first time
 if your distro has one.  This provides just the Linux kernel and
 initrd and the rest of the boot takes place from the HDD.
 
-2) Once you are booted, copy vmlinuz and initrd from the boot CD 
+2) Once you are booted, copy vmlinuz and initrd from the boot CD
 to /boot on the HDD.  For Mandrake it looks like this:
 
 cp /mnt/cdrom/vmlinuz /boot
@@ -125,8 +129,10 @@ Todo
    vmlinuz and initrd to /boot by default
  - Ethernet code and stack
 
+
 Improvements!
 
+ - 1024x576 widescreen mode for PAL
  - 800x600 PAL mode!  Quite pleasant for browsing, etc.
  - works with v1.1 or v1.0
  - If the keyword no is used for an initrd in the linuxconf.cfg
@@ -140,7 +146,12 @@ Improvements!
    inside Linux; works with Oliver's accellerated X driver (reserves
 	 4MByte of RAM for video)
 
+
 	 
+Note: 1024x576 is NOT working with X yet.  But you can enjoy the 128x36
+console mode on your widescreen TV :-)
+
+
 Here are three /etc/X11/XF86Config-4 which work with Oliver's video driver.
 Unfortunately you must match the right file to the right resolution:
 

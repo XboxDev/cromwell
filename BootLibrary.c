@@ -217,6 +217,15 @@ char * strcpy(char *sz, const char *szc)
 	return szStart;
 }
 
+char * _strncpy(char *sz, const char *szc, int nLenMax)
+{
+	char *szStart=sz;
+	while((*szc) && (nLenMax--)) *sz++=*szc++;
+	*sz='\0';
+	return szStart;
+}
+
+
 int _strncmp(const char *sz1, const char *sz2, int nMax) {
 
 	while((*sz1) && (*sz2) && nMax--) {
@@ -232,14 +241,14 @@ int _strncmp(const char *sz1, const char *sz2, int nMax) {
 unsigned long GetMillisecondCount()
 {
 	DWORD dw1, dw2, * pdw;
-	unsigned long ul;
+	unsigned long ul[2];
 
 	__asm__ __volatile__ (
 		"rdtsc " : "=a" (dw1), "=d" (dw2)
 	);
 	pdw=(DWORD *)&ul;
 	*pdw++=dw1;
-	return ul;
+	return ul[0];
 }
 
 void Sleep(int nMicroseconds)

@@ -200,10 +200,29 @@ void IntHandlerCSmc(void)
 	bStatus=I2CTransmitByteGetReturn(0x10, 0x11); // Query PIC for interrupt reason
 	while(nBit<7) {
 		if(bStatus & 1) {
+			BYTE b=0x04;
 			switch(nBit) {
 
 				case 0: // POWERDOWN EVENT
 					bprintf("SMC Interrupt %d: Powerdown\n", nCountInterruptsSmc);
+					I2CTransmitWord(0x10, 0x0200);
+					I2CTransmitWord(0x10, 0x0100|b);
+					I2CTransmitWord(0x10, 0x0500|b);
+					I2CTransmitWord(0x10, 0x0600|b);
+					I2CTransmitWord(0x10, 0x0900|b);
+					I2CTransmitWord(0x10, 0x0a00|b);
+					I2CTransmitWord(0x10, 0x0b00|b);
+					I2CTransmitWord(0x10, 0x0d00|b);
+					I2CTransmitWord(0x10, 0x0e00|b);
+					I2CTransmitWord(0x10, 0x0f00|b);
+					I2CTransmitWord(0x10, 0x1000|b);
+					I2CTransmitWord(0x10, 0x1200|b);
+					I2CTransmitWord(0x10, 0x1300|b);
+					I2CTransmitWord(0x10, 0x1400|b);
+					I2CTransmitWord(0x10, 0x1500|b);
+					I2CTransmitWord(0x10, 0x1600|b);
+					I2CTransmitWord(0x10, 0x1700|b);
+					I2CTransmitWord(0x10, 0x1800|b);
 					fSeenPowerdown=true;
 /*
 						// sequence in 2bl at halt_it
@@ -305,8 +324,10 @@ void IntHandlerCTimer0(void)
 
 void IntHandler1C(void)
 {
+	extern volatile USB_CONTROLLER_OBJECT usbcontroller[2];
+//	bprintf("USB1 Interrupt 1\n");
 #ifndef XBE
-	BootUsbInterrupt();
+	BootUsbInterrupt(&usbcontroller[0]);
 #endif
 }
 
@@ -427,7 +448,11 @@ void IntHandler8C(void)
 
 void IntHandler9C(void)
 {
-	bprintf("Interrupt 9\n");
+//	bprintf("USB2 Interrupt 9\n");
+	extern volatile USB_CONTROLLER_OBJECT usbcontroller[2];
+#ifndef XBE
+	BootUsbInterrupt(&usbcontroller[1]);
+#endif
 }
 
 void IntHandler10C(void)

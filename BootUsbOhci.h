@@ -1,7 +1,18 @@
 
-#define COUNT_ROOTHUBS 1
-#define MAX_USB_PATH_DEPTH 10
+/***************************************************************************
+ *                                                                         *
+ *   This program is free software; you can redistribute it and/or modify  *
+ *   it under the terms of the GNU General Public License as published by  *
+ *   the Free Software Foundation; either version 2 of the License, or     *
+ *   (at your option) any later version.                                   *
+ *                                                                         *
+ ***************************************************************************
 
+	2003-02-13 andy@warmcat.com  First CVS version
+
+*/
+
+#define COUNT_ROOTHUBS 2
 
 // actual footprint of memory-mapped
 // USB_OPERATIONAL_REGISTERS
@@ -35,6 +46,16 @@ typedef struct {
 	DWORD m_dwHcRhPortStatus[COUNT_ROOTHUBS];
 } USB_OPERATIONAL_REGISTERS;
 
+typedef struct {
+	volatile USB_OPERATIONAL_REGISTERS * m_pusboperationalregisters;
+	void * m_pvHostControllerCommsArea;
+	size_t m_sizeAllocation;
+	void * m_pvUSB_DEVICERootHubFirst;  // first ROOT_HUB USB Device, list formed by sibling pointer from first Root Hub USB_DEVICE
+	DWORD m_dwCountAllocatedMemoryFromDescriptorStorage;
+	char m_szName[32];
+	DWORD m_dwCountInterrupts;
+} USB_CONTROLLER_OBJECT;
+
 
 //
 // Host Controller Endpoint Descriptor, refer to Section 4.2, Endpoint Descriptor
@@ -47,41 +68,55 @@ typedef struct {
 } HC_ENDPOINT_DESCRIPTOR;
 
 #define HcEDHeadP_HALT 0x00000001 //hardware stopped bit
-#define HcEDHeadP_CARRY0x00000002 //hardware toggle carry bit
+#define HcEDHeadP_CARRY 0x00000002 //hardware toggle carry bit
 //
 // Host Controller Transfer Descriptor, refer to Section 4.3, Transfer Descriptors
 //
 typedef struct {
 	DWORD m_hctransfercontrolControl; // dword 0
-	void * m_pvCBP;
+	void * m_pvCBP;  // buffer start, current position
 	volatile void * m_pvNextTD; // phys ptr to HC_TRANSFER_DESCRIPTOR
-	void * m_pvBE;
+	void * m_pvBE; // buffer end address
 } HC_GENERAL_TRANSFER_DESCRIPTOR;
 
+	// representation of USB device in driver (can be a hub)
 
-typedef struct {
-	LIST_ENTRY m_list;
+typedef struct _USB_DEVICE {
+	USB_CONTROLLER_OBJECT * m_pusbcontrollerOwner;
+	struct _USB_DEVICE * m_pParentDevice;
+	struct _USB_DEVICE * m_pNextSiblingDevice;
+	struct _USB_DEVICE * m_pFirstChildDevice;  // linked list to child devices
 	char m_szFriendlyName[32];
-	BYTE m_baPath[MAX_USB_PATH_DEPTH];
+	BYTE m_bAddressUsb;
+	HC_ENDPOINT_DESCRIPTOR * m_phcendpointdescriptorFirst;
 } USB_DEVICE;
 
+typedef enum {
+	UTT_SETUP=0,
+	UTT_OUT,
+	UTT_IN,
+	UTT_SETUP_OUT,
+	UTT_SETUP_IN
+} USB_TRANSFER_TYPE;
 
 typedef struct {
-	volatile USB_OPERATIONAL_REGISTERS * m_pusboperationalregisters;
-	void * m_pvHostControllerCommsArea;
-	size_t m_sizeAllocation;
-	USB_DEVICE m_usbdeviceaRootHubDevices[COUNT_ROOTHUBS];
-} USB_CONTROLLER_OBJECT;
+	USB_DEVICE * m_pusbdevice;
+	HC_ENDPOINT_DESCRIPTOR * m_phcendpointdescriptor;
+	USB_TRANSFER_TYPE m_usbtransfertype; // decribes global transaction
+	BYTE * m_pbBuffer; //
+	int m_nLengthBuffer;
+	int m_nCompletionCode;
+} USB_IRP;
 
 
+void BootUsbInit(USB_CONTROLLER_OBJECT * pusbcontroller, const char * szcName, void * pvOperationalRegisterBase, void * pvHostControllerCommsArea, size_t sizeAllocation);
 
-void BootUsbInit(USB_CONTROLLER_OBJECT * pusbcontroller, void * pvOperationalRegisterBase, void * pvHostControllerCommsArea, size_t sizeAllocation);
-
-void BootUsbPrintStatus();
+void BootUsbPrintStatus(USB_CONTROLLER_OBJECT *pusbcontroller);
 void BootUsbInterrupt();
 
 void * BootUsbDescriptorMalloc(USB_CONTROLLER_OBJECT *pusbcontroller, int nCount16ByteContiguousRegion);
 void BootUsbDescriptorFree(USB_CONTROLLER_OBJECT *pusbcontroller, void *pvoid, int nCount16ByteContiguousRegion);
+void BootUsbDump(USB_CONTROLLER_OBJECT *pusbcontroller);
 
 #if 0
 

@@ -1,29 +1,179 @@
+
+/***************************************************************************
+ *                                                                         *
+ *   This program is free software; you can redistribute it and/or modify  *
+ *   it under the terms of the GNU General Public License as published by  *
+ *   the Free Software Foundation; either version 2 of the License, or     *
+ *   (at your option) any later version.                                   *
+ *                                                                         *
+ ***************************************************************************
+
+	2003-02-13 andy@warmcat.com  Structural improvements as I learn more about the OHCI architecture
+
+*/
+
 #include "boot.h"
 #include "BootUsbOhci.h"
 
 #define SIZEOF_HCCA 0x100
 
-void BootUsbInit(USB_CONTROLLER_OBJECT * pusbcontroller, void * pvOperationalRegisterBase, void * pvHostControllerCommsArea, size_t sizeAllocation)
+const LIST_ENTRY listentryEmpty = { NULL, NULL };
+
+void ConstructHC_GENERAL_TRANSFER_DESCRIPTOR(
+	HC_GENERAL_TRANSFER_DESCRIPTOR * phcgeneraltransferdescriptor,
+	DWORD dwControl,
+	BYTE * pbBuffer,
+	DWORD dwLengthBuffer
+) {
+	phcgeneraltransferdescriptor->m_hctransfercontrolControl=dwControl&(~0x10000); // force b16 to zero, inidcating 16-byte General TD (as opposed to 32-byte Isochronous one)
+	phcgeneraltransferdescriptor->m_pvCBP=pbBuffer;  // buffer start, current position
+	phcgeneraltransferdescriptor->m_pvNextTD=NULL; // phys ptr to HC_TRANSFER_DESCRIPTOR (inited to NULL)
+	phcgeneraltransferdescriptor->m_pvBE=&pbBuffer[dwLengthBuffer-1]; // buffer end address
+}
+
+void DestructHC_GENERAL_TRANSFER_DESCRIPTOR(
+	USB_CONTROLLER_OBJECT * pusbcontrollerOwner,
+	HC_GENERAL_TRANSFER_DESCRIPTOR * phcgeneraltransferdescriptor
+) {
+	BootUsbDescriptorFree(pusbcontrollerOwner, phcgeneraltransferdescriptor, 1);
+}
+
+
+void ConstructHC_ENDPOINT_DESCRIPTOR(HC_ENDPOINT_DESCRIPTOR * phcendpointdescriptor)
 {
-	DWORD dwSaved;
-	HC_ENDPOINT_DESCRIPTOR * pendpointRootHubConfig;
-	HC_GENERAL_TRANSFER_DESCRIPTOR * pgeneraltransferdescriptor;
+	phcendpointdescriptor->m_hcendpointcontrolControl=0x00080000; // default to 8 byte max pkt size e/p 0 fn 0
+	phcendpointdescriptor->m_pvTailP=NULL;
+	phcendpointdescriptor->m_pvHeadP=NULL;
+	phcendpointdescriptor->m_pvNextED=NULL;
+}
+
+
+void DestructHC_ENDPOINT_DESCRIPTOR(USB_CONTROLLER_OBJECT * pusbcontrollerOwner, HC_ENDPOINT_DESCRIPTOR *phcendpointdescriptor)
+{  // does not unlink from any lists
+	HC_GENERAL_TRANSFER_DESCRIPTOR * pgeneraltransferdescriptor=(HC_GENERAL_TRANSFER_DESCRIPTOR *)((int)phcendpointdescriptor->m_pvHeadP& (~0xf));
+	bool fMore=true;
+		// destroy any transfer descriptors owned by this endpoint descriptor
+	while(fMore) {
+		HC_GENERAL_TRANSFER_DESCRIPTOR * pgeneraltransferdescriptorNext;
+		int nDescriptorSizeOver16=1;
+
+		if(pgeneraltransferdescriptor==phcendpointdescriptor->m_pvTailP) { fMore=false; continue; }
+		pgeneraltransferdescriptorNext=(HC_GENERAL_TRANSFER_DESCRIPTOR *)pgeneraltransferdescriptor->m_pvNextTD;
+		if(pgeneraltransferdescriptor->m_hctransfercontrolControl & 0x10000) nDescriptorSizeOver16++;  // b16 set on the descriptor indicates ISO 32-byte size one
+		BootUsbDescriptorFree(pusbcontrollerOwner, pgeneraltransferdescriptor, nDescriptorSizeOver16);
+		pgeneraltransferdescriptor=pgeneraltransferdescriptorNext;
+	}
+		// then kill the endpoint itself
+	BootUsbDescriptorFree(pusbcontrollerOwner, phcendpointdescriptor, 1);
+}
+
+
+void ConstructUSB_DEVICE(USB_DEVICE * pusbdevice, USB_CONTROLLER_OBJECT * pusbcontrollerOwner, USB_DEVICE * pusbdeviceParent, const char * szName)
+{
+	HC_ENDPOINT_DESCRIPTOR * phcendpointdescriptor=BootUsbDescriptorMalloc(pusbcontrollerOwner, 1);
+	ConstructHC_ENDPOINT_DESCRIPTOR(phcendpointdescriptor);
+
+	pusbdevice->m_pusbcontrollerOwner=pusbcontrollerOwner;
+	pusbdevice->m_pParentDevice=pusbdeviceParent;
+	pusbdevice->m_pNextSiblingDevice=NULL;
+	pusbdevice->m_pFirstChildDevice=NULL;
+	_strncpy(pusbdevice->m_szFriendlyName, szName, sizeof(pusbdevice->m_szFriendlyName)-1);
+	pusbdevice->m_bAddressUsb=0;
+
+	pusbdevice->m_phcendpointdescriptorFirst=phcendpointdescriptor; // attach our default endpoint descriptor
+/*
+			// cook a transfer descriptor
+
+	pgeneraltransferdescriptor=BootUsbDescriptorMalloc(pusbcontrollerOwner, 1);
+	pgeneraltransferdescriptor->m_hctransfercontrolControl=0;
+	*/
+}
+
+
+void DestructUSB_DEVICE(USB_DEVICE * pusbdevice)  // does not unlink from parent
+{
+		// recurse to destruct any child devices first
+	{
+		USB_DEVICE *pusbdeviceChildNext, *pusbdeviceChild=pusbdevice->m_pFirstChildDevice;
+		while(pusbdeviceChild!=NULL) {
+			pusbdeviceChildNext=pusbdeviceChild->m_pNextSiblingDevice;
+			DestructUSB_DEVICE(pusbdeviceChild);  // does not unlink from parent list, but that's okay as parent is being destroyed next
+			pusbdeviceChild=pusbdeviceChildNext;
+		}
+	}
+
+		// destruct our enpoint descriptors
+	{
+		HC_ENDPOINT_DESCRIPTOR * phcendpointdescriptorNext, *phcendpointdescriptor=pusbdevice->m_phcendpointdescriptorFirst;
+
+		while(phcendpointdescriptor!=NULL) {
+			phcendpointdescriptorNext=(HC_ENDPOINT_DESCRIPTOR *)phcendpointdescriptor->m_pvNextED;
+			DestructHC_ENDPOINT_DESCRIPTOR(pusbdevice->m_pusbcontrollerOwner, phcendpointdescriptor);
+			phcendpointdescriptor=phcendpointdescriptorNext;
+		}
+	}
+
+	free(pusbdevice);
+}
+
+
+void ConstructUSB_CONTROLLER_OBJECT(
+	USB_CONTROLLER_OBJECT * pusbcontroller,
+	void * pvOperationalRegisterBase,
+	void * pvHostControllerCommsArea,
+	size_t sizeAllocation
+) {
+	USB_DEVICE * * ppLastUsbDevicePtr=(USB_DEVICE * *)&pusbcontroller->m_pvUSB_DEVICERootHubFirst; // update USB device first root hub device ptr first
 	int n;
 
 	pusbcontroller->m_pusboperationalregisters = (volatile USB_OPERATIONAL_REGISTERS *)pvOperationalRegisterBase;
 	pusbcontroller->m_pvHostControllerCommsArea = pvHostControllerCommsArea;
 	pusbcontroller->m_sizeAllocation = sizeAllocation;
-
-	memset(pusbcontroller->m_pvHostControllerCommsArea, 0, sizeAllocation);
+	pusbcontroller->m_dwCountInterrupts=0;
 
 		// construct the root hub usb devices associated with this Usb controller
 
 	for(n=0;n<COUNT_ROOTHUBS;n++) {
-		pusbcontroller->m_usbdeviceaRootHubDevices[n].m_list.m_plistentryPrevious=NULL;
-		pusbcontroller->m_usbdeviceaRootHubDevices[n].m_list.m_plistentryNext=NULL;
-		sprintf(pusbcontroller->m_usbdeviceaRootHubDevices[n].m_szFriendlyName, "Root Hub #%u", n+1);
-		pusbcontroller->m_usbdeviceaRootHubDevices[n].m_baPath[0]=0;
+		char sz[32];
+		USB_DEVICE * pusbdevice=malloc(sizeof(USB_DEVICE));
+
+		*ppLastUsbDevicePtr=pusbdevice;
+		sprintf(sz, "Root Hub #%u", n+1);
+
+		ConstructUSB_DEVICE(pusbdevice, pusbcontroller, NULL, sz); // parent device is NULL as root hub is toplevel
+
+		ppLastUsbDevicePtr=&pusbdevice->m_pNextSiblingDevice; // subsequently update last root hub's USB_DEVICE next sibling pointer
 	}
+}
+
+void DestructUSB_CONTROLLER_OBJECT(USB_CONTROLLER_OBJECT * pusbcontroller)  // does not deallocate mem for controller object!
+{
+		// destruct all of the root hubs (they will in turn destruct their child USB_DEVICEs)
+	{
+		USB_DEVICE * pusbdevice=(USB_DEVICE *)pusbcontroller->m_pvUSB_DEVICERootHubFirst;
+		while(pusbdevice) {
+			USB_DEVICE * pusbdeviceNext = (USB_DEVICE *)pusbdevice->m_pNextSiblingDevice;
+			DestructUSB_DEVICE(pusbdevice);
+			pusbdevice=pusbdeviceNext;
+		}
+	}
+}
+
+
+void BootUsbInit(
+	USB_CONTROLLER_OBJECT * pusbcontroller,
+	const char *szName,
+	void * pvOperationalRegisterBase,
+	void * pvHostControllerCommsArea,
+	size_t sizeAllocation
+) {
+	DWORD dwSaved;
+
+	_strncpy(pusbcontroller->m_szName, szName, sizeof(pusbcontroller->m_szName)-1 );
+
+	ConstructUSB_CONTROLLER_OBJECT(pusbcontroller, pvOperationalRegisterBase, pvHostControllerCommsArea, sizeAllocation);
+
+	memset(pusbcontroller->m_pvHostControllerCommsArea, 0, sizeAllocation);
 
 		// init the hardware
 
@@ -57,18 +207,6 @@ void BootUsbInit(USB_CONTROLLER_OBJECT * pusbcontroller, void * pvOperationalReg
 
 		// 5.1.1.4 prep the HCCA block data before pointing hardware to it
 
-			//  descriptor at address 0, endpoint 0
-
-	pendpointRootHubConfig=BootUsbDescriptorMalloc(pusbcontroller, 1);
-	pendpointRootHubConfig->m_hcendpointcontrolControl=0x01000000; // 256 byte max pkt size e/p 0 fn 0
-	pendpointRootHubConfig->m_pvTailP=NULL;
-	pendpointRootHubConfig->m_pvHeadP=NULL;
-	pendpointRootHubConfig->m_pvNextED=NULL;
-
-		// cook a transfer descriptor
-
-	pgeneraltransferdescriptor=BootUsbDescriptorMalloc(pusbcontroller, 1);
-	pgeneraltransferdescriptor->m_hctransfercontrolControl=0;
 
 		// 5.1.1.4 init the ED Operational registers
 
@@ -96,50 +234,63 @@ void BootUsbPrintStatus(USB_CONTROLLER_OBJECT * pusbcontroller)
 	}
 }
 
+	// manage response to detection of roothub status change - called by ISR
+	// we get one of these after coming out of OHCI reset
+
+void BootUsbRootHubStatusChange(USB_DEVICE *pusbdeviceRootHub)
+{
+
+}
+
+
+
 	// ISR calls through to here
 
-void BootUsbInterrupt()
+void BootUsbInterrupt(USB_CONTROLLER_OBJECT * pusbcontroller)
 {
-	extern volatile USB_CONTROLLER_OBJECT usbcontroller;
+	pusbcontroller->m_dwCountInterrupts++;
 
-	if(usbcontroller.m_pusboperationalregisters->m_dwHcInterruptStatus&1) {
-		bprintf("Interrupt 1: USB Scheduling Overrun\n");
-		usbcontroller.m_pusboperationalregisters->m_dwHcInterruptStatus=1;
+	if(pusbcontroller->m_pusboperationalregisters->m_dwHcInterruptStatus&1) {
+		bprintf("%s Interrupt (%u): USB Scheduling Overrun\n", pusbcontroller->m_szName, pusbcontroller->m_dwCountInterrupts);
+		pusbcontroller->m_pusboperationalregisters->m_dwHcInterruptStatus=1;
 	}
-	if(usbcontroller.m_pusboperationalregisters->m_dwHcInterruptStatus&2) {
-		bprintf("Interrupt 1: USB Writeback Done Head\n");
-		usbcontroller.m_pusboperationalregisters->m_dwHcInterruptStatus=2;
+	if(pusbcontroller->m_pusboperationalregisters->m_dwHcInterruptStatus&2) {
+		bprintf("%s Interrupt (%u): USB Writeback Done Head\n", pusbcontroller->m_szName, pusbcontroller->m_dwCountInterrupts);
+		pusbcontroller->m_pusboperationalregisters->m_dwHcInterruptStatus=2;
 	}
-	if(usbcontroller.m_pusboperationalregisters->m_dwHcInterruptStatus&4) {
-//		bprintf("Interrupt 1: USB Start of Frame\n");
-		usbcontroller.m_pusboperationalregisters->m_dwHcInterruptStatus=4;
+	if(pusbcontroller->m_pusboperationalregisters->m_dwHcInterruptStatus&4) {
+//		bprintf("%s Interrupt (%u): USB Start of Frame\n", pusbcontroller->m_szName, pusbcontroller->m_dwCountInterrupts);
+		pusbcontroller->m_pusboperationalregisters->m_dwHcInterruptStatus=4;
 	}
-	if(usbcontroller.m_pusboperationalregisters->m_dwHcInterruptStatus&8) {
-		bprintf("Interrupt 1: USB Resume Detected\n");
-		usbcontroller.m_pusboperationalregisters->m_dwHcInterruptStatus=8;
+	if(pusbcontroller->m_pusboperationalregisters->m_dwHcInterruptStatus&8) {
+		bprintf("%s Interrupt (%u): USB Resume Detected\n", pusbcontroller->m_szName, pusbcontroller->m_dwCountInterrupts);
+		pusbcontroller->m_pusboperationalregisters->m_dwHcInterruptStatus=8;
 	}
-	if(usbcontroller.m_pusboperationalregisters->m_dwHcInterruptStatus&16) {
-		bprintf("Interrupt 1: USB Unrecoverable Error\n");
-		usbcontroller.m_pusboperationalregisters->m_dwHcInterruptStatus=16;
+	if(pusbcontroller->m_pusboperationalregisters->m_dwHcInterruptStatus&16) {
+		bprintf("%s Interrupt (%u): USB Unrecoverable Error\n", pusbcontroller->m_szName, pusbcontroller->m_dwCountInterrupts);
+		pusbcontroller->m_pusboperationalregisters->m_dwHcInterruptStatus=16;
 	}
-	if(usbcontroller.m_pusboperationalregisters->m_dwHcInterruptStatus&32) {
-		bprintf("Interrupt 1: USB Frame Number Overflow\n");
-		usbcontroller.m_pusboperationalregisters->m_dwHcInterruptStatus=32;
+	if(pusbcontroller->m_pusboperationalregisters->m_dwHcInterruptStatus&32) {
+		bprintf("%s Interrupt (%u): USB Frame Number Overflow\n", pusbcontroller->m_szName, pusbcontroller->m_dwCountInterrupts);
+		pusbcontroller->m_pusboperationalregisters->m_dwHcInterruptStatus=32;
 	}
-	if(usbcontroller.m_pusboperationalregisters->m_dwHcInterruptStatus&64) {
+	if(pusbcontroller->m_pusboperationalregisters->m_dwHcInterruptStatus&64) {
 		int n;
-		bprintf("Interrupt 1: RootHub Status Change\n");
+		USB_DEVICE * pusbdeviceRootHub=(USB_DEVICE *)pusbcontroller->m_pvUSB_DEVICERootHubFirst;
+		bprintf("%s Interrupt (%u): RootHub Status Change\n", pusbcontroller->m_szName, pusbcontroller->m_dwCountInterrupts);
 		for(n=0;n<COUNT_ROOTHUBS;n++) {
-			if(usbcontroller.m_pusboperationalregisters->m_dwHcRhPortStatus[n]&0x10000) {
+			if(pusbcontroller->m_pusboperationalregisters->m_dwHcRhPortStatus[n]&0x10000) {
 					// change in connection status detected in n-th root hub
-					usbcontroller.m_pusboperationalregisters->m_dwHcRhPortStatus[n]=0x10000; // clear it
+					pusbcontroller->m_pusboperationalregisters->m_dwHcRhPortStatus[n]=0x10000; // clear it
+					BootUsbRootHubStatusChange(pusbdeviceRootHub);
 			}
+			pusbdeviceRootHub=pusbdeviceRootHub->m_pNextSiblingDevice;
 		}
-		usbcontroller.m_pusboperationalregisters->m_dwHcInterruptStatus=64;
+		pusbcontroller->m_pusboperationalregisters->m_dwHcInterruptStatus=64;
 	}
-	if(usbcontroller.m_pusboperationalregisters->m_dwHcInterruptStatus&0x40000000) {
-		bprintf("Interrupt 1: USB Ownership Change\n");
-		usbcontroller.m_pusboperationalregisters->m_dwHcInterruptStatus=0x40000000;
+	if(pusbcontroller->m_pusboperationalregisters->m_dwHcInterruptStatus&0x40000000) {
+		bprintf("%s Interrupt (%u): USB Ownership Change\n", pusbcontroller->m_szName, pusbcontroller->m_dwCountInterrupts);
+		pusbcontroller->m_pusboperationalregisters->m_dwHcInterruptStatus=0x40000000;
 	}
 }
 
@@ -150,7 +301,7 @@ void * BootUsbDescriptorMalloc(USB_CONTROLLER_OBJECT *pusbcontroller, int nCount
 	BYTE * pb=((BYTE *)pusbcontroller->m_pvHostControllerCommsArea)+SIZEOF_HCCA;
 	DWORD dwSizeofFatInBytes=((pusbcontroller->m_sizeAllocation-SIZEOF_HCCA)/16);
 	int n;
-	
+
 	for(n=0;n<dwSizeofFatInBytes;n++) {
 		if(pb[n]==0) {
 			int y=0;
@@ -158,6 +309,7 @@ void * BootUsbDescriptorMalloc(USB_CONTROLLER_OBJECT *pusbcontroller, int nCount
 			for(y=1;y<nCount16ByteContiguousRegion;y++) { if(pb[n+y]) fBroken=true; }
 			if(fBroken) continue;
 			for(y=0;y<nCount16ByteContiguousRegion;y++) { pb[n+y]=1; }
+			pusbcontroller->m_dwCountAllocatedMemoryFromDescriptorStorage+=(nCount16ByteContiguousRegion<<4);
 			bprintf("BootUsbDescriptorMalloc sector %u, len %u, ptr=0x%x, 0x%x\n", n, nCount16ByteContiguousRegion, pb+dwSizeofFatInBytes+(16*n), n);
 			return pb+dwSizeofFatInBytes+(16*n);
 		}
@@ -171,6 +323,7 @@ void BootUsbDescriptorFree(USB_CONTROLLER_OBJECT *pusbcontroller, void *pvoid, i
 	DWORD dwSizeofFatInBytes=((pusbcontroller->m_sizeAllocation-SIZEOF_HCCA)/16);
 	int n=(((BYTE *)pvoid)-pb -dwSizeofFatInBytes)/16;
 	int y;
+	pusbcontroller->m_dwCountAllocatedMemoryFromDescriptorStorage-=(nCount16ByteContiguousRegion<<4);
 	bprintf("BootUsbDescriptorFree sector %u, len %u\n", n, nCount16ByteContiguousRegion);
 	for(y=0;y<nCount16ByteContiguousRegion;y++) { pb[n++]=0; }
 }
@@ -179,9 +332,39 @@ void ListEntryInsertAt(LIST_ENTRY *plistentryCurrent, LIST_ENTRY *plistentryNew)
 void ListEntryRemove(LIST_ENTRY *plistentryCurrent);
 
 
+void BootUsbDumpDeviceAndSiblingsAndRecurseForChildren(USB_DEVICE *pusbdevice, int nIndent)
+{
+	while(pusbdevice) {
+		int n;
+		n=0; while(n++ <nIndent) printk(" ");
+		printk("[] %s\n",
+			pusbdevice->m_szFriendlyName
+		);
+		{
+			USB_DEVICE *pusbdeviceChild=(USB_DEVICE *)pusbdevice->m_pFirstChildDevice;
+			while(pusbdeviceChild) {
+				BootUsbDumpDeviceAndSiblingsAndRecurseForChildren(pusbdeviceChild, nIndent+1);
+				pusbdeviceChild=pusbdeviceChild->m_pNextSiblingDevice;
+			}
+		}
+		pusbdevice=pusbdevice->m_pNextSiblingDevice;
+	}
+}
+
+void BootUsbDump(USB_CONTROLLER_OBJECT *pusbcontroller)
+{
+	printk("%s devices:\n", pusbcontroller->m_szName);
+
+	BootUsbDumpDeviceAndSiblingsAndRecurseForChildren((USB_DEVICE *)pusbcontroller->m_pvUSB_DEVICERootHubFirst, 1);
+
+}
 
 
 #if 0
+
+// this code has come from the OHCI standard
+// its less useful than I hoped so far, but maybe I just don't understand enough to appreciate it yet
+
 	// endpoint descriptor lists
 
 void

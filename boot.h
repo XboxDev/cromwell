@@ -75,16 +75,16 @@ extern volatile CURRENT_VIDEO_MODE_DETAILS currentvideomodedetails;
 
 #define FRAMEBUFFER_START ( /* 0xf0000000 */ (*((DWORD * )0xfd600800)) & 0x7fffffff  )
 
-#define VIDEO_CURSOR_POSX (*((DWORD * volatile)0x430))
-#define VIDEO_CURSOR_POSY (*((DWORD * volatile)0x434))
-#define VIDEO_ATTR (*((DWORD * volatile)0x438))
-#define VIDEO_LUMASCALING (*((DWORD * volatile)0x43c))
-#define VIDEO_RSCALING (*((DWORD * volatile)0x440))
-#define VIDEO_BSCALING (*((DWORD * volatile)0x444))
-#define VIDEO_VSYNC_COUNT (*((DWORD * volatile)0x448))
-#define BIOS_TICK_COUNT (*((DWORD *volatile)0x46c))
-#define VIDEO_VSYNC_POSITION (*((DWORD * volatile)0x470))
-#define VIDEO_VSYNC_DIR (*((DWORD * volatile)0x474))
+#define VIDEO_CURSOR_POSX (*((volatile DWORD * )0x430))
+#define VIDEO_CURSOR_POSY (*((volatile DWORD * )0x434))
+#define VIDEO_ATTR (*((volatile DWORD * )0x438))
+#define VIDEO_LUMASCALING (*((volatile DWORD * )0x43c))
+#define VIDEO_RSCALING (*((volatile DWORD * )0x440))
+#define VIDEO_BSCALING (*((volatile DWORD * )0x444))
+#define VIDEO_VSYNC_COUNT (*((volatile DWORD * )0x448))
+#define BIOS_TICK_COUNT (*((volatile DWORD *)0x46c))
+#define VIDEO_VSYNC_POSITION (*((volatile DWORD * )0x470))
+#define VIDEO_VSYNC_DIR (*((volatile DWORD * )0x474))
 
 
 /////////////////////////////////
@@ -431,6 +431,7 @@ void * memset(void *dest, int data,  size_t size);
 int _memcmp(const BYTE *pb, const BYTE *pb1, int n);
 int _strncmp(const char *sz1, const char *sz2, int nMax);
 char * strcpy(char *sz, const char *szc);
+char * _strncpy(char *sz, const char *szc, int nLenMax);
 
 void MemoryManagementInitialization(void * pvStartAddress, DWORD dwTotalMemoryAllocLength);
 void * malloc(size_t size);

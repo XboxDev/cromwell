@@ -81,7 +81,7 @@ typedef struct _EEPROMDATA {
 
    BYTE		LanguageID[4];				// 0x90 - 0x93 Language ID
   
-   BYTE		VideoFlags[4];				// 0x94 - 0x97 Video Settings
+   BYTE		VideoFlags[4];				// 0x94 - 0x97 Video Settings - 0x96 b0==widescreen 0x96 b4 == letterbox
    BYTE		AudioFlags[4];				// 0x98 - 0x9B Audio Settings
   
    BYTE		ParentalControlGames[4];	// 0x9C - 0x9F 0=MAX rating
