@@ -193,18 +193,18 @@ void BootDetectMemorySize(void)
 	int i;
 	int result;
 	unsigned char *fillstring;
+	void *membase = (void*)((64*1024*1024) + 1);
 	
 	xbox_ram = 64;	
 	fillstring = malloc(0x200);
 	memset(fillstring,0xAA,0x200);
-	memcpy((void*)(64*1024*1024),fillstring,0x200);
+	memset(membase,0xAA,0x200);
 	
-	if (_memcmp((void*)(64*1024*1024),fillstring,0x200) == 0) {
+	if (_memcmp(membase,fillstring,0x200) == 0) {
 		// Looks like there is memory
 	
-		memset(fillstring,0x55,0x200);
-		memcpy((void*)(64*1024*1024),fillstring,0x200);
-		if (_memcmp((void*)(64*1024*1024),fillstring,0x200) == 0) {
+		memset(membase,0xAA,0x200);
+		if (_memcmp(membase,fillstring,0x200) == 0) {
 			// Looks like there is memory 
 			// now we are sure, we set memory
   			
