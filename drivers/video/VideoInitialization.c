@@ -29,6 +29,7 @@ typedef int bool;
 #define FALSE 0
 #define TRUE 1
 
+extern BYTE VIDEO_AV_MODE;
 // functions defined elsewhere
 int I2CTransmitByteGetReturn(BYTE bPicAddressI2cFormat, BYTE bDataToWrite);
 int I2CTransmitWord(BYTE bPicAddressI2cFormat, WORD wDataToWrite);
@@ -90,8 +91,8 @@ EVIDEOSTD DetectVideoStd(void) {
 
 EAVTYPE DetectAvType(void) {
 	EAVTYPE avType;
-	BYTE b=I2CTransmitByteGetReturn(0x10, 0x04);
-	switch (b) {
+
+	switch (VIDEO_AV_MODE) {
 		case 0: avType = AV_SCART_RGB; break;
 		case 1: avType = AV_HDTV; break;
 		case 2: avType = AV_VGA_SOG; break;

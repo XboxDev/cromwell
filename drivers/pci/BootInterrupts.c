@@ -237,7 +237,7 @@ void IntHandlerCSmc(void)
 {
 	BYTE bStatus, nBit=0;
         unsigned int temp;
-
+        BYTE temp_AV_mode;
         
 	nCountInterruptsSmc++;
    
@@ -303,11 +303,23 @@ void IntHandlerCSmc(void)
 					break;
 
 				case 3: // AV CABLE HAS BEEN PLUGGED IN
-					BootVgaInitializationKernelNG((CURRENT_VIDEO_MODE_DETAILS *)&currentvideomodedetails);
+					       
+					temp_AV_mode =I2CTransmitByteGetReturn(0x10, 0x04);
+					// Compare to global variable
+					if (VIDEO_AV_MODE != temp_AV_mode ) {
+						VIDEO_AV_MODE = 0xff;
+						wait_ms(30);
+						VIDEO_AV_MODE = temp_AV_mode;
+						BootVgaInitializationKernelNG((CURRENT_VIDEO_MODE_DETAILS *)&currentvideomodedetails);
+						wait_ms(200);
+						BootVgaInitializationKernelNG((CURRENT_VIDEO_MODE_DETAILS *)&currentvideomodedetails);
+						
+					}
 					break;
 
 				case 4: // AV CABLE HAS BEEN UNPLUGGED
 					bprintf("SMC Interrupt %d: AV cable unplugged\n", nCountInterruptsSmc);
+					VIDEO_AV_MODE=0xff;
 					//currentvideomodedetails.m_bAvPack=0xff;
 					break;
 

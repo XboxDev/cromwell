@@ -32,6 +32,10 @@ void BootVgaInitializationKernelNG(CURRENT_VIDEO_MODE_DETAILS * pcurrentvideomod
 
 	videoStd = DetectVideoStd();
 
+        // Dump to global variable
+	VIDEO_AV_MODE=I2CTransmitByteGetReturn(0x10, 0x04);
+
+
    	memset((void *)pcurrentvideomodedetails,0,sizeof(CURRENT_VIDEO_MODE_DETAILS));
 	pcurrentvideomodedetails->m_nVideoModeIndex =VIDEO_MODE_800x600;
 

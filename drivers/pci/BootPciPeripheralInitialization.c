@@ -172,6 +172,24 @@ void rtc_set_checksum(int range_start, int range_end, int cks_loc)
 }
 
 
+
+void BootAGPBUSInitialization(void)
+{
+	DWORD temp;
+	PciWriteDword(BUS_0, DEV_1, FUNC_0, 0x54,   PciReadDword(BUS_0, DEV_1, FUNC_0, 0x54) | 0x88000000 );
+	
+	PciWriteDword(BUS_0, DEV_0, FUNC_0, 0x64,   (PciReadDword(BUS_0, DEV_0, FUNC_0, 0x64))| 0x88000000 );
+	
+	temp =  PciReadDword(BUS_0, DEV_0, FUNC_0, 0x6C);
+	IoOutputDword(0xcfc , temp & 0xFFFFFFFE);
+	IoOutputDword(0xcfc , temp );
+	
+	PciWriteDword(BUS_0, DEV_0, FUNC_0, 0x80, 0x00000100);
+    
+}
+
+
+
 void BootPciPeripheralInitialization()
 {
 

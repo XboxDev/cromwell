@@ -103,7 +103,7 @@ extern void BootResetAction ( void ) {
 	memcpy(&cromwell_loadbank,(void*)(0x03A00000+28),4);
         memcpy(&cromwell_Biostype,(void*)(0x03A00000+32),4);
   
-	      
+	VIDEO_AV_MODE = 0xff;
         CACHE_VSYNC_WRITEBACK = 0;
 	nInteruptable = 0;	
 
@@ -133,13 +133,16 @@ extern void BootResetAction ( void ) {
 	
 	dwaTitleArea = malloc(1024*64);
 
-	BootInterruptsWriteIdt();	// Save Mode, not all fully Setup
+	BootInterruptsWriteIdt();	
 	bprintf("BOOT: done interrupts\n\r");
 
 
 	// initialize the PCI devices
 	bprintf("BOOT: starting PCI init\n\r");
 	BootPciPeripheralInitialization();
+	// Reset the AGP bus and start with good condition
+	BootAGPBUSInitialization();
+	
 	bprintf("BOOT: done with PCI initialization\n\r");
 
 	// We disable The CPU Cache
