@@ -170,7 +170,7 @@ int BootLodaConfigNative(int nActivePartition, CONFIGENTRY *config, bool fJustTe
 		if(filemax==0) {
 			printf("Empty file\n"); while(1);
 		}
-		if( (nRet!=1 ) || (errnum)) {
+		if( (nRet!=1) || (errnum)) {
 			printk("Unable to load initrd, Grub error %d\n", errnum);
 			while(1) ;
 		}
@@ -189,10 +189,10 @@ int BootLodaConfigNative(int nActivePartition, CONFIGENTRY *config, bool fJustTe
 
 int BootLodaConfigFATX(CONFIGENTRY *config, bool fJustTestingForPossible) {
 
-	FATXPartition *partition = NULL;
-	FATXFILEINFO fileinfo;
-	FATXFILEINFO infokernel;
-	FATXFILEINFO infoinitrd;
+	static FATXPartition *partition = NULL;
+	static FATXFILEINFO fileinfo;
+	static FATXFILEINFO infokernel;
+	static FATXFILEINFO infoinitrd;
 
 	if(!fJustTestingForPossible) printk("Loading linuxboot.cfg form FATX\n");
 	partition = OpenFATXPartition(0,
@@ -247,7 +247,7 @@ int BootLodaConfigFATX(CONFIGENTRY *config, bool fJustTestingForPossible) {
 int BootLodaConfigCD(CONFIGENTRY *config) {
 
 	DWORD dwConfigSize=0, dw;
-	BYTE ba[2048], baBackground[640*64*4];
+	static BYTE ba[2048], baBackground[640*64*4];
 #ifndef IS_XBE_CDLOADER
 	BYTE b;
 #endif
@@ -483,7 +483,7 @@ void RecoverMbrArea()
 
 
 void StartBios(	int nDrive, int nActivePartition , int nFATXPresent) {
-	CONFIGENTRY config;
+	static CONFIGENTRY config;
 	char szGrub[256+4];
 #ifdef MENU
 	int nTempCursorResumeX, nTempCursorResumeY, nTempStartMessageCursorX, nTempStartMessageCursorY;

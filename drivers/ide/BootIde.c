@@ -606,6 +606,7 @@ Known-good HDD password for this drive:
 
 */
 
+#ifndef XBE
 	if((drive_info[128]&0x0004)==0x0004) { // 'security' is in force, unlock the drive (was 0x104/0x104)
 		BYTE baMagic[0x200], baKeyFromEEPROM[0x10], baEeprom[0x30];
 		bool fUnlocked=false;
@@ -825,6 +826,7 @@ Known-good HDD password for this drive:
 	} else {
 		if(nIndexDrive==0) printk("  Unlocked");
 	}
+#endif
 
 	if (drive_info[49] & 0x200) { /* bit 9 of capability word is lba supported bit */
 		tsaHarddiskInfo[nIndexDrive].m_bLbaMode = IDE_DH_LBA;

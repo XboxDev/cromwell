@@ -4,9 +4,9 @@
 
 
 int ParseConfig(char *szBuffer, CONFIGENTRY *entry, EEPROMDATA *eeprom) {
-	char szLine[MAX_LINE];
-	char szTmp[MAX_LINE];
-	char szNorm[MAX_LINE];
+	static char szLine[MAX_LINE];
+	static char szTmp[MAX_LINE];
+	static char szNorm[MAX_LINE];
 	char *ptr;
 
 	memset(szNorm,0,MAX_LINE);
