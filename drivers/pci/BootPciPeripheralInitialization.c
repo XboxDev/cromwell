@@ -402,5 +402,11 @@ void BootPciPeripheralInitialization()
 	
 	PciWriteDword(BUS_1, DEV_0, FUNC_0, 0x0c, 0x0);
 	PciWriteDword(BUS_1, DEV_0, FUNC_0, 0x18, 0x08);
-
+        
+        // find out how much RAM is installed in the Xbox
+        xbox_ram = PciReadDword(BUS_0, DEV_0, FUNC_0, 0x84);
+        xbox_ram ++;
+        xbox_ram = xbox_ram / 0x100000;
+        
+        
 }

@@ -48,10 +48,6 @@
 	.long _start_checksum	// This number will be overwritten  
 				// With imagebld, but we need a temp value
 	
-	// Strange, we need this ? Theoretically no, but really, we need it !	
-	.org 0x60
-	jmp	start_bootloader
-	
 	.org 0x6c
 	.long 0x00000107
 	
@@ -67,19 +63,7 @@
 .section rom, "ax"
 
 
-	/*
- *
- * this is the entry code.  We get here by a jump
- * from the top of rom, and we get there by the
- * single xcode which exposes the top 512
- * bytes and nops take us to a long jump.
- *
- * We arrive here in protected mode with the cs set
- * to 08 offset in the gdt, which has been set to
- * 4GB flat mode (code and data). Data is 0x10 offset.
- * Caching is disabled since we did not go through the EE opcode.
- */
-
+// Note: never change this from offset 0x1000 ....
 .globl start_bootloader
 start_bootloader:
        	// Good Morning CPU

@@ -81,8 +81,8 @@ void setup(void* KernelPos, void* PhysInitrdPos, void* InitrdSize, char* kernel_
     kernel_setup->heap_end_ptr = 0xffff;	/* 64K heap */
     kernel_setup->flags = 0x81;			/* loaded high, heap existant */
     kernel_setup->start = PM_KERNEL_DEST;
-    kernel_setup->ext_mem_k = ((60-1) * 1024); /* *extended* (minus first MB) memory in kilobytes */
-
+    kernel_setup->ext_mem_k = ((xbox_ram-5) * 1024); /* *extended* (minus first MB) memory in kilobytes */
+	
     /* initrd */
     /* ED : only if initrd */
 
@@ -112,8 +112,8 @@ void setup(void* KernelPos, void* PhysInitrdPos, void* InitrdSize, char* kernel_
     kernel_setup->lfb_width = currentvideomodedetails.m_dwWidthInPixels;
 
     kernel_setup->lfb_height = currentvideomodedetails.m_dwHeightInLines; // SCREEN_HEIGHT_480;
-   
-    kernel_setup->lfb_base = FRAMEBUFFER_START;
+    
+    kernel_setup->lfb_base =  (0xf0000000 | ((xbox_ram*0x100000) - FRAMEBUFFER_SIZE));
 
     kernel_setup->lfb_size = FRAMEBUFFER_SIZE / 0x10000;
 

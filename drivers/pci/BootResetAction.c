@@ -223,12 +223,11 @@ extern void BootResetAction ( void ) {
 	
 	if (cromwell_config==XROMWELL) 	printk("\2Xbox Linux XROMWELL  " VERSION "\2\n" );
 	if (cromwell_config==CROMWELL)	printk("\2Xbox Linux Clean BIOS  " VERSION "\2\n" );
-
 	VIDEO_CURSOR_POSY=currentvideomodedetails.m_dwMarginYInLinesRecommended+32;
 	VIDEO_CURSOR_POSX=(currentvideomodedetails.m_dwMarginXInPixelsRecommended/*+64*/)*4;
 	printk( __DATE__ " -  http://xbox-linux.sf.net\n");
 	VIDEO_CURSOR_POSX=(currentvideomodedetails.m_dwMarginXInPixelsRecommended/*+64*/)*4;
-	printk("(C)2002-2003 Xbox Linux Team - Licensed under the GPL  ");
+	printk("(C)2002-2003 Xbox Linux Team   RAM : %d MB's  ",xbox_ram);
 	if (cromwell_config==CROMWELL) {
 		printk("(Load Trys: %d Bank: %d ",cromwell_retryload,cromwell_loadbank);
 		if (cromwell_Biostype == 0) printk("Bios: 256k)");

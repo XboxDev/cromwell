@@ -1099,6 +1099,9 @@ void StartBios(CONFIGENTRY *config, int nActivePartition , int nFATXPresent,int 
 	//wait_ms(200);
 	BootPciPeripheralInitialization();
 	
+	// Tell Video Card we have changed the offset to higher up
+	(*(unsigned int*)0xFD600800) = (0xf0000000 | ((xbox_ram*0x100000) - FRAMEBUFFER_SIZE));
+	   
 	memset((void*)0x00700000,0x0,1024*8);
 	
 	__asm __volatile__ (
