@@ -14,10 +14,10 @@
  *      none
  */
 
-#include "encoder-i2c.h"
+//#include "encoder-i2c.h"
 #include "conexant.h"
 #include "focus.h"
-#include <asm/io.h>
+//#include <asm/io.h>
 
 #define ADR(x) (x / 2 - 0x17)
 
