@@ -50,7 +50,8 @@ OBJECTS-ROMBOOT += $(TOPDIR)/obj/2bPicResponseAction.o
 OBJECTS-ROMBOOT += $(TOPDIR)/obj/2bBootStartBios.o
 OBJECTS-ROMBOOT += $(TOPDIR)/obj/sha1.o
 OBJECTS-ROMBOOT += $(TOPDIR)/obj/2bBootLibrary.o
-OBJECTS-ROMBOOT += $(TOPDIR)/obj/2bdecompress.o
+#OBJECTS-ROMBOOT += $(TOPDIR)/obj/2bdecompress.o
+OBJECTS-ROMBOOT += $(TOPDIR)/obj/misc.o
                                              
 OBJECTS-CROM = $(TOPDIR)/obj/BootStartup.o
 OBJECTS-CROM += $(TOPDIR)/obj/BootResetAction.o
@@ -171,6 +172,7 @@ install:
 clean:
 	find . \( -name '*.[oas]' -o -name core -o -name '.*.flags' \) -type f -print \
 		| grep -v lxdialog/ | xargs rm -f
+	rm -f $(TOPDIR)/obj/*.gz 
 	rm -f $(TOPDIR)/obj/*.bin 
 	rm -f $(TOPDIR)/obj/*.elf
 	rm -f $(TOPDIR)/image/*.bin 
@@ -219,14 +221,14 @@ image.bin:
 	${OBJCOPY} --output-target=binary --strip-all $(TOPDIR)/obj/2lbimage.elf $(TOPDIR)/obj/2blimage.bin
 
 # This is a local executable, so don't use a cross compiler...
-bin/imagebld: lib/imagebld/imagebld.c lib/imagebld/lzari.c lib/crypt/sha1.c
-	gcc -Ilib/imagebld -o bin/lzari.o -c lib/imagebld/lzari.c
+bin/imagebld: lib/imagebld/imagebld.c lib/crypt/sha1.c
 	gcc -Ilib/crypt -o bin/sha1.o -c lib/crypt/sha1.c
 	gcc -Ilib/crypt -o bin/imagebld.o -c lib/imagebld/imagebld.c
-	gcc -o bin/imagebld bin/imagebld.o bin/lzari.o bin/sha1.o 
+	gcc -o bin/imagebld bin/imagebld.o bin/sha1.o 
 	
 imagecompress: obj/image-crom.bin bin/imagebld
-	bin/imagebld -rom obj/2blimage.bin obj/image-crom.bin image/image.bin image/image_1024.bin
+	gzip -9 obj/image-crom.bin
+	bin/imagebld -rom obj/2blimage.bin obj/image-crom.bin.gz image/image.bin image/image_1024.bin
 	bin/imagebld -xbe xbe/default.xbe obj/image-crom.bin
 	bin/imagebld -vml boot_vml/disk/vmlboot obj/image-crom.bin 
 

@@ -757,6 +757,6 @@ void inc_jiffies(int);
 void init_wrapper(void);
 void do_all_timers(void);
 
-
+#define __KERNEL_DS   0x18
 
 

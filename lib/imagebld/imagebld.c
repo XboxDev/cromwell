@@ -14,7 +14,7 @@
 #include <stdlib.h>
 #include "sha1.h"
 #include "xbe-header.h"
-#include "lzari.h"
+//#include "lzari.h"
 
 #define debug
 
@@ -226,13 +226,8 @@ int romcopy (
 	unsigned char *flash256;
 	unsigned char *flash1024;
 	unsigned char *crom;
-	unsigned char *compressedcrom;
-	
-		
 	unsigned int freeflashspace = 256*1024;
-	
        	unsigned int romsize=0;
-       	unsigned int compressedromsize=0;
        	struct Checksumstruct bootloaderstruct ;
        	unsigned int bootloderpos;
        	int a;
@@ -243,12 +238,10 @@ int romcopy (
 	flash256 = malloc(256*1024);
 	flash1024 = malloc(1024*1024);
 	crom = malloc(1024*1024);
-	compressedcrom = malloc(1024*1024);
        	
        	memset(flash256,0x00,256*1024);
 	memset(flash1024,0x00,1024*1024);
        	memset(crom,0x00,1024*1024);
-       	memset(compressedcrom,0x00,1024*1024);
        	memset(loaderimage,0x00,256*1024);
        	
 
@@ -320,38 +313,6 @@ int romcopy (
     		
     		// We have dumped the GDT now, we continue	
                 
-                // Ok, we compress the ROM image now
-		
-		SHA1Reset(&context);
-		SHA1Input(&context,&crom[0x20],(romsize-0x20));
-		SHA1Result(&context,SHA1_result);
-		memcpy(&crom[0x0c],SHA1_result,20);
-		               
-		// This is the compression               
-              
-		compressinit();
-		memcpy(BufferIN,crom,romsize);
-		BufferINlen = romsize;
-		Encode();     
-                memcpy(compressedcrom,BufferOUT,BufferOUTPos);
-                compressedromsize = BufferOUTPos;
-		
-		// compression DOne
-		// Compression Verify
-		compressinit();
-		memcpy(BufferIN,compressedcrom,compressedromsize);
-		BufferINlen = compressedromsize;
-		Decode();                       
-		if ((memcmp(BufferOUT,crom,romsize)==0)&(romsize==BufferOUTPos)) {
-			printf("De-CompressTest          : OK\n");
-		} else {
-			printf("De-CompressTest          : FAIL\n");
-		}
-		
-		// Verify Done		
-		
-		// Ok, we start with the real programm                
-                
 		memcpy(&bootloderpos,&loaderimage[0x40],4);   	// This can be foun in the 2bBootStartup.S
 		memset(&loaderimage[0x40],0x0,4);    		// We do not need this helper sum anymore
 		memcpy(&bootloaderstruct,&loaderimage[bootloderpos],sizeof(struct Checksumstruct));
@@ -368,14 +329,11 @@ int romcopy (
 		temp = temp + 0x100;
 		
 		bootloaderstruct.compressed_image_start = temp;
-		bootloaderstruct.compressed_image_size =  compressedromsize;
+		bootloaderstruct.compressed_image_size =  romsize;
 
 		//freeflashspace = freeflashspace - 512; // We decrement the TOP ROM
 		// We have no TOP ROM anymore
 		freeflashspace = freeflashspace - bootloaderstruct.compressed_image_start;
-
-
-
 		
 		bootloaderstruct.Biossize_type = 0; // Means it is a 256 kbyte Image
 		memcpy(&flash256[bootloderpos],&bootloaderstruct,sizeof(struct Checksumstruct));
@@ -437,22 +395,22 @@ int romcopy (
                 
                 // Ok, the 2BL loader is ready, we now go to the "Kernel"
 
-                memset(&flash256[bootloaderstruct.compressed_image_start+20+compressedromsize],0xff,256*1024-(bootloaderstruct.compressed_image_start+20+compressedromsize)-512);
+                memset(&flash256[bootloaderstruct.compressed_image_start+20+romsize],0xff,256*1024-(bootloaderstruct.compressed_image_start+20+romsize)-512);
 	      	
 	        // The first 20 bytes of the compressed image are the checksum
-		memcpy(&flash256[bootloaderstruct.compressed_image_start+20],&compressedcrom[0],compressedromsize);
+		memcpy(&flash256[bootloaderstruct.compressed_image_start+20],&crom[0],romsize);
 		SHA1Reset(&context);
-		SHA1Input(&context,&flash256[bootloaderstruct.compressed_image_start+20],compressedromsize);
+		SHA1Input(&context,&flash256[bootloaderstruct.compressed_image_start+20],romsize);
 		SHA1Result(&context,SHA1_result);                                
 		memcpy(&flash256[bootloaderstruct.compressed_image_start],SHA1_result,20);			
 
 		memset(&flash1024[1*256*1024],0xff,2*1024*256);
 		    			
 		memcpy(&flash1024[bootloaderstruct.compressed_image_start+(1*256*1024)],SHA1_result,20);			
-		memcpy(&flash1024[bootloaderstruct.compressed_image_start+20+(1*256*1024)],&compressedcrom[0],compressedromsize);
+		memcpy(&flash1024[bootloaderstruct.compressed_image_start+20+(1*256*1024)],&crom[0],romsize);
 
 		memcpy(&flash1024[bootloaderstruct.compressed_image_start+(2*256*1024)],SHA1_result,20);			
-	      	memcpy(&flash1024[bootloaderstruct.compressed_image_start+20+(2*256*1024)],&compressedcrom[0],compressedromsize);
+	      	memcpy(&flash1024[bootloaderstruct.compressed_image_start+20+(2*256*1024)],&crom[0],romsize);
 
 			      	
 	      	#ifdef debug

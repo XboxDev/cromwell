@@ -139,5 +139,3 @@ unsigned char *BufferIN;
 int BufferINlen;
 unsigned char *BufferOUT;
 int BufferOUTPos;
-void compressinit(void);
-void Decode(void);

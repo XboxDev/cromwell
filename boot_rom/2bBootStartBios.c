@@ -16,7 +16,7 @@
 #include "2bload.h"
 #include "sha1.h"
 
-
+extern int decompress_kernel(char*out, char *data, int len);
 
 
 
@@ -91,7 +91,7 @@ extern void BootStartBiosLoader ( void ) {
 	unsigned int compressed_image_size;
 	unsigned int Biossize_type;
 	int temp;
-	unsigned int de_compressed_image_size=0;
+//	unsigned int de_compressed_image_size=0;
 	
         int validimage;
         free_mem_ptr = 0x02500000;		// Main Dynamic Memory starts here
@@ -193,13 +193,14 @@ extern void BootStartBiosLoader ( void ) {
                         
                         I2cSetFrontpanelLed(I2C_LED_RED0 | I2C_LED_RED1 | I2C_LED_RED2 | I2C_LED_RED3 );
 		
-      		       	compressinit();
+//      		       	compressinit();
 
-      			BufferIN = (unsigned char*)(CROMWELL_compress_temploc);
-      			BufferINlen=compressed_image_size;
-      			BufferOUT = (unsigned char*)CROMWELL_Memory_pos;
-      			Decode();
-      			de_compressed_image_size = BufferOUTPos;
+			BufferIN = (unsigned char*)(CROMWELL_compress_temploc);
+			BufferINlen=compressed_image_size;
+			BufferOUT = (unsigned char*)CROMWELL_Memory_pos;
+			decompress_kernel(BufferOUT, BufferIN, BufferINlen);
+//  			Decode();
+//      		de_compressed_image_size = BufferOUTPos;
       			#if 0
       			SHA1Reset(&context);
 			SHA1Input(&context,(void*)(CROMWELL_Memory_pos+0x20),(de_compressed_image_size-0x20));
@@ -212,7 +213,7 @@ extern void BootStartBiosLoader ( void ) {
 			};
 			#endif
 			
-			memset((void*)(CROMWELL_Memory_pos+de_compressed_image_size),0x0,1024);
+//			memset((void*)(CROMWELL_Memory_pos+de_compressed_image_size),0x0,1024);
 
 			
 			//I2cSetFrontpanelLed(I2C_LED_RED0 | I2C_LED_RED1 | I2C_LED_RED2 | I2C_LED_RED3 );
