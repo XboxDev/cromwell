@@ -128,7 +128,6 @@ static struct usb_device_id xpad_ids [] = {
 	{ USB_DEVICE(0x045e, 0x0285) },//Microsoft Xbox Controller S
 	{ USB_DEVICE(0x045e, 0x0289) },//Microsoft Xbox Controller S
 	{ USB_DEVICE(0x046d, 0xca84) },//Logitech Cordless Controller for Xbox
-	{ USB_DEVICE(0x046d, 0xca87) },//Logitech Thunderpad Controller for Xbox
 	{ USB_DEVICE(0x046d, 0xca88) },//Logitech Compact Controller for Xbox
 	{ USB_DEVICE(0x05fd, 0x1007) },//???Mad Catz Controller???
 	{ USB_DEVICE(0x05fd, 0x107a) },//InterAct PowerPad Pro
