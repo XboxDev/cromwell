@@ -6,6 +6,10 @@
  * and work by Johan Rydberg and Daniel Kahlin.
  *
  * $Log$
+ * Revision 1.5  2003/04/25 19:33:11  hamtitampti
+ * Fixed Compiler/Linker Problems with gcc 3.2x
+ * thx. Oliver
+ *
  * Revision 1.4  2003/04/25 11:32:09  hamtitampti
  * switched on the FPU on cromwell startup, compiler now to -mpentium
  *
@@ -107,7 +111,8 @@ SECTIONS {
 	}
 */
 
-	.rodata (0xfffc0c80 + SIZEOF(.rom)) : AT ( 0xc80 + SIZEOF(.rom)) {
+	
+	.rodata (0x3B00000 + 0x0c80 + SIZEOF(.rom)) : AT ( 0xc80 + SIZEOF(.rom)) {
 			*(.rodata);
 			*(.rodata.str1.1);
 			*(.rodata.str1.32);
@@ -117,30 +122,35 @@ SECTIONS {
 			*(.backdrop);
 	_end_backdrop = .;
 	_end_rodata = . ;
- }
+	}
 
 
 	/* ram allocations */
 
 	.data (RAM_BASE) : AT( 0xc80 + SIZEOF(.rom)+ SIZEOF(.rodata) ) {
-			_start_data = .;
-				*(.data);
+		_start_data = .;
+		*(.data);
 		*(.sdata);
 		*(.sdata2);
 		*(.got);
 		_end_data = .;
 	}
 
-	RamCopy (RAM_CODE) : AT( 0xc80 + SIZEOF(.rom)+ SIZEOF(.rodata) +SIZEOF(.data)) {
-		_ram_location = .;
+	RamCopy (0x3B00000 + 0xc80 + SIZEOF(.rom)+ SIZEOF(.rodata) + SIZEOF(.data)) : AT( 0xc80 + SIZEOF(.rom)+ SIZEOF(.rodata) +SIZEOF(.data)) {
+                
 		_start_ramcopy = 0xc80 + SIZEOF(.rom)+ SIZEOF(.rodata) +SIZEOF(.data) - RAM_CODE + 0xFFFC0000;
-                                *(.text);
-				*(RamCopy);
-		_end_ramcopy = .;
-		_size_ramcopy = . - RAM_CODE;
+                *(.text);
+		*(RamCopy);
+
+		
+		
 	}
 
-
+	_ram_copy_offset = 0x0c80 + SIZEOF(.rom);
+	_ram_location = RAM_CODE + _ram_copy_offset;
+	_start_ramcopy = LOW_ROM + _ram_copy_offset;
+	_size_ramcopy = (0xc80 + SIZEOF(.rom)+ SIZEOF(.rodata) + SIZEOF(.data)-_ram_copy_offset);
+         
 	/* the data (initialized globals) is moved to ram by the startup code */
 
 	_start_load_data = LOADADDR(.data);

@@ -67,7 +67,7 @@ OBJECTS += $(TOPDIR)/obj/BootUsbOhci.o
 OBJECTS += $(TOPDIR)/obj/BootParser.o
 OBJECTS += $(TOPDIR)/obj/BootFATX.o
 
-LDFLAGS = -s -S -T $(TOPDIR)/scripts/ldscript.ld
+LDFLAGS = -M -s -S -T $(TOPDIR)/scripts/ldscript.ld
 
 RESOURCES = $(TOPDIR)/obj/xcodes11.elf $(TOPDIR)/obj/backdrop.elf
 

@@ -475,8 +475,8 @@ selfPipeKill:
 
 	mov $0x8000f04c, %eax ;	movw $0xcf8, %dx ;	outl	%eax, %dx ;	movw $0xcfc, %dx ;	mov	$0x00000001, %eax ;	outl	%eax, %dx
 	mov $0x8000f018, %eax ;	movw $0xcf8, %dx ;	outl	%eax, %dx ;	movw $0xcfc, %dx ;	mov	$0x00010100, %eax ;	outl	%eax, %dx
-	// What is this ?
-//	mov $0x80000084, %eax ;	movw $0xcf8, %dx ;	outl	%eax, %dx ;	movw $0xcfc, %dx ;	mov	$0x07ffffff, %eax ;	outl	%eax, %dx
+
+	mov $0x80000084, %eax ;	movw $0xcf8, %dx ;	outl	%eax, %dx ;	movw $0xcfc, %dx ;	mov	$0x07ffffff, %eax ;	outl	%eax, %dx
 	
 	mov $0x8000f020, %eax ;	movw $0xcf8, %dx ;	outl	%eax, %dx ;	movw $0xcfc, %dx ;	mov	$0x0ff00f00, %eax ;	outl	%eax, %dx
 	mov $0x8000f024, %eax ;	movw $0xcf8, %dx ;	outl	%eax, %dx ;	movw $0xcfc, %dx ;	mov	$0xf7f0f000, %eax ;	outl	%eax, %dx
@@ -559,7 +559,7 @@ nota1b:
 	movw $0xc200, %dx ;	movb $0x70, %al ;	outb %al, %dx
 //	movw $0xc002, %dx ;	movb $0x10, %al ;	outb %al, %dx // enable I2C interrupt
 
-		// skipped unnecessary conexant init
+	// skipped unnecessary conexant init
 
 	movw $0xc000, %dx ;	movb $0x10, %al ;	outb %al, %dx
 	movw $0xc004, %dx ;	movb $0x20, %al ;	outb %al, %dx
@@ -695,7 +695,11 @@ spin3:
 #endif
 
 // copy everything into RAM + Verify the Read from the Flash
+
 #ifndef XBE
+
+/*
+	// complicated Copy + Verify
 	mov 	$_ram_location, %edi
 	mov 	$_start_ramcopy, %esi
 	mov 	$_size_ramcopy, %ecx
@@ -710,7 +714,21 @@ retry_read:
 	stosb
 	dec   	%ecx
 	jnz   	loop_read
-
+                                    
+*/
+        cld
+        /*
+	// simple Copy
+	mov 	$_ram_location, %edi
+	mov 	$_start_ramcopy, %esi
+	mov 	$_size_ramcopy, %ecx
+	repe 	movsb	
+	*/
+	
+	mov 	$_ram_location, %edi
+	mov 	$_start_ramcopy, %esi
+	mov 	$_size_ramcopy, %ecx
+	repe 	movsb
 #endif
         jmp 	BootResetAction  // this can be found in BootResetAction.c
 
