@@ -170,13 +170,11 @@ void wait_ms(DWORD ticks) {
 	COUNT_start = IoInputDword(0x8008);	
 
 	while(1) {
-
 		// Reads out the System timer
 		HH = IoInputDword(0x8008);		
 		temp = HH-COUNT_start;
 		// We reached the counter
 		if (temp>COUNT_TO) break;
-	
 	};
 	
 
@@ -231,8 +229,8 @@ void BootInterruptsWriteIdt() {
 	IoOutputByte(0xa1, 0x02);  // am slave, hooked to INT2 on master
 	IoOutputByte(0xa1, 0x01);  // x86 mode normal EOI
 
-	if (cromwell_config==XROMWELL) 	IoOutputByte(0xa1, 0xaf);	// enable int14(IDE) int12(SMI)
-	if (cromwell_config==CROMWELL) 	IoOutputByte(0xa1, 0x00);
+	if (cromwell_config==CROMWELL) 	IoOutputByte(0xa1, 0x00);	// enable int14(IDE) int12(SMI)
+	else IoOutputByte(0xa1, 0xaf);
 
 	// enable interrupts
 	intel_interrupts_on();
@@ -293,12 +291,6 @@ void IntHandlerCSmc(void)
 					I2CTransmitWord(0x10, 0x1700|b);
 					I2CTransmitWord(0x10, 0x1800|b);
 					fSeenPowerdown=true;
-/*
-						// sequence in 2bl at halt_it
-					IoOutputDword(0xcf8, 0x8000036C); // causes weird double-height video, jittery, like it screwed with clock
-					IoOutputDword(0xcfc, 0x1000000);
-					__asm__ __volatile__("hlt" );
-*/
 					break;
 
 				case 1: // CDROM TRAY IS NOW CLOSED
@@ -396,17 +388,7 @@ void IntHandlerUnusedC2(void)
 
 void IntHandlerCTimer0(void)
 {
-#ifdef DEBUG_MODE
-        extern volatile ohci_t usbcontroller[2];
-#endif
-	
 	BIOS_TICK_COUNT++;
-        
-#ifdef DEBUG_MODE
-        if(!nInteruptable) return;
-
-  
-#endif
 }
  
  
@@ -415,10 +397,14 @@ void IntHandlerCTimer0(void)
 void IntHandler1C(void)
 {
 	// Interrupt for OHCI controller located on 0xfed00000
+	if(!nInteruptable) return;
+	USBGetEvents();
 }
 void IntHandler9C(void)
 {
       	// Interrupt for OHCI controller located on 0xfed08000
+	if(!nInteruptable) return;
+	USBGetEvents();
 }
 
 
