@@ -747,7 +747,7 @@ int DriveSecurityChange(unsigned uIoBase, int driveId, ide_command_t ide_cmd, ch
 	memcpy(&ide_cmd_data[2],password,20);
 
 	//If we're locking, use high security mode, as this is what the MS bios expects
-	if (ide_cmd == IDE_CMD_SET_PASSWORD) ide_cmd_data[1]|=0x01;
+	if (ide_cmd == IDE_CMD_SECURITY_T_PASSWORD) ide_cmd_data[1]|=0x01;
 
 	if(BootIdeWaitNotBusy(uIoBase)) 
 	{
