@@ -96,7 +96,7 @@ void BootVgaInitializationKernelNG(CURRENT_VIDEO_MODE_DETAILS * pcurrentvideomod
 
 	MMIO_H_OUT32 (riva.PCRTC, 0, 0x800, pcurrentvideomodedetails->m_dwFrameBufferStart);
 
-	IoOutputByte(0x80d3, 5);  // definitively kill video out using an ACPI control pin
+	IoOutputByte(0x80d3, 5);  // Kill all video out using an ACPI control pin
 
 	MMIO_H_OUT32(riva.PRAMDAC,0,0x880,0);
 	MMIO_H_OUT32(riva.PRAMDAC,0,0x884,0x0);
@@ -143,7 +143,8 @@ void BootVgaInitializationKernelNG(CURRENT_VIDEO_MODE_DETAILS * pcurrentvideomod
 			gpu.nvvtotal = 525;
 			gpu.pixelDepth = (32 + 1) / 8;
 			gpu.crtchdispend = pcurrentvideomodedetails->m_dwWidthInPixels;
-			gpu.crtcvstart = gpu.nvvtotal;
+			gpu.crtcvstart = gpu.nvvstart;
+			gpu.crtcvtotal = gpu.nvvtotal;
 			
 			pll_int = (unsigned char)((double)27027 * 6.0 / 13.5e3 + 0.5);
 			if (video_encoder == ENCODER_CONEXANT)
@@ -167,8 +168,8 @@ void BootVgaInitializationKernelNG(CURRENT_VIDEO_MODE_DETAILS * pcurrentvideomod
 			gpu.nvvtotal = 630;
 			gpu.pixelDepth = (32 + 1) / 8;
 			gpu.crtchdispend = pcurrentvideomodedetails->m_dwWidthInPixels;
-			gpu.crtcvstart = gpu.nvvtotal;
-			
+			gpu.crtcvstart = gpu.nvvstart;
+			gpu.crtcvtotal = gpu.nvvtotal;
 			pll_int = (unsigned char)((double)36000 * 6.0 / 13.5e3 + 0.5);
 			
 			if (video_encoder == ENCODER_CONEXANT)
@@ -178,8 +179,7 @@ void BootVgaInitializationKernelNG(CURRENT_VIDEO_MODE_DETAILS * pcurrentvideomod
 		}
 	}
 	else {	
-
-	/* Everything else - normal SDTV */
+	/* All other cable types - normal SDTV */
 		switch(pcurrentvideomodedetails->m_nVideoModeIndex) {
 			case VIDEO_MODE_640x480:
 				pcurrentvideomodedetails->m_dwWidthInPixels=640;
