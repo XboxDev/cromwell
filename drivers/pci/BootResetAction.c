@@ -97,14 +97,14 @@ Hints:
 // access to RTC CMOS memory
 
 void BiosCmosWrite(BYTE bAds, BYTE bData) {
-		IoOutputByte(0x70, bAds);
-		IoOutputByte(0x71, bData);
+		IoOutputByte(0x72, bAds);
+		IoOutputByte(0x73, bData);
 }
 
 BYTE BiosCmosRead(BYTE bAds)
 {
-		IoOutputByte(0x70, bAds);
-		return IoInputByte(0x71);
+		IoOutputByte(0x72, bAds);
+		return IoInputByte(0x73);
 }
 
 
@@ -143,7 +143,7 @@ extern void BootResetAction ( void ) {
 #else
 	MemoryManagementInitialization((void *)0x1000000, 0x2000000);
 #endif
-	
+
 	BootInterruptsWriteIdt();
 //	bprintf("BOOT: done interrupts\n\r");
 
@@ -152,6 +152,11 @@ extern void BootResetAction ( void ) {
 	BootPerformPicChallengeResponseAction();
 	bprintf("BOOT: done with PIC challenge\n\r");
 
+
+	BootEepromReadEntireEEPROM();
+	bprintf("BOOT: Read EEPROM\n\r");
+//	DumpAddressAndData(0, (BYTE *)&eeprom, 256);
+
 		// initialize the PCI devices
 
 	bprintf("BOOT: starting PCI init\n\r");
@@ -159,9 +164,6 @@ extern void BootResetAction ( void ) {
 	bprintf("BOOT: done with PCI initialization\n\r");
 
 
-	BootEepromReadEntireEEPROM();
-	bprintf("BOOT: Read EEPROM\n\r");
-//	DumpAddressAndData(0, (BYTE *)&eeprom, 256);
 
 	if(((BYTE *)&eeprom)[0x96]&0x01) { // 16:9 widescreen TV
 		currentvideomodedetails.m_nVideoModeIndex=VIDEO_MODE_1024x576;
@@ -437,6 +439,10 @@ extern void BootResetAction ( void ) {
 			BiosCmosWrite(0x32, 20); // century
 //			BiosCmosWrite(0x3d, 0); // boot method: default=0=do not attempt boot (set in BootIde.c)
 		}
+#else
+		{
+				BiosCmosWrite(0x32, 20); // century
+		}
 #endif
 			// gggb while waiting for Ethernet & Hdd
 
@@ -595,7 +601,9 @@ extern void BootResetAction ( void ) {
 		}
 
 			// if we made it this far, lets have a solid green LED to celebrate
-		I2cSetFrontpanelLed(I2C_LED_GREEN0 | I2C_LED_GREEN1 | I2C_LED_GREEN2 | I2C_LED_GREEN3);
+		I2cSetFrontpanelLed(
+			I2C_LED_GREEN0 | I2C_LED_GREEN1 | I2C_LED_GREEN2 | I2C_LED_GREEN3
+		);
 
 //	printk("i2C=%d SMC=%d, IDE=%d, tick=%d una=%d unb=%d\n", nCountI2cinterrupts, nCountInterruptsSmc, nCountInterruptsIde, BIOS_TICK_COUNT, nCountUnusedInterrupts, nCountUnusedInterruptsPic2);
 

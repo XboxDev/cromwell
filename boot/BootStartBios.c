@@ -747,6 +747,13 @@ void StartBios(	int nDrive, int nActivePartition , int nFATXPresent) {
 //		BootIdeSetTransferMode(0, 0x04);
 	}
 
+		// orangeness, people seem to like that colour
+
+	I2cSetFrontpanelLed(
+		I2C_LED_GREEN0 | I2C_LED_GREEN1 | I2C_LED_GREEN2 | I2C_LED_GREEN3 |
+		I2C_LED_RED0 | I2C_LED_RED1 | I2C_LED_RED2 | I2C_LED_RED3
+	);
+
 
 		__asm __volatile__ (
 

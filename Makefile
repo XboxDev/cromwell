@@ -4,6 +4,7 @@ INCLUDE = -I$(TOPDIR)/grub -I$(TOPDIR)/include -I$(TOPDIR)/ -I./ -I$(TOPDIR)/fs/
 	-I$(TOPDIR)/drivers/video -I$(TOPDIR)/drivers/flash -I$(TOPDIR)/lib/misc \
 	-I$(TOPDIR)/fs/grub -I$(TOPDIR)/lib/font -I$(TOPDIR)/lib/jpeg-6b
 CFLAGS	= -g -O2 -Wall -Werror $(INCLUDE)
+#CFLAGS	= -g -O0 -Wall -Werror $(INCLUDE)
 LD      = ld
 OBJCOPY = objcopy
 

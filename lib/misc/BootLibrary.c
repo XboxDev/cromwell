@@ -16,7 +16,7 @@
 #include "boot.h"
 
 //#ifndef XBE
-void BootPciInterruptGlobalStackStateAndDisable(DWORD *dw) {	__asm__ __volatile__ (  "pushf; pop %%eax ; mov %%eax, (%%ebx); cli" : : "b" (dw)); }
+void BootPciInterruptGlobalStackStateAndDisable(DWORD *dw) {	__asm__ __volatile__ (  "pushf; pop %%eax ; mov %%eax, (%%ebx); cli" : : "b" (dw) : "%eax"); }
 void BootPciInterruptGlobalPopState(DWORD dw)  {	__asm__ __volatile__  (  "push %%ebx; popf" : : "b" (dw)); }
 void BootPciInterruptEnable()  {	__asm__ __volatile__  (  "sti" ); }
 //#else
