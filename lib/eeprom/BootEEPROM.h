@@ -1,12 +1,17 @@
+/*
+ * Parts are from the Team-Assembly XKUtils thx.
+ *
+ */
+
 #ifndef _BootEEPROM_H_
 #define _BootEEPROM_H_
 
 
 //Defines for Data structure sizes..
 
-#define EEPROM_SIZE			0x100
+#define EEPROM_SIZE		0x100
 #define CONFOUNDER_SIZE		0x008
-#define HDDKEY_SIZE			0x010
+#define HDDKEY_SIZE		0x010
 #define XBEREGION_SIZE		0x001
 #define SERIALNUMBER_SIZE	0x00C
 #define MACADDRESS_SIZE		0x006

@@ -68,19 +68,23 @@ struct kernel_setup_t {
 extern void* framebuffer;
 
 void setup(void* KernelPos, void* PhysInitrdPos, void* InitrdSize, char* kernel_cmdline) {
-    int cmd_line_ptr;
+    
     struct kernel_setup_t *kernel_setup = (struct kernel_setup_t*)KernelPos;
-		DWORD dwInterrupt;
+    DWORD dwInterrupt;
 
-		BootPciInterruptGlobalStackStateAndDisable(&dwInterrupt);
+    memset(kernel_setup->__pad2,0x00,sizeof(kernel_setup->__pad2));
+    memset(kernel_setup->__pad3,0x00,sizeof(kernel_setup->__pad3));
+    kernel_setup->unused2=0; 
+    kernel_setup->unused3=0;
+    
+    BootPciInterruptGlobalStackStateAndDisable(&dwInterrupt);
 
-
-		/* init kernel parameters */
+    /* init kernel parameters */
     kernel_setup->loader = 0xff;		/* must be != 0 */
     kernel_setup->heap_end_ptr = 0xffff;	/* 64K heap */
     kernel_setup->flags = 0x81;			/* loaded high, heap existant */
     kernel_setup->start = PM_KERNEL_DEST;
-		kernel_setup->ext_mem_k = ((60-1) * 1024); /* *extended* (minus first MB) memory in kilobytes */
+    kernel_setup->ext_mem_k = ((60-1) * 1024); /* *extended* (minus first MB) memory in kilobytes */
 
     /* initrd */
     /* ED : only if initrd */
@@ -95,11 +99,13 @@ void setup(void* KernelPos, void* PhysInitrdPos, void* InitrdSize, char* kernel_
     kernel_setup->orig_video_isVGA = 0x23;
     kernel_setup->orig_x = 0;
     kernel_setup->orig_y = 0;
-		if(currentvideomodedetails.m_dwWidthInPixels==640) {
-	    kernel_setup->vid_mode = 0x312;		/* 640x480x16M Colors (works if you are already in x576 as well)*/
-		} else {
-	    kernel_setup->vid_mode = 0x315;		/* 800x600x16M Colors */
-		}
+    if(currentvideomodedetails.m_dwWidthInPixels==640) {
+
+	kernel_setup->vid_mode = 0x312;		/* 640x480x16M Colors (works if you are already in x576 as well)*/
+    } else {
+	kernel_setup->vid_mode = 0x315;		/* 800x600x16M Colors */
+    }
+
     kernel_setup->orig_video_mode = kernel_setup->vid_mode-0x300;
     kernel_setup->orig_video_cols = currentvideomodedetails.m_dwWidthInPixels/8;
     kernel_setup->orig_video_lines = currentvideomodedetails.m_dwHeightInLines/16;
@@ -108,12 +114,11 @@ void setup(void* KernelPos, void* PhysInitrdPos, void* InitrdSize, char* kernel_
     kernel_setup->lfb_depth = 32;
     kernel_setup->lfb_width = currentvideomodedetails.m_dwWidthInPixels;
 
-		kernel_setup->lfb_height = currentvideomodedetails.m_dwHeightInLines; // SCREEN_HEIGHT_480;
-		memcpy((void *)(60 * 1024 * 1024), (void *)((*(unsigned int*)0xFD600800)&0x7fffffff), currentvideomodedetails.m_dwWidthInPixels*currentvideomodedetails.m_dwHeightInLines*4);
-		(*(unsigned int*)0xFD600800)= (60 * 1024 * 1024);
-	  kernel_setup->lfb_base = (0xf0000000|*(unsigned int*)0xFD600800); // 0xF0000000+NEW_FRAMEBUFFER_480;
-//	printk("kernel_setup->lfb_base=0x%08X\n", kernel_setup->lfb_base);
-		kernel_setup->lfb_size = (4 * 1024 * 1024)/0x10000; // (FRAMEBUFFER_SIZE_480+0xFFFF)/0x10000;
+    kernel_setup->lfb_height = currentvideomodedetails.m_dwHeightInLines; // SCREEN_HEIGHT_480;
+   
+    kernel_setup->lfb_base = FRAMEBUFFER_START;
+
+    kernel_setup->lfb_size = (4 * 1024 * 1024); 
 
     kernel_setup->lfb_linelength = currentvideomodedetails.m_dwWidthInPixels*4;
     kernel_setup->pages=1;
@@ -128,23 +133,24 @@ void setup(void* KernelPos, void* PhysInitrdPos, void* InitrdSize, char* kernel_
     kernel_setup->rsvd_size = 8;
     kernel_setup->rsvd_pos = 24;
 
-		kernel_setup->root_dev=0x0301; // 0x0301..?? /dev/hda1 default if no comline override given
-		kernel_setup->pHookRealmodeSwitch=0;
-		kernel_setup->start_sys=0;
-		kernel_setup->a=0;
-		kernel_setup->b=0;
-		kernel_setup->c=0;
-
-		kernel_setup->root_flags=0; // allow read/write
+    kernel_setup->root_dev=0x0301; // 0x0301..?? /dev/hda1 default if no comline override given
+    kernel_setup->pHookRealmodeSwitch=0;
+    kernel_setup->start_sys=0;
+    kernel_setup->a=0;
+    kernel_setup->b=0;
+    kernel_setup->c=0;
+    
+    kernel_setup->root_flags=0; // allow read/write
 
     /* set command line */
-    cmd_line_ptr = (kernel_setup->setup_sects) * 512; /* = 512 bytes from top of SETUP */
-    kernel_setup->cmd_offset = (unsigned short) cmd_line_ptr;
-    kernel_setup->cmd_magic = 0xA33F;
-    kernel_setup->cmd_line_ptr = (DWORD)((BYTE *)kernel_setup)+cmd_line_ptr;
-    memcpy((char*)(KernelPos+cmd_line_ptr), kernel_cmdline, 512);
-    *(char*)(KernelPos+cmd_line_ptr+511) = 0;
 
-		BootPciInterruptGlobalPopState(dwInterrupt);
+    kernel_setup->cmd_offset = 0;
+    kernel_setup->cmd_magic = 0xA33F;
+    kernel_setup->cmd_line_ptr = 0x00405000;
+    _strncpy((void*)0x00405000, kernel_cmdline, 512);
+
+
+
+BootPciInterruptGlobalPopState(dwInterrupt);
 
 }

@@ -19,7 +19,6 @@
 
 #define WIDTH_SPACE_PIXELS 5
 
-
 // returns number of x pixels taken up by ascii character bCharacter
 
 unsigned int BootVideoGetCharacterWidth(BYTE bCharacter, bool fDouble)
@@ -361,7 +360,7 @@ bool BootVideoJpegUnpackAsRgb(
 BYTE * BootVideoGetPointerToEffectiveJpegTopLeft(JPEG * pJpeg)
 {
 	DWORD dwCountPixelsHorzOffsetIntoJpeg=(pJpeg->m_nWidth-currentvideomodedetails.m_dwWidthInPixels)/2;
-	DWORD dwCountLinesVertOffsetIntoJpeg=(pJpeg->m_nHeight-currentvideomodedetails.m_dwHeightInLines)/2;
+	DWORD dwCountLinesVertOffsetIntoJpeg=(pJpeg->m_nHeight-currentvideomodedetails.m_dwHeightInLines + ICON_HEIGH)/2;
 	return ((BYTE *)pJpeg->m_pBitmapData)+
 			(dwCountLinesVertOffsetIntoJpeg * pJpeg->m_nWidth * pJpeg->m_nBytesPerPixel)+
 			(dwCountPixelsHorzOffsetIntoJpeg * pJpeg->m_nBytesPerPixel)
@@ -463,7 +462,7 @@ void BootVideoChunkedPrint(char * szBuffer, WORD wLength) {
 }
 
 int printk(const char *szFormat, ...) {  // printk displays to video and filtror if enabled
-	char szBuffer[512];
+	char szBuffer[512*2];
 	WORD wLength=0;
 	va_list argList;
 	va_start(argList, szFormat);
@@ -472,13 +471,16 @@ int printk(const char *szFormat, ...) {  // printk displays to video and filtror
 //	memcpy(szBuffer, szFormat, wLength);
 	va_end(argList);
 
-	szBuffer[wLength]='\0';
 
+	szBuffer[sizeof(szBuffer)-1]=0;
+        if (wLength>(sizeof(szBuffer)-1)) wLength = sizeof(szBuffer)-1;
+	szBuffer[wLength]='\0';
+	        
 	#if INCLUDE_SERIAL
 	serialprint(&szBuffer[0]);
 	#endif
 	#if INCLUDE_FILTROR
-	BootFiltrorSendArrayToPcModal(&szBuffer[0], wLength);
+//	BootFiltrorSendArrayToPcModal(&szBuffer[0], wLength);
 	#endif
 
 	BootVideoChunkedPrint(szBuffer, wLength);
@@ -488,14 +490,18 @@ int printk(const char *szFormat, ...) {  // printk displays to video and filtror
 
 #if INCLUDE_SERIAL
 int serialprint(const char *szFormat, ...) {
-	char szBuffer[512];
+	char szBuffer[512*2];
 	WORD wLength=0;
 	WORD wSerialLength=0;
 	va_list argList;
 	va_start(argList, szFormat);
 	wLength=(WORD) vsprintf(szBuffer, szFormat, argList);
 	va_end(argList);
-
+	
+	szBuffer[sizeof(szBuffer)-1]=0;
+        if (wLength>(sizeof(szBuffer)-1)) wLength = sizeof(szBuffer)-1;
+	szBuffer[wLength]='\0';
+        
 	while(wSerialLength < wLength) {
 		IoOutputByte(0x03f8, szBuffer[wSerialLength]);
 		wSerialLength++;

@@ -1,63 +1,148 @@
-#
-# $Id$
-#
-# Shamelessly lifted and hacked from the
-# free bios project.
-#
-# $Log$
-#
-# 2002-09-14 andy@warmcat.com  changed to -Wall and -Werror, superclean
-# 2002-09-11 andy@warmcat.com  branched for cromwell, removed all the linux boot stuff
-#
-# Revision 1.4  2002/08/19 13:53:33  meriac
-# the need of nasm during linking removed
-#
-# Revision 1.2  2002/08/15 20:01:38  mist
-# kernel and initrd needn't be patched into image.bin manually any more,
-# due to Milosch
-#
-#
-
-### compilers and options
 CC	= gcc
-CFLAGS	= -g -O2 -Wall -Werror -pedantic
-LD	= ld
-LDFLAGS	= -s -S -T ldscript.ld
-OBJCOPY	= objcopy
-
-### objects
-OBJECTS	= BootStartup.o BootResetAction.o filtror.o BootPerformPicChallengeResponseAction.o vsprintf.o \
-BootPciPeripheralInitialization.o BootPerformXCodeActions.o BootVgaInitialization.o BootIde.o \
-BootHddKey.o rc4.o sha1.o BootVideoHelpers.o
-
-# target:
-all	: image.bin
-
-clean	:
-	rm -rf *.o *~ core *.core ${OBJECTS} image.elf image.bin
-
-image.elf : ${OBJECTS}
-	${LD} -o $@ ${OBJECTS} ${RESOURCES} ${LDFLAGS}
+INCLUDE = -I$(TOPDIR)/grub -I$(TOPDIR)/include -I$(TOPDIR)/ -I./ -I$(TOPDIR)/fs/cdrom \
+	-I$(TOPDIR)/fs/fatx -I$(TOPDIR)/lib/eeprom -I$(TOPDIR)/lib/crypt -I$(TOPDIR)/drivers/usb \
+	-I$(TOPDIR)/drivers/video -I$(TOPDIR)/drivers/flash -I$(TOPDIR)/lib/misc \
+	-I$(TOPDIR)/boot_xbe/ -I$(TOPDIR)/fs/grub -I$(TOPDIR)/lib/font -I$(TOPDIR)/lib/jpeg-6b \
+	-I$(TOPDIR)/startuploader 
 
 
+CFLAGS	= -O2 -mcpu=pentium -Wall -Werror $(INCLUDE)
+LD      = ld
+OBJCOPY = objcopy
+
+export CC
+
+TOPDIR  := $(shell /bin/pwd)
+SUBDIRS	= boot_rom fs drivers lib boot 
+
+LDFLAGS-ROM     = -s -S -T $(TOPDIR)/scripts/ldscript-crom.ld
+LDFLAGS-XBEBOOT = -s -S -T $(TOPDIR)/scripts/xbeboot.ld
+LDFLAGS-ROMBOOT = -M -s -S -T $(TOPDIR)/boot_rom/bootrom.ld
+
+RESOURCES-ROMBOOT = $(TOPDIR)/obj/xcodes11.elf 
+
+OBJECTS-IMAGEBLD = $(TOPDIR)/obj/imagebld.o
+OBJECTS-IMAGEBLD += $(TOPDIR)/obj/sha1.o
+
+OBJECTS-XBE = $(TOPDIR)/boot_xbe/xbeboot.o
+                                             
+OBJECTS-ROMBOOT = $(TOPDIR)/obj/2bBootStartup.o
+OBJECTS-ROMBOOT += $(TOPDIR)/obj/2bPicResponseAction.o
+OBJECTS-ROMBOOT += $(TOPDIR)/obj/2bBootStartBios.o
+OBJECTS-ROMBOOT += $(TOPDIR)/obj/sha1.o
+OBJECTS-ROMBOOT += $(TOPDIR)/obj/2bBootLibrary.o
+                                             
+OBJECTS-CROM = $(TOPDIR)/obj/BootStartup.o
+OBJECTS-CROM += $(TOPDIR)/obj/BootResetAction.o
+OBJECTS-CROM += $(TOPDIR)/obj/BootPerformPicChallengeResponseAction.o
+OBJECTS-CROM += $(TOPDIR)/obj/BootPciPeripheralInitialization.o
+OBJECTS-CROM += $(TOPDIR)/obj/BootVgaInitialization.o
+OBJECTS-CROM += $(TOPDIR)/obj/BootIde.o
+OBJECTS-CROM += $(TOPDIR)/obj/BootHddKey.o
+OBJECTS-CROM += $(TOPDIR)/obj/rc4.o
+OBJECTS-CROM += $(TOPDIR)/obj/sha1.o
+OBJECTS-CROM += $(TOPDIR)/obj/BootVideoHelpers.o
+OBJECTS-CROM += $(TOPDIR)/obj/vsprintf.o
+OBJECTS-CROM += $(TOPDIR)/obj/filtror.o
+OBJECTS-CROM += $(TOPDIR)/obj/BootStartBios.o
+OBJECTS-CROM += $(TOPDIR)/obj/setup.o
+OBJECTS-CROM += $(TOPDIR)/obj/BootFilesystemIso9660.o
+OBJECTS-CROM += $(TOPDIR)/obj/BootLibrary.o
+OBJECTS-CROM += $(TOPDIR)/obj/BootInterrupts.o
+OBJECTS-CROM += $(TOPDIR)/obj/fsys_reiserfs.o
+OBJECTS-CROM += $(TOPDIR)/obj/char_io.o
+OBJECTS-CROM += $(TOPDIR)/obj/disk_io.o
+OBJECTS-CROM += $(TOPDIR)/obj/jdapimin.o
+OBJECTS-CROM += $(TOPDIR)/obj/jdapistd.o
+OBJECTS-CROM += $(TOPDIR)/obj/jdtrans.o
+OBJECTS-CROM += $(TOPDIR)/obj/jdatasrc.o
+OBJECTS-CROM += $(TOPDIR)/obj/jdmaster.o
+OBJECTS-CROM += $(TOPDIR)/obj/jdinput.o
+OBJECTS-CROM += $(TOPDIR)/obj/jdmarker.o
+OBJECTS-CROM += $(TOPDIR)/obj/jdhuff.o
+OBJECTS-CROM += $(TOPDIR)/obj/jdphuff.o
+OBJECTS-CROM += $(TOPDIR)/obj/jdmainct.o
+OBJECTS-CROM += $(TOPDIR)/obj/jdcoefct.o
+OBJECTS-CROM += $(TOPDIR)/obj/jdpostct.o
+OBJECTS-CROM += $(TOPDIR)/obj/jddctmgr.o
+OBJECTS-CROM += $(TOPDIR)/obj/jidctfst.o
+OBJECTS-CROM += $(TOPDIR)/obj/jidctflt.o
+OBJECTS-CROM += $(TOPDIR)/obj/jidctint.o
+OBJECTS-CROM += $(TOPDIR)/obj/jidctred.o
+OBJECTS-CROM += $(TOPDIR)/obj/jdsample.o
+OBJECTS-CROM += $(TOPDIR)/obj/jdcolor.o
+OBJECTS-CROM += $(TOPDIR)/obj/jquant1.o
+OBJECTS-CROM += $(TOPDIR)/obj/jquant2.o
+OBJECTS-CROM += $(TOPDIR)/obj/jdmerge.o
+OBJECTS-CROM += $(TOPDIR)/obj/jmemnobs.o
+OBJECTS-CROM += $(TOPDIR)/obj/jmemmgr.o
+OBJECTS-CROM += $(TOPDIR)/obj/jcomapi.o
+OBJECTS-CROM += $(TOPDIR)/obj/jutils.o
+OBJECTS-CROM += $(TOPDIR)/obj/jerror.o
+OBJECTS-CROM += $(TOPDIR)/obj/BootAudio.o
+OBJECTS-CROM += $(TOPDIR)/obj/BootFlash.o
+OBJECTS-CROM += $(TOPDIR)/obj/BootFlashUi.o
+OBJECTS-CROM += $(TOPDIR)/obj/BootEEPROM.o
+OBJECTS-CROM += $(TOPDIR)/obj/BootParser.o
+OBJECTS-CROM += $(TOPDIR)/obj/BootFATX.o
+OBJECTS-CROM += $(TOPDIR)/obj/BootUsbOhci.o
 
 
-### rules:
-%.o	: %.c boot.h consts.h
-	${CC} ${CFLAGS} -o $@ -c $<
+RESOURCES = $(TOPDIR)/obj/backdrop.elf
 
-%.o	: %.S consts.h
-	${CC} -DASSEMBLER ${CFLAGS} -o $@ -c $<
+export INCLUDE
+export TOPDIR
 
-%.bin : %.elf
-	${OBJCOPY} --output-target=binary --strip-all $< $@
-	@ls -l $@
+all: clean xcodes11.elf cromsubdirs image.elf imagebld backdrop.elf image-crom.elf image-crom.bin default.xbe image.bin
 
-#     the following send the patched result to a Filtror and starts up the X-Box with the new code
-#     you can get lmilk from http://warmcat.com/milksop/milk.html
-#	@lmilk -f -p image.bin -q
-#    this one is the same but additionally runs terminal emulator
-#	@lmilk -f -p image.bin -q -t
+cromsubdirs: $(patsubst %, _dir_%, $(SUBDIRS))
+$(patsubst %, _dir_%, $(SUBDIRS)) : dummy
+	$(MAKE) CFLAGS="$(CFLAGS)" -C $(patsubst _dir_%, %, $@)
+
+dummy:
+
+xcodes11.elf:
+	${LD} -r --oformat elf32-i386 -o $(TOPDIR)/obj/$@ -T $(TOPDIR)/boot_rom/xcodes11.ld -b binary $(TOPDIR)/boot_rom/xcodes11.bin
+
+image.elf:
+	${LD} -o $(TOPDIR)/obj/$@ ${OBJECTS-ROMBOOT} ${RESOURCES-ROMBOOT} ${LDFLAGS-ROMBOOT}
+
+image.bin:
+	${OBJCOPY} --output-target=binary --strip-all $(TOPDIR)/obj/image.elf $(TOPDIR)/image/$@
+	$(TOPDIR)/obj/imagebld -rom $(TOPDIR)/image/image.bin $(TOPDIR)/obj/image-crom.bin
+	cat $(TOPDIR)/image/image.bin $(TOPDIR)/image/image.bin $(TOPDIR)/image/image.bin $(TOPDIR)/image/image.bin > $(TOPDIR)/image/image_1024.bin
+
+imagebld:
+	gcc $(OBJECTS-IMAGEBLD) -o $(TOPDIR)/obj/imagebld $(INCLUDE)
 
 install:
-	lmilk -f -p image.bin -q -t
+	lmilk -f -p $(TOPDIR)/image/image.bin
+	lmilk -f -a c0000 -p $(TOPDIR)/image/image.bin -q	
+clean:
+	find . \( -name '*.[oas]' -o -name core -o -name '.*.flags' \) -type f -print \
+		| grep -v lxdialog/ | xargs rm -f
+	rm -f $(TOPDIR)/obj/*.bin rm -f $(TOPDIR)/obj/*.elf
+	rm -f $(TOPDIR)/image/*.bin rm -f $(TOPDIR)/image/*.xbe rm -f $(TOPDIR)/xbe/*.xbe $(TOPDIR)/xbe/*.bin
+	rm -f $(TOPDIR)/xbe/*.elf
+	rm -f $(TOPDIR)/image/*.bin
+	rm -f $(TOPDIR)/obj/imagebld
+	
+
+backdrop.elf:
+	${LD} -r --oformat elf32-i386 -o $(TOPDIR)/obj/$@ -T $(TOPDIR)/scripts/backdrop.ld -b binary $(TOPDIR)/pics/backdrop.jpg
+
+default.elf: ${OBJECTS-XBE}
+	${LD} -o $(TOPDIR)/obj/$@ ${OBJECTS-XBE} ${LDFLAGS-XBEBOOT}
+	
+default.xbe: default.elf
+	${OBJCOPY} --output-target=binary --strip-all $(TOPDIR)/obj/default.elf $(TOPDIR)/xbe/$@
+	cat $(TOPDIR)/obj/image-crom.bin >> $(TOPDIR)/xbe/default.xbe
+	$(TOPDIR)/obj/imagebld -xbe $(TOPDIR)/xbe/default.xbe 
+	#mv $(TOPDIR)/out.xbe $(TOPDIR)/xbe/default.xbe -f
+	@ls -l $(TOPDIR)/xbe/$@
+				
+image-crom.elf:
+	${LD} -o $(TOPDIR)/obj/$@ ${OBJECTS-CROM} ${RESOURCES} ${LDFLAGS-ROM}
+
+image-crom.bin:
+	${OBJCOPY} --output-target=binary --strip-all $(TOPDIR)/obj/image-crom.elf $(TOPDIR)/obj/$@

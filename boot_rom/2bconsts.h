@@ -1,5 +1,4 @@
-#ifndef _Consts_H_
-#define _Consts_H_
+
 
 /*
  *
@@ -15,8 +14,6 @@
  *   (at your option) any later version.                                   *
  *                                                                         *
  ***************************************************************************/
-
-#define VERSION "2.00 dev"
 
 #define PCI_CFG_ADDR 0x0CF8
 #define PCI_CFG_DATA 0x0CFC
@@ -80,20 +77,3 @@
 		outb    %al, $0x80 
 */
 /* Filtror debug stuff  4K block used for communications */
-#define FILT_DEBUG_BASE 0xff0fe000
-#define FILT_DEBUG_FOOTPRINT 0x1000
-#define FILT_DEBUG_MAX_DATA ((FILT_DEBUG_FOOTPRINT/2)-4)
-#define FILT_DEBUG_TOPC_START (FILT_DEBUG_BASE+0)
-#define FILT_DEBUG_FROMPC_START (FILT_DEBUG_BASE+(FILT_DEBUG_FOOTPRINT/2))
-#define FILT_DEBUG_TOPC_LEN (FILT_DEBUG_BASE+(FILT_DEBUG_FOOTPRINT/2)-2)
-#define FILT_DEBUG_FROMPC_LEN (FILT_DEBUG_BASE+FILT_DEBUG_FOOTPRINT-2)
-#define FILT_DEBUG_TOPC_CHECKSUM (FILT_DEBUG_BASE+(FILT_DEBUG_FOOTPRINT/2)-4)
-#define FILT_DEBUG_FROMPC_CHECKSUM (FILT_DEBUG_BASE+FILT_DEBUG_FOOTPRINT-4)
-
-#define MEMORYMANAGERSTART 	0x01000000
-#define MEMORYMANAGERSIZE 	 0x1000000 // 16 MB
-#define MEMORYMANAGEREND 	0x01FFFFFF
-
-#endif // _Consts_H_
-
-

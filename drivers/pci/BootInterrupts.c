@@ -13,21 +13,20 @@
  */
 
 #include "boot.h"
-#ifdef XBE
-#include "config-xbe.h"
-#else
-#include "config-rom.h"
-#endif
-
+#include "config.h"
 #include "BootUsbOhci.h"
 
 volatile int nCountI2cinterrupts, nCountUnusedInterrupts, nCountUnusedInterruptsPic2, nCountInterruptsSmc, nCountInterruptsIde;
 volatile bool fSeenPowerdown;
 volatile TRAY_STATE traystate;
 
+volatile int nInteruptable = 0;
+
+#ifndef DEBUG_MODE
 extern volatile AC97_DEVICE ac97device;
 extern volatile AUDIO_ELEMENT_SINE aesTux;
 extern volatile AUDIO_ELEMENT_NOISE aenTux;
+#endif
 
 DWORD dwaTitleArea[1024*64];
 
@@ -124,8 +123,10 @@ const ISR_PREP isrprep[] = {
 };
 
 
-void BootInterruptsWriteIdt(void) {
-	volatile ts_pm_interrupt * ptspmi=(volatile ts_pm_interrupt *)(0xef000);  // ie, start of IDT area
+void BootInterruptsWriteIdt() {
+
+
+	volatile ts_pm_interrupt * ptspmi=(volatile ts_pm_interrupt *)(0x00400000);  // ie, start of IDT area
 	int n, n1=0;
 
 			// init storage used by ISRs
@@ -172,17 +173,13 @@ void BootInterruptsWriteIdt(void) {
 	IoOutputByte(0xa1, 0x70);  // base interrupt vector address
 	IoOutputByte(0xa1, 0x02);  // am slave, hooked to INT2 on master
 	IoOutputByte(0xa1, 0x01);  // x86 mode normal EOI
-#ifdef XBE
-//	IoOutputByte(0xa1, 0xff);		// enable no ints
-	IoOutputByte(0xa1, 0xaf);		// enable int14(IDE) int12(SMI)
-#else
-	IoOutputByte(0xa1, 0x00);		// enable all ints
-#endif
 
-			// enable interrupts
+	if (cromwell_config==XROMWELL) 	IoOutputByte(0xa1, 0xaf);	// enable int14(IDE) int12(SMI)
+	if (cromwell_config==CROMWELL) 	IoOutputByte(0xa1, 0x00);
+
+	// enable interrupts
 
 	__asm__ __volatile__("wbinvd; mov $0x1b, %%cx ; rdmsr ; andl $0xfffff7ff, %%eax ; wrmsr; sti" : : : "%ecx", "%eax", "%edx");
-
 }
 
 
@@ -251,16 +248,18 @@ void IntHandlerCSmc(void)
 				case 3: // AV CABLE HAS BEEN PLUGGED IN
 					{
 						bprintf("SMC Interrupt %d: AV cable plugged in\n", nCountInterruptsSmc);
-#ifndef XBE
-						{
-							BYTE b=I2CTransmitByteGetReturn(0x10, 0x04);
-							bprintf("Detected new AV type %d, cf %d\n", b, currentvideomodedetails.m_bAvPack);
-							if(b!=currentvideomodedetails.m_bAvPack ) {
-								VIDEO_LUMASCALING=VIDEO_RSCALING=VIDEO_BSCALING=0;
-								BootVgaInitializationKernel((CURRENT_VIDEO_MODE_DETAILS *)&currentvideomodedetails);
+if (cromwell_config==CROMWELL) {
+						if(nInteruptable) {
+							{
+								BYTE b=I2CTransmitByteGetReturn(0x10, 0x04);
+								bprintf("Detected new AV type %d, cf %d\n", b, currentvideomodedetails.m_bAvPack);
+								if(b!=currentvideomodedetails.m_bAvPack ) {
+									VIDEO_LUMASCALING=VIDEO_RSCALING=VIDEO_BSCALING=0;
+	BootVgaInitializationKernelNG((CURRENT_VIDEO_MODE_DETAILS *)&currentvideomodedetails);
+								}
 							}
 						}
-#endif
+} // End of IF cromwell
 					}
 					break;
 
@@ -295,6 +294,7 @@ void IntHandlerCSmc(void)
 
 void IntHandlerCIde(void)
 {
+	if(!nInteruptable) return;
 	IoInputByte(0x1f7);
 	bprintf("IDE Interrupt\n");
 	nCountInterruptsIde++;
@@ -302,18 +302,23 @@ void IntHandlerCIde(void)
 
 void IntHandlerCI2C(void)
 {
+	if(!nInteruptable) return;
 	nCountI2cinterrupts++;
 }
 void IntHandlerUnusedC(void)
 {
+	if(!nInteruptable) return;
 	bprintf("Unhandled Interrupt\n");
+	//printk("Unhandled Interrupt");
 	nCountUnusedInterrupts++;
-	while(1) ;
+	//while(1) ;
 }
 
 
 void IntHandlerUnusedC2(void)
 {
+	if(!nInteruptable) return;
+
 	bprintf("Unhandled Interrupt 2\n");
 	nCountUnusedInterruptsPic2++;
 }
@@ -323,29 +328,43 @@ void IntHandlerUnusedC2(void)
 
 void IntHandlerCTimer0(void)
 {
+#ifdef DEBUG_MODE
+        extern volatile ohci_t usbcontroller[2];
+#endif
+	
 	BIOS_TICK_COUNT++;
+
+#ifdef DEBUG_MODE
+        if(!nInteruptable) return;
+
+        BootUsbDebugOut((ohci_t *)&usbcontroller[0]);
+        BootUsbInterrupt((ohci_t *)&usbcontroller[0]);
+#endif
 }
 
 // USB interrupt
 
 void IntHandler1C(void)
 {
-//	bprintf("USB1 Interrupt 1\n");
-//#ifndef XBE
-	extern volatile USB_CONTROLLER_OBJECT usbcontroller[2];
-	BootUsbInterrupt(&usbcontroller[0]);
-//#endif
+        extern volatile ohci_t usbcontroller[2];
+	
+	if(!nInteruptable) return;
+
+	BootUsbInterrupt((ohci_t *)&usbcontroller[0]);
 }
 
 
 void IntHandler2C(void)
 {
+	if(!nInteruptable) return;
 	bprintf("Interrupt 2\n");
 }
 void IntHandler3VsyncC(void)  // video VSYNC
 {
 	DWORD dwTempInt;
-//	bprintf("Interrupt 3\n");
+	
+	if(!nInteruptable) return;
+	
 	BootPciInterruptGlobalStackStateAndDisable(&dwTempInt);
 	VIDEO_VSYNC_COUNT++;
 
@@ -383,13 +402,16 @@ void IntHandler3VsyncC(void)  // video VSYNC
 	}
 
 	if(VIDEO_VSYNC_COUNT>20) {
+#ifndef DEBUG_MODE
 		DWORD dwOld=VIDEO_VSYNC_POSITION;
+#endif
 		char c=(VIDEO_VSYNC_COUNT*4)&0xff;
 		DWORD dw=c;
 		if(c<0) dw=((-(int)c)-1);
 
 		switch(VIDEO_VSYNC_DIR) {
 			case 0:
+#ifndef DEBUG_MODE
 				{
 					int nTux=(((VIDEO_VSYNC_POSITION * 0x2fff)/currentvideomodedetails.m_dwWidthInPixels));
 					dw=(((VIDEO_VSYNC_POSITION * 192)/currentvideomodedetails.m_dwWidthInPixels)+64)<<24;
@@ -406,6 +428,7 @@ void IntHandler3VsyncC(void)  // video VSYNC
 					aenTux.m_sVolumeZeroIsNone7FFFIsFull=nTux/40;
 					aenTux.m_paudioelement.m_sPanZeroIsAllLeft7FFFIsAllRight=(nTux*2);
 				}
+#endif
 				break;
 			case 1:
 				dw+=64; dw<<=24;
@@ -413,6 +436,7 @@ void IntHandler3VsyncC(void)  // video VSYNC
 				if((int)VIDEO_VSYNC_POSITION<=0) VIDEO_VSYNC_DIR=0;
 				break;
 			case 2:
+#ifndef DEBUG_MODE
 					// manipulate the tux sound
 				aesTux.m_saVolumePerHarmonicZeroIsNone7FFFIsFull[0]=(dw<<4);
 				aesTux.m_saVolumePerHarmonicZeroIsNone7FFFIsFull[1]=(dw<<5)/12;
@@ -424,28 +448,32 @@ void IntHandler3VsyncC(void)  // video VSYNC
 				aenTux.m_paudioelement.m_sPanZeroIsAllLeft7FFFIsAllRight=0x7fff;
 
 				dw+=128; dw<<=24;
+#endif
 				break;
 		}
 
+#ifndef DEBUG_MODE
 		BootVideoJpegBlitBlend(
-			(DWORD *)(FRAMEBUFFER_START+currentvideomodedetails.m_dwWidthInPixels*4*currentvideomodedetails.m_dwMarginYInLinesRecommended+currentvideomodedetails.m_dwMarginXInPixelsRecommended*4+(dwOld<<2)), currentvideomodedetails.m_dwWidthInPixels * 4, &jpegBackdrop,
+			(DWORD *)(FRAMEBUFFER_START+currentvideomodedetails.m_dwWidthInPixels*4*currentvideomodedetails.m_dwMarginYInLinesRecommended+currentvideomodedetails.m_dwMarginXInPixelsRecommended*4+(dwOld<<2)),
+			currentvideomodedetails.m_dwWidthInPixels * 4, &jpegBackdrop,
 			&dwaTitleArea[dwOld+currentvideomodedetails.m_dwMarginXInPixelsRecommended],
 			0x00ff00ff,
 			&dwaTitleArea[dwOld+currentvideomodedetails.m_dwMarginXInPixelsRecommended],
 			currentvideomodedetails.m_dwWidthInPixels*4,
 			4,
-			54, 64
+			ICON_WIDTH, ICON_HEIGH
 		);
 		BootVideoJpegBlitBlend(
-			(DWORD *)(FRAMEBUFFER_START+currentvideomodedetails.m_dwWidthInPixels*4*currentvideomodedetails.m_dwMarginYInLinesRecommended+currentvideomodedetails.m_dwMarginXInPixelsRecommended*4+(VIDEO_VSYNC_POSITION<<2)), currentvideomodedetails.m_dwWidthInPixels * 4, &jpegBackdrop,
-			(DWORD *)(((BYTE *)jpegBackdrop.m_pBitmapData)+(jpegBackdrop.m_nWidth*(jpegBackdrop.m_nHeight-64)*jpegBackdrop.m_nBytesPerPixel)),
+			(DWORD *)(FRAMEBUFFER_START+currentvideomodedetails.m_dwWidthInPixels*4*currentvideomodedetails.m_dwMarginYInLinesRecommended+currentvideomodedetails.m_dwMarginXInPixelsRecommended*4+(VIDEO_VSYNC_POSITION<<2)),
+			currentvideomodedetails.m_dwWidthInPixels * 4, &jpegBackdrop,
+			(DWORD *)((BYTE *)jpegBackdrop.m_pBitmapData),
 			0x00ff00ff | dw,
 			&dwaTitleArea[VIDEO_VSYNC_POSITION+currentvideomodedetails.m_dwMarginXInPixelsRecommended],
 			currentvideomodedetails.m_dwWidthInPixels*4,
 			4,
-			54, 64
+			ICON_WIDTH, ICON_HEIGH
 		);
-
+#endif
 	}
 
 	*((volatile DWORD *)0xfd600100)=0x1;  // clear VSYNC int
@@ -454,10 +482,12 @@ void IntHandler3VsyncC(void)  // video VSYNC
 
 void IntHandler4C(void)
 {
+	if(!nInteruptable) return;
 	bprintf("Interrupt 4\n");
 }
 void IntHandler5C(void)
 {
+	if(!nInteruptable) return;
 	bprintf("Interrupt 5\n");
 }
 
@@ -465,11 +495,14 @@ void IntHandler5C(void)
 
 void IntHandler6C(void)
 {
-//	bprintf("Interrupt 6\n");
+	if(!nInteruptable) return;
+#ifndef DEBUG_MODE
 	BootAudioInterrupt(&ac97device);
+#endif
 }
 void IntHandler7C(void)
 {
+	if(!nInteruptable) return;
 	bprintf("Interrupt 7\n");
 }
 
@@ -480,15 +513,16 @@ void IntHandler8C(void)
 
 void IntHandler9C(void)
 {
-//	bprintf("USB2 Interrupt 9\n");
-//#ifndef XBE
-	extern volatile USB_CONTROLLER_OBJECT usbcontroller[2];
-	BootUsbInterrupt(&usbcontroller[1]);
-//#endif
+        extern volatile ohci_t usbcontroller[2];
+	
+	if(!nInteruptable) return;
+	
+	BootUsbInterrupt((ohci_t *)&usbcontroller[1]);
 }
 
 void IntHandler10C(void)
 {
+	if(!nInteruptable) return;
 	bprintf("Interrupt 10\n");
 }
 
@@ -499,10 +533,12 @@ void IntHandler13C(void)
 
 void IntHandler15C(void)
 {
+	if(!nInteruptable) return;
 	bprintf("Unhandled Interrupt 15\n");
 }
 
-void IntHandlerException0C(void) {	bprintf("CPU Exc: Divide by Zero\n");	while(1) ; }
+//void IntHandlerException0C(void) {	bprintf("CPU Exc: Divide by Zero\n");	while(1) ; }
+void IntHandlerException0C(void) {	bprintf("CPU Exc: Divide by Zero\n");}
 void IntHandlerException1C(void) {	bprintf("CPU Exc: Single Step\n");	while(1) ; }
 void IntHandlerException2C(void) {	bprintf("CPU Exc: NMI\n");	while(1) ; }
 void IntHandlerException3C(void) {	bprintf("CPU Exc: Breakpoint\n");	while(1) ; }
@@ -521,15 +557,18 @@ void IntHandlerException6C(void) {
 #endif
 	while(1) ;
 }
-void IntHandlerException7C(void) {	bprintf("CPU Exc: Coprocessor Absent\n");	while(1) ; }
+//void IntHandlerException7C(void) {	bprintf("CPU Exc: Coprocessor Absent\n");	while(1) ; }
+void IntHandlerException7C(void) {	bprintf("CPU Exc: Coprocessor Absent\n");}
 void IntHandlerException8C(void) {	bprintf("CPU Exc: Double Fault\n");	while(1) ; }
-void IntHandlerException9C(void) {	bprintf("CPU Exc: Copro Seg Overrun\n");	while(1) ; }
+//void IntHandlerException9C(void) {	bprintf("CPU Exc: Copro Seg Overrun\n");	while(1) ; }
+void IntHandlerException9C(void) {	bprintf("CPU Exc: Copro Seg Overrun\n");}
 void IntHandlerExceptionAC(void) {	bprintf("CPU Exc: Invalid TSS\n");	while(1) ; }
 void IntHandlerExceptionBC(void) {	bprintf("CPU Exc: Segment not present\n");	while(1) ; }
 void IntHandlerExceptionCC(void) {	bprintf("CPU Exc: Stack Exception\n");	while(1) ; }
 void IntHandlerExceptionDC(void) {	bprintf("CPU Exc: General Protection Fault\n");	while(1) ; }
 void IntHandlerExceptionEC(void) {	bprintf("CPU Exc: Page Fault\n");	while(1) ; }
 void IntHandlerExceptionFC(void) {	bprintf("CPU Exc: Reserved\n");	while(1) ; }
-void IntHandlerException10C(void) {	bprintf("CPU Exc: Copro Error\n");	while(1) ; }
+//void IntHandlerException10C(void) {	bprintf("CPU Exc: Copro Error\n");	while(1) ; }
+void IntHandlerException10C(void) {	bprintf("CPU Exc: Copro Error\n");}
 
 

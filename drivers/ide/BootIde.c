@@ -31,7 +31,7 @@
 // #define HDD_SANITY
 
 
-#include  "boot.h"
+#include "boot.h"
 #include "shared.h"
 #include "BootEEPROM.h"
 
@@ -66,6 +66,12 @@ typedef struct {
     unsigned char m_bSector;
     unsigned short m_wCylinder;
     unsigned char m_bDrivehead;
+    
+       /* 48-bit LBA */   
+    unsigned char m_bCountSectorExt;   
+    unsigned char m_bSectorExt;   
+    unsigned short m_wCylinderExt; 
+
 #       define IDE_DH_DEFAULT (0xA0)
 #       define IDE_DH_HEAD(x) ((x) & 0x0F)
 #       define IDE_DH_MASTER  (0x00)
@@ -84,7 +90,9 @@ typedef enum {
     IDE_CMD_READ_MULTI_RETRY = 0x20,
     IDE_CMD_READ_MULTI = IDE_CMD_READ_MULTI_RETRY,
     IDE_CMD_READ_MULTI_NORETRY = 0x21,
-
+    
+    IDE_CMD_READ_EXT = 0x24, /* 48-bit LBA */
+  
     IDE_CMD_DRIVE_DIAG = 0x90,
     IDE_CMD_SET_PARAMS = 0x91,
     IDE_CMD_STANDBY_IMMEDIATE = 0x94, /* 2 byte command- also send
@@ -99,6 +107,7 @@ typedef enum {
 
 		IDE_CMD_SECURITY_UNLOCK = 0xf2
 } ide_command_t;
+
 
 #define printk_debug bprintf
 
@@ -171,7 +180,17 @@ int BootIdeIssueAtaCommand(
 //	if(n)	{// as our command may be being used to clear the error, not a good policy to check too closely!
 //		printk("error on BootIdeIssueAtaCommand wait 1: ret=%d, error %02X\n", n, IoInputByte(IDE_REG_ERROR(uIoBase)));
 //		return 1;
-//	}
+//	}  
+ 	
+ 	/* 48-bit LBA */   
+        /* this won't hurt for non 48-bit LBA commands since we re-write these registers below */   
+	
+	IoOutputByte(IDE_REG_SECTOR_COUNT(uIoBase), params->m_bCountSectorExt);   
+	IoOutputByte(IDE_REG_SECTOR_NUMBER(uIoBase), params->m_bSectorExt);   
+	IoOutputByte(IDE_REG_CYLINDER_LSB(uIoBase), params->m_wCylinderExt & 0xFF);   
+	IoOutputByte(IDE_REG_CYLINDER_MSB(uIoBase), (params->m_wCylinderExt >> 8) ); 
+	/* End 48-bit LBA */   
+
 	IoOutputByte(IDE_REG_SECTOR_COUNT(uIoBase), params->m_bCountSector);
 	IoOutputByte(IDE_REG_SECTOR_NUMBER(uIoBase), params->m_bSector);
 	IoOutputByte(IDE_REG_CYLINDER_LSB(uIoBase), params->m_wCylinder & 0xFF);
@@ -358,7 +377,9 @@ static int BootIdeDriveInit(unsigned uIoBase, int nIndexDrive)
 	tsIdeCommandParams tsicp = IDE_DEFAULT_COMMAND;
 	unsigned short* drive_info;
 	BYTE baBuffer[512];
-
+     
+	memset(&tsaHarddiskInfo[nIndexDrive],0x00,sizeof(struct tsHarddiskInfo));
+	
 	tsaHarddiskInfo[nIndexDrive].m_fwPortBase = uIoBase;
 	tsaHarddiskInfo[nIndexDrive].m_wCountHeads = 0u;
 	tsaHarddiskInfo[nIndexDrive].m_wCountCylinders = 0u;
@@ -405,7 +426,9 @@ static int BootIdeDriveInit(unsigned uIoBase, int nIndexDrive)
 		}
 	} else { // slave... death if you send it IDE_CMD_GET_INFO, it needs an ATAPI request
 
-#ifdef XBE
+
+	if (cromwell_config==XROMWELL) {
+		// Is working as Xromwell
 
 		tsicp.m_bDrivehead = IDE_DH_DEFAULT | IDE_DH_HEAD(0) | IDE_DH_CHS | IDE_DH_DRIVE(nIndexDrive);
 /*
@@ -428,7 +451,9 @@ static int BootIdeDriveInit(unsigned uIoBase, int nIndexDrive)
 //			printk("  hd%c: set feature OKAY\n", 'a'+nIndexDrive);
 		}
 */
-#endif
+		}
+
+
 
 		if (BootIdeWaitNotBusy(uIoBase))	{
 			printk_debug("Error after ATAPI soft reset error %02X\n", IoInputByte(IDE_REG_ERROR(uIoBase)));
@@ -453,17 +478,37 @@ static int BootIdeDriveInit(unsigned uIoBase, int nIndexDrive)
 	tsaHarddiskInfo[nIndexDrive].m_dwCountSectorsTotal = *((unsigned int*)&(drive_info[60]));
 	tsaHarddiskInfo[nIndexDrive].m_wAtaRevisionSupported = drive_info[88];
 
+
+        /* 48-bit LBA */   
+	if( drive_info[83] & 1ul<<10 ) {   
+	        unsigned long long maxLBA;   
+	        /*   
+	           Do a sanity check here since the T13 spec is not clear on byte/word ordering of this value   
+	           The lower 28 bits of the Max 48 bit LBA should match the previously returned 28 bit max LBA.   
+	           If it does match, then we are reading the 48-bit Max LBA correctly and we can go ahead and use it...   
+	           Once this code is actually tested this check can be removed.   
+	        */   
+	        printk("ATA 48-bit LBA Supported\n");   
+	        maxLBA = *((unsigned long long*)&(drive_info[100]));   
+	        if( tsaHarddiskInfo[nIndexDrive].m_dwCountSectorsTotal == (unsigned int)(maxLBA & 0xFFFFFFF) ) {   
+	                tsaHarddiskInfo[nIndexDrive].m_dwCountSectorsTotal = (unsigned int)maxLBA;   
+	        } else {   
+	                printk("28 LSBs of Max 48-bit LBA's don't match.  Using Max 28-bit LBA\n");   
+	        }   
+	} else {   
+	        printk("ATA 28-bit LBA Support Only\n");   
+	} 
+	/* End 48-bit LBA */   
+	
 	{ 
 		WORD * pw=(WORD *)&(drive_info[10]);
 		tsaHarddiskInfo[nIndexDrive].s_length =
-			copy_swap_trim(tsaHarddiskInfo[nIndexDrive].m_szSerial,(BYTE*)pw,0x14);
+			copy_swap_trim(tsaHarddiskInfo[nIndexDrive].m_szSerial,(BYTE*)pw,20);
 		pw=(WORD *)&(drive_info[27]);
 		tsaHarddiskInfo[nIndexDrive].m_length =
-			copy_swap_trim(tsaHarddiskInfo[nIndexDrive].m_szIdentityModelNumber,(BYTE *)pw,0x28);
-		copy_swap_trim(tsaHarddiskInfo[nIndexDrive].m_szFirmware,(BYTE *)&(drive_info[23]),0x8);
+			copy_swap_trim(tsaHarddiskInfo[nIndexDrive].m_szIdentityModelNumber,(BYTE *)pw,40);
+		copy_swap_trim(tsaHarddiskInfo[nIndexDrive].m_szFirmware,(BYTE *)&(drive_info[23]),8);
 
-	tsaHarddiskInfo[nIndexDrive].m_szSerial[sizeof(tsaHarddiskInfo[0].m_szSerial)-1]='\0';
-	tsaHarddiskInfo[nIndexDrive].m_szIdentityModelNumber[sizeof(tsaHarddiskInfo[0].m_szIdentityModelNumber)-1]='\0';
 
 /*
 		for(n=0; n<20;n+=2) { tsaHarddiskInfo[nIndexDrive].m_szSerial[n]=(*pw)>>8; tsaHarddiskInfo[nIndexDrive].m_szSerial[n+1]=(char)(*pw); pw++; }
@@ -483,13 +528,16 @@ static int BootIdeDriveInit(unsigned uIoBase, int nIndexDrive)
 		printk("hd%c: ", nIndexDrive+'a');
 		VIDEO_ATTR=0xffc8c800;
 
-		printk("%s %s %s\n",
+		printk("%s %s %s\n",tsaHarddiskInfo[nIndexDrive].m_szIdentityModelNumber,
 			tsaHarddiskInfo[nIndexDrive].m_szIdentityModelNumber,
 			tsaHarddiskInfo[nIndexDrive].m_szSerial,
 			tsaHarddiskInfo[nIndexDrive].m_szFirmware
 		);
 
-#ifndef XBE
+
+	if (cromwell_config==CROMWELL) {
+		// IS working as Cromwell
+		
 		{  // this is the only way to clear the ATAPI ''I have been reset'' error indication
 			BYTE ba[128];
 			ba[2]=0x06;
@@ -505,7 +553,7 @@ static int BootIdeDriveInit(unsigned uIoBase, int nIndexDrive)
 //					printk("ATAPI Drive reports ASC 0x%02X\n", ba[12]);  // normally 0x29 'reset' but clears the condition by reading
 				}
 			}
-
+          }
 /*
 
 	// Xbox drives can't handle ALLOW REMOVAL??
@@ -519,7 +567,7 @@ static int BootIdeDriveInit(unsigned uIoBase, int nIndexDrive)
 			}
 */
 		}
-#endif
+
 
 
 	} else { // HDD
@@ -606,6 +654,9 @@ Known-good HDD password for this drive:
 
 */
 
+
+if (cromwell_config==CROMWELL) {
+	// Cromwell Mode
 	if((drive_info[128]&0x0004)==0x0004) { // 'security' is in force, unlock the drive (was 0x104/0x104)
 		BYTE baMagic[0x200], baKeyFromEEPROM[0x10], baEeprom[0x30];
 		bool fUnlocked=false;
@@ -620,7 +671,7 @@ Known-good HDD password for this drive:
 
 		printk(" Lck[%x]", drive_info[128]);
 
-#ifdef HDD_SANITY
+	#ifdef HDD_SANITY
 
 		printk("\n");
 
@@ -709,7 +760,7 @@ Known-good HDD password for this drive:
 
 			printk("HDD p/w: Passed sanity check for Ed's drive\n");
 		}
-#endif
+	#endif
 
 
 		dwMagicFromEEPROM=0;
@@ -724,10 +775,10 @@ Known-good HDD password for this drive:
 
 			for(n=0;n<0x200;n++) baMagic[n]=0;
 
-#ifdef HDD_DEBUG
+	#ifdef HDD_DEBUG
 			printk("Model='%s', Serial='%s'\n", tsaHarddiskInfo[nIndexDrive].m_szIdentityModelNumber, tsaHarddiskInfo[nIndexDrive].m_szSerial);
 			VideoDumpAddressAndData(0, &baKeyFromEEPROM[0], 0x10);
-#endif
+	#endif
 
 			HMAC_SHA1 (&baMagic[2], baKeyFromEEPROM, 0x10,
 					 tsaHarddiskInfo[nIndexDrive].m_szIdentityModelNumber,
@@ -810,9 +861,9 @@ Known-good HDD password for this drive:
 //			nVersionHashing++;
 
 		}
-#ifndef HDD_DEBUG
+	#ifndef HDD_DEBUG
 		if(!fUnlocked)
-#endif
+	#endif
 		{
 			printk("\n");
 			printk("FAILED to unlock drive, sec: %04x; Version=%d, EEPROM:\n", drive_info[128], nVersionSuccessfulDecrypt);
@@ -825,6 +876,10 @@ Known-good HDD password for this drive:
 	} else {
 		if(nIndexDrive==0) printk("  Unlocked");
 	}
+}  
+
+// End the C/X romwell Selection from above
+
 
 	if (drive_info[49] & 0x200) { /* bit 9 of capability word is lba supported bit */
 		tsaHarddiskInfo[nIndexDrive].m_bLbaMode = IDE_DH_LBA;
@@ -870,9 +925,9 @@ Known-good HDD password for this drive:
 				printk(" - MBR", nIndexDrive);
 				if(nIndexDrive==0) {
 					tsaHarddiskInfo[nIndexDrive].m_fHasMbr=1;
-#ifdef DO_CMOS_BIOS_DATA
+	#ifdef DO_CMOS_BIOS_DATA
 					BiosCmosWrite(0x3d, 2);  // boot from HDD
-#endif
+	#endif
 				}
 			} else {
 				tsaHarddiskInfo[nIndexDrive].m_fHasMbr=0;
@@ -885,11 +940,11 @@ Known-good HDD password for this drive:
 		printk("\n");
 
 	} else {  // cd/dvd
-#ifdef DO_CMOS_BIOS_DATA
+	#ifdef DO_CMOS_BIOS_DATA
 		if(BiosCmosRead(0x3d)==0) {  // no bootable HDD
 			BiosCmosWrite(0x3d, 3);  // boot from CD/DVD instead then
 		}
-#endif
+	#endif
 //		printk("BootIdeDriveInit() DVD completed ok\n");
 
 	}
@@ -961,7 +1016,8 @@ int BootIdeAtapiModeSense(int nDriveIndex, BYTE bCodePage, BYTE * pba, int nLeng
 
 		if(!tsaHarddiskInfo[nDriveIndex].m_fDriveExists) return 4;
 
-		memset(&ba[0], 0, 12);
+		memset(ba, 0, sizeof(ba));
+		//memset(&ba[0], 0, 12);
 		ba[0]=0x5a;
 	 	ba[2]=bCodePage;
 	 	ba[7]=(BYTE)(sizeof(ba)>>8); ba[8]=(BYTE)sizeof(ba);
@@ -994,7 +1050,8 @@ int BootIdeAtapiAdditionalSenseCode(int nDriveIndex, BYTE * pba, int nLengthMaxR
 
 		if(!tsaHarddiskInfo[nDriveIndex].m_fDriveExists) return 4;
 
-		memset(&ba[0], 0, 12);
+		//memset(&ba[0], 0, 12);
+		memset(ba, 0, sizeof(ba));
 		ba[0]=0x03;
 	 	ba[4]=0xfe;
 
@@ -1019,6 +1076,7 @@ bool BootIdeAtapiReportFriendlyError(int nDriveIndex, char * szErrorReturn, int 
 	int nReturn;
 	bool f=true;
 
+	memset(ba, 0, sizeof(ba));
 	nReturn=BootIdeAtapiAdditionalSenseCode(nDriveIndex, &ba[0], sizeof(ba));
 	if(nReturn<12) {
 		sprintf(szError, "Unable to get Sense Code\n");
@@ -1035,6 +1093,7 @@ bool BootIdeAtapiReportFriendlyError(int nDriveIndex, char * szErrorReturn, int 
 void BootIdeAtapiPrintkFriendlyError(int nDriveIndex)
 {
 	char sz[512];
+	memset(&sz,0x00,sizeof(sz));
 	BootIdeAtapiReportFriendlyError(nDriveIndex, sz, sizeof(sz));
 	printk(sz);
 }
@@ -1053,7 +1112,8 @@ int BootIdeReadSector(int nDriveIndex, void * pbBuffer, unsigned int block, int 
 	unsigned char baBufferSector[IDE_SECTOR_SIZE];
 	unsigned int track;
 	int status;
-
+	unsigned char ideReadCommand = IDE_CMD_READ_MULTI_RETRY; /* 48-bit LBA */
+	
 	if(!tsaHarddiskInfo[nDriveIndex].m_fDriveExists) return 4;
 
 	uIoBase = tsaHarddiskInfo[nDriveIndex].m_fwPortBase;
@@ -1092,7 +1152,8 @@ int BootIdeReadSector(int nDriveIndex, void * pbBuffer, unsigned int block, int 
 		}
 
 		tsicp.m_wCylinder=2048;
-		memset(&ba[0], 0, 12);
+		memset(ba, 0, sizeof(ba));
+		//memset(&ba[0], 0, 12);
 		ba[0]=0x28; ba[2]=block>>24; ba[3]=block>>16; ba[4]=block>>8; ba[5]=block; ba[7]=0; ba[8]=1;
 
 		if(BootIdeIssueAtapiPacketCommandAndPacket(nDriveIndex, &ba[0])) {
@@ -1120,7 +1181,22 @@ int BootIdeReadSector(int nDriveIndex, void * pbBuffer, unsigned int block, int 
 
 	tsicp.m_bCountSector = 1;
 
-	if (tsaHarddiskInfo[nDriveIndex].m_bLbaMode == IDE_DH_CHS) {
+	
+	
+	if( block >= 0x10000000 ) { /* 48-bit LBA access required for this block */ 
+		tsicp.m_bCountSectorExt = 0;   
+		
+		 /* This routine can have a max LBA of 32 bits (due to unsigned int data type used for block parameter) */   
+		
+		tsicp.m_wCylinderExt = 0; /* 47:32 */   
+		tsicp.m_bSectorExt = (block >> 24) & 0xff; /* 31:24 */   
+		tsicp.m_wCylinder = (block >> 8) & 0xffff; /* 23:8 */   
+		tsicp.m_bSector = block & 0xff; /* 7:0 */   
+		tsicp.m_bDrivehead = IDE_DH_DRIVE(nDriveIndex) | IDE_DH_LBA;   
+		ideReadCommand = IDE_CMD_READ_EXT;   
+    
+         } else if (tsaHarddiskInfo[nDriveIndex].m_bLbaMode == IDE_DH_CHS) { 
+
 		track = block / tsaHarddiskInfo[nDriveIndex].m_wCountSectorsPerTrack;
 
 		tsicp.m_bSector = 1+(block % tsaHarddiskInfo[nDriveIndex].m_wCountSectorsPerTrack);
@@ -1139,7 +1215,7 @@ int BootIdeReadSector(int nDriveIndex, void * pbBuffer, unsigned int block, int 
 			IDE_DH_LBA;
 	}
 
-	if(BootIdeIssueAtaCommand(uIoBase, IDE_CMD_READ_MULTI_RETRY, &tsicp)) {
+	if(BootIdeIssueAtaCommand(uIoBase, ideReadCommand, &tsicp)) {
 		printk("ide error %02X...\n", IoInputByte(IDE_REG_ERROR(uIoBase)));
 		return 1;
 	}

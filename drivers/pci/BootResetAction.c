@@ -27,23 +27,22 @@
 #include "BootEEPROM.h"
 #include "BootFlash.h"
 #include "BootFATX.h"
+#include "xbox.h"
 
-#ifdef XBE
-#include "config-xbe.h"
-#else
-#include "config-rom.h"
-#endif
+#include "config.h"
 #include "BootUsbOhci.h"
 
-#define DO_USB
+
 
 extern DWORD dwaTitleArea[1024*64];
 JPEG jpegBackdrop;
 
 int nTempCursorMbrX, nTempCursorMbrY;
 
+extern volatile int nInteruptable;
+
 volatile CURRENT_VIDEO_MODE_DETAILS currentvideomodedetails;
-volatile USB_CONTROLLER_OBJECT usbcontroller[2];
+volatile ohci_t usbcontroller[2];
 
 volatile AC97_DEVICE ac97device;
 
@@ -58,7 +57,11 @@ const KNOWN_FLASH_TYPE aknownflashtypesDefault[] = {
 	{ 0xad, 0xd5, "Hynix HY29F080", 0x100000 },  // default flash types
 	{ 0x20, 0xf1, "ST M29F080A", 0x100000 },  // default flash types
 	{ 0x89, 0xA6, "Sharp LHF08CH1", 0x100000 }, // default flash types
-	{ 0, 0, "", 0 }
+	{ 0xbf, 0x50, "256 bank 1", 0x100000 },
+	{ 0xbf, 0x51, "256 bank 2", 0x100000 },
+	{ 0xbf, 0x52, "256 bank 3", 0x100000 },
+	{ 0xbf, 0x53, "256 bank 4", 0x100000 },
+	{ 0, 0, "\0", 0 }
 };
 
 
@@ -97,17 +100,15 @@ Hints:
 // access to RTC CMOS memory
 
 void BiosCmosWrite(BYTE bAds, BYTE bData) {
-		IoOutputByte(0x70, bAds);
-		IoOutputByte(0x71, bData);
+		IoOutputByte(0x72, bAds);
+		IoOutputByte(0x73, bData);
 }
 
 BYTE BiosCmosRead(BYTE bAds)
 {
-		IoOutputByte(0x70, bAds);
-		return IoInputByte(0x71);
+		IoOutputByte(0x72, bAds);
+		return IoInputByte(0x73);
 }
-
-
 
 //////////////////////////////////////////////////////////////////////
 //
@@ -121,6 +122,16 @@ extern void BootResetAction ( void ) {
 	int nFATXPresent=false;
 	int nTempCursorX, nTempCursorY;
 
+        memcpy(&cromwell_config,(void*)(0x03A00000+20),4);
+        memcpy(&cromwell_retryload,(void*)(0x03A00000+24),4);
+	memcpy(&cromwell_loadbank,(void*)(0x03A00000+28),4);
+          
+	// Very cosmetic, but very secure
+       	memset((void*)0x00090000,0x00,0x10000);  // Linux Kernel Info Space
+      	memset((void*)0x00100000,0x00,0x200000);  // Kompressed Kernel
+        
+        nInteruptable = 0;	
+        
 #if INCLUDE_FILTROR
 	// clear down channel quality stats
 	bfcqs.m_dwBlocksFromPc=0;
@@ -128,8 +139,10 @@ extern void BootResetAction ( void ) {
 	bfcqs.m_dwBlocksToPc=0;
 	bfcqs.m_dwCountTimeoutErrorsSeenToPc=0;
 #endif
-
-		// prep our BIOS console print state
+        
+        
+         
+	// prep our BIOS console print state
 
 	VIDEO_ATTR=0xffffffff;
 
@@ -137,49 +150,32 @@ extern void BootResetAction ( void ) {
 	BootFiltrorSendArrayToPc("\nBOOT: starting BootResetAction()\n\r", 34);
 #endif
 
-	BootInterruptsWriteIdt();
-//	bprintf("BOOT: done interrupts\n\r");
-
-		// init malloc() and free() structures
-#ifdef XBE
-	MemoryManagementInitialization((void *)0x1000000, 0x0E00000);
-#else
-	MemoryManagementInitialization((void *)0x1000000, 0x2000000);
-#endif
-
-		// if we don't make the PIC happy within 200mS, the damn thing will reset us
-
-	BootPerformPicChallengeResponseAction();
-	bprintf("BOOT: done with PIC challenge\n\r");
-
-		// initialize the PCI devices
-
+	// init malloc() and free() structures
+      
+        
+	MemoryManagementInitialization((void *)MEMORYMANAGERSTART, MEMORYMANAGERSIZE);
+	
+	BootInterruptsWriteIdt();	// Save Mode, not all fully Setup
+	bprintf("BOOT: done interrupts\n\r");
+	
+	// initialize the PCI devices
 	bprintf("BOOT: starting PCI init\n\r");
 	BootPciPeripheralInitialization();
 	bprintf("BOOT: done with PCI initialization\n\r");
+       
+	// if we don't make the PIC happy within 200mS, the damn thing will reset us
 
+	memset((ohci_t *)&usbcontroller[0],0,sizeof(ohci_t));
+	memset((ohci_t *)&usbcontroller[1],0,sizeof(ohci_t));
 
+	
 	BootEepromReadEntireEEPROM();
 	bprintf("BOOT: Read EEPROM\n\r");
 //	DumpAddressAndData(0, (BYTE *)&eeprom, 256);
+        
+        // Load and Init the Background image
 
-	if(((BYTE *)&eeprom)[0x96]&0x01) { // 16:9 widescreen TV
-		currentvideomodedetails.m_nVideoModeIndex=VIDEO_MODE_1024x576;
-	} else { // 4:3 TV
-		currentvideomodedetails.m_nVideoModeIndex=VIDEO_PREFERRED_MODE;
-	}
-
-//		currentvideomodedetails.m_nVideoModeIndex=VIDEO_MODE_800x600;
-
-
-	currentvideomodedetails.m_pbBaseAddressVideo=(BYTE *)0xfd000000;
-//#ifdef XBE
-//	currentvideomodedetails.m_fForceEncoderLumaAndChromaToZeroInitially=0;
-//#else
-	currentvideomodedetails.m_fForceEncoderLumaAndChromaToZeroInitially=1;
-//#endif
-
-	BootVgaInitializationKernel((CURRENT_VIDEO_MODE_DETAILS *)&currentvideomodedetails);
+	BootVgaInitializationKernelNG((CURRENT_VIDEO_MODE_DETAILS *)&currentvideomodedetails);
 
 	bprintf("BOOT: kern VGA init done\n\r");
 
@@ -193,101 +189,70 @@ extern void BootResetAction ( void ) {
 	}
 	bprintf("BOOT: backdrop unpacked\n\r");
 
-		// paint the backdrop
-	BootVideoClearScreen(&jpegBackdrop, 0, 0xffff);
-	bprintf("BOOT: done backdrop\n\r");
-
-
-//#ifndef XBE
-	// configure ACPI hardware to generate interrupt on PIC-chip pin6 action (via EXTSMI#)
-	{
-		DWORD dw;
-		BootPciInterruptGlobalStackStateAndDisable(&dw);
-//		IoOutputByte(0x80c0, 0x08);  // from 2bl
-		IoOutputByte(0x8004, IoInputByte(0x8004)|1);  // KERN: SCI enable == SCI interrupt generated
-		IoOutputByte(0x8022, IoInputByte(0x8022)|2);  // KERN: Interrupt enable register, b1 RESERVED in AMD docs
-		IoOutputByte(0x8002, IoInputByte(0x8002)|1);  // KERN: Enable SCI interrupt when timer status goes high
-		IoOutputByte(0x8028, IoInputByte(0x8028)|1);  // KERN: setting readonly trap event???
-
-		I2CTransmitWord(0x10, 0x0b00); // Allow audio
-//		I2CTransmitWord(0x10, 0x0b01); // GAH!!!  Audio Mute!
-		I2CTransmitWord(0x10, 0x1a01); // unknown, done immediately after reading out eeprom data
-		I2CTransmitWord(0x10, 0x1b04); // unknown
-		BootPciInterruptGlobalPopState(dw);
-	}
-//#endif
-
-
-#if 1
-			// do audio
-	{
-		BootAudioInit(&ac97device);
-
-		ConstructAUDIO_ELEMENT_SINE(&aesTux, 1000);  // constructed silent, manipulated in video IRQ that moves tux
-		BootAudioAttachAudioElement(&ac97device, (AUDIO_ELEMENT *)&aesTux);
-		ConstructAUDIO_ELEMENT_SINE(&aesSong, 1000);  // constructed silent, manipulated in video IRQ that moves tux
-		aesSong.m_paudioelement.m_pvPayload=(SONG_NOTE *)&songnoteaIntro[0];
-		aesSong.m_saVolumePerHarmonicZeroIsNone7FFFIsFull[0]=0x1fff;
-		aesSong.m_paudioelement.m_bStageZeroIsAttack=3; // silenced initially until first note
-		aesSong.m_paudioelement.m_bStageZeroIsAttack=3; // silenced initially until first note
-		BootAudioAttachAudioElement(&ac97device, (AUDIO_ELEMENT *)&aesSong);
-		ConstructAUDIO_ELEMENT_NOISE(&aenTux);  // constructed silent, manipulated in video IRQ that moves tux
-		BootAudioAttachAudioElement(&ac97device, (AUDIO_ELEMENT *)&aenTux);
-		BootAudioPlayDescriptors(&ac97device);
-
-	}
-#endif
-
-	// init USB
-#ifdef DO_USB
-	{
-		const int nSizeAllocation=0x10000;
-		void * pvHostControllerCommsArea=malloc(nSizeAllocation+0x100); // 64K+256 to ensure alignment
-		void * pvHostControllerCommsArea1=malloc(nSizeAllocation+0x100); // 64K+256 to ensure alignment
-		bprintf("BOOT: start USB init\n\r");
-		BootUsbInit((USB_CONTROLLER_OBJECT *)&usbcontroller[0], "USB1", (void *)0xfed00000, (void *)(((DWORD)pvHostControllerCommsArea+0x100)&0xffffff00), nSizeAllocation);
-		BootUsbInit((USB_CONTROLLER_OBJECT *)&usbcontroller[1], "USB2", (void *)0xfed08000, (void *)(((DWORD)pvHostControllerCommsArea1+0x100)&0xffffff00), nSizeAllocation);
-		bprintf("BOOT: done USB init\n\r");
-	}
-#endif
-
-
 	// display solid red frontpanel LED while we start up
 	I2cSetFrontpanelLed(I2C_LED_RED0 | I2C_LED_RED1 | I2C_LED_RED2 | I2C_LED_RED3 );
 
-	{
-		DWORD dw;
-		BootPciInterruptGlobalStackStateAndDisable(&dw);
-
-		I2CTransmitWord(0x10, 0x1901); // no reset on eject
-#ifdef IS_XBE_CDLOADER
-		I2CTransmitWord(0x10, 0x0c01); // close DVD tray
-#else
-		I2CTransmitWord(0x10, 0x0c00); // eject DVD tray
+		// paint the backdrop
+#ifndef DEBUG_MODE
+	BootVideoClearScreen(&jpegBackdrop, 0, 0xffff);
 #endif
-		BootPciInterruptGlobalPopState(dw);
+	bprintf("BOOT: done backdrop\n\r");
+
+	nInteruptable = 1;	      
+       
+	I2CTransmitWord(0x10, 0x1a01); // unknown, done immediately after reading out eeprom data
+	I2CTransmitWord(0x10, 0x1b04); // unknown
+
+	// Audio Section
+	
+	BootAudioInit(&ac97device);
+	ConstructAUDIO_ELEMENT_SINE(&aesTux, 1000);  // constructed silent, manipulated in video IRQ that moves tux
+	BootAudioAttachAudioElement(&ac97device, (AUDIO_ELEMENT *)&aesTux);
+	ConstructAUDIO_ELEMENT_SINE(&aesSong, 1000);  // constructed silent, manipulated in video IRQ that moves tux
+	aesSong.m_paudioelement.m_pvPayload=(SONG_NOTE *)&songnoteaIntro[0];
+	aesSong.m_saVolumePerHarmonicZeroIsNone7FFFIsFull[0]=0x1fff;
+	aesSong.m_paudioelement.m_bStageZeroIsAttack=3; // silenced initially until first note
+	aesSong.m_paudioelement.m_bStageZeroIsAttack=3; // silenced initially until first note
+	BootAudioAttachAudioElement(&ac97device, (AUDIO_ELEMENT *)&aesSong);
+	ConstructAUDIO_ELEMENT_NOISE(&aenTux);  // constructed silent, manipulated in video IRQ that moves tux
+	BootAudioAttachAudioElement(&ac97device, (AUDIO_ELEMENT *)&aenTux);
+	BootAudioPlayDescriptors(&ac97device);
+
+
+	nInteruptable = 1;	
+	
+
+
+        {
+	DWORD dw=0;
+	BootPciInterruptGlobalStackStateAndDisable(&dw);
+
+	I2CTransmitWord(0x10, 0x1901); // no reset on eject
+
+#ifdef IS_XBE_CDLOADER
+	I2CTransmitWord(0x10, 0x0c01); // close DVD tray
+#else
+	I2CTransmitWord(0x10, 0x0c00); // eject DVD tray
+#endif
+	BootPciInterruptGlobalPopState(dw);
 	}
-	// start up Timer 0 so we get the 18.2Hz tick interrupts
-
-	IoOutputByte(0x43, 0x36);
-	IoOutputByte(0x40, 0xff);
-	IoOutputByte(0x40, 0xff);
-
+     
+         
 	VIDEO_CURSOR_POSY=currentvideomodedetails.m_dwMarginYInLinesRecommended;
 	VIDEO_CURSOR_POSX=(currentvideomodedetails.m_dwMarginXInPixelsRecommended/*+64*/)*4;
-#ifdef XBE
-	printk("\2Xbox Linux XROMWELL  " VERSION "\2\n" );
-#else
-	printk("\2Xbox Linux Clean BIOS  " VERSION "\2\n" );
-#endif
+	
+	if (cromwell_config==XROMWELL) 	printk("\2Xbox Linux XROMWELL  " VERSION "\2\n" );
+	if (cromwell_config==CROMWELL)	printk("\2Xbox Linux Clean BIOS  " VERSION "\2\n" );
+	
+
 	VIDEO_CURSOR_POSY=currentvideomodedetails.m_dwMarginYInLinesRecommended+32;
 	VIDEO_CURSOR_POSX=(currentvideomodedetails.m_dwMarginXInPixelsRecommended/*+64*/)*4;
 	printk( __DATE__ " -  http://xbox-linux.sf.net\n");
 	VIDEO_CURSOR_POSX=(currentvideomodedetails.m_dwMarginXInPixelsRecommended/*+64*/)*4;
-	printk("(C)2002-2003 Xbox Linux Team - Licensed under the GPL\n");
+	printk("(C)2002-2003 Xbox Linux Team - Licensed under the GPL  (Load Trys: %d Bank: %d) \n",cromwell_retryload,cromwell_loadbank);
 	printk("\n");
 
-		// capture title area
+	// capture title area
 	BootVideoBlit(&dwaTitleArea[0], currentvideomodedetails.m_dwWidthInPixels*4, ((DWORD *)FRAMEBUFFER_START)+(currentvideomodedetails.m_dwMarginYInLinesRecommended*currentvideomodedetails.m_dwWidthInPixels), currentvideomodedetails.m_dwWidthInPixels*4, 64);
 
 	nTempCursorX=VIDEO_CURSOR_POSX;
@@ -300,20 +265,11 @@ extern void BootResetAction ( void ) {
 		printk("v1.0  ");
 	} else {
 		printk("v1.1  ");
-//		printk("v1.1  %x", PciReadDword(BUS_0, DEV_1, 0, 0x08)&0xff);
 	}
 
 
 	BootPciInterruptEnable();
 
-/*
-	{
-		DWORD dw1, dw2;
-		rdmsr(0x2a, dw1, dw2);
-//		printk("%x %x  ", dw1, dw2);
-
-	}
-*/
 	{
 		int n, nx;
 		I2CGetTemperature(&n, &nx);
@@ -425,6 +381,7 @@ extern void BootResetAction ( void ) {
 		{  			// standard BIOS settings
 			int n;
 			for(n=0x0e;n<0x40;n++) BiosCmosWrite(n, 0);
+
 //			BiosCmosWrite(0x0e, 0); // say that CMOS, HDD and RTC are all valid
 //			BiosCmosWrite(0x0f, 0); // say that we are coming up from a normal reset
 //			BiosCmosWrite(0x10, 0); // no floppies on this thing
@@ -436,6 +393,10 @@ extern void BootResetAction ( void ) {
 			BiosCmosWrite(0x31, 0xe6); // high part (set to 59MB)
 			BiosCmosWrite(0x32, 20); // century
 //			BiosCmosWrite(0x3d, 0); // boot method: default=0=do not attempt boot (set in BootIde.c)
+		}
+#else
+		{
+				BiosCmosWrite(0x32, 20); // century
 		}
 #endif
 			// gggb while waiting for Ethernet & Hdd
@@ -452,40 +413,51 @@ extern void BootResetAction ( void ) {
 		}
 #endif
 
-			// set Ethernet MAC address from EEPROM
-		{
-			volatile BYTE * pb=(BYTE *)0xfef000a8;  // Ethernet MMIO base + MAC register offset (<--thanks to Anders Gustafsson)
-			int n;
-			for(n=5;n>=0;n--) { *pb++=	eeprom.MACAddress[n]; } // send it in backwards, its reversed by the driver
-		}
+		// set Ethernet MAC address from EEPROM
+	        
+	        {
+		volatile BYTE * pb=(BYTE *)0xfef000a8;  // Ethernet MMIO base + MAC register offset (<--thanks to Anders Gustafsson)
+		int n;
+		for(n=5;n>=0;n--) { *pb++=	eeprom.MACAddress[n]; } // send it in backwards, its reversed by the driver
+	        }
 
-//		BootPciInterruptEnable();
 		BootEepromPrintInfo();
 
-#ifndef XBE
+		
+#if 0
 		{
-			OBJECT_FLASH of;
-			of.m_pbMemoryMappedStartAddress=(BYTE *)0xff000000;
-			BootFlashCopyCodeToRam();
-			BootFlashGetDescriptor(&of, (KNOWN_FLASH_TYPE *)&aknownflashtypesDefault[0]);
-			VIDEO_ATTR=0xffc8c8c8;
-			printk("Flash type: ");
-			VIDEO_ATTR=0xffc8c800;
-			printk("%s\n", of.m_szFlashDescription);
+		OBJECT_FLASH of;
+		memset(&of,0x00,sizeof(of));
+		of.m_pbMemoryMappedStartAddress=(BYTE *)0xff000000;
+		BootFlashCopyCodeToRam();
+		BootFlashGetDescriptor(&of, (KNOWN_FLASH_TYPE *)&aknownflashtypesDefault[0]);
+		VIDEO_ATTR=0xffc8c8c8;
+		printk("Flash type: ");
+		VIDEO_ATTR=0xffc8c800;
+		printk("%s\n", of.m_szFlashDescription);
 		}
-
 #endif
+	
+	// init USB
 #ifdef DO_USB
-		{
-			VIDEO_ATTR=0xffc8c8c8;
-			printk("USB: ");
-			VIDEO_ATTR=0xffc8c800;
+	
+		printk("BOOT: start USB init\n");
 
-			BootUsbPrintStatus((USB_CONTROLLER_OBJECT *)&usbcontroller[0]);
-//			BootUsbPrintStatus((USB_CONTROLLER_OBJECT *)&usbcontroller[1]);
-			BootUsbDump((USB_CONTROLLER_OBJECT *)&usbcontroller[0]);
-//			BootUsbDump((USB_CONTROLLER_OBJECT *)&usbcontroller[1]);
-		}
+		BootUsbInit((ohci_t *)&usbcontroller[0], "USB1", (void *)0xfed00000);
+//		BootUsbInit((ohci_t *)&usbcontroller[1], "USB1", (void *)0xfed08000);
+		printk("BOOT: done USB init\n");
+	
+
+		
+		VIDEO_ATTR=0xffc8c8c8;
+		printk("USB: ");
+		VIDEO_ATTR=0xffc8c800;
+
+//		BootUsbPrintStatus((USB_CONTROLLER_OBJECT *)&usbcontroller[0]);
+//		BootUsbPrintStatus((USB_CONTROLLER_OBJECT *)&usbcontroller[1]);
+//		BootUsbDump((USB_CONTROLLER_OBJECT *)&usbcontroller[0]);
+//		BootUsbDump((USB_CONTROLLER_OBJECT *)&usbcontroller[1]);
+		
 #endif
 
 			// init the HDD and DVD
@@ -494,16 +466,19 @@ extern void BootResetAction ( void ) {
 
 			// wait around for HDD to become ready
 
+		
 		{
-			DWORD dw=BIOS_TICK_COUNT;
-			BootIdeWaitNotBusy(0x1f0);
-			while((BIOS_TICK_COUNT-dw)<30) ;  // wait minimum ~1.8 second
+		DWORD dw=BIOS_TICK_COUNT;
+		BootIdeWaitNotBusy(0x1f0);
+		while((BIOS_TICK_COUNT-dw)<30) ;  // wait minimum ~1.8 second
 		}
 		printk("Ready\n");
 
 					// reuse BIOS status area
 
+#ifndef DEBUG_MODE
 		BootVideoClearScreen(&jpegBackdrop, nTempCursorY, VIDEO_CURSOR_POSY+1);  // blank out volatile data area
+#endif
 		VIDEO_CURSOR_POSX=nTempCursorX;
 		VIDEO_CURSOR_POSY=nTempCursorY;
 
@@ -518,6 +493,7 @@ extern void BootResetAction ( void ) {
 
 		{
 			BYTE ba[512];
+			memset(&ba,0x00,sizeof(ba));
 			if(BootIdeReadSector(0, &ba[0], 0, 0, 512)) {
 				printk("Unable to read HDD first sector getting partition table\n");
 			} else {
@@ -529,6 +505,7 @@ extern void BootResetAction ( void ) {
 					int n=0, nPos=0;
 #ifdef DISPLAY_MBR_INFO
 					char sz[512];
+					memset(&sz,0x00,sizeof(sz));
 
 					VIDEO_ATTR=0xffe8e8e8;
 					printk("MBR Partition Table:\n");
@@ -595,10 +572,23 @@ extern void BootResetAction ( void ) {
 		}
 
 			// if we made it this far, lets have a solid green LED to celebrate
-		I2cSetFrontpanelLed(I2C_LED_GREEN0 | I2C_LED_GREEN1 | I2C_LED_GREEN2 | I2C_LED_GREEN3);
+		I2cSetFrontpanelLed(
+			I2C_LED_GREEN0 | I2C_LED_GREEN1 | I2C_LED_GREEN2 | I2C_LED_GREEN3
+		);
 
 //	printk("i2C=%d SMC=%d, IDE=%d, tick=%d una=%d unb=%d\n", nCountI2cinterrupts, nCountInterruptsSmc, nCountInterruptsIde, BIOS_TICK_COUNT, nCountUnusedInterrupts, nCountUnusedInterruptsPic2);
 
+
+	// enable below for stress testing
+	// continually restarts _romwell without hard-resetting the hardware
+
+#if 0
+		{
+			void bootloader2();
+			printk("rebooting\n");
+			bootloader2();
+		}
+#endif
 
 	// Used to start Bochs; now a misnomer as it runs vmlinux
 	// argument 0 for hdd and 1 for from CDROM

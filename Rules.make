@@ -7,7 +7,7 @@
 #
 .PHONY: dummy
 
-CFLAGSBR = -g -Wall -Werror 
+CFLAGSBR = -Wall -Werror 
 
 #
 # Special variables which should not be exported
@@ -29,13 +29,13 @@ SUB_DIRS	:= $(subdir)
 #
 
 BootPerformPicChallengeResponseAction.o: BootPerformPicChallengeResponseAction.c
-	${CC} ${CFLAGSBR} $(INCLUDE) -o $(TOPDIR)/obj/$@ -c $<
+	$(CC) $(CFLAGSBR) $(INCLUDE) -o $(TOPDIR)/obj/$@ -c $<
 	
 %.o     : %.c
-	${CC} ${CFLAGS} ${EXTRA_CFLAGS} -o $(TOPDIR)/obj/$@ -c $<
+	$(CC) $(CFLAGS) $(EXTRA_CFLAGS) -o $(TOPDIR)/obj/$@ -c $<
 
 %.o     : %.S
-	${CC} -DASSEMBLER ${CFLAGS} -o $(TOPDIR)/obj/$@ -c $<
+	$(CC) -DASSEMBLER $(CFLAGS) -o $(TOPDIR)/obj/$@ -c $<
 
 all_targets: $(O_TARGET)
 

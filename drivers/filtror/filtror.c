@@ -241,7 +241,7 @@ int DumpAddressAndData(DWORD dwAds, const BYTE * baData, DWORD dwCountBytesUsabl
 }
 
 #if INCLUDE_FILTROR
-//  __attribute__ ((section (".data")))
+
 BOOTFILTROR_CHANNEL_QUALITY_STATS bfcqs;  // information about connection quality and usage
 #endif
 

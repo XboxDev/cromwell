@@ -1,14 +1,6 @@
 /*
  *
  *  BIOS ROM Startup Assembler
- *  (C)2002 Andy, Michael, Paul, Steve
- * Original top and bottom ROM code by Steve from an idea by Michael
- *
- *  This contains the magic values read by the MCPX before the CPU gets started,
- *  as well as a minimal Xcode program which exits the Xcode interpreter immediately
- *  by turning off the MCPX ROM while the interpreter is running.
- *  The CPU will start executing *our* ROM instructions at location 0xFFFFFE62.
- *  See label jmp_code in this file for where execution picks up
  */
 
  /***************************************************************************
@@ -23,50 +15,20 @@
 
 	.code32
 
-.section .low_rom, "ax"
-
-					/* MCPX Magic Values */
-
-		.long 0xff000009
-		.long 0xff000008
-mcpx_magic:  // needs to be DWORD aligned
-    .long 0x2b16d065, 0x3346322d
-    .byte 1, 1, 1, 1, 8, 8, 8, 8, 1, 8, 0, 0
-		.byte 0x8a, 0x7c, 0xfc, 0xc8
-		.byte 0x13, 0x02, 0x29, 0x44, 0x98, 0x49, 0x00, 0x90
-		.long 0x0, 0xffffffff, 0xffffffff
-
-		.org 0x60
-
-		jmp	start_linux
-
-		.org 0x6c
-		.byte 0x07, 0x01
-		.org 0x70
-
-		.byte 0x0f, 0x00, 0x00, 0x00, 0x00, 0x44, 0x00, 0x40
-		.byte 0x70, 0x00, 0xd1, 0x12, 0x90, 0x0c, 0x00, 0x00
-
-	.section .text, "ax"
-	.text
-
-
-	/*
- *
- * this is the entry code.  We get here by a jump
- * from the top of rom, and we get there by the
- * single xcode which exposes the top 512
- * bytes and nops take us to a long jump.
- *
- * We arrive here in protected mode with the cs set
- * to 08 offset in the gdt, which has been set to
- * 4GB flat mode (code and data). Data is 0x10 offset.
- * Caching is disabled since we did not go through the EE opcode.
- */
-
-
- 	//
-
+.section .text, "ax"
+         .org 0x00
+         jmp	start_linux
+         
+.global	Cromwellconfig
+Cromwellconfig:      	
+        .org 0x20       
+        .long 0x0	// if XBE, then this bit is 0, if Cromwell mode, the bit is set to 1 by the Startuploader
+        .long 0x0	// ImageRetryLoads
+        .long 0x0	// Bank, from where Loaded
+        
+	.org 0x100
+	jmp	start_linux        
+        
 .globl tableGdt
 tableGdt:
 
@@ -86,285 +48,65 @@ tableGdtDescriptor:
 tableIdtDescriptor:
 
 	.word 2048
-	.long 0xef000
+	.long 0x00400000
 	.word 0
 
 	.globl start_linux
 start_linux:
 
-#ifdef XBE
-	jmp bootloader2
-#endif
+
+        // Clear Intel Interrupts in Processor Register
+	// Everytime very good, specially when comming out of a running envoronment
 	
-	cli
-
-	mov %cr0, %eax
-	orl	$0x60000000, %eax
-	mov	%eax, %cr0
-	invd
-
-	xorl	%edx, %edx
-	movl	$0x2ff, %ecx
-	movl	$0x000, %eax // KILL MTRRs
+	/*  
+  	 There are Some Nops here
+  	 Basically, they are useless, it works without them too.
+  	 BUT !
+  	 IA32 Manual Recommends some waiting after doing eg. CPU swapout or reloading of the IDT, GDT, as the CPU
+  	 nees some minor time to settel.
+  	 basically, they recommend a small "dummy" loop, but NOP is also good, but wastes more space .. who cares
+  	 we have 733 Mhz here
+  	*/
+  	
+        nop
+	nop
+	nop
+	
+	movl	$0x1b, %ecx
+	xor	%eax, %eax
+	xor	%edx, %edx
 	wrmsr
 
-//		mov	$0, %al
-//		mov	$0x72, %dx
-//		out	%al, %dx
+        // We clear the IDT in RAM
+        xor %eax,%eax
+	mov $0x5000,%ecx
+	mov $0x400000,%edi
+	rep stosb
 
-	mov	$0x8, %al
-	mov	$0x61, %dx
-	out	%al, %dx
-
-		// xcode actions first of all
-
-	mov $0x80000810, %eax ;	movw $0xcf8, %dx ; outl	%eax, %dx ;	movw $0xcfc, %dx ;	mov	$0x8001, %eax ;	outl	%eax, %dx  // v1.0 ACPI IO region enable
-	mov $0x80000884, %eax ;	movw $0xcf8, %dx ; outl	%eax, %dx ;	movw $0xcfc, %dx ;	mov	$0x8001, %eax ;	outl	%eax, %dx  // v1.1  "
-	movw $0x8026, %dx ;	movw $0x2201, %ax ;	outb %al, %dx // extsmi# able to control power (b0<-0 causes CPU powerdown after couple of seconds)
-#if 1
-	mov $0x80000804, %eax ;	movw $0xcf8, %dx ;	outl	%eax, %dx ;	movw $0xcfc, %dx ;	mov	$0x3, %eax ;	outl	%eax, %dx
-
-	movw $0x80d6, %dx ;	movb $4, %al ;	outb %al, %dx
-	movw $0x80d8, %dx ;	movb $4, %al ;	outb %al, %dx
-	movw $0x8049, %dx ;	movb $8, %al ;	outb %al, %dx
-//	movw $0x80d9, %dx ;	movb $0, %al ;	outb %al, %dx
-
-//	mov $0x8000036c, %eax ;	movw $0xcf8, %dx ;	outl	%eax, %dx ;	movw $0xcfc, %dx ;	mov	$0x0, %eax ;	outl	%eax, %dx
-//	mov $0x80000340, %eax ;	movw $0xcf8, %dx ;	outl	%eax, %dx ;	movw $0xcfc, %dx ;	mov	$0xf81c4400, %eax ;	outl	%eax, %dx
-
-	mov $0x8000f04c, %eax ;	movw $0xcf8, %dx ;	outl	%eax, %dx ;	movw $0xcfc, %dx ;	mov	$0x00000001, %eax ;	outl	%eax, %dx
-	mov $0x8000f018, %eax ;	movw $0xcf8, %dx ;	outl	%eax, %dx ;	movw $0xcfc, %dx ;	mov	$0x00010100, %eax ;	outl	%eax, %dx
-	mov $0x80000084, %eax ;	movw $0xcf8, %dx ;	outl	%eax, %dx ;	movw $0xcfc, %dx ;	mov	$0x07ffffff, %eax ;	outl	%eax, %dx
-	mov $0x8000f020, %eax ;	movw $0xcf8, %dx ;	outl	%eax, %dx ;	movw $0xcfc, %dx ;	mov	$0x0ff00f00, %eax ;	outl	%eax, %dx
-	mov $0x8000f024, %eax ;	movw $0xcf8, %dx ;	outl	%eax, %dx ;	movw $0xcfc, %dx ;	mov	$0xf7f0f000, %eax ;	outl	%eax, %dx
-	mov $0x80010010, %eax ;	movw $0xcf8, %dx ;	outl	%eax, %dx ;	movw $0xcfc, %dx ;	mov	$0x0f000000, %eax ;	outl	%eax, %dx
-	mov $0x80010014, %eax ;	movw $0xcf8, %dx ;	outl	%eax, %dx ;	movw $0xcfc, %dx ;	mov	$0xf0000000, %eax ;	outl	%eax, %dx
-	mov $0x80010004, %eax ;	movw $0xcf8, %dx ;	outl	%eax, %dx ;	movw $0xcfc, %dx ;	mov	$0x00000007, %eax ;	outl	%eax, %dx
-	mov $0x8000f004, %eax ;	movw $0xcf8, %dx ;	outl	%eax, %dx ;	movw $0xcfc, %dx ;	mov	$0x00000007, %eax ;	outl	%eax, %dx
-
-	movl $0x07633461, 0x0f0010b0
-	movl $0x66660000, 0x0f0010cc
-
-	movl $0x03c00000, 0x0f600800  // new guy, move the video out of the way
-//	movl $0x0, 0x0f680600  // stopped blue horrors previously
-
-	cld             // clear direction flag
-
-	movl 0x0f101000, %eax
-	testl $0x000c0000, %eax
-	jnz nota1a
-
-	andl	$0xe1f3ffff, %eax
-	orl $0x80000000, %eax
-	movl %eax, 0x0f101000
-	movl	$0xeeee0000, 0x0f0010b8
-
-//	movl $0x07633451, 0x0f0010b0
-//	movl $0x0, 0x0f0010cc
-//	movl $0xffff0000, 0x0f0010b8
-//	movl $0x5, 0x0f0010d4
-
-	jmp donea1a
-
-nota1a:
-
-	andl	$0xe1f3ffff, %eax
-	orl $0x860c0000, %eax
-	movl %eax, 0x0f101000
-	movl	$0xffff0000, 0x0f0010b8
-
-//	movl $0x07633461, 0x0f0010b0
-//	movl $0x66660000, 0x0f0010cc
-//	movl $0xffff0000, 0x0f0010b8
-//	movl $0x9, 0x0f0010d4
-
-donea1a:
-
-	movl $0x0, 0x0f0010b4
-	movl $0x5866, 0x0f0010bc
-	movl $0x0351c858, 0x0f0010c4
-	movl $0x30007d67, 0x0f0010c8
-	movl $0x0, 0x0f0010d8
-	movl $0xa0423635, 0x0f0010dc
-	movl $0x0c6558c6, 0x0f0010e8
-
-	movl $0x03070103, 0x0f100200
-
-	movl $0x11000016, 0x0f100410
-	movl $0x11000016, 0x0f100410
-	movl $0x84848888, 0x0f100330
-
-	movl $0xffffcfff, 0x0f10032c
-	movl $0x00000001, 0x0f100328
-	movl $0x000000df, 0x0f100338
-
-	movb 0x0f000000, %al
-	cmpb $0xa1, %al
-	jnz nota1b
-
-	mov $0x803d4401, %eax ; mov 0x0f101000, %eax
-
-nota1b:
-
-	mov $0x80000904, %eax ;	movw $0xcf8, %dx ;	outl	%eax, %dx ;	movw $0xcfc, %dx ;	mov	$0x00000001, %eax ;	outl	%eax, %dx
-	mov $0x80000914, %eax ;	movw $0xcf8, %dx ;	outl	%eax, %dx ;	movw $0xcfc, %dx ;	mov	$0x0000c001, %eax ;	outl	%eax, %dx
-	mov $0x80000918, %eax ;	movw $0xcf8, %dx ;	outl	%eax, %dx ;	movw $0xcfc, %dx ;	mov	$0x0000c201, %eax ;	outl	%eax, %dx
-
-	mov $0x8000093c, %eax ;	movw $0xcf8, %dx ;	outl	%eax, %dx ;	movw $0xcfc, %dx ;	inl %dx, %eax ; orl	$0x7, %eax ;	outl	%eax, %dx // I2C int=7
-
-	movw $0xc200, %dx ;	movb $0x70, %al ;	outb %al, %dx
-//	movw $0xc002, %dx ;	movb $0x10, %al ;	outb %al, %dx // enable I2C interrupt
-
-		// skipped unnecessary conexant init
-
-	movw $0xc000, %dx ;	movb $0x10, %al ;	outb %al, %dx
-	movw $0xc004, %dx ;	movb $0x20, %al ;	outb %al, %dx
-	movw $0xc008, %dx ;	movb $0x01, %al ;	outb %al, %dx
-	movw $0xc006, %dx ;	movb $0x00, %al ;	outb %al, %dx
-	movw $0xc002, %dx ;	movb $0x0a, %al ;	outb %al, %dx
-
-spin1:
-	movw $0xc000, %dx
-	inb %dx, %al
-	cmp $0x10, %al
-	jnz	spin1
-
-	  // (skipped PIC test here)
-	movw $0xc000, %dx ;	movb $0x10, %al ;	outb %al, %dx
-	movw $0xc004, %dx ;	movb $0x21, %al ;	outb %al, %dx
-	movw $0xc008, %dx ;	movb $0x01, %al ;	outb %al, %dx
-	movw $0xc002, %dx ;	movb $0x0a, %al ;	outb %al, %dx
-
-spin1a:
-	movw $0xc000, %dx
-	inb %dx, %al
-	cmp $0x10, %al
-	jnz	spin1a
-
-	movw $0xc006, %dx
-	inb %dx, %al
-	cmp $0x50, %al
-	jz skipPicDecidedInit
-
-	mov $0x8000036c, %eax ;	movw $0xcf8, %dx ;	outl	%eax, %dx ;	movw $0xcfc, %dx ;	mov	$0x01000000, %eax ;	outl	%eax, %dx
-
-skipPicDecidedInit:
-
-	movb 0x0f000000, %al
-	cmpb $0xa1, %al
-	jnz nota1c
-
-	mov $0x10101010, %eax ; mov 0x0f001214, %eax
-
-	jmp donea1c
-
-nota1c:
-
-	mov $0x12121212, %eax ; mov 0x0f001214, %eax
-
-donea1c:
-
-	movl $0xaaaaaaaa, 0x0f00122c
-	movl $0xaaaaaaaa, 0x0f001230
-	movl $0xaaaaaaaa, 0x0f001234
-	movl $0xaaaaaaaa, 0x0f001238
-	movl $0x8b8b8b8b, 0x0f00123c
-	movl $0x8b8b8b8b, 0x0f001240
-	movl $0x8b8b8b8b, 0x0f001244
-	movl $0x8b8b8b8b, 0x0f001248
-	movl $0x00000001, 0x0f1002d4
-	movl $0x00100042, 0x0f1002c4
-	movl $0x00100042, 0x0f1002cc
-	movl $0x11, 0x0f1002c0
-	movl $0x11, 0x0f1002c8
-	movl $0x32, 0x0f1002c0
-	movl $0x32, 0x0f1002c8
-	movl $0x132, 0x0f1002c0
-	movl $0x132, 0x0f1002c8
-	movl $0x1, 0x0f1002d0
-	movl $0x1, 0x0f1002d0
-	movl $0x80000000, 0x0f100210
-	movl $0xaa8baa8b, 0x0f00124c
-	movl $0x0000aa8b, 0x0f001250
-	movl $0x081205ff, 0x0f100228
-	movl $0x00010000, 0x0f000218
-
-	mov $0x80000860, %eax ;	movw $0xcf8, %dx ;	outl	%eax, %dx ;	movw $0xcfc, %dx ;	in %dx, %eax ; orl $0x400, %eax ;	outl	%eax, %dx
-	mov $0x8000084c, %eax ;	movw $0xcf8, %dx ;	outl	%eax, %dx ;	movw $0xcfc, %dx ;	mov	$0xfdde, %eax ;	outl	%eax, %dx
-	mov $0x8000089c, %eax ;	movw $0xcf8, %dx ;	outl	%eax, %dx ;	movw $0xcfc, %dx ;	mov	$0x871cc707, %eax ;	outl	%eax, %dx
-
-	mov $0x800008b4, %eax ;	movw $0xcf8, %dx ;	outl	%eax, %dx ;	movw $0xcfc, %dx ;	in %dx, %eax ; orl $0xf00, %eax ;	outl	%eax, %dx
-
-	mov $0x80000340, %eax ;	movw $0xcf8, %dx ;	outl	%eax, %dx ;	movw $0xcfc, %dx ;	mov	$0xf0f0c0c0, %eax ;	outl	%eax, %dx
-	mov $0x80000344, %eax ;	movw $0xcf8, %dx ;	outl	%eax, %dx ;	movw $0xcfc, %dx ;	mov	$0x00c00000, %eax ;	outl	%eax, %dx
-	mov $0x8000035c, %eax ;	movw $0xcf8, %dx ;	outl	%eax, %dx ;	movw $0xcfc, %dx ;	mov	$0x04070000, %eax ;	outl	%eax, %dx
-	mov $0x8000036c, %eax ;	movw $0xcf8, %dx ;	outl	%eax, %dx ;	movw $0xcfc, %dx ;	mov	$0x00230801, %eax ;	outl	%eax, %dx
-	mov $0x8000036c, %eax ;	movw $0xcf8, %dx ;	outl	%eax, %dx ;	movw $0xcfc, %dx ;	mov	$0x01230801, %eax ;	outl	%eax, %dx
-
-	mov $8, %eax ; timloop2: dec %eax ; cmp $0, %eax ; jnz timloop2
-
-		// 5F1
-
-	movl $0x03070103, 0x0f100200
-	movl $0x11448000, 0x0f100204
-
-			// skipped actual memory test
-
-		// A95
-	movl $0x03070003, 0x0f100200
-
-		// A9E
-	mov $0x80000084, %eax ;	movw $0xcf8, %dx ;	outl	%eax, %dx ;	movw $0xcfc, %dx ;	mov	$0x03ffffff, %eax ;	outl	%eax, %dx
-
-	movw $0xc006, %dx ;	movb $0x0f, %al ;	outb %al, %dx // result1 AB9
-
-	movw $0xc004, %dx ;	movb $0x20, %al ;	outb %al, %dx
-	movw $0xc008, %dx ;	movb $0x13, %al ;	outb %al, %dx
-	movw $0xc002, %dx ;	movb $0x0a, %al ;	outb %al, %dx
-
-		// B2E
-spin2:
-	movw $0xc000, %dx
-	inb %dx, %al
-	cmp $0x10, %al
-	jnz	spin2
-
-	movw $0xc000, %dx ;	movb $0x10, %al ;	outb %al, %dx
-	movw $0xc006, %dx ;	movb $0xf0, %al ;	outb %al, %dx
-	movw $0xc004, %dx ;	movb $0x20, %al ;	outb %al, %dx
-	movw $0xc008, %dx ;	movb $0x12, %al ;	outb %al, %dx
-	movw $0xc006, %dx ;	movb $0xf0, %al ;	outb %al, %dx
-	movw $0xc002, %dx ;	movb $0x0a, %al ;	outb %al, %dx
-
-		// B76
-spin3:
-	movw $0xc000, %dx
-	inb %dx, %al
-	cmp $0x10, %al
-	jnz	spin3
-
-	movw $0xc000, %dx ;	movb $0x10, %al ;	outb %al, %dx
-
-	mov $0x8000f020, %eax ;	movw $0xcf8, %dx ;	outl	%eax, %dx ;	movw $0xcfc, %dx ;	mov	$0xfdf0fd00, %eax ;	outl	%eax, %dx
-	mov $0x80010010, %eax ;	movw $0xcf8, %dx ;	outl	%eax, %dx ;	movw $0xcfc, %dx ;	mov	$0xfd000000, %eax ;	outl	%eax, %dx
-
-#endif
-
-
-
-bootloader2:
-
-	lidt tableIdtDescriptor
+	//call ClearIDT
 	lgdt tableGdtDescriptor
-	ljmp $0x10, $selftarget
+	lidt tableIdtDescriptor
 
-selftarget:
+       // FPU SETUP
+	movl %cr0,%eax          
+	andl $0x80000011,%eax   
+	orl $0x50022,%eax       
+	movl %eax,%cr0
+	clts
+	fninit
+	.byte 0xDB,0xE4         /* fsetpm for 287, ignored by 387 */	
 
-	// this from 2bl first init
 
-		// kill the cache
-
-	mov %cr0, %eax
+	nop
+	nop
+	nop    
+	
+	xor	%eax, %eax
+	xor	%edx, %edx
+	xor	%ecx, %ecx
+	
+	// kill the cache
+       	mov %cr0, %eax
 	orl	$0x60000000, %eax
 	mov	%eax, %cr0
 	wbinvd
@@ -372,108 +114,134 @@ selftarget:
 	mov	%cr3, %eax
 	mov	%eax, %cr3
 
+	// Clear Mmeory Type register
 	movl	$0x2ff, %ecx
-		xor		%eax, %eax
-		xor		%edx, %edx
-		wrmsr
-
-		// Init the MTRR for Ram
-
-		movl	$0x200, %ecx // from MCPX 0xee action
-
-			// MTRR for RAM
-			// from address 0, Writeback Caching, 64MB range
-
-		movl	$0x00000000, %edx // 0x00
-		movl	$0x00000006, %eax // == WB_CACHE == 6
-		wrmsr
-		inc		%ecx
-
-			// MASK0 set to 0xffc000[000] == 64M
-		movl	$0x0f, %edx // 0x0f
-		movl	$0xfc000800, %eax  // 0xfc000800 b11= enable MTRR
-		wrmsr
-		inc %ecx
-
-
-			// MTRR for BIOS
-
-		movl	$0x00000000, %edx // 0x00
-		movl	$0xFFF00006, %eax // == WB cache  NOTE SIZING!  Only last 1M cached!
-		wrmsr
-		inc		%ecx
-
-			// MASK0 set to 0xff0000[000] == 16M
-		movl	$0x0000000f, %edx // 0x0f
-		movl	$0xFFF00800, %eax  // 0xff000800
-		wrmsr
-		inc %ecx
-
-
-			// MTRR for Video Memory (last 4MByte of shared Ram)
-			// Writethrough type trumps Writeback for overlapping region
-
-		movl	$0x00000000, %edx // 0x00
-		movl	$0x03C00004, %eax // == Writethrough == 4
-		wrmsr
-		inc		%ecx
-			// MASK0 set to 0xfffC00[000] == 4M
-		movl	$0x0000000f, %edx // 0x0f
-		movl	$0xFFC00800, %eax  // 0xffC00800
-		wrmsr
-		inc %ecx
+	xor	%eax, %eax
+	xor	%edx, %edx
+	wrmsr
 
 /*
-			// MTRR for Filtror comms area
+  We are setting the Ram Init's now to set up the Regions in the Ram
 
-		movl	$0x00000000, %edx // 0x00
-		movl	$0xffffe000, %eax // == Writethrough == 4
-		wrmsr
-		inc		%ecx
-			// MASK0 set to 0xfffC00[000] == 4M
-		movl	$0x00000000, %edx // 0x0f
-		movl	$0xFFFFF800, %eax  // 0xffC00800
-		wrmsr
-		inc %ecx
+*/ 
+
+	// MTRR for RAM
+	// from address 0, Writeback Caching, 64MB range
+        movl	$0x200, %ecx 		// IA32_MTRR_PHYS Base 0
+	movl	$0x00000000, %edx 	// 0x00
+	movl	$0x00000006, %eax 	// == WB_CACHE == 6
+	wrmsr
+
+	// MASK0 set to 0xffc000[000] == 64M    
+        movl	$0x201, %ecx  		// IA32_MTRR_PHYS_MASK 0
+	movl	$0x0f, %edx 		// 0x0f
+	movl	$0xfc000800, %eax  	// 0xfc000800 b11= enable MTRR
+	wrmsr
+	
+	// MTRR for BIOS
+	movl	$0x202, %ecx		// IA32_MTRR_PHYS Base 1 
+	movl	$0x00000000, %edx 	// 0x00
+	movl	$0xFFF00006, %eax 	// == WB cache  NOTE SIZING!  Only last 1M cached!
+	wrmsr
+
+        // MASK0 set to 0xff0000[000] == 16M
+        movl	$0x203, %ecx             // IA32_MTRR_PHYS_MASK 1
+	movl	$0x0000000f, %edx // 0x0f
+	movl	$0xFFF00800, %eax  // 0xff000800
+	wrmsr
+        
+        
+        // MTRR for Video Memory (last 4MByte of shared Ram)
+	// Writethrough type trumps Writeback for overlapping region
+        movl	$0x204, %ecx           	// IA32_MTRR_PHYS Base 2
+	movl	$0x00000000, %edx 	// 0x00
+	movl	$0x03C00004, %eax 	// == Writethrough == 4
+	wrmsr
+	
+	// MASK0 set to 0xfffC00[000] == 4M
+	movl	$0x205, %ecx            // IA32_MTRR_PHYS_MASK 2
+	movl	$0x0000000f, %edx // 0x0f
+	movl	$0xFFC00800, %eax  // 0xffC00800
+	wrmsr
+
+        xor	%eax, %eax
+	xor	%edx, %edx
+	
+	movl	$0x206, %ecx		// IA32_MTRR_PHYS Base 3
+        wrmsr                                                   
+	movl	$0x207, %ecx		// IA32_MTRR_PHYS_MASK 3
+        wrmsr                                                   
+
+	movl	$0x208, %ecx		// IA32_MTRR_PHYS Base 4
+        wrmsr                                                   
+	movl	$0x209, %ecx		// IA32_MTRR_PHYS_MASK 4
+        wrmsr                                                   
+
+	movl	$0x20a, %ecx		// IA32_MTRR_PHYS Base 5
+        wrmsr                                                   
+	movl	$0x20b, %ecx		// IA32_MTRR_PHYS_MASK 5
+        wrmsr                                                   
+
+	movl	$0x20c, %ecx		// IA32_MTRR_PHYS Base 6
+        wrmsr                                                   
+	movl	$0x20d, %ecx		// IA32_MTRR_PHYS_MASK 6
+        wrmsr
+
+	movl	$0x20e, %ecx		// IA32_MTRR_PHYS Base 7
+        wrmsr
+	movl	$0x20f, %ecx		// IA32_MTRR_PHYS_MASK 7
+        wrmsr                                                   
+
+/*
+	// MTRR for Filtror comms area
+
+	movl	$0x206, %ecx   		// IA32_MTRR_PHYS Base 3
+	movl	$0x00000000, %edx 	// 0x00
+	movl	$0xffffe000, %eax 	// == Writethrough == 4
+	wrmsr
+	
+	movl	$0x207, %ecx    	// IA32_MTRR_PHYS_MASK 3
+					// MASK0 set to 0xfffC00[000] == 4M
+	movl	$0x00000000, %edx 	// 0x0f
+	movl	$0xFFFFF800, %eax  	// 0xffC00800
+	wrmsr
+
 */
+	// Define Memory in IA32_MTRR_DEF_TYPE
+	movl	$0x2ff, %ecx
+	xor	%edx, %edx
+	movl	$0x800, %eax //Enable MTRRs
+	wrmsr
 
-		xor		%eax, %eax
-		xor		%edx, %edx
-cleardown:
-		wrmsr
-		inc	%ecx
-		cmpb	$0xf, %cl
-		jna cleardown
+	/* turn on normal cache */
 
-// madeline
-
-		movl	$0x2ff, %ecx
-		movl	$0x800, %eax // edx still 0, default to NON-cacheable, Enable MTRRs
-		wrmsr
-
-			/* turn on normal cache */
-//		invd
-		movl	%cr0, %eax
-		mov %eax, %ebx
-		andl	$0x9FFFFFFF,%eax
-		movl	%eax, %cr0
+	movl	%cr0, %eax
+	mov 	%eax, %ebx
+	andl	$0x9FFFFFFF,%eax
+	movl	%eax, %cr0
 
 
-			// set up selectors for everything
+	// set up selectors for everything
 
-		mov	$0x18, %eax
-		.byte 0x8e, 0xd8  // from 2bl first init
-//		movl	$ 0x00200000,%esp
-		movl	$ 0x00080000,%esp
-		movw    %ax, %ds
-		movw    %ax, %es
-		movw    %ax, %ss
+	mov	$0x18, %eax
+	.byte 0x8e, 0xd8  // from 2bl first init
 
-		xor		%eax, %eax
-		movw    %ax, %fs
-		movw    %ax, %gs
+//	movl	$ 0x00200000,%esp
+	movl	$ 0x00080000,%esp
+	movw    %ax, %ds
+	movw    %ax, %es
+	movw    %ax, %ss
+  
+  	xor	%eax, %eax
+	movw    %ax, %fs
+	movw    %ax, %gs
+        
+        cld
+    
+/*
+  We are setting the Page directory's Now
 
-		cld
+*/ 
 
 #if 1
 		// set up the page directory
@@ -538,13 +306,13 @@ patspin2:
 	add	$0x400000, %eax
 	mov	%eax, (%ebx)
 
-	mov $0xfe0000fb, %eax // not cacheable 4M area starting 0xfe000000
+	mov 	$0xfe0000fb, %eax // not cacheable 4M area starting 0xfe000000
 	mov	%eax, %ebx
 
 	shr	$0x14, %ebx  // divide ebx by 1M, 0xfe0
 	add	%edi, %ebx // add to page table base 0xffe0
 
-		// contiguous 16M area starting 0xfe000000 - 0xfeffffff in page tbl at 0xffe0+
+	// contiguous 16M area starting 0xfe000000 - 0xfeffffff in page tbl at 0xffe0+
 
 	mov	%eax, (%ebx)
 	add	$4, %ebx
@@ -560,7 +328,7 @@ patspin2:
 
 	mov	%cr0, %eax
 	mov	%eax, %ebx
-	and $0xdfffffff, %eax
+	and 	$0xdfffffff, %eax
 	or	$0x40000000, %eax
 	mov	%eax, %cr0
 	wbinvd
@@ -585,67 +353,88 @@ patspin2:
 	mov	%eax, %cr0
 
 	jmp selfPipeKill
+
 selfPipeKill:
 
-	mov $0x00040000, %esp
+	mov 	$0x00040000, %esp
 
 #endif
+
+
 /*
-  cld             // clear direction flag
+  These Init Codes Can be found in the 2'nd Bootloader
 
-	movl $0, %edi
-	xor	%eax, %eax
- 	movl	$0x100000, %ecx
-	rep
-  stosb
+*/ 
+      
 
-//	mov $0x00040000, %esp
+	mov 	$0x80000854, %eax
+	movw 	$0xcf8, %dx
+	outl 	%eax, %dx
+	movw 	$0xcfc, %dx
+	inl 	%dx, %eax 
+	orl 	$0x88000000, %eax
+	outl 	%eax, %dx 
 
-        // copy initiliazed data to ram
+	mov 	$0x80000064, %eax 
+	movw 	$0xcf8, %dx 
+	outl	%eax, %dx 
+	movw 	$0xcfc, %dx
+	inl 	%dx, %eax 
+	orl 	$0x88000000, %eax 
+	outl	%eax, %dx 
+	
+	mov 	$0x8000006c, %eax 
+	movw 	$0xcf8, %dx
+	outl	%eax, %dx 
+	movw 	$0xcfc, %dx 
+	inl 	%dx, %eax
+	push 	%eax 
+	andl 	$0xfffffffe, %eax 
+	outl	%eax, %dx 
+	pop 	%eax
+	outl	%eax, %dx 
 
-        leal    _start_load_data, %esi
-        leal    _start_data, %edi
-        movl    $_end_load_data, %ecx
-        subl    %esi, %ecx
-        jz      .nodata
-        rep
-        movsb
-.nodata:
+	mov 	$0x80000080, %eax 
+	movw 	$0xcf8, %dx 
+	outl	%eax, %dx 
+	movw 	$0xcfc, %dx 
+	movl 	$0x100, %eax 
+	outl	%eax, %dx 
 
-    // clear bss
-        leal    _bss, %edi
-        movl    $_ebss, %ecx
-        subl    %edi, %ecx
-        jz      .nobss
-        xorl    %eax, %eax
-        rep
-        stosb
-.nobss:
-*/
+	mov 	$0x8000088C, %eax 
+	movw 	$0xcf8, %dx 
+	outl	%eax, %dx 
+	movw 	$0xcfc, %dx 
+	movl 	$0x40000000, %eax 
+	outl	%eax, %dx
 
-	jmp BootResetAction  // this can be found in BootResetAction.c
+	movl 	$0x0, 0x0f680600
+       
+       
+	jmp BootResetAction
+
+       
+
 
 ///////////////////////////////////////////
 //
 //  Interrupt Service Routines
 //
 
-		// int 0
 
 		.global	IntHandlerTimer0
 IntHandlerTimer0:
+	cli
 	pusha
 	pushf
-	cli
 	call	IntHandlerCTimer0
 	mov	$0x20, %al
 	outb	%al, $0x20
 	popf
-	sti
+//	sti
 	popa
 	iret
 
-		// int 1
 
 		.global	IntHandler1
 IntHandler1:
@@ -656,107 +445,103 @@ IntHandler1:
 	mov	$0x21, %al
 	outb	%al, $0x20
 	popf
-	sti
+//	sti
 	popa
 	iret
 
-		// int 2
 
 		.global	IntHandler2
 IntHandler2:
+	cli
 	pusha
 	pushf
-	cli
 	call	IntHandler2C
 	mov	$0x22, %al
 	outb	%al, $0x20
 	popf
-	sti
 	popa
+//	sti
 	iret
 
-		// int 3
+
 
 		.global	IntHandler3
 IntHandler3:
+	cli
 	pusha
 	pushf
-	cli
 	call	IntHandler3VsyncC
 	mov	$0x23, %al
 	outb	%al, $0x20
 	popf
-	sti
 	popa
+//	sti
 	iret
 
-		// int 4
 
 		.global	IntHandler4
 IntHandler4:
+	cli
 	pusha
 	pushf
-	cli
 	call	IntHandler4C
 	mov	$0x24, %al
 	outb	%al, $0x20
 	popf
-	sti
 	popa
+//	sti
 	iret
 
-		// int 5
 
 		.global	IntHandler5
 IntHandler5:
+	cli
 	pusha
 	pushf
-	cli
 	call	IntHandler5C
 	mov	$0x25, %al
 	outb	%al, $0x20
 	popf
-	sti
 	popa
+//	sti
 	iret
 
-		// int 6
 
 		.global	IntHandler6
 IntHandler6:
+	cli
 	pusha
 	pushf
-	cli
 	call	IntHandler6C
 	mov	$0x26, %al
 	outb	%al, $0x20
 	popf
-	sti
 	popa
+	sti
 	iret
 
-		// int 7
+
 
 		.global	IntHandler7
 IntHandler7:
+	cli
 	pusha
 	pushf
-	cli
 	call	IntHandler7C
 	mov	$0x27, %al
 	outb	%al, $0x20
 	popf
-	sti
 	popa
+	sti	
 	iret
 
-		// Int 8 interrupts
+
 
 	.global IntHandler8
 IntHandler8:
+	cli
 	pusha
 	pushf
-	cli
 	call	IntHandler8C
 		// EOI on master and slave needed
 	mov	$0x60, %al
@@ -768,7 +553,7 @@ IntHandler8:
 	iret
 
 
-		// Int 9 interrupts
+
 
 	.global IntHandler9
 IntHandler9:
@@ -824,9 +609,10 @@ IntHandlerI2C:
 
 	.global IntHandlerSmc
 IntHandlerSmc:
+	cli
 	pusha
 	pushf
-	cli
+
 	call	IntHandlerCSmc
 
 		// acknowledge EXTSMI# action (from PIC p6)
@@ -849,9 +635,10 @@ IntHandlerSmc:
 
 	.global IntHandler13
 IntHandler13:
+	cli
 	pusha
 	pushf
-	cli
+
 	call	IntHandler13C
 		// EOI on master and slave needed
 	mov	$0x65, %al
@@ -866,9 +653,10 @@ IntHandler13:
 
 	.global IntHandlerIde
 IntHandlerIde:
+	cli
 	pusha
 	pushf
-	cli
+	
 	call	IntHandlerCIde
 
 		// EOI on master and slave needed
@@ -884,9 +672,10 @@ IntHandlerIde:
 
 	.global IntHandler15
 IntHandler15:
+	cli
 	pusha
 	pushf
-	cli
+	
 	call	IntHandler15C
 		// EOI on master and slave needed
 	mov	$0x67, %al
@@ -902,9 +691,10 @@ IntHandler15:
 
 	.global IntHandlerUnused
 IntHandlerUnused:
+	cli
 	pusha
 	pushf
-	cli
+	
 	call	IntHandlerUnusedC
 	mov	$0x20, %al
 	out	%al, $0x20
@@ -916,9 +706,10 @@ IntHandlerUnused:
 
 	.global IntHandlerUnusedPic2
 IntHandlerUnusedPic2:
+	cli
 	pusha
 	pushf
-	cli
+	
 	call	IntHandlerUnusedC2
 	mov $0xffff, %ax
 	mov	$0x8028, %dx
@@ -938,6 +729,7 @@ IntHandlerUnusedPic2:
 	.global SpareIntNop
 SpareIntNop:
 	iret
+
 
 		// CPU Exception Interrupts
 
@@ -1111,106 +903,7 @@ IntHandlerException10:
 	popa
 	iret
 
-	.section .justbehind, "ax"  // v1.1: 128 byte space here, FFFFFC80
-		.code32
-
-		 //must be at 0xfffffc80
-
-		mov $0xc004, %dx
-		mov $0x20, %al
-		out %al, %dx
-		mov $0xc008, %dx
-		mov $0x8, %al
-		out %al, %dx
-		mov $0xc006, %dx
-		mov $0xa6, %al
-		out %al, %dx
-		mov $0xc006, %dx
-		in %dx,%al
-		mov $0xc002, %dx
-		mov $0x1a, %al
-		out %al, %dx
-		mov $0xc000, %dx
-
-		ledspin: in %dx, %al ; cmp $0x10, %al ; jnz ledspin
-
-		mov $0xc004, %dx
-		mov $0x20, %al
-		out %al, %dx
-		mov $0xc008, %dx
-		mov $0x7, %al
-		out %al, %dx
-		mov $0xc006, %dx
-		mov $0x1, %al
-		out %al, %dx
-		mov $0xc006, %dx
-		in %dx,%al
-		mov $0xc002, %dx
-		mov $0x1a, %al
-		out %al, %dx
-		mov $0xc000, %dx
-
-		ledspin1: in %dx, %al ; cmp $0x10, %al ; jnz ledspin1
-
-		jmp ledspin1
-
-	mov $0x18, %ax
-	mov	%ax, %ds
-	mov	%ax, %es
-	mov	%ax, %ss
-
-	mov $0x200000, %esp
-//		jmp	hello
 
 
-/************************************************************
-	the linker locates this file at the top
-	of the rom and fills the space with nops.
-*/
-////////////////////////////////////////////
-//  High ROM
-
-		.section .high_rom, "ax"
-		.code32
-		.global sizeof_top
-		.equ start_top, .
-
-
-//		jmp start_linux
-		ljmp $8, $start_linux				// nop's fall through to here which
-								// jumps to our code earlier in this file at start_linux
-
-	nop
-
-gdt_table:
-		.quad 0			// beginning of gdt
-		.quad 0x0CF9B000000FFFF	// segment 8 offset
-								// code segment execute/read, base 0 limit 4GB
-		.quad 0x0CF93000000FFFF	// segment 10h offset
-								//data segment r/w base	0 limit	4GB
-// ---------------------------------------------------------------------
-
-// ---------------------------------------------------------------------
-		nop
-		nop
-		nop
-		nop
-gdt_ptr:
-		.word 0x18
-		.long 0x0FFFFFFD8		//pointer to gdt table
-		nop
-		nop
-		nop
-		nop
-		nop
-		nop
-
-	.equ end_top, .
-/*
-	this is used by the linker to put this at the top of
-	the rom.
-*/
-
-.equ sizeof_top, (. - start_top)
 
 

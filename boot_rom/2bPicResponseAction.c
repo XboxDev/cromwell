@@ -12,7 +12,7 @@
  *                                                                         *
  ***************************************************************************/
 
-#include "boot.h"
+#include "2bload.h"
 
 
 // ----------------------------  I2C -----------------------------------------------------------
@@ -24,7 +24,7 @@ int I2CTransmitByteGetReturn(BYTE bPicAddressI2cFormat, BYTE bDataToWrite)
 {
 	int nRetriesToLive=400;
 
-	if(IoInputWord(I2C_IO_BASE+0)&0x8000) { bprintf("Smb status=%x\n",IoInputWord(I2C_IO_BASE+0)); }
+	//if(IoInputWord(I2C_IO_BASE+0)&0x8000) {  }
 	while(IoInputWord(I2C_IO_BASE+0)&0x0800) ;  // Franz's spin while bus busy with any master traffic
 
 	while(nRetriesToLive--) {
@@ -39,10 +39,10 @@ int I2CTransmitByteGetReturn(BYTE bPicAddressI2cFormat, BYTE bDataToWrite)
 			while( (b&0x36)==0 ) { b=IoInputByte(I2C_IO_BASE+0); }
 
 			if(b&0x24) {
-				bprintf("I2CTransmitByteGetReturn error %x\n", b);
+				//bprintf("I2CTransmitByteGetReturn error %x\n", b);
 			}
 			if(!(b&0x10)) {
-				bprintf("I2CTransmitByteGetReturn no complete, retry\n");
+				//bprintf("I2CTransmitByteGetReturn no complete, retry\n");
 			} else {
 				return (int)IoInputByte(I2C_IO_BASE+6);
 			}
@@ -60,7 +60,7 @@ int I2CTransmitWord(BYTE bPicAddressI2cFormat, WORD wDataToWrite)
 {
 	int nRetriesToLive=400;
 
-	if(IoInputWord(I2C_IO_BASE+0)&0x8000) { bprintf("Smb status=%x\n",IoInputWord(I2C_IO_BASE+0)); }
+	//if(IoInputWord(I2C_IO_BASE+0)&0x8000) { bprintf("Smb status=%x\n",IoInputWord(I2C_IO_BASE+0)); }
 	while(IoInputWord(I2C_IO_BASE+0)&0x0800) ;  // Franz's spin while bus busy with any master traffic
 
 	while(nRetriesToLive--) {
@@ -77,10 +77,10 @@ int I2CTransmitWord(BYTE bPicAddressI2cFormat, WORD wDataToWrite)
 			while( (b&0x36)==0 ) { b=IoInputByte(I2C_IO_BASE+0); }
 
 			if(b&0x24) {
-				bprintf("I2CTransmitWord error %x\n", b);
+				//bprintf("I2CTransmitWord error %x\n", b);
 			}
 			if(!(b&0x10)) {
-				bprintf("I2CTransmitWord no complete, retry\n");
+				//bprintf("I2CTransmitWord no complete, retry\n");
 			} else {
 				return ERR_SUCCESS;
 			}
@@ -155,27 +155,23 @@ int BootPerformPicChallengeResponseAction()
 
 	// continues as part of video setup....
 
+
 	return ERR_SUCCESS;
 }
 
 extern int I2cSetFrontpanelLed(BYTE b)
 {
-	DWORD dw;
-	BootPciInterruptGlobalStackStateAndDisable(&dw);
+
 	I2CTransmitWord( 0x10, 0x800 | b);  // sequencing thanks to Jarin the Penguin!
 	I2CTransmitWord( 0x10, 0x701);
-	BootPciInterruptGlobalPopState(dw);
-
 	return ERR_SUCCESS;
 }
 
 bool I2CGetTemperature(int * pnLocalTemp, int * pExternalTemp)
 {
-	DWORD dw;
-	BootPciInterruptGlobalStackStateAndDisable(&dw);
+
 	*pnLocalTemp=I2CTransmitByteGetReturn(0x4c, 0x01);
 	*pExternalTemp=I2CTransmitByteGetReturn(0x4c, 0x00);
-	BootPciInterruptGlobalPopState(dw);
 	return true;
 }
 

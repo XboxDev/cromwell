@@ -1,3 +1,6 @@
+#ifndef _Boot_H_
+#define _Boot_H_
+
 /***************************************************************************
       Includes used by XBox boot code
  ***************************************************************************/
@@ -19,6 +22,26 @@
 #include "consts.h"
 #include "jpeglib.h"
 
+unsigned int cromwell_config;
+unsigned int cromwell_retryload;
+unsigned int cromwell_loadbank;
+
+#define XROMWELL	0
+#define CROMWELL	1
+
+#define ICON_WIDTH 64
+#define ICON_HEIGH 64
+
+static inline double min (double a, double b)
+{
+	if (a < b) return a; else return b;
+}
+
+static inline double max (double a, double b)
+{
+	if (a > b) return a; else return b;
+}
+
 // filtror is a debugging device designed to make code available over LPC and allow a debug shell
 // details are at http://warmcat.com/milksop
 // if you don't have one, or are building a final ROM image, keep this at zero
@@ -37,18 +60,20 @@
 #define TRACE
 #endif
 
+#define INITRD_POS 0x02000000
 
 /////////////////////////////////
 // some typedefs to make for easy sizing
 
-  typedef unsigned int DWORD;
-  typedef unsigned short WORD;
-  typedef unsigned char BYTE;
+typedef unsigned long ULONG;
+typedef unsigned int DWORD;
+typedef unsigned short WORD;
+typedef unsigned char BYTE;
 #ifndef bool_already_defined_
 	typedef int bool;
 #endif
-	typedef unsigned long RGBA; // LSB=R -> MSB = A
-	typedef long long __int64;
+typedef unsigned long RGBA; // LSB=R -> MSB = A
+typedef long long __int64;
 
 #define guint int
 #define guint8 unsigned char
@@ -72,19 +97,18 @@ extern void WATCHDOG(void);
 extern volatile CURRENT_VIDEO_MODE_DETAILS currentvideomodedetails;
 
 
-#define FRAMEBUFFER_START ( /* 0xf0000000 */ (*((DWORD * )0xfd600800)) & 0x7fffffff  )
+#define FRAMEBUFFER_START  	0x03c00000 
 
-#define VIDEO_CURSOR_POSX (*((volatile DWORD * )0x430))
-#define VIDEO_CURSOR_POSY (*((volatile DWORD * )0x434))
-#define VIDEO_ATTR (*((volatile DWORD * )0x438))
-#define VIDEO_LUMASCALING (*((volatile DWORD * )0x43c))
-#define VIDEO_RSCALING (*((volatile DWORD * )0x440))
-#define VIDEO_BSCALING (*((volatile DWORD * )0x444))
-#define VIDEO_VSYNC_COUNT (*((volatile DWORD * )0x448))
-#define BIOS_TICK_COUNT (*((volatile DWORD *)0x46c))
-#define VIDEO_VSYNC_POSITION (*((volatile DWORD * )0x470))
-#define VIDEO_VSYNC_DIR (*((volatile DWORD * )0x474))
-
+volatile DWORD VIDEO_CURSOR_POSX;
+volatile DWORD VIDEO_CURSOR_POSY;
+volatile DWORD VIDEO_ATTR;
+volatile DWORD VIDEO_LUMASCALING;
+volatile DWORD VIDEO_RSCALING;
+volatile DWORD VIDEO_BSCALING;
+volatile DWORD VIDEO_VSYNC_COUNT;
+volatile DWORD BIOS_TICK_COUNT;
+volatile DWORD VIDEO_VSYNC_POSITION;
+volatile DWORD VIDEO_VSYNC_DIR;
 
 /////////////////////////////////
 // Superfunky i386 internal structures
@@ -107,16 +131,19 @@ typedef enum {
 	EDT_XBOXFS
 } enumDriveType;
 
-typedef struct {  // this is the retained knowledge about an IDE device after init
+typedef struct tsHarddiskInfo {  // this is the retained knowledge about an IDE device after init
     unsigned short m_fwPortBase;
     unsigned short m_wCountHeads;
     unsigned short m_wCountCylinders;
     unsigned short m_wCountSectorsPerTrack;
     unsigned long m_dwCountSectorsTotal; /* total */
     unsigned char m_bLbaMode;	/* am i lba (0x40) or chs (0x00) */
-    unsigned char m_szIdentityModelNumber[41];
-    unsigned char m_szSerial[21];
-		char m_szFirmware[9];
+    unsigned char m_szIdentityModelNumber[40];      
+    unsigned char term_space_1[2];
+    unsigned char m_szSerial[20]; 
+    unsigned char term_space_2[2];
+    char m_szFirmware[8];
+    unsigned char term_space_3[2];
     unsigned char m_fDriveExists;
     unsigned char m_fAtapi;  // true if a CDROM, etc
     enumDriveType m_enumDriveType;
@@ -124,7 +151,7 @@ typedef struct {  // this is the retained knowledge about an IDE device after in
     unsigned short m_wAtaRevisionSupported;
     unsigned char s_length;
     unsigned char m_length;
-		unsigned char m_fHasMbr;
+    unsigned char m_fHasMbr;
 } tsHarddiskInfo;
 
 
@@ -326,7 +353,7 @@ int BootPerformXCodeActions(void);
 void StartBios(int nDrive, int nActivePartition, int nFATXPresent);
 
 ////////// BootResetActions.c
-
+void ClearIDT (void);
 void BootResetAction(void);
 void BootCpuCache(bool fEnable) ;
 int printk(const char *szFormat, ...);
@@ -346,7 +373,7 @@ extern void	WritePCIBlock(unsigned int bus, unsigned int dev, unsigned int func,
 void PciWriteByte (unsigned int bus, unsigned int dev, unsigned int func,
 		unsigned int reg_off, unsigned char byteval);
 BYTE PciReadByte(unsigned int bus, unsigned int dev, unsigned int func, unsigned int reg_off);
-void PciWriteDword(unsigned int bus, unsigned int dev, unsigned int func, unsigned int reg_off, DWORD dw);
+DWORD PciWriteDword(unsigned int bus, unsigned int dev, unsigned int func, unsigned int reg_off, DWORD dw);
 DWORD PciReadDword(unsigned int bus, unsigned int dev, unsigned int func, unsigned int reg_off);
 
 ///////// BootPerformPicChallengeResponseAction.c
@@ -354,7 +381,7 @@ DWORD PciReadDword(unsigned int bus, unsigned int dev, unsigned int func, unsign
 int I2CTransmitWord(BYTE bPicAddressI2cFormat, WORD wDataToWrite);
 int I2CTransmitByteGetReturn(BYTE bPicAddressI2cFormat, BYTE bDataToWrite);
 bool I2CGetTemperature(int *, int *);
-
+void I2CModifyBits(BYTE bAds, BYTE bReg, BYTE bData, BYTE bMask);
 
 ///////// BootIde.c
 
@@ -537,7 +564,7 @@ typedef enum {
 extern volatile TRAY_STATE traystate;
 
 
-void BootInterruptsWriteIdt(void);
+void BootInterruptsWriteIdt();
 
 int copy_swap_trim(unsigned char *dst, unsigned char *src, int len);
 void HMAC_SHA1( unsigned char *result,
@@ -548,3 +575,5 @@ void HMAC_SHA1( unsigned char *result,
 char *HelpGetToken(char *ptr,char token);
 void HelpGetParm(char *szBuffer, char *szOrig);
 char *strrchr0(char *string, char ch);
+
+#endif // _Boot_H_

@@ -15,15 +15,10 @@
 
 #include "boot.h"
 
-//#ifndef XBE
-void BootPciInterruptGlobalStackStateAndDisable(DWORD *dw) {	__asm__ __volatile__ (  "pushf; pop %%eax ; mov %%eax, (%%ebx); cli" : : "b" (dw)); }
+
+void BootPciInterruptGlobalStackStateAndDisable(DWORD *dw) {	__asm__ __volatile__ (  "pushf; pop %%eax ; mov %%eax, (%%ebx); cli" : : "b" (dw) : "%eax"); }
 void BootPciInterruptGlobalPopState(DWORD dw)  {	__asm__ __volatile__  (  "push %%ebx; popf" : : "b" (dw)); }
 void BootPciInterruptEnable()  {	__asm__ __volatile__  (  "sti" ); }
-//#else
-//void BootPciInterruptGlobalStackStateAndDisable(DWORD *dw) {}
-//void BootPciInterruptGlobalPopState(DWORD dw)  {}
-//void BootPciInterruptEnable()  {}
-//#endif
 
 void * memcpy(void *dest, const void *src,  size_t size) {
 //    bprintf("memcpy(0x%x,0x%x,0x%x);\n",dest,src,size);
@@ -36,7 +31,7 @@ void * memcpy(void *dest, const void *src,  size_t size) {
               "    push %%esi    \n"
               "    push %%edi    \n"
               "    push %%ecx    \n"
-             "    cld    \n"
+              "    cld    \n"
               "    mov %0, %%esi \n"
               "    mov %1, %%edi \n"
               "    mov %2, %%ecx \n"
@@ -50,7 +45,7 @@ void * memcpy(void *dest, const void *src,  size_t size) {
 		);
 
 		__asm__ __volatile__ (
-		          "    pop %ecx     \n"
+	      "    pop %ecx     \n"
               "    pop %edi     \n"
               "    pop %esi     \n"
 		);
@@ -113,6 +108,7 @@ typedef struct {
 MEM_MGT * pmemmgtStartAddressMemoryMangement;
 #define SENTINEL_CONST 0xaa556b2
 #define MERGE_IF_LESS_THAN_THIS_LEFT_OVER 0x100
+
 
 void MemoryManagementInitialization(void * pvStartAddress, DWORD dwTotalMemoryAllocLength)
 {
@@ -278,26 +274,6 @@ void ListEntryRemove(LIST_ENTRY *plistentryCurrent)
 	if(plistentryCurrent->m_plistentryNext) {
 		plistentryCurrent->m_plistentryNext->m_plistentryPrevious=plistentryCurrent->m_plistentryPrevious;
 	}
-}
-
-int copy_swap_trim(unsigned char *dst, unsigned char *src, int len)
-{
-	unsigned char tmp;
-	int i;
-        for (i=0; i < len; i+=2) {
-		tmp = src[i];     //allow swap in place
-		dst[i] = src[i+1];
-		dst[i+1] = tmp;
-	}
-
-	--dst;
-	for (i=len; i>0; --i) {
-		if (dst[i] != ' ') {
-			dst[i+1] = 0;
-			break;
-		}
-	}
-	return i;
 }
 
 char *HelpGetToken(char *ptr,char token) {

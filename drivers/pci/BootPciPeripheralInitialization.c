@@ -11,14 +11,7 @@
  *   (at your option) any later version.                                   *
  *                                                                         *
  ***************************************************************************/
-/*
-void WATCHDOG() {
-	 __asm__ __volatile__ (
-	 	" movw $0x80cf, %%dx ; mov $5, %%al ; out %%al, %%dx ; mov $10000, %%eax ; 0: dec %%eax ; cmp $0, %%eax ; jnz 0b ; mov $4, %%al ; out %%al, %%dx  "
-		: : : "%eax", "%edx"
-		);
-}
-*/
+
 
 BYTE PciReadByte(unsigned int bus, unsigned int dev, unsigned int func, unsigned int reg_off)
 {
@@ -39,8 +32,11 @@ void PciWriteByte (unsigned int bus, unsigned int dev, unsigned int func,
 	base_addr |= ((dev & 0x1F) << 11);	// device #
 	base_addr |= ((func & 0x07) << 8);	// func #
 
-		IoOutputDword(0xcf8, (base_addr + (reg_off & 0xfc)));
-		IoOutputByte(0xcfc + (reg_off & 3), byteval);
+	IoOutputDword(0xcf8, (base_addr + (reg_off & 0xfc)));
+	IoOutputByte(0xcfc + (reg_off & 3), byteval);
+
+//	IoOutputDword(0xcf8, (base_addr + (reg_off & 0xfc)));
+//	IoOutputByte(0xcfc + (reg_off & 3), byteval);
 }
 
 
@@ -67,7 +63,7 @@ void PciWriteWord(unsigned int bus, unsigned int dev, unsigned int func, unsigne
 		IoOutputWord(0xcfc + (reg_off & 1), w);
 
 }
-
+/*
 DWORD PciReadDword(unsigned int bus, unsigned int dev, unsigned int func, unsigned int reg_off)
 {
 	DWORD base_addr = 0x80000000;
@@ -80,17 +76,56 @@ DWORD PciReadDword(unsigned int bus, unsigned int dev, unsigned int func, unsign
 }
 
 
-void PciWriteDword(unsigned int bus, unsigned int dev, unsigned int func, unsigned int reg_off, DWORD dw)
+DWORD PciWriteDword(unsigned int bus, unsigned int dev, unsigned int func, unsigned int reg_off, unsigned int dw) 
 {
+		
 	DWORD base_addr = 0x80000000;
 	base_addr |= ((bus & 0xFF) << 16);	// bus #
 	base_addr |= ((dev & 0x1F) << 11);	// device #
 	base_addr |= ((func & 0x07) << 8);	// func #
 
-		IoOutputDword(0xcf8, (base_addr + (reg_off & 0xfc)));
-		IoOutputDword(0xcfc + (reg_off & 3), dw);
+	IoOutputDword(0xcf8, (base_addr + (reg_off & 0xfc)));	
+	IoOutputDword(0xcfc + ((reg_off) & 3), dw);
 
+//	IoOutputDword(0xcf8, (base_addr + (reg_off & 0xfc)));	
+//	IoOutputDword(0xcfc + ((reg_off) & 3), dw);
+	return 0; 
 }
+  
+*/
+
+
+DWORD PciReadDword(unsigned int bus, unsigned int dev, unsigned int func, unsigned int reg_off)
+{
+	DWORD base_addr = 0x80000000;
+	base_addr |= ((bus & 0xFF) << 16);	// bus #
+	base_addr |= ((dev & 0x1F) << 11);	// device #
+	base_addr |= ((func & 0x07) << 8);	// func #
+        base_addr |= ((func & 0x07) << 8);
+        base_addr |= ((reg_off & 0xff));
+        
+	IoOutputDword(0xcf8, base_addr);
+	return IoInputDword(0xcfc);
+}
+
+
+DWORD PciWriteDword(unsigned int bus, unsigned int dev, unsigned int func, unsigned int reg_off, unsigned int dw) 
+{
+		
+	DWORD base_addr = 0x80000000;
+	base_addr |= ((bus & 0xFF) << 16);	// bus #
+	base_addr |= ((dev & 0x1F) << 11);	// device #
+	base_addr |= ((func & 0x07) << 8);	// func #
+	base_addr |= ((reg_off & 0xff));
+
+	IoOutputDword(0xcf8, base_addr );	
+	IoOutputDword(0xcfc ,dw);
+
+	return 0;    
+}
+
+
+
 
 
 void BootPciPeripheralInitialization()
@@ -98,41 +133,58 @@ void BootPciPeripheralInitialization()
 
 	__asm__ __volatile__ ( "cli" );
 
-		__asm__ __volatile__(
-			" mov $0x1b, %%ecx ; rdmsr ; and $0xFFFFF7FF, %%eax ; wrmsr  \n"  // turn off APIC
-				: : : "%ecx", "%edx", "%eax"
-		);
-
 	PciWriteDword(BUS_0, DEV_1, 0, 0x80, 2);  // v1.1 2BL kill ROM area
 	if(PciReadByte(BUS_0, DEV_1, 0, 0x8)>=0xd1) { // check revision
 		PciWriteDword(BUS_0, DEV_1, 0, 0xc8, 0x8f00);  // v1.1 2BL <-- death
 	}
 
-	PciWriteDword(BUS_0, DEV_0, 3, 0x58, 0x00008000);
+// Bus 0, Device 0, Function 0 = PCI Bridge Device - Host Bridge
+//   
+   
+	PciWriteDword(BUS_0, DEV_0, FUNC_0, 0x48, 0x00000114);
+	PciWriteDword(BUS_0, DEV_0, FUNC_0, 0x44, 0x80000000); // new 2003-01-23 ag  trying to get single write actions on TSOP
+
 	PciWriteDword(BUS_0, DEV_0, 3, 0x40, 0x0017cc00);
+	PciWriteDword(BUS_0, DEV_0, 3, 0x58, 0x00008000);
 
+//	PciWriteByte(BUS_0, DEV_0, FUNC_0, 0x4b,0x00); --> BAD !!! -- Xbox Dies sometimes
 
+	PciWriteByte(BUS_0, DEV_0, 3, 0x4c,0x19);     // could this be the System inactivity timer disable ?
+	
 	IoOutputByte(0x2e, 0x55);
 	IoOutputByte(0x2e, 0x26);
 
 	IoOutputByte(0x61, 0xff);
 	IoOutputByte(0x92, 0x01);
-//	IoOutputByte(0xcf9, 0x08);
 
-	IoOutputByte(0x70, 0x0a);
+	IoOutputByte(0xcf9, 0x08);
+
+	// gah, failure to do this caused long delays and timeouts on boot and shutdown of Linux
+	// RTC CMOS was disabled, rtc driver was polling "safe to read" bit which was never okay
+	
+	IoOutputByte(0x70, 0x30);	
+	IoOutputByte(0x71, 0x03);  // activate RTC bank1, bank0 and RTC
+	IoOutputByte(0x72, 0xf0);	
+	IoOutputByte(0x73, 0x00);  // nothing locked
+
+
+	IoOutputByte(0x70, 0x0a);	
 	IoOutputByte(0x71, 0x2d);
-
-	IoOutputByte(0x70, 0x0b);
+	
+	IoOutputByte(0x70, 0x0b); 
 	IoOutputByte(0x71, (IoInputByte(0x71)&1)|2);
 
 	IoOutputByte(0x70, 0x0c);
 	IoInputByte(0x71);
 	IoOutputByte(0x70, 0x0d);
 	IoInputByte(0x71);
-
-
-//#ifndef XBE
-			// configure ACPI hardware to generate interrupt on PIC-chip pin6 action (via EXTSMI#)
+        
+	IoOutputByte(0x43, 0x36);
+	IoOutputByte(0x40, 0xff);
+	IoOutputByte(0x40, 0xff);
+                
+        
+	// configure ACPI hardware to generate interrupt on PIC-chip pin6 action (via EXTSMI#)
 
 	IoOutputByte(0x80ce, 0x08);  // from 2bl RI#
 	IoOutputByte(0x80c0, 0x08);  // from 2bl SMBUSC
@@ -141,26 +193,9 @@ void BootPciPeripheralInitialization()
 	IoOutputWord(0x8023, IoInputByte(0x8023)|2);  // KERN: Interrupt enable register, b1 RESERVED in AMD docs
 	IoOutputByte(0x8002, IoInputByte(0x8002)|1);  // KERN: Enable SCI interrupt when timer status goes high
 	IoOutputWord(0x8028, IoInputByte(0x8028)|1);  // KERN: setting readonly trap event???
-
-//#endif
-	/*
-			// Setup paging tables
-
-	{ int n=0; volatile DWORD * pdw=(volatile DWORD *)0xf800; DWORD dw=0xe3;
-		for(n=0; n<0x40; n++) { *pdw++=dw; dw+=0x400000; }
-		for(n=0;n<0x1c0;n++) { *pdw++=0; }
-
-		pdw=(volatile DWORD *)0xfc00;
-		*pdw=0xf063;
-		pdw=(volatile DWORD *)0xfffc;
-		*pdw=0x0FFC000E3;
-		pdw=(volatile DWORD *)(0xf000+(0x0FD0000FB>>20));
-		*pdw++=0x0FD0000FB;
-		*pdw++=0x0FD4000FB;
-		*pdw++=0x0FD8000FB;
-		*pdw++=0x0FDC000FB;
-	}
-*/
+ 
+	I2CTransmitWord(0x10, 0x0b00); // Allow audio
+//	I2CTransmitWord(0x10, 0x0b01); // GAH!!!  Audio Mute!
 
 // Bus 0, Device 1, Function 0 = nForce HUB Interface - ISA Bridge
 //
@@ -168,6 +203,8 @@ void BootPciPeripheralInitialization()
 	PciWriteByte(BUS_0, DEV_1, FUNC_0, 0x6a, 0x0003); // kern ??? gets us an int3?  vsync req
 	PciWriteDword(BUS_0, DEV_1, FUNC_0, 0x64, 0x00000b0c);
 	PciWriteByte(BUS_0, DEV_1, FUNC_0, 0x81, PciReadByte(BUS_0, DEV_1, FUNC_0, 0x81)|8);
+
+	PciWriteDword(BUS_0, DEV_1, FUNC_0, 0x4c, 0x000f0000); // RTC clocks enable?  2Hz INT8?
 
 
 //
@@ -258,16 +295,17 @@ void BootPciPeripheralInitialization()
 	IoOutputByte(0x80c8, 0x04); // Set CACHEZZ pin to low
 	IoOutputDword(0x80b4, 0xffff);  // any interrupt resets ACPI system inactivity timer
 */
-//#ifndef XBE
+
 	IoOutputDword(0x80b4, 0xffff);  // any interrupt resets ACPI system inactivity timer
 	IoOutputByte(0x80cc, 0x08); // Set EXTSMI# pin to be pin function
 	IoOutputByte(0x80cd, 0x08); // Set PRDY pin on ACPI to be PRDY function
+	IoOutputByte(0x80cf, 0x08); // Set C32KHZ pin to be pin function
 
 	IoOutputWord(0x8020, IoInputWord(0x8020)|0x200); // ack any preceding ACPI int
-//#endif
+
 
 	bprintf("b\n");
-
+/*
 //
 // Bus 0, Device 1e, Function 0 = nForce AGP Host to PCI Bridge
 //
@@ -286,9 +324,9 @@ void BootPciPeripheralInitialization()
 //	bprintf("Test Smb status3g =%x\n",IoInputWord(I2C_IO_BASE+0));
 	PciWriteDword(BUS_0, DEV_1e, FUNC_0, 0x3c, 7);  // trying to get video irq
 
-		// frankenregister xbe load correction to match cromwell load
-		// controls requests for memory regions
-
+	// frankenregister xbe load correction to match cromwell load
+	// controls requests for memory regions
+   
 	PciWriteDword(BUS_0, DEV_1e, FUNC_0, 0x0c, 0xff019ee7);
 	PciWriteDword(BUS_0, DEV_1e, FUNC_0, 0x10, 0xbcfaf7e7);
 	PciWriteDword(BUS_0, DEV_1e, FUNC_0, 0x14, 0x0101fafa);
@@ -299,18 +337,29 @@ void BootPciPeripheralInitialization()
 	PciWriteDword(BUS_0, DEV_1e, FUNC_0, 0x2c, 0xf8bfef87);
 	PciWriteDword(BUS_0, DEV_1e, FUNC_0, 0x30, 0xdf758fa3);
 	PciWriteDword(BUS_0, DEV_1e, FUNC_0, 0x38, 0xb785fccc);
-
-
-//
-// Bus 0, Device 0, Function 0 = PCI Bridge Device - Host Bridge
-//
-	PciWriteDword(BUS_0, DEV_0, FUNC_0, 0x48, 0x00000114);
-	PciWriteDword(BUS_0, DEV_0, FUNC_0, 0x44, 0x80000000); // new 2003-01-23 ag  trying to get single write actions on TSOP
-
-	PciWriteByte(BUS_0, DEV_0, 3, 0x42, 0x17);
-	PciWriteByte(BUS_0, DEV_0, FUNC_0, 0x4b,0x00);
-
-
+ */     
+      
+   
+	PciWriteDword(BUS_0, DEV_1e, FUNC_0, 0x04, 0x02200007);
+	PciWriteDword(BUS_0, DEV_1e, FUNC_0, 0x08, 0x060400a1);
+	PciWriteDword(BUS_0, DEV_1e, FUNC_0, 0x0c, 0xff019ee7);
+	PciWriteDword(BUS_0, DEV_1e, FUNC_0, 0x10, 0xbcfaf7e7);
+	PciWriteDword(BUS_0, DEV_1e, FUNC_0, 0x14, 0x0101fafa);
+	PciWriteDword(BUS_0, DEV_1e, FUNC_0, 0x18, 0x00010100);
+	PciWriteDword(BUS_0, DEV_1e, FUNC_0, 0x1c, 0x02a000f0);
+	PciWriteDword(BUS_0, DEV_1e, FUNC_0, 0x20, 0xfdf0fd00);
+	PciWriteDword(BUS_0, DEV_1e, FUNC_0, 0x24, 0xf7f0f000);
+	PciWriteDword(BUS_0, DEV_1e, FUNC_0, 0x28, 0x8e7ffcff);
+	PciWriteDword(BUS_0, DEV_1e, FUNC_0, 0x2c, 0xf8bfef87);
+	PciWriteDword(BUS_0, DEV_1e, FUNC_0, 0x30, 0xdf758fa3);
+	PciWriteDword(BUS_0, DEV_1e, FUNC_0, 0x34, 0x00000000);
+	PciWriteDword(BUS_0, DEV_1e, FUNC_0, 0x38, 0xb785fccc);
+	PciWriteDword(BUS_0, DEV_1e, FUNC_0, 0x3c, 0x00000007);	// Video IRQ
+  	PciWriteDword(BUS_0, DEV_1e, FUNC_0, 0x40, 0x00000001);
+    	PciWriteDword(BUS_0, DEV_1e, FUNC_0, 0x44, 0x80000000);
+      	PciWriteDword(BUS_0, DEV_1e, FUNC_0, 0x48, 0x80000014);
+        PciWriteDword(BUS_0, DEV_1e, FUNC_0, 0x4c, 0x80000001);
+   
 //
 // Bus 1, Device 0, Function 0 = NV2A GeForce3 Integrated GPU
 //
@@ -320,68 +369,12 @@ void BootPciPeripheralInitialization()
 
 	PciWriteByte(BUS_0, DEV_0, FUNC_0, 0x87, 3); // kern 8001FC21
 
-			// frankenregisters so Xromwell matches Cromwell
+// frankenregisters so Xromwell matches Cromwell
 
-		PciWriteDword(BUS_1, DEV_0, FUNC_0, 0x0c, 0x0);
-		PciWriteDword(BUS_1, DEV_0, FUNC_0, 0x18, 0x08);
+	PciWriteDword(BUS_1, DEV_0, FUNC_0, 0x0c, 0x0);
+	PciWriteDword(BUS_1, DEV_0, FUNC_0, 0x18, 0x08);
 
-#if 0
-		__asm__ __volatile__(
 
-		" wbinvd \n"
-
-		" push %edx \n"
-		" push %eax \n"
-
-		" mov $0x80000854, %eax \n"
-		" movw $0xcf8, %dx \n"
-		" outl	%eax, %dx \n"
-		" movw $0xcfc, %dx \n"
-		" inl %dx, %eax \n"
-		" orl $0x88000000, %eax \n"
-		" outl	%eax, %dx \n"
-
-		" mov $0x80000064, %eax \n"
-		" movw $0xcf8, %dx \n"
-		" outl	%eax, %dx \n"
-		" movw $0xcfc, %dx \n"
-		" inl %dx, %eax \n"
-		" orl $0x88000000, %eax \n"
-		" outl	%eax, %dx \n"
-
-		" mov $0x8000006c, %eax \n"
-		" movw $0xcf8, %dx \n"
-		" outl	%eax, %dx \n"
-		" movw $0xcfc, %dx \n"
-		" inl %dx, %eax \n"
-		" push %eax \n"
-		" andl $0xfffffffe, %eax \n"
-		" outl	%eax, %dx \n"
-		" pop %eax\n"
-		" outl	%eax, %dx \n"
-
-		" mov $0x80000080, %eax \n"
-		" movw $0xcf8, %dx \n"
-		" outl	%eax, %dx \n"
-		" movw $0xcfc, %dx \n"
-		" movl $0x100, %eax \n"
-		" outl	%eax, %dx \n"
-/*
-		" mov $0x8000088C, %eax \n"
-		" movw $0xcf8, %dx \n"
-		" outl	%eax, %dx \n"
-		" movw $0xcfc, %dx \n"
-		" movl $0x40000000, %eax \n"
-		" outl	%eax, %dx \n"
-*/
-		" pop %eax\n"
-		" pop %edx \n"
-		"	movl $0x0, 0x0f680600\n"
-//		" sti\n"
-
-		);
-#endif
-	bprintf("c\n");
 
 
 }

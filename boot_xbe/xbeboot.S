@@ -30,9 +30,11 @@
 // Minimum physical address at which the kernel can reside temporarily
 #define MIN_KERNEL_ADDRESS		KERNEL_ADDRESS
 // Memory reserved to the kernel (1 MB at the moment)
-#define KERNEL_SIZE        0x00100000
-// Location of kernel info in RAM
-#define KERNEL_INFO_ADDRESS 0x90000
+
+#define KERNEL_SIZE        		0x00040000
+
+// Location of kernel in RAM
+#define KERNEL_RAM_ADDRESS		0x03A00000
 // Size of memory on a retail XBOX unit
 #define RETAIL_RAM_SIZE			0x04000000
 // Reserve pages in address space
@@ -152,8 +154,8 @@ _start:
         push	PAGE_READWRITE
         push	0
         push	RETAIL_RAM_SIZE / 2 - 1
-        push	MIN_KERNEL_ADDRESS + KERNEL_SIZE // at 2 MB
-        push	KERNEL_SIZE
+        push	MIN_KERNEL_ADDRESS + (KERNEL_SIZE) 
+        push	(KERNEL_SIZE)
         call	dword ptr [MmAllocateContiguousMemoryEx]
         mov	[kernelram], eax
 
@@ -183,8 +185,8 @@ _start:
     push ecx
     mov esi, offset kernel
     mov edi, dword ptr [kernelram]
-    mov ecx, 1024*1024/2  //KERNEL_SIZE / 2 TODO
-    rep movsw
+    mov ecx, KERNEL_SIZE    
+    rep movsb
     pop ecx
 
 // 4. use MmAllocateContiguousMemoryEx to allocate 4096 bytes of memory
@@ -332,16 +334,48 @@ ptr_newloc:
 	.word	0x0008
 
 newloc:
-        // esi = phys_kernelram
-	mov	edi, 0x02f00000 // 64 MB
-	mov	ecx, KERNEL_SIZE / 4
-	.byte	0xF3, 0xA5  // rep movsd
+  // Kill Interrupt Handler  
+   	cli
+	mov	al,0x11		// initialization sequence
+	out	0x20,al		// send it to 8259A-1
+	.word	0x00eb,0x00eb		// jmp $+2, jmp $+2
+	out	0xA0,al		// and to 8259A-2
+	.word	0x00eb,0x00eb
+	mov	al,0x20		// start of hardware int's (0x20)
+	out	0x21,al
+	.word	0x00eb,0x00eb
+	mov	al,0x28		// start of hardware int's 2 (0x28)
+	out	0xA1,al
+	.word	0x00eb,0x00eb
+	mov	al,0x04		// 8259-1 is master
+	out	0x21,al
+	.word	0x00eb,0x00eb
+	mov	al,0x02		// 8259-2 is slave
+	out	0xA1,al
+	.word	0x00eb,0x00eb
+	mov	al,0x01		// 8086 mode for both
+	out	0x21,al
+	.word	0x00eb,0x00eb
+	out	0xA1,al
+	.word	0x00eb,0x00eb
+	mov	al,0xFF		// mask off all interrupts for now
+	out	0x21,al
+	.word	0x00eb,0x00eb
+	out	0xA1,al
+// Interrupt Handler Now Dead      
+        
+	// copy the Cromwell to it's new position
+	mov	edi, KERNEL_RAM_ADDRESS 
+	mov	ecx, KERNEL_SIZE 
+	rep 	movsb
+	//.byte	0xF3, 0xA5  // rep movsw
 
 	//jmp newflash
-// start kernel
+	// Jump into Cromwell & start Kernel
 	.byte	0xea //  = ljmp
 
-	.long	0x02fffe00
+
+	.long	KERNEL_RAM_ADDRESS  // Basically, jump to the first Byte in the Cromwell image...
 	.word	0x0008
 
 newflash:

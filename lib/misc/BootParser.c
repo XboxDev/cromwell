@@ -4,18 +4,23 @@
 
 
 int ParseConfig(char *szBuffer, CONFIGENTRY *entry, EEPROMDATA *eeprom) {
-	char szLine[MAX_LINE];
-	char szTmp[MAX_LINE];
-	char szNorm[MAX_LINE];
+	static char szLine[MAX_LINE];
+	static char szTmp[MAX_LINE];
+	static char szNorm[MAX_LINE];
 	char *ptr;
-	
+
 	memset(szNorm,0,MAX_LINE);
 	memset(entry,0,sizeof(CONFIGENTRY));
 	ptr = szBuffer;
 	ptr = HelpGetToken(szBuffer,10);
 	entry->nValid = 1;
+
+
 	while(1) {
-		memcpy(szLine,ptr,strlen(ptr));
+                memset(szLine,0x00,sizeof(szLine));
+		memcpy(szLine,ptr,strlen(ptr));    
+                szLine[sizeof(szLine)-1]=0;	// Make sure, we are Terminated
+                
 		if(strlen(ptr) < MAX_LINE) {
 			if(_strncmp(ptr,"kernel",strlen("kernel")) == 0)  {
 				HelpGetParm(szTmp, ptr);
@@ -32,6 +37,9 @@ int ParseConfig(char *szBuffer, CONFIGENTRY *entry, EEPROMDATA *eeprom) {
 			if(_strncmp(ptr,"rivafb",strlen("rivafb")) == 0) {
 				entry->nRivaFB = 1;
 			}
+			if(_strncmp(ptr,"vesafb",strlen("vesafb")) == 0) {
+				entry->nVesaFB = 1;
+			}
 			if(_strncmp(ptr,"append",strlen("append")) == 0)
 				sprintf(entry->szAppend,"%s",ptr);
 		} else {
@@ -39,14 +47,31 @@ int ParseConfig(char *szBuffer, CONFIGENTRY *entry, EEPROMDATA *eeprom) {
 		}
 		ptr = HelpGetToken(0,10);
 		if(*ptr == 0) break;
+		
 	}
+
+
 	if(entry->nRivaFB == 1) {
 		switch(*((VIDEO_STANDARD *)&eeprom->VideoStandard)) {
 			case NTSC_M:
-				strcpy(szNorm," video=riva:640x480,nomtrr,nohwcursor,fb_mem=4M,tv=NTSC ");
+				strcpy(szNorm," video=riva:640x480,nomtrr,nohwcursor,tv=NTSC ");
 				break;
 			case PAL_I:
-				strcpy(szNorm," video=riva:640x480,nomtrr,nohwcursor,fb_mem=4M,tv=PAL ");
+				strcpy(szNorm," video=riva:640x480,nomtrr,nohwcursor,tv=PAL ");
+				break;
+			case VID_INVALID:
+			default:
+				printk("%X  ", (int)((VIDEO_STANDARD )eeprom->VideoStandard));
+				break;
+		}
+	}
+	if(entry->nVesaFB == 1) {
+		switch(*((VIDEO_STANDARD *)&eeprom->VideoStandard)) {
+			case NTSC_M:
+				strcpy(szNorm," video=vesa:640x480tv=NTSC ");
+				break;
+			case PAL_I:
+				strcpy(szNorm," video=vesa:640x480,tv=PAL ");
 				break;
 			case VID_INVALID:
 			default:
