@@ -24,14 +24,14 @@ void HddMenuInit(TEXTMENUITEM *parentItem) {
 	parentItem->childMenu = (struct TEXTMENU*)menuPtr;
 
 	for (i=0; i<2; ++i) {
-		//If it's not ATAPI, it must be IDE
-		if (!tsaHarddiskInfo[i].m_fAtapi) {
+		if (tsaHarddiskInfo[i].m_fDriveExists && !tsaHarddiskInfo[i].m_fAtapi) {
+			//If it's not ATAPI, it must be IDE
 			if((tsaHarddiskInfo[i].m_securitySettings &0x0004)==0x0004) {
 				//This drive is locked - produce an unlock menu
 				itemPtr = (TEXTMENUITEM*)malloc(sizeof(TEXTMENUITEM));
 				memset(itemPtr,0x00,sizeof(TEXTMENUITEM));
    				char *driveName=malloc(sizeof(char)*32);
-				sprintf(driveName,"Unlock  HDD (hd%c)",i ? 'b':'a');
+				sprintf(driveName,"Unlock HDD (hd%c)",i ? 'b':'a');
 				itemPtr->szCaption = driveName;
 				itemPtr->functionPtr= UnlockHdd;
     				itemPtr->functionDataPtr = malloc(sizeof(int));
@@ -43,7 +43,7 @@ void HddMenuInit(TEXTMENUITEM *parentItem) {
 				itemPtr = (TEXTMENUITEM*)malloc(sizeof(TEXTMENUITEM));
 				memset(itemPtr,0x00,sizeof(TEXTMENUITEM));
    				char *driveName=malloc(sizeof(char)*32);
-				sprintf(driveName,"Lock  HDD (hd%c)",i ? 'b':'a');
+				sprintf(driveName,"Lock HDD (hd%c)",i ? 'b':'a');
 				itemPtr->szCaption = driveName;
 				itemPtr->functionPtr= LockHdd;
     				itemPtr->functionDataPtr = malloc(sizeof(int));
