@@ -228,36 +228,39 @@ void * malloc(size_t size) {
 	unsigned char *tempmalloc;
 	unsigned int *tempmalloc1;
 	unsigned int *tempmalloc2;
-
-	temp = (size+0x80) & 0xffFFffc0;
+         __asm__ __volatile__  (  "cli" );
+         
+	temp = (size+0x200) & 0xffFFff00;
 
 	tempmalloc = t_malloc(temp);
 	tempmalloc2 = (unsigned int*)tempmalloc;
 
-	tempmalloc = (unsigned char*)((unsigned int)(tempmalloc+0x40) & 0xffFFffc0);
+	tempmalloc = (unsigned char*)((unsigned int)(tempmalloc+0x100) & 0xffFFff00);
 	tempmalloc1 = (unsigned int*)tempmalloc;
 	tempmalloc1--;
 	tempmalloc1--;
 	tempmalloc1[0] = (unsigned int)tempmalloc2;
 	tempmalloc1[1] = 0x1234567;
-	
+	__asm__ __volatile__  (  "sti" );
+		
 	return tempmalloc;
 }
 
 void free(void *ptr) {
 
 	unsigned int *tempmalloc1;
+        __asm__ __volatile__  (  "cli" );
+        
 	tempmalloc1 = ptr;
 	tempmalloc1--;
 	tempmalloc1--;
 	ptr = (unsigned int*)tempmalloc1[0];
         if (tempmalloc1[1]!= 0x1234567) {
-        	//printk("free return-- %08x\n ",ptr);
+        	__asm__ __volatile__  (  "sti" );
         	return ;
 	}        
-	//printk("free -- %08x\n ",ptr);
 	t_free(ptr);
-
+	__asm__ __volatile__  (  "sti" );
 
 }
  
