@@ -1,11 +1,6 @@
 #include "../usb_wrapper.h"
 
 
-unsigned int last_remote_key;
-unsigned int last_remote_keydir;
-unsigned int current_remote_key;
-unsigned int current_remote_keydir;
-unsigned int Last_remote_keystroke;
 
 struct usb_kbd_info {
 	struct urb *urb;
