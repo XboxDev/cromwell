@@ -68,16 +68,9 @@ int focus_calc_hdtv_mode(
 	/* HDTV Hor start */
 	regs[0xb8] = 0xbe;
 	
-	/* Colour scaling */
-	regs[0xa8] = 0x92;
-	regs[0x09] = 0x00;
-	regs[0xaa] = 0xa0;
-	regs[0xab] = 0x00;
-	regs[0xac] = 0x92;
-	regs[0xad] = 0x00;
-	
-	/*Set up video mode to HDTV + progressive*/
-	regs[0x92] = 0x1e;		
+	/*Set up video mode to HDTV, progressive, 
+	 * and disable YUV matrix bypass */
+	regs[0x92] = 0x1a;		
 	
 	switch (hdtv_mode) {
 		case HDTV_480p:
@@ -103,6 +96,13 @@ int focus_calc_hdtv_mode(
 			regs[0x97] = 0x00;
 			regs[0x98] = 0x1B;
 			regs[0x99] = 0x03;
+			/* Colour scaling */
+			regs[0xA2] = 0x4D;
+			regs[0xA4] = 0x96;
+			regs[0xA6] = 0x1D;
+			regs[0xA8] = 0x58;
+			regs[0xAA] = 0x8A;
+			regs[0xAC] = 0x4A;
 			break;
 		case HDTV_720p:
 			/* PLL settings */
@@ -127,6 +127,13 @@ int focus_calc_hdtv_mode(
 			regs[0x97] = 0x00;
 			regs[0x98] = 0x2C;
 			regs[0x99] = 0x06;
+			/* Colour scaling */
+			regs[0xA2] = 0x36;
+			regs[0xA4] = 0xB7;
+			regs[0xA6] = 0x13;
+			regs[0xA8] = 0x58;
+			regs[0xAA] = 0x8A;
+			regs[0xAC] = 0x4A;
 			break;
 		case HDTV_1080i:
 			/* PLL settings */
@@ -151,6 +158,13 @@ int focus_calc_hdtv_mode(
 			regs[0x97] = 0x00;
 			regs[0x98] = 0x6C;
 			regs[0x99] = 0x08;
+			/* Colour scaling */
+			regs[0xA2] = 0x36;
+			regs[0xA4] = 0xB7;
+			regs[0xA6] = 0x13;
+			regs[0xA8] = 0x58;
+			regs[0xAA] = 0x8A;
+			regs[0xAC] = 0x4A;
 			/* Set mode to interlaced */
 			regs[0x92] |= 0x80;
 			break;
@@ -219,27 +233,18 @@ int focus_calc_mode(xbox_video_mode * mode, struct riva_regs * riva_out)
 			break;
 	}
 
-	switch (mode->av_type) {
-		case AV_SCART_RGB:
-			/* Video control */
-			b = (regs[0x92] &= ~0x04);
-			regs[0x92] = (b|= 0x01);
-			regs[0x93] &= ~0x40;
-			/* MTX */
-			regs[0xA2] = 0x4D;
-			regs[0xA4] = 0x96;
-			regs[0xA6] = 0x1D;
-			/* Color scaling */
-			regs[0xA8] = 0xA0;
-			regs[0xAA] = 0xDB;
-			regs[0xAC] = 0x7E;
-			
-			break;
+	/* Video control  - set to RGB input*/
+	b = (regs[0x92] &= ~0x04);
+	regs[0x92] = (b|= 0x01);
+	regs[0x93] &= ~0x40;
+	/* Colour scaling */
+	regs[0xA2] = 0x4D;
+	regs[0xA4] = 0x96;
+	regs[0xA6] = 0x1D;
+	regs[0xA8] = 0xA0;
+	regs[0xAA] = 0xDB;
+	regs[0xAC] = 0x7E;
 	
-		default:
-			break;
-			/* Not tested with other cable types than SVIDEO + RGB yet */
-	}
 	tv_vactive = tv_vactive * (1.0f-mode->voc);
 	vga_vtotal = mode->yres * ((float)tv_vtotal/tv_vactive);
 	vga_htotal = mode->xres * 1.25f;
