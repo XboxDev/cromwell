@@ -103,7 +103,7 @@ void PrintFAXPartitionTable(int nDriveIndex);
 int FATXSignature(int nDriveIndex,unsigned int block,BYTE *ba);
 FATXPartition *OpenFATXPartition(int nDriveIndex,unsigned int partitionOffset,
 		                u_int64_t partitionSize);
-int FATXRawRead (int drive, int sector, u_int64_t byte_offset, int byte_len, char *buf);
+int FATXRawRead (int drive, int sector, unsigned long long byte_offset, int byte_len, char *buf);
 void DumpFATXTree(FATXPartition *partition);
 void _DumpFATXTree(FATXPartition* partition, int clusterId, int nesting);
 void LoadFATXCluster(FATXPartition* partition, int clusterId, unsigned char* clusterData);

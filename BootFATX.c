@@ -544,7 +544,7 @@ void LoadFATXCluster(FATXPartition* partition, int clusterId, unsigned char* clu
 	u_int64_t readSize;
 	
 	// work out the address of the cluster
-	clusterAddress = partition->cluster1Address + ((clusterId - 1) * partition->clusterSize);
+	clusterAddress = partition->cluster1Address + ((unsigned long long)(clusterId - 1) * partition->clusterSize);
 
 	// Now, load it
 	readSize = FATXRawRead(partition->nDriveIndex, partition->partitionStart,
@@ -556,7 +556,7 @@ void LoadFATXCluster(FATXPartition* partition, int clusterId, unsigned char* clu
 }
 	    
 
-int FATXRawRead(int drive, int sector, u_int64_t byte_offset, int byte_len, char *buf) {
+int FATXRawRead(int drive, int sector, unsigned long long byte_offset, int byte_len, char *buf) {
 
 	int byte_read;
 	
