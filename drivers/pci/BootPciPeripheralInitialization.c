@@ -187,20 +187,10 @@ void BootPciPeripheralInitialization()
 	PciWriteDword(BUS_0, DEV_0, FUNC_0, 0x48, 0x00000114);
 	PciWriteDword(BUS_0, DEV_0, FUNC_0, 0x44, 0x80000000); // new 2003-01-23 ag  trying to get single write actions on TSOP
 
-
 	PciWriteByte(BUS_0, DEV_0, FUNC_0, 0x87, 3); // kern 8001FC21
 	
-
 	PciWriteByte(BUS_0, DEV_0, 8, 0, 0x42);       // Xbeboot-compare
 	
-	// Memory	
-	//PciWriteDword(BUS_0, DEV_0, 3, 0x40, 0x0017cc00);  // Orginal Andy
-	//PciWriteDword(BUS_0, DEV_0, 3, 0x58, 0x00008000);  // original Andy
-
-
-//	PciWriteByte(BUS_0, DEV_0, FUNC_0, 0x4b,0x00); --> BAD !!! -- Xbox Dies sometimes
-
-//	PciWriteDword(BUS_0, DEV_9, FUNC_0, 0x4c, 0xffff00ff); // 2x30nS address setup on IDE
 	
 	IoOutputByte(0x2e, 0x55);
 	IoOutputByte(0x2e, 0x26);
@@ -208,7 +198,6 @@ void BootPciPeripheralInitialization()
 	IoOutputByte(0x61, 0xff);
 	IoOutputByte(0x92, 0x01);
 
-//	IoOutputByte(0xcf9, 0x08);	// Reset Port
 	IoOutputByte(0xcf9, 0x0);	// Reset Port
 
           
