@@ -27,9 +27,9 @@ header_start:
   .long 0                               // original size of image (PE copy)*unimportant*
   .long 0                               // original checksum (PE copy)     *unimportant*
   .long 0                               // original time stamp (PE copy)   *unimportant*
-  .long certificate + 12                               // debug path name address         *unimportant*
-  .long certificate + 12                               // debug file name address         *unimportant*
-  .long certificate + 12               // debug unicode file name address *unimportant*
+  .long normalname			// debug path name address         *unimportant*
+  .long normalname			// debug file name address         *unimportant*
+  .long unicodename			// debug unicode file name address *unimportant*
   .long 0x11000 ^ 0x5B6D40B6            // kernel image thunk address XOR key **GAS ISSUE: see above**
   .long 0                               // non-kernel import directory address
   .long 0                               // number of library versions      *unimportant*
@@ -46,7 +46,10 @@ certificate:
   .long 0                               // title id                        *unimportant?*
 
   // title name (unicode string, 40 chars) *unimportant, but beautiful*
-  .word 'L','i','n','u','x',0,0,0,0,0,0
+unicodename:
+  .word 'L','i','n','u','x',0,0,0,
+normalname:  
+  .byte 'L','i','n','u','x',0,
   .word 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
   .word 0,0,0,0,0,0,0,0,0,0,0,0,0
 
