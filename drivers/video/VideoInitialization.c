@@ -94,9 +94,10 @@ EAVTYPE DetectAvType(void) {
 	switch (b) {
 		case 0: avType = AV_SCART_RGB; break;
 		case 1: avType = AV_HDTV; break;
-		case 2: avType = AV_VGA; break;
+		case 2: avType = AV_VGA_SOG; break;
 		case 4: avType = AV_SVIDEO; break;
 		case 6: avType = AV_COMPOSITE; break;
+          case 7: avType = AV_VGA; break;
 		default: avType = AV_COMPOSITE; break;
 	}
 
@@ -141,7 +142,14 @@ static void SetVGAConexantRegister(BYTE pll_int, BYTE* pbRegs)
 	I2CTransmitWord(0x45, (0xba<<8) | 0x80); // Conexant reset
 	I2CTransmitByteGetReturn(0x45, 0xb8);       // dummy read to wait for completion
 	I2CTransmitWord(0x45, (0xa0<<8) | 0x13); // Switch to Pseudo-Master mode
-	I2CTransmitWord(0x45, (0x2e<<8) | 0xad); // HDTV_EN = 1, RPR_SYNC_DIS = 1, BPB_SYNC_DIS = 1, HD_SYNC_EDGE = 1, RASTER_SEL = 01
+	if (DetectAvType() == AV_VGA_SOG)
+	{
+		I2CTransmitWord(0x45, (0x2e<<8) | 0xad); // HDTV_EN = 1, RPR_SYNC_DIS = 1, BPB_SYNC_DIS = 1, HD_SYNC_EDGE = 1, RASTER_SEL = 01
+	}
+	else
+	{
+		I2CTransmitWord(0x45, (0x2e<<8) | 0xbd); // HDTV_EN = 1, GY_SYNC_DIS = 1, RPR_SYNC_DIS = 1, BPB_SYNC_DIS = 1, HD_SYNC_EDGE = 1, RASTER_SEL = 01
+	}
 	I2CTransmitWord(0x45, (0x32<<8) | 0x48); // DRVS = 2, IN_MODE[3] = 1;
 	I2CTransmitWord(0x45, (0x3c<<8) | 0x80); // MCOMPY
 	I2CTransmitWord(0x45, (0x3e<<8) | 0x80); // MCOMPU

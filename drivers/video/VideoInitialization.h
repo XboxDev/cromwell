@@ -18,9 +18,10 @@ typedef enum enumAvTypes {
 	AV_ILLEGAL=-1,
 	AV_SCART_RGB,
 	AV_SVIDEO,
-	AV_VGA,
+	AV_VGA_SOG,
 	AV_HDTV,
-	AV_COMPOSITE
+	AV_COMPOSITE,
+	AV_VGA
 } EAVTYPE;
 
 // this struct contains all required parameter to define a TV mode
