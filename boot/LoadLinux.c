@@ -64,8 +64,10 @@ void memPlaceKernel(const u8* kernelOrg, u32 kernelSize)
 
 
 
-// if fJustTestingForPossible is true, returns 0 if this kind of boot not possible, 1 if it is worth trying
-int BootLoadConfigNative(int nActivePartition, CONFIGENTRY *config, bool fJustTestingForPossible) {
+CONFIGENTRY* LoadConfigNative(int drive, int partition) {
+	CONFIGENTRY *config;
+	CONFIGENTRY *currentConfigItem;
+	int nLen;
 	u32 dwConfigSize=0;
 	char *szGrub;
 	u8* tempBuf;
@@ -77,7 +79,7 @@ int BootLoadConfigNative(int nActivePartition, CONFIGENTRY *config, bool fJustTe
 
 	szGrub[0]=0xff;
 	szGrub[1]=0xff;
-	szGrub[2]=nActivePartition;
+	szGrub[2]=partition;
 	szGrub[3]=0x00;
 
 	errnum=0;
@@ -92,13 +94,11 @@ int BootLoadConfigNative(int nActivePartition, CONFIGENTRY *config, bool fJustTe
 	disk_read_hook=NULL;
 	disk_read_func=NULL;
 
-	VIDEO_ATTR=0xffa8a8a8;
-
 	//Try for /boot/linuxboot.cfg first
 	strcpy(&szGrub[4], "/boot/linuxboot.cfg");
 	nRet=grub_open(szGrub);
 
-	if(nRet!=1 || (errnum)) {
+	if(nRet!=1 || errnum) {
 		//Not found - try /linuxboot.cfg
 		errnum=0;
 		strcpy(&szGrub[4], "/linuxboot.cfg");
@@ -106,30 +106,64 @@ int BootLoadConfigNative(int nActivePartition, CONFIGENTRY *config, bool fJustTe
 	}
 	
 	dwConfigSize=filemax;
-	if (nRet!=1 || (errnum)) {
-		if(!fJustTestingForPossible) printk("linuxboot.cfg not found, using defaults\n");
-	} else {
-		int nLen;
-		if(fJustTestingForPossible) return 1; // if there's a linuxboot.cfg it must be worth trying to boot
-		nLen=grub_read((void *)KERNEL_SETUP, filemax);
-		
-		config = ParseConfig((char *)KERNEL_SETUP, nLen, NULL);
-		
-		BootPrintConfig(config);
-		printf("linuxboot.cfg is %d bytes long.\n", dwConfigSize);
+	if (nRet!=1 || errnum) {
+		//File not found
+		free(szGrub);
+		return NULL;
 	}
-	grub_close();
 	
-        strncpy(&szGrub[4], config->szKernel,sizeof(config->szKernel));
+	nLen=grub_read((void *)KERNEL_SETUP, filemax);
+
+	config = ParseConfig((char *)KERNEL_SETUP, nLen, NULL);
+
+	for (currentConfigItem = (CONFIGENTRY*) config; config; config = (CONFIGENTRY*)config->nextConfigEntry) {
+		//Set the drive ID and partition IDs for the returned config items
+		currentConfigItem->drive=drive;
+		currentConfigItem->partition=partition;
+
+	}
+	
+	grub_close();
+	free(szGrub);
+	return config;
+}
+
+int LoadKernelNative(CONFIGENTRY *config) {
+	int nLen;
+	u32 dwConfigSize=0;
+	char *szGrub;
+	u8* tempBuf;
+        
+	szGrub = (char *) malloc(265+4);
+        memset(szGrub,0,256+4);
+        
+	memset((u8 *)KERNEL_SETUP,0,2048);
+
+	szGrub[0]=0xff;
+	szGrub[1]=0xff;
+	szGrub[2]=config->partition;
+	szGrub[3]=0x00;
+
+	errnum=0;
+	boot_drive=0;
+	saved_drive=0;
+	saved_partition=0x0001ffff;
+	buf_drive=-1;
+	current_partition=0x0001ffff;
+	current_drive=0xff;
+	buf_drive=-1;
+	fsys_type = NUM_FSYS;
+	disk_read_hook=NULL;
+	disk_read_func=NULL;
+
+        strncpy(&szGrub[4], config->szKernel,strlen(config->szKernel));
 
 	nRet=grub_open(szGrub);
 
 	if(nRet!=1) {
-		if(fJustTestingForPossible) return 0;
 		printk("Unable to load kernel, Grub error %d\n", errnum);
 		while(1) ;
 	}
-	if(fJustTestingForPossible) return 1; // if there's a default kernel it must be worth trying to boot
         
 	// Use INITRD_START as temporary location for loading the Kernel 
 	tempBuf = (u8*)INITRD_START;
@@ -197,7 +231,7 @@ CONFIGENTRY* LoadConfigFatX(void) {
 	return NULL;
 }
 
-int BootLoadConfigFATX(CONFIGENTRY *config) {
+int LoadKernelFatX(CONFIGENTRY *config) {
 
 	static FATXPartition *partition = NULL;
 	static FATXFILEINFO fileinfo;

@@ -8,7 +8,8 @@
 struct CONFIGENTRY;
 
 typedef struct {
-        int  nValid;
+        int  drive;
+	int  partition;
 	char title[15];
 	char szPath[MAX_LINE];
         char szKernel[MAX_LINE];
