@@ -30,7 +30,7 @@ void IconMenuInit(void) {
 			iconPtr->szCaption = driveName;
 			iconPtr->functionPtr = BootFromCD;
 			iconPtr->functionDataPtr = malloc(sizeof(int));
-			iconPtr->functionDataPtr=(void*)i;
+			memcpy(iconPtr->functionDataPtr,&i,sizeof(int));
 			AddIcon(iconPtr);
 		}
 	}

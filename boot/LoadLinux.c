@@ -289,11 +289,10 @@ int BootLoadConfigCD(int cdromId, CONFIGENTRY *config) {
 	DWORD dwX=VIDEO_CURSOR_POSX;
 	BYTE* tempBuf;
 
-	if(tsaHarddiskInfo[0].m_fAtapi) cdromId=0; 
-	else cdromId=1;
-	
 	memset((BYTE *)KERNEL_SETUP,0,4096);
 
+	//Needs to be changed for non-xbox drives, which don't have an eject line
+	//Need to send ATA eject command.
 	I2CTransmitWord(0x10, 0x0c00); // eject DVD tray
 	wait_ms(2000); // Wait for DVD to become responsive to inject command
 		
