@@ -412,7 +412,6 @@ void free(void *ptr) {
       	  
 	tempmalloc1 = ptr;
 	tempmalloc1-=2;
-	tempmalloc1--;
 	ptr = (unsigned int*)tempmalloc1[0];
         if (tempmalloc1[1]!= 0x1234567) {
         	__asm__ __volatile__  (  "sti" );
