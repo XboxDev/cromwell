@@ -410,8 +410,8 @@ extern void BootResetAction ( void ) {
 		{
 		OBJECT_FLASH of;
 		memset(&of,0x00,sizeof(of));
-		of.m_pbMemoryMappedStartAddress=(BYTE *)0xff000000;
-		BootFlashCopyCodeToRam();
+		of.m_pbMemoryMappedStartAddress=(BYTE *)LPCFlashadress;
+		//BootFlashCopyCodeToRam();
 		BootFlashGetDescriptor(&of, (KNOWN_FLASH_TYPE *)&aknownflashtypesDefault[0]);
 		VIDEO_ATTR=0xffc8c8c8;
 		printk("Flash type: ");

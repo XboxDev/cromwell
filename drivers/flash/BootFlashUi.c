@@ -35,7 +35,7 @@ int BootReflashAndReset(BYTE *pbNewData, DWORD dwStartOffset, DWORD dwLength)
 
 		// prep our flash object with start address and params
 
-	of.m_pbMemoryMappedStartAddress=(BYTE *)0xff000000;
+	of.m_pbMemoryMappedStartAddress=(BYTE *)LPCFlashadress;
 	of.m_dwStartOffset=dwStartOffset;
 	of.m_dwLengthUsedArea=dwLength;
 	of.m_pcallbackFlash=BootFlashUserInterface;

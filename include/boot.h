@@ -182,6 +182,7 @@ typedef struct tsHarddiskInfo {  // this is the retained knowledge about an IDE 
 /* the initrd resides at 1 MB from the top of RAM */
 #define INITRD_DEST (RAMSIZE_USE - 1024*1024)
 
+#define LPCFlashadress 0xFFF00000
 
 /////////////////////////////////
 // LED-flashing codes
