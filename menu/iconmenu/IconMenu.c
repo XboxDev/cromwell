@@ -172,7 +172,8 @@ void IconMenu(void) {
 			temp = IoInputDword(0x8008) - COUNT_start;
 		}
 		
-		if ((risefall_xpad_BUTTON(TRIGGER_XPAD_KEY_A) == 1) || (DWORD)(temp>(0x369E99*BOOT_TIMEWAIT))) {
+		if ((risefall_xpad_BUTTON(TRIGGER_XPAD_KEY_A) == 1) || risefall_xpad_BUTTON(TRIGGER_XPAD_KEY_START) == 1 || 
+				(DWORD)(temp>(0x369E99*BOOT_TIMEWAIT))) {
 			memcpy((void*)FB_START,videosavepage,FB_SIZE);
 			free(videosavepage);
 			
