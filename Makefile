@@ -227,8 +227,9 @@ bin/imagebld: lib/imagebld/imagebld.c lib/crypt/sha1.c
 	gcc -o bin/imagebld bin/imagebld.o bin/sha1.o 
 	
 imagecompress: obj/image-crom.bin bin/imagebld
-	gzip -9 obj/image-crom.bin
-	bin/imagebld -rom obj/2blimage.bin obj/image-crom.bin.gz image/image.bin image/image_1024.bin
+	cp obj/image-crom.bin obj/image-crom.bin.tmp
+	gzip -9 obj/image-crom.bin.tmp
+	bin/imagebld -rom obj/2blimage.bin obj/image-crom.bin.tmp.gz image/image.bin image/image_1024.bin
 	bin/imagebld -xbe xbe/default.xbe obj/image-crom.bin
 	bin/imagebld -vml boot_vml/disk/vmlboot obj/image-crom.bin 
 
