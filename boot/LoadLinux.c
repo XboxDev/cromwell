@@ -326,19 +326,24 @@ CONFIGENTRY *LoadConfigCD(int cdromId) {
 		printk("\2Please insert CD and press Button A\n\n");
 
 		while(1) {
+			// Make button 'A' close the DVD tray
 			if (risefall_xpad_BUTTON(TRIGGER_XPAD_KEY_A) == 1) {
-				I2CTransmitWord(0x10, 0x0c01); // close DVD tray
+				I2CTransmitWord(0x10, 0x0c01);
+				// May as well break here too incase the drive is
+				// a non-standard Xbox drive and can't report whether the
+				// tray is closing or not.
+				wait_ms(500);
+				break;
+			}
+
+			// If the drive is closing, exit the loop.  This accounts
+			// for people pushing the drive shut or even pressing the eject
+			//  button.  
+			if (DVD_TRAY_STATE == DVD_CLOSING) {
 				wait_ms(500);
 				break;
 			}
 			wait_ms(10);
-		
-			//Keep trying to read, in case somebody puts the tray in manually, without pressing A
-			dwConfigSize = BootIso9660GetFile(cdromId,"/linuxboo.cfg", (u8 *)KERNEL_SETUP, 0x800);
-			if (dwConfigSize>0) {
-				configLoaded=1;
-				break;
-			}
 		}						
 
 		VIDEO_ATTR=0xffffffff;
