@@ -27,10 +27,7 @@ Cromwellconfig:
         .long 0x0	// Bank, from where Loaded
         .long 0x0	// 0 .. Bios = 256 k, 1 .. Bios = 1MB
         
-	.org 0x100
-	jmp	start_linux        
-        
-.globl tableGdt
+	.org 0x40       // We have linkbase for this programm 0x03A00000 + 0x40 = divisable /4 .. so CPU likes it
 tableGdt:
 
 	.byte 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 // 0x00 dummy
@@ -39,19 +36,25 @@ tableGdt:
 	.byte 0xff, 0xff, 0x00, 0x00, 0x00, 0x93, 0xcf, 0x00 // 0x18 data32
 	.byte 0xff, 0xff, 0x00, 0x00, 0x00, 0x9b, 0x8f, 0x00 // 0x20 code16 (8f indicates 4K granularity, ie, huge limit)
 	.byte 0xff, 0xff, 0x00, 0x00, 0x00, 0x93, 0x8f, 0x00 // 0x28 data16
-
+        .byte 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 // Dummy
+  
+  	// We are Dword Alligated until now
 tableGdtDescriptor:
 
 	.word 0x30
 	.long tableGdt
-	.word 0
-
+	.word 0    // fill Word, so we get alliged again
+        
+        // We are again Dword Alligated now
+        
 tableIdtDescriptor:
 
 	.word 2048
 	.long 0x00400000
-	.word 0
-
+	.word 0     // fill Word, so we get alliged again
+        
+        // We are again Dword Alligated now
+        
 	.globl start_linux
 start_linux:
 
