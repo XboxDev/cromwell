@@ -6,15 +6,15 @@ Memory Mapping C/X romwell
  	0x000a 0000 Kernel / cromwell GDT Table
 	0x000B 0000 Kernel / cromwell IDT Table
  	
-	0x0010 0000 Kompressed Kernel ( 0x200000 size = 2 MB)
- 	0x003F FFFF Kompressed Kernel
+	0x0010 0000 Compressed Kernel ( 0x200000 size = 2 MB)
+ 	0x003F FFFF Compressed Kernel
 
 	0x0040 5000 command Line Pointer for the Kernel
 
 	0x0070 0000 Stack Pointer Upper Limit
 
- 	0x0100 0000 Memorymanager for Cromwell (0x1000000 size = 16 MB)
- 	0x01FF FFFF Memorymanager
+ 	0x0100 0000 Memory manager for Cromwell (0x1000000 size = 16 MB)
+ 	0x01FF FFFF Memory manager
  	
 	0x0200 0000 Linux Ramdisk Starting address (0x1B00000 size = 27MB)
  	0x03AF FFFF Linux Ramdisk End address
