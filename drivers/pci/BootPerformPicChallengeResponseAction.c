@@ -90,6 +90,12 @@ int I2CTransmitWord(BYTE bPicAddressI2cFormat, WORD wDataToWrite)
 	return ERR_I2C_ERROR_BUS;
 }
 
+void I2CModifyBits(BYTE bAds, BYTE bReg, BYTE bData, BYTE bMask)
+{
+	BYTE b=I2CTransmitByteGetReturn(0x45, bReg)&(~bMask);
+	I2CTransmitWord(0x45, (bReg<<8)|((bData)&bMask)|b);
+}
+
 // ----------------------------  PIC challenge/response -----------------------------------------------------------
 //
 // given four bytes, returns a WORD

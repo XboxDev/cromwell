@@ -111,46 +111,40 @@ SECTIONS {
 	}
 */
 
-	
-	.rodata (0x3B00000 + 0x0c80 + SIZEOF(.rom)) : AT ( 0xc80 + SIZEOF(.rom)) {
+	.rodata (0xfffc0c80 + SIZEOF(.rom)) : AT ( 0xc80 + SIZEOF(.rom)) {
 			*(.rodata);
 			*(.rodata.str1.1);
 			*(.rodata.str1.32);
 			*(.rodata.cst4);
-			*(.rodata.cst8);
+/*			*(.rodata.cst8); */
 	_start_backdrop = .;
 			*(.backdrop);
 	_end_backdrop = .;
 	_end_rodata = . ;
-	}
+ }
 
 
 	/* ram allocations */
 
 	.data (RAM_BASE) : AT( 0xc80 + SIZEOF(.rom)+ SIZEOF(.rodata) ) {
-		_start_data = .;
-		*(.data);
+			_start_data = .;
+				*(.data);
 		*(.sdata);
 		*(.sdata2);
 		*(.got);
 		_end_data = .;
 	}
 
-	RamCopy (0x3B00000 + 0xc80 + SIZEOF(.rom)+ SIZEOF(.rodata) + SIZEOF(.data)) : AT( 0xc80 + SIZEOF(.rom)+ SIZEOF(.rodata) +SIZEOF(.data)) {
-                
+	RamCopy (RAM_CODE) : AT( 0xc80 + SIZEOF(.rom)+ SIZEOF(.rodata) +SIZEOF(.data)) {
+		_ram_location = .;
 		_start_ramcopy = 0xc80 + SIZEOF(.rom)+ SIZEOF(.rodata) +SIZEOF(.data) - RAM_CODE + 0xFFFC0000;
-                *(.text);
-		*(RamCopy);
-
-		
-		
+                                *(.text);
+				*(RamCopy);
+		_end_ramcopy = .;
+		_size_ramcopy = . - RAM_CODE;
 	}
 
-	_ram_copy_offset = 0x0c80 + SIZEOF(.rom);
-	_ram_location = RAM_CODE + _ram_copy_offset;
-	_start_ramcopy = LOW_ROM + _ram_copy_offset;
-	_size_ramcopy = (0xc80 + SIZEOF(.rom)+ SIZEOF(.rodata) + SIZEOF(.data)-_ram_copy_offset);
-         
+
 	/* the data (initialized globals) is moved to ram by the startup code */
 
 	_start_load_data = LOADADDR(.data);

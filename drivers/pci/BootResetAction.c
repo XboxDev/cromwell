@@ -167,22 +167,19 @@ extern void BootResetAction ( void ) {
 	bprintf("BOOT: Read EEPROM\n\r");
 //	DumpAddressAndData(0, (BYTE *)&eeprom, 256);
 
-
-
-
+	__asm__("fninit"); // turn on fpu
 
 	if(((BYTE *)&eeprom)[0x96]&0x01) { // 16:9 widescreen TV
 		currentvideomodedetails.m_nVideoModeIndex=VIDEO_MODE_1024x576;
 	} else { // 4:3 TV
 		currentvideomodedetails.m_nVideoModeIndex=VIDEO_PREFERRED_MODE;
 	}
-
 	currentvideomodedetails.m_pbBaseAddressVideo=(BYTE *)0xfd000000;
 	currentvideomodedetails.m_fForceEncoderLumaAndChromaToZeroInitially=1;
-        
+
         // Load and Init the Background image
 
-	BootVgaInitializationKernel((CURRENT_VIDEO_MODE_DETAILS *)&currentvideomodedetails);
+	BootVgaInitializationKernelNG((CURRENT_VIDEO_MODE_DETAILS *)&currentvideomodedetails);
 
 	bprintf("BOOT: kern VGA init done\n\r");
 
@@ -239,7 +236,7 @@ extern void BootResetAction ( void ) {
 	// display solid red frontpanel LED while we start up
 	I2cSetFrontpanelLed(I2C_LED_RED0 | I2C_LED_RED1 | I2C_LED_RED2 | I2C_LED_RED3 );
 
-	
+
         {
 	DWORD dw=0;
 	BootPciInterruptGlobalStackStateAndDisable(&dw);

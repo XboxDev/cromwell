@@ -13,7 +13,7 @@
 // uncomment to default to FATX boot if you
 // run xromwell as bootloader for FATX
 
-//#define DEFAULT_FATX
+#define DEFAULT_FATX
 
 // Usefull combinations
 //

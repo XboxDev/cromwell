@@ -811,10 +811,11 @@ nDrive=0;
 			
 			}	
 			
-		*/	
+		*/
 		
+		/*
 		{
-		extern int _start_backdrop, _end_backdrop;	
+		extern int _start_backdrop, _end_backdrop;
 			extern void IntHandler1(void);
 			extern void IntHandler2(void);
 			extern void IntHandler3(void);
@@ -828,10 +829,10 @@ nDrive=0;
 			printk("%08X\n",_start_backdrop);
 			printk("%08X\n",_end_backdrop);
 		}
-		
-		
+
 		while(1);
-		
+		*/
+
 		
 		} 
 		

@@ -261,7 +261,7 @@ void IntHandlerCSmc(void)
 								bprintf("Detected new AV type %d, cf %d\n", b, currentvideomodedetails.m_bAvPack);
 								if(b!=currentvideomodedetails.m_bAvPack ) {
 									VIDEO_LUMASCALING=VIDEO_RSCALING=VIDEO_BSCALING=0;
-									BootVgaInitializationKernel((CURRENT_VIDEO_MODE_DETAILS *)&currentvideomodedetails);
+BootVgaInitializationKernelNG((CURRENT_VIDEO_MODE_DETAILS *)&currentvideomodedetails);
 								}
 							}
 						}
@@ -521,7 +521,8 @@ void IntHandler15C(void)
 	bprintf("Unhandled Interrupt 15\n");
 }
 
-void IntHandlerException0C(void) {	bprintf("CPU Exc: Divide by Zero\n");	while(1) ; }
+//void IntHandlerException0C(void) {	bprintf("CPU Exc: Divide by Zero\n");	while(1) ; }
+void IntHandlerException0C(void) {	bprintf("CPU Exc: Divide by Zero\n");}
 void IntHandlerException1C(void) {	bprintf("CPU Exc: Single Step\n");	while(1) ; }
 void IntHandlerException2C(void) {	bprintf("CPU Exc: NMI\n");	while(1) ; }
 void IntHandlerException3C(void) {	bprintf("CPU Exc: Breakpoint\n");	while(1) ; }
@@ -540,15 +541,18 @@ void IntHandlerException6C(void) {
 #endif
 	while(1) ;
 }
-void IntHandlerException7C(void) {	bprintf("CPU Exc: Coprocessor Absent\n");	while(1) ; }
+//void IntHandlerException7C(void) {	bprintf("CPU Exc: Coprocessor Absent\n");	while(1) ; }
+void IntHandlerException7C(void) {	bprintf("CPU Exc: Coprocessor Absent\n");}
 void IntHandlerException8C(void) {	bprintf("CPU Exc: Double Fault\n");	while(1) ; }
-void IntHandlerException9C(void) {	bprintf("CPU Exc: Copro Seg Overrun\n");	while(1) ; }
+//void IntHandlerException9C(void) {	bprintf("CPU Exc: Copro Seg Overrun\n");	while(1) ; }
+void IntHandlerException9C(void) {	bprintf("CPU Exc: Copro Seg Overrun\n");}
 void IntHandlerExceptionAC(void) {	bprintf("CPU Exc: Invalid TSS\n");	while(1) ; }
 void IntHandlerExceptionBC(void) {	bprintf("CPU Exc: Segment not present\n");	while(1) ; }
 void IntHandlerExceptionCC(void) {	bprintf("CPU Exc: Stack Exception\n");	while(1) ; }
 void IntHandlerExceptionDC(void) {	bprintf("CPU Exc: General Protection Fault\n");	while(1) ; }
 void IntHandlerExceptionEC(void) {	bprintf("CPU Exc: Page Fault\n");	while(1) ; }
 void IntHandlerExceptionFC(void) {	bprintf("CPU Exc: Reserved\n");	while(1) ; }
-void IntHandlerException10C(void) {	bprintf("CPU Exc: Copro Error\n");	while(1) ; }
+//void IntHandlerException10C(void) {	bprintf("CPU Exc: Copro Error\n");	while(1) ; }
+void IntHandlerException10C(void) {	bprintf("CPU Exc: Copro Error\n");}
 
 

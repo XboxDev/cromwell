@@ -22,6 +22,16 @@
 #include "consts.h"
 #include "jpeglib.h"
 
+static inline double min (double a, double b)
+{
+	if (a < b) return a; else return b;
+}
+
+static inline double max (double a, double b)
+{
+	if (a > b) return a; else return b;
+}
+
 // filtror is a debugging device designed to make code available over LPC and allow a debug shell
 // details are at http://warmcat.com/milksop
 // if you don't have one, or are building a final ROM image, keep this at zero
@@ -45,6 +55,7 @@
 /////////////////////////////////
 // some typedefs to make for easy sizing
 
+typedef unsigned long ULONG;
 typedef unsigned int DWORD;
 typedef unsigned short WORD;
 typedef unsigned char BYTE;
@@ -373,7 +384,7 @@ DWORD PciReadDword(unsigned int bus, unsigned int dev, unsigned int func, unsign
 int I2CTransmitWord(BYTE bPicAddressI2cFormat, WORD wDataToWrite);
 int I2CTransmitByteGetReturn(BYTE bPicAddressI2cFormat, BYTE bDataToWrite);
 bool I2CGetTemperature(int *, int *);
-
+void I2CModifyBits(BYTE bAds, BYTE bReg, BYTE bData, BYTE bMask);
 
 ///////// BootIde.c
 
