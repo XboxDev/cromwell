@@ -455,7 +455,7 @@ extern void BootResetAction ( void ) {
 //		BootPciInterruptEnable();
 		BootEepromPrintInfo();
 
-#ifndef XBE
+//#ifndef XBE
 		{
 			OBJECT_FLASH of;
 			memset(&of,0x00,sizeof(of));
@@ -468,7 +468,7 @@ extern void BootResetAction ( void ) {
 			printk("%s\n", of.m_szFlashDescription);
 		}
 
-#endif
+//#endif
 	
 	// init USB
 #ifdef DO_USB
@@ -526,6 +526,7 @@ extern void BootResetAction ( void ) {
 
 		{
 			BYTE ba[512];
+			memset(&ba,0x00,sizeof(ba));
 			if(BootIdeReadSector(0, &ba[0], 0, 0, 512)) {
 				printk("Unable to read HDD first sector getting partition table\n");
 			} else {
@@ -537,6 +538,7 @@ extern void BootResetAction ( void ) {
 					int n=0, nPos=0;
 #ifdef DISPLAY_MBR_INFO
 					char sz[512];
+					memset(&sz,0x00,sizeof(sz));
 
 					VIDEO_ATTR=0xffe8e8e8;
 					printk("MBR Partition Table:\n");

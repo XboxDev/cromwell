@@ -264,26 +264,27 @@ int BootStartUpEthernet()
 	cromwellDeviceDescriptor.skbuffhead.next=NULL;
 
 	cromwellapi.pfnAllocMemory=BootEthernetMemoryAlloc;
-  cromwellapi.pfnFreeMemory=BootEthernetMemoryFree;
-  cromwellapi.pfnClearMemory=BootEthernetClearMemory;
-  cromwellapi.pfnAllocMemoryNonCached=BootEthernetMemoryAlloc;
-  cromwellapi.pfnFreeMemoryNonCached=BootEthernetMemoryFree;
-  cromwellapi.pfnStallExecution=BootEthernetStallExecution;
-  cromwellapi.pfnAllocReceiveBuffer=BootEthernetAllocRxBuffer;
-  cromwellapi.pfnFreeReceiveBuffer=BootEthernetFreeRxBuffer;
-  cromwellapi.pfnPacketWasSent=BootEthernetPacketWasSent;
-  cromwellapi.pfnPacketWasReceived=BootEthernetPacketWasReceived;
-  cromwellapi.pfnLinkStateHasChanged=BootEthernetLinkStateHasChanged;
+  	cromwellapi.pfnFreeMemory=BootEthernetMemoryFree;
+  	cromwellapi.pfnClearMemory=BootEthernetClearMemory;
+  	cromwellapi.pfnAllocMemoryNonCached=BootEthernetMemoryAlloc;
+  	cromwellapi.pfnFreeMemoryNonCached=BootEthernetMemoryFree;
+  	cromwellapi.pfnStallExecution=BootEthernetStallExecution;
+  	cromwellapi.pfnAllocReceiveBuffer=BootEthernetAllocRxBuffer;
+  	cromwellapi.pfnFreeReceiveBuffer=BootEthernetFreeRxBuffer;
+  	cromwellapi.pfnPacketWasSent=BootEthernetPacketWasSent;
+  	cromwellapi.pfnPacketWasReceived=BootEthernetPacketWasReceived;
+  	cromwellapi.pfnLinkStateHasChanged=BootEthernetLinkStateHasChanged;
 	cromwellapi.pfnAllocTimer=BootEthernetAllocateTimer;
 	cromwellapi.pfnFreeTimer=BootEthernetFreeTimer;
 	cromwellapi.pfnInitializeTimer=BootEthernetInitTimer;
 	cromwellapi.pfnSetTimer=BootEthernetSetTimer;
 	cromwellapi.pfnCancelTimer=BootEthernetCancelTimer;
+
 #ifdef AMDHPNA10
   cromwellapi.pfnPeriodicTimer=BootEthernetPeriodicTimer;
 #endif
-  cromwellapi.pfnPreprocessPacket=BootEthernetPreprocessPacket;
-  cromwellapi.pfnIndicatePackets=BootEthernetIndicatePackets;
+	cromwellapi.pfnPreprocessPacket=BootEthernetPreprocessPacket;
+  	cromwellapi.pfnIndicatePackets=BootEthernetIndicatePackets;
 	cromwellapi.pfnLockAlloc=BootEthernetLockAlloc;
 	cromwellapi.pfnLockAcquire=BootEthernetLockAcquire;
 	cromwellapi.pfnLockRelease=BootEthernetLockRelease;
@@ -321,13 +322,13 @@ int BootStartUpEthernet()
 
 	printk("AdapterOpen returned %d\n", n);
 
-  realmac[0] = eeprom.MACAddress[5];
-  realmac[1] = eeprom.MACAddress[4];
-  realmac[2] = eeprom.MACAddress[3];
-  realmac[3] = eeprom.MACAddress[2];
-  realmac[4] = eeprom.MACAddress[1];
-  realmac[5] = eeprom.MACAddress[0];
-  priv.hwapi->pfnSetNodeAddress(priv.hwapi->pADCX, realmac);
+  	realmac[0] = eeprom.MACAddress[5];
+  	realmac[1] = eeprom.MACAddress[4];
+  	realmac[2] = eeprom.MACAddress[3];
+  	realmac[3] = eeprom.MACAddress[2];
+  	realmac[4] = eeprom.MACAddress[1];
+  	realmac[5] = eeprom.MACAddress[0];
+  	priv.hwapi->pfnSetNodeAddress(priv.hwapi->pADCX, realmac);
 
 /*
 	int n=PHY_Open(&baOsStruct[0], &phyapi, &ulIsHPNAPhy, &ulPhyAddr, &ulPhyConnected);

@@ -129,7 +129,7 @@ void BootPciPeripheralInitialization()
 	IoInputByte(0x71);
 
 
-#if 1
+#if 0
 		__asm__ __volatile__(
 
 //		" wbinvd \n"
@@ -341,12 +341,16 @@ void BootPciPeripheralInitialization()
 
 //
 // Bus 0, Device 0, Function 0 = PCI Bridge Device - Host Bridge
-//
+//   
+
+#ifndef XBE
 	PciWriteDword(BUS_0, DEV_0, FUNC_0, 0x48, 0x00000114);
 	PciWriteDword(BUS_0, DEV_0, FUNC_0, 0x44, 0x80000000); // new 2003-01-23 ag  trying to get single write actions on TSOP
-
-	PciWriteByte(BUS_0, DEV_0, 3, 0x42, 0x17);
 	PciWriteByte(BUS_0, DEV_0, FUNC_0, 0x4b,0x00);
+	
+	PciWriteByte(BUS_0, DEV_0, 3, 0x42, 0x17);
+
+#endif
 
 
 //
@@ -358,10 +362,10 @@ void BootPciPeripheralInitialization()
 
 	PciWriteByte(BUS_0, DEV_0, FUNC_0, 0x87, 3); // kern 8001FC21
 
-			// frankenregisters so Xromwell matches Cromwell
+// frankenregisters so Xromwell matches Cromwell
 
-		PciWriteDword(BUS_1, DEV_0, FUNC_0, 0x0c, 0x0);
-		PciWriteDword(BUS_1, DEV_0, FUNC_0, 0x18, 0x08);
+	PciWriteDword(BUS_1, DEV_0, FUNC_0, 0x0c, 0x0);
+	PciWriteDword(BUS_1, DEV_0, FUNC_0, 0x18, 0x08);
 
 
 	bprintf("c\n");

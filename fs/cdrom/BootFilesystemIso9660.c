@@ -178,6 +178,8 @@ int BootIso9660GetFileDetails(const char * szcPath, ISO_SYSTEM_DIRECTORY_RECORD 
 	int n=0, nReturn;
 	bool fMore=true;
 
+	memset(&szPathElement,0x00,sizeof(szPathElement));
+	
 	if(*szcPath!='/') return -2; // no relative paths
 
 	while(fMore) {

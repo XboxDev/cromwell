@@ -118,6 +118,7 @@ bool BootFlashGetDescriptor( OBJECT_FLASH *pof, KNOWN_FLASH_TYPE * pkft )
 			) {
 				fSeen=true;
 				fMore=false;
+				nPos = 0;
 				nPos+=sprintf(&pof->m_szFlashDescription[nPos], "%s (%dK)", pkft->m_szFlashDescription, (int)pkft->m_dwLengthInBytes/1024);
 				pof->m_dwLengthInBytes = pkft->m_dwLengthInBytes;
 
