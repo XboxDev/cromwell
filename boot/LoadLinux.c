@@ -113,7 +113,7 @@ int BootLoadConfigNative(int nActivePartition, CONFIGENTRY *config, bool fJustTe
 		if(fJustTestingForPossible) return 1; // if there's a linuxboot.cfg it must be worth trying to boot
 		nLen=grub_read((void *)KERNEL_SETUP, filemax);
 		if(nLen>0) { ((char *)KERNEL_SETUP)[nLen]='\0'; }  // needed to terminate incoming string, reboot in ParseConfig without it
-		ParseConfig((char *)KERNEL_SETUP,config,&eeprom, NULL);
+		ParseConfig((char *)KERNEL_SETUP,config, NULL);
 		BootPrintConfig(config);
 		printf("linuxboot.cfg is %d bytes long.\n", dwConfigSize);
 	}
@@ -178,13 +178,13 @@ int BootTryLoadConfigFATX(CONFIGENTRY *config) {
 		if(!LoadFATXFile(partition,"/linuxboot.cfg",&fileinfo)) {
 			if(LoadFATXFile(partition,"/debian/linuxboot.cfg",&fileinfo) ) {
 				fileinfo.buffer[fileinfo.fileSize]=0;
-				ParseConfig(fileinfo.buffer,config,&eeprom,"/debian");
+				ParseConfig(fileinfo.buffer,config,"/debian");
 				free(fileinfo.buffer);
 				CloseFATXPartition(partition);
 			}
 		} else {
 			fileinfo.buffer[fileinfo.fileSize]=0;
-			ParseConfig(fileinfo.buffer,config,&eeprom,NULL);
+			ParseConfig(fileinfo.buffer,config,NULL);
 			free(fileinfo.buffer);
 		}
 	} else {
@@ -229,13 +229,13 @@ int BootLoadConfigFATX(CONFIGENTRY *config) {
 	if(LoadFATXFile(partition,"/linuxboot.cfg",&fileinfo) ) {
 		wait_ms(50);
 		fileinfo.buffer[fileinfo.fileSize]=0;
-		ParseConfig(fileinfo.buffer,config,&eeprom, NULL);
+		ParseConfig(fileinfo.buffer,config, NULL);
 		free(fileinfo.buffer);
 	} 
 	else if(LoadFATXFile(partition,"/debian/linuxboot.cfg",&fileinfo) ) {
 		wait_ms(50);
 		fileinfo.buffer[fileinfo.fileSize]=0;
-		ParseConfig(fileinfo.buffer,config,&eeprom, "/debian");
+		ParseConfig(fileinfo.buffer,config,"/debian");
 		free(fileinfo.buffer);
 	} else {
 		wait_ms(50);
@@ -345,7 +345,7 @@ int BootLoadConfigCD(int cdromId, CONFIGENTRY *config) {
 	}
         // LinuxBoot.cfg File Loaded
 	((char *)KERNEL_SETUP)[dwConfigSize]=0;
-	ParseConfig((char *)KERNEL_SETUP,config,&eeprom, NULL);
+	ParseConfig((char *)KERNEL_SETUP,config,NULL);
 	BootPrintConfig(config);
 
 	// Use INITRD_START as temporary location for loading the Kernel 
