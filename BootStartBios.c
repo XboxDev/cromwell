@@ -592,7 +592,11 @@ void StartBios(	int nDrive, int nActivePartition , int nFATXPresent) {
 		if(nDrive == 0) {
 			printk("Defaulting to HDD boot\n");
 			I2CTransmitWord(0x10, 0x0c01); // close DVD tray
+#ifdef DEFAULT_FATX
+			nIcon = ICON_FATX;
+#else
 			nIcon = ICON_NATIVE;
+#endif
 		} else {
 			printk("Defaulting to CD boot\n");
 			nIcon = ICON_CD;

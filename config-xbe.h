@@ -9,7 +9,10 @@
 //#define FORCE_CD_BOOT
 //#define IS_XBE_CDLOADER
 #define MENU
-#define ENABLE_FATX
+
+// uncomment to default to FATX boot if you
+// run xromwell as bootloader for FATX
+#define DEFAULT_FATX
 
 // Usefull combinations
 //
@@ -18,7 +21,6 @@
 // #define FORCE_CD_BOOT
 // #define IS_XBE_CDLOADER
 // #undef MENU
-// #undef ENABLE_FATX
 //
 // Use xromwell as a normal bootselector from
 // HDD
@@ -26,7 +28,6 @@
 // #undef FORCE_CD_BOOT
 // #undef IS_XBE_CDLOADER
 // #define MENU
-// #define ENABLE_FATX
 
 // display a line like Composite 480 detected if uncommented
 #define REPORT_VIDEO_MODE
