@@ -21,16 +21,11 @@
 #define OF(args)  args
 #define STATIC static
 
-#undef memset
-#undef memcpy
-
 /*
  * Why do we do this? Don't ask me..
  *
  * Incomprehensible are the ways of bootloaders.
  */
-static void* memset(void *, int, size_t);
-static void* memcpy(void *, __const void *, size_t);
 #define memzero(s, n)     memset ((s), 0, (n))
 
 typedef unsigned char  uch;
@@ -136,25 +131,6 @@ static void gzip_mark(void **ptr)
 static void gzip_release(void **ptr)
 {
 	free_mem_ptr = (long) *ptr;
-}
- 
-static void* memset(void* s, int c, size_t n)
-{
-	int i;
-	char *ss = (char*)s;
-
-	for (i=0;i<n;i++) ss[i] = c;
-	return s;
-}
-
-static void* memcpy(void* __dest, __const void* __src,
-			    size_t __n)
-{
-	int i;
-	char *d = (char *)__dest, *s = (char *)__src;
-
-	for (i=0;i<__n;i++) d[i] = s[i];
-	return __dest;
 }
 
 /* ===========================================================================
