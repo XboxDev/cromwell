@@ -109,7 +109,6 @@
 
 #include "../usb_wrapper.h"
 #include "../core/hcd.h"
-int USB_init_ani=1;
 
 //#define OHCI_VERBOSE_DEBUG
 #endif
@@ -585,7 +584,6 @@ static void ohci_irq (struct usb_hcd *hcd, struct pt_regs *ptregs)
 	}
   
 	if (ints & OHCI_INTR_WDH) {
-		if (USB_init_ani) usbprintk("I");
 		writel (OHCI_INTR_WDH, &regs->intrdisable);	
 		dl_done_list (ohci, dl_reverse_done_list (ohci), ptregs);
 		writel (OHCI_INTR_WDH, &regs->intrenable); 

@@ -25,7 +25,6 @@ extern int (*thread_handler)(void*);
 int (*hub_thread_handler)(void*);
 
 extern int nousb;
-extern int USB_init_ani;
 extern int xpad_num;
 
 struct pci_dev xx_ohci_dev={
@@ -49,30 +48,22 @@ void BootStartUSB(void)
         init_wrapper();
         subsys_usb_init();
         hub_thread_handler=thread_handler;
-	usb_hcd_pci_probe(&xx_ohci_dev,
-			  module_table_pci_ids);	
+	usb_hcd_pci_probe(&xx_ohci_dev, module_table_pci_ids);	
 	XPADInit();
 	
 	XRemoteInit();
 	
 	UsbKeyBoardInit();
-		
-	// Find a few connected devices first...
-	for(n=0;n<3000;n++)
-	{
+
+	for(n=0;n<30;n++) {
 		USBGetEvents();
 		wait_ms(1);
-		if (xpad_num!=0) {  // Houston, we have a XPAD!
-			if (n>200) break;
-		}
 	}
-	
-	USB_init_ani=0; // No more animation
 }
 /*------------------------------------------------------------------------*/ 
 void USBGetEvents(void)
 {	
-        inc_jiffies(1);
+	inc_jiffies(1);
         do_all_timers();
         hub_thread_handler(NULL);
         handle_irqs(-1);       
