@@ -10,6 +10,5 @@
 #define TAGGED_IMAGE
 #define ELF_IMAGE
 #define CONFIG_PCI
-#define printf printk
 
 #endif

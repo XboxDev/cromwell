@@ -18,8 +18,6 @@ Literature dealing with the network protocols:
 #include "nic.h"
 #include "elf.h" /* FOR EM_CURRENT */
 
-extern void BootResetAction(void);
-
 struct arptable_t	arptable[MAX_ARP];
 #if MULTICAST_LEVEL2
 unsigned long last_igmpv1 = 0;
@@ -236,8 +234,7 @@ int eth_load_configuration(struct dev *dev __unused)
 #endif
 	if (!server_found) {
 		printf("No Server found\n");
-		// longjmp(restart_etherboot, -1);
-		BootResetAction();
+		longjmp(restart_etherboot, -1);
 	}
 	return 0;
 }
@@ -275,8 +272,7 @@ int eth_load(struct dev *dev __unused)
 	loadkernel(kernel); /* We don't return except on error */
 	printf("Unable to load file.\n");
 	interruptible_sleep(2);		/* lay off the server for a while */
-	// longjmp(restart_etherboot, -1);
-	BootResetAction();
+	longjmp(restart_etherboot, -1);
 }
 
 

@@ -9,6 +9,8 @@ extern uint32_t PciReadDword(unsigned int bus, unsigned int dev, unsigned int fu
 extern void PciWriteByte(unsigned int bus, unsigned int dev, unsigned int func, unsigned int reg_off, uint8_t value);
 extern void PciWriteWord(unsigned int bus, unsigned int dev, unsigned int func, unsigned int reg_off, uint16_t value);
 extern uint32_t PciWriteDword(unsigned int bus, unsigned int dev, unsigned int func, unsigned int reg_off, uint32_t value);
+extern void BootResetAction(void);
+extern void BootStopUSB(void);
 
 static struct meminfo meminfo = 
 {
@@ -122,3 +124,11 @@ void udelay(unsigned int usecs)
 {
 	wait_us(usecs);
 }
+
+void restart_etherboot(int status)
+{
+	eth_disable();
+	BootStopUSB();
+	BootResetAction();
+}
+

@@ -1,4 +1,4 @@
-#include "Config.h"
+#include "etherboot_config.h"
 #include "osdep.h"
 
 #ifndef BOOT_FIRST
@@ -388,7 +388,6 @@ External variables
 extern struct rom_info rom;
 extern char *hostname;
 extern int hostnamelen;
-extern jmp_buf restart_etherboot;
 extern int url_port;
 extern struct arptable_t arptable[MAX_ARP];
 extern struct igmptable_t igmptable[MAX_IGMP];
@@ -412,6 +411,11 @@ extern char freebsd_kernel_env[FREEBSD_KERNEL_ENV_SIZE];
 /* bootmenu.c */
 
 /* osloader.c */
+
+/* xbox.c */
+#define printf printk
+#define longjmp(a,b) a(b)
+extern void restart_etherboot(int);
 
 /* created by linker */
 extern char _virt_start[], _text[], _etext[], _text16[], _etext16[];
