@@ -353,7 +353,7 @@ int BootLodaConfigCD(CONFIGENTRY *config) {
 	memset((BYTE *)0x90000,0,4096);
 
 	I2CTransmitWord(0x10, 0x0c00); // eject DVD tray
-	wait_ms(500);
+	wait_ms(2000); // Wait for DVD to become responsive to inject command
 		
 selectinsert:
 	BootVideoBlit(
@@ -415,7 +415,8 @@ selectinsert:
 				currentvideomodedetails.m_dwWidthInPixels*4, (DWORD *)&baBackground[0], 640*4, 64
 				);
 				I2CTransmitWord(0x10, 0x0c00); // eject DVD tray	
-				
+				wait_ms(2000); // Wait for DVD to become responsive to inject command
+
 				goto selectinsert;
 			}
 			wait_ms(200);
@@ -573,7 +574,7 @@ int BootLoadFlashCD(CONFIGENTRY *config) {
       	unsigned char SHA1_result[20];
 
 	I2CTransmitWord(0x10, 0x0c00); // eject DVD tray
-	wait_ms(500);
+	wait_ms(2000); // Wait for DVD to become responsive to inject command
                         	
 selectinsert:
 	BootVideoBlit(
@@ -624,7 +625,7 @@ selectinsert:
 				currentvideomodedetails.m_dwWidthInPixels*4, (DWORD *)&baBackground[0], 640*4, 64
 				);
 				I2CTransmitWord(0x10, 0x0c00); // eject DVD tray	
-				
+				wait_ms(2000); // Wait for DVD to become responsive to inject command
 				goto selectinsert;
 			}
 			wait_ms(200);
