@@ -171,13 +171,13 @@ void rtc_set_checksum(int range_start, int range_end, int cks_loc)
 	CMOS_WRITE(((sum >> 0) & 0x0ff), cks_loc+1);
 }
 
+
 void BootPciPeripheralInitialization()
 {
 
-       
+	__asm__ __volatile__ ( "cli" );
+
 	PciWriteDword(BUS_0, DEV_1, 0, 0x80, 2);  // v1.1 2BL kill ROM area
-	
-	// USB Slew Rate compensation
 	if(PciReadByte(BUS_0, DEV_1, 0, 0x8)>=0xd1) { // check revision
 		PciWriteDword(BUS_0, DEV_1, 0, 0xc8, 0x8f00);  // v1.1 2BL <-- death
 	}
@@ -187,29 +187,32 @@ void BootPciPeripheralInitialization()
 	PciWriteDword(BUS_0, DEV_0, FUNC_0, 0x48, 0x00000114);
 	PciWriteDword(BUS_0, DEV_0, FUNC_0, 0x44, 0x80000000); // new 2003-01-23 ag  trying to get single write actions on TSOP
 
-  
+
 	PciWriteByte(BUS_0, DEV_0, FUNC_0, 0x87, 3); // kern 8001FC21
 	
-		
 
 	PciWriteByte(BUS_0, DEV_0, 8, 0, 0x42);       // Xbeboot-compare
-
-        //Memory controller, but this is buggy !
-	if (cromwell_config==CROMWELL) {
 	
-		PciWriteDword(BUS_0, DEV_0, 3, 0x40, 0x0017cc00);  // Orginal Andy
-		PciWriteDword(BUS_0, DEV_0, 3, 0x58, 0x00008000);  // original Andy
-	}
-  
-	//	PciWriteByte(BUS_0, DEV_0, FUNC_0, 0x4b,0x00); --> BAD !!! -- Xbox Dies sometimes
+	// Memory	
+	//PciWriteDword(BUS_0, DEV_0, 3, 0x40, 0x0017cc00);  // Orginal Andy
+	//PciWriteDword(BUS_0, DEV_0, 3, 0x58, 0x00008000);  // original Andy
 
-  
 
+//	PciWriteByte(BUS_0, DEV_0, FUNC_0, 0x4b,0x00); --> BAD !!! -- Xbox Dies sometimes
+
+//	PciWriteDword(BUS_0, DEV_9, FUNC_0, 0x4c, 0xffff00ff); // 2x30nS address setup on IDE
+	
 	IoOutputByte(0x2e, 0x55);
 	IoOutputByte(0x2e, 0x26);
 
 	IoOutputByte(0x61, 0xff);
 	IoOutputByte(0x92, 0x01);
+
+//	IoOutputByte(0xcf9, 0x08);	// Reset Port
+	IoOutputByte(0xcf9, 0x0);	// Reset Port
+
+          
+                
         
         IoOutputByte(0x43, 0x36);         	// Timer 0 (system time): mode 3
         IoOutputByte(0x40, 0xFF);              // 18.2Hz (1.19318MHz/65535)
@@ -265,18 +268,18 @@ void BootPciPeripheralInitialization()
         IoOutputByte(0xD4, 0);                 // clear chain 4 mask
 
 
-	
+	/* Setup the real time clock */
 	CMOS_WRITE(RTC_CONTROL_DEFAULT, RTC_CONTROL);
-	
+	/* Setup the frequency it operates at */
 	CMOS_WRITE(RTC_FREQ_SELECT_DEFAULT, RTC_FREQ_SELECT);
-	
-	//rtc_set_checksum(PC_CKS_RANGE_START,
-          //              PC_CKS_RANGE_END,PC_CKS_LOC);
-	
+	/* Make certain we have a valid checksum */
+//	rtc_set_checksum(PC_CKS_RANGE_START,
+  //                      PC_CKS_RANGE_END,PC_CKS_LOC);
+	/* Clear any pending interrupts */
 	(void) CMOS_READ(RTC_INTR_FLAGS);
 
 
-        return;
+
 
         
 	// configure ACPI hardware to generate interrupt on PIC-chip pin6 action (via EXTSMI#)
@@ -292,8 +295,8 @@ void BootPciPeripheralInitialization()
 	I2CTransmitWord(0x10, 0x0b00); // Allow audio
 //	I2CTransmitWord(0x10, 0x0b01); // GAH!!!  Audio Mute!
 
-// Bus 0, Device 1, Function 0 = nForce HUB Interface - ISA Bridge
-//
+	// Bus 0, Device 1, Function 0 = nForce HUB Interface - ISA Bridge
+
 	PciWriteDword(BUS_0, DEV_1, FUNC_0, 0x6c, 0x0e065491);
 	PciWriteByte(BUS_0, DEV_1, FUNC_0, 0x6a, 0x0003); // kern ??? gets us an int3?  vsync req
 	PciWriteDword(BUS_0, DEV_1, FUNC_0, 0x64, 0x00000b0c);
@@ -301,7 +304,6 @@ void BootPciPeripheralInitialization()
 
 	PciWriteDword(BUS_0, DEV_1, FUNC_0, 0x4c, 0x000f0000); // RTC clocks enable?  2Hz INT8?
 
-      	
 
 	// Bus 0, Device 9, Function 0 = nForce ATA Controller
 
@@ -311,13 +313,20 @@ void BootPciPeripheralInitialization()
 
 	PciWriteDword(BUS_0, DEV_9, FUNC_0, 0x58, 0x20202020); // kern1.1
 	PciWriteDword(BUS_0, DEV_9, FUNC_0, 0x60, 0x00000000); // kern1.1
-	//  PciWriteDword(BUS_0, DEV_9, FUNC_0, 0x40, 0x000084bb); // new - removed by frankenregister comparison
+
 	PciWriteDword(BUS_0, DEV_9, FUNC_0, 0x50, 0x00000002);  // without this there is no register footprint at IO 1F0
 
 	PciWriteDword(BUS_0, DEV_9, FUNC_0, 0x2c, 0x00000000); // frankenregister from xbe boot
 	PciWriteDword(BUS_0, DEV_9, FUNC_0, 0x40, 0x00000000); // frankenregister from xbe boot
 	// below reinstated by frankenregister compare with xbe boot
 	PciWriteDword(BUS_0, DEV_9, FUNC_0, 0x60, 0xC0C0C0C0); // kern1.1 <--- this was in kern1.1 but is FATAL for good HDD access
+
+	// Bus 0, Device 4, Function 0 = nForce MCP Networking Adapter - all verified with kern1.1
+
+	PciWriteDword(BUS_0, DEV_4, FUNC_0, 4, PciReadDword(BUS_0, DEV_4, FUNC_0, 4) | 7 );
+	PciWriteDword(BUS_0, DEV_4, FUNC_0, 0x10, 0xfef00000); // memory base address 0xfef00000
+	PciWriteDword(BUS_0, DEV_4, FUNC_0, 0x14, 0x0000e001); // I/O base address 0xe000
+	PciWriteDword(BUS_0, DEV_4, FUNC_0, 0x118-0xdc, (PciReadDword(BUS_0, DEV_4, FUNC_0, 0x3c) &0xffff0000) | 0x0004 );
 
 
 	// Bus 0, Device 2, Function 0 = nForce OHCI USB Controller - all verified with kern 1.1
@@ -327,7 +336,6 @@ void BootPciPeripheralInitialization()
 	PciWriteDword(BUS_0, DEV_2, FUNC_0, 0x3c, (PciReadDword(BUS_0, DEV_2, FUNC_0, 0x3c) &0xffff0000) | 0x0001 );
 	PciWriteDword(BUS_0, DEV_2, FUNC_0, 0x50, 0x0000000f);
 
-
 	// Bus 0, Device 3, Function 0 = nForce OHCI USB Controller - verified with kern1.1
 
 	PciWriteDword(BUS_0, DEV_3, FUNC_0, 4, PciReadDword(BUS_0, DEV_3, FUNC_0, 4) | 7 );
@@ -335,26 +343,12 @@ void BootPciPeripheralInitialization()
 	PciWriteDword(BUS_0, DEV_3, FUNC_0, 0x3c, (PciReadDword(BUS_0, DEV_3, FUNC_0, 0x3c) &0xffff0000) | 0x0009 );
 	PciWriteDword(BUS_0, DEV_3, FUNC_0, 0x50, 0x00000030);  // actually BYTE?
 
-	// Bus 0, Device 4, Function 0 = nForce MCP Networking Adapter - all verified with kern1.1
-
-	PciWriteDword(BUS_0, DEV_4, FUNC_0, 4, PciReadDword(BUS_0, DEV_4, FUNC_0, 4) | 7 );
-	PciWriteDword(BUS_0, DEV_4, FUNC_0, 0x10, 0xfef00000); // memory base address 0xfef00000
-	PciWriteDword(BUS_0, DEV_4, FUNC_0, 0x14, 0x0000e001); // I/O base address 0xe000
-	PciWriteDword(BUS_0, DEV_4, FUNC_0, 0x118-0xdc, (PciReadDword(BUS_0, DEV_4, FUNC_0, 0x3c) &0xffff0000) | 0x0004 );
-
-	// Bus 0, Device 5, Function 0 = nForce MCP APU
-
-	PciWriteDword(BUS_0, DEV_5, FUNC_0, 4, PciReadDword(BUS_0, DEV_5, FUNC_0, 4) | 7 );
-	PciWriteDword(BUS_0, DEV_5, FUNC_0, 0x3c, (PciReadDword(BUS_0, DEV_5, FUNC_0, 0x3c) &0xffff0000) | 0x0005 );
-	PciWriteDword(BUS_0, DEV_5, FUNC_0, 0x10, 0xfe800000);	// memory base address 0xfe800000
-
 	// Bus 0, Device 6, Function 0 = nForce Audio Codec Interface - verified with kern1.1
 
 	PciWriteDword(BUS_0, DEV_6, FUNC_0, 4, PciReadDword(BUS_0, DEV_6, FUNC_0, 4) | 7 );
 	PciWriteDword(BUS_0, DEV_6, FUNC_0, 0x10, (PciReadDword(BUS_0, DEV_6, FUNC_0, 0x10) &0xffff0000) | 0xd001 );  // MIXER at IO 0xd000
 	PciWriteDword(BUS_0, DEV_6, FUNC_0, 0x14, (PciReadDword(BUS_0, DEV_6, FUNC_0, 0x14) &0xffff0000) | 0xd201 );  // BusMaster at IO 0xD200
 	PciWriteDword(BUS_0, DEV_6, FUNC_0, 0x18, 0xfec00000);	// memory base address 0xfec00000
-
 
 	// frankenregister from working Linux driver
 
@@ -365,14 +359,18 @@ void BootPciPeripheralInitialization()
 	PciWriteDword(BUS_0, DEV_6, FUNC_0, 0x4c, 0x107 );
 
 
-	
+	// Bus 0, Device 5, Function 0 = nForce MCP APU
+
+	PciWriteDword(BUS_0, DEV_5, FUNC_0, 4, PciReadDword(BUS_0, DEV_5, FUNC_0, 4) | 7 );
+	PciWriteDword(BUS_0, DEV_5, FUNC_0, 0x3c, (PciReadDword(BUS_0, DEV_5, FUNC_0, 0x3c) &0xffff0000) | 0x0005 );
+	PciWriteDword(BUS_0, DEV_5, FUNC_0, 0x10, 0xfe800000);	// memory base address 0xfe800000
 
 	// Bus 0, Device 1, Function 0 = nForce HUB Interface - ISA Bridge
 
-//	PciWriteDword(BUS_0, DEV_1, FUNC_0, 0x8c, (PciReadDword(BUS_0, DEV_1, FUNC_0, 0x8c) &0xfbffffff) | 0x08000000 );
-
+	PciWriteDword(BUS_0, DEV_1, FUNC_0, 0x8c, (PciReadDword(BUS_0, DEV_1, FUNC_0, 0x8c) &0xfbffffff) | 0x08000000 );
 
 	// ACPI pin init
+
 
 	IoOutputDword(0x80b4, 0xffff);  // any interrupt resets ACPI system inactivity timer
 	IoOutputByte(0x80cc, 0x08); // Set EXTSMI# pin to be pin function
@@ -381,6 +379,8 @@ void BootPciPeripheralInitialization()
 
 	IoOutputWord(0x8020, IoInputWord(0x8020)|0x200); // ack any preceding ACPI int
 
+
+	
 	// Bus 0, Device 1e, Function 0 = nForce AGP Host to PCI Bridge
 
 	PciWriteDword(BUS_0, DEV_1e, FUNC_0, 4, PciReadDword(BUS_0, DEV_1e, FUNC_0, 4) | 7 );
@@ -402,18 +402,16 @@ void BootPciPeripheralInitialization()
 	PciWriteDword(BUS_0, DEV_1e, FUNC_0, 0x30, 0xdf758fa3);
 	PciWriteDword(BUS_0, DEV_1e, FUNC_0, 0x38, 0xb785fccc);
 
-
-
-// Bus 1, Device 0, Function 0 = NV2A GeForce3 Integrated GPU
+      
+	// Bus 1, Device 0, Function 0 = NV2A GeForce3 Integrated GPU
 
 	PciWriteDword(BUS_1, DEV_0, FUNC_0, 4, PciReadDword(BUS_1, DEV_0, FUNC_0, 4) | 7 );
 	PciWriteDword(BUS_1, DEV_0, FUNC_0, 0x3c, (PciReadDword(BUS_1, DEV_0, FUNC_0, 0x3c) &0xffff0000) | 0x0103 );  // should get vid irq!!
 	PciWriteDword(BUS_1, DEV_0, FUNC_0, 0x4c, 0x00000114);
 
-// frankenregisters so Xromwell matches Cromwell
-
+	// frankenregisters so Xromwell matches Cromwell
+	
 	PciWriteDword(BUS_1, DEV_0, FUNC_0, 0x0c, 0x0);
 	PciWriteDword(BUS_1, DEV_0, FUNC_0, 0x18, 0x08);
 
 }
-
