@@ -148,7 +148,7 @@ BOOT_ETH_DIR = boot_eth/ethboot
 BOOT_ETH_SUBDIRS = ethsubdirs
 endif
 
-all: clean resources $(BOOT_ETH_SUBDIRS) cromsubdirs default.xbe vmlboot $(BOOT_ETH_DIR) image.bin imagecompress 
+all: clean resources $(BOOT_ETH_SUBDIRS) cromsubdirs xromwell.xbe vmlboot $(BOOT_ETH_DIR) cromwell.bin imagecompress 
 
 ifeq ($(ETHERBOOT), yes)
 ethsubdirs: $(patsubst %, _dir_%, $(ETH_SUBDIRS))
@@ -166,9 +166,6 @@ resources:
 	# Background
 	${LD} -r --oformat elf32-i386 -o $(TOPDIR)/obj/backdrop.elf -T $(TOPDIR)/scripts/backdrop.ld -b binary $(TOPDIR)/pics/backdrop.jpg	
 
-install:
-	lmilk -f -p $(TOPDIR)/image/image.bin
-	lmilk -f -a c0000 -p $(TOPDIR)/image/image.bin -q	
 clean:
 	find . \( -name '*.[oas]' -o -name core -o -name '.*.flags' \) -type f -print \
 		| grep -v lxdialog/ | xargs rm -f
@@ -203,11 +200,11 @@ boot_eth/ethboot: ${OBJECTS-ETH} obj/image-crom.bin
 	perl -I boot_eth boot_eth/mknbi.pl --output=$@ obj/ethboot.bin
 endif
 
-default.xbe: ${OBJECTS-XBE}
-	${LD} -o $(TOPDIR)/obj/default.elf ${OBJECTS-XBE} ${LDFLAGS-XBEBOOT}
-	${OBJCOPY} --output-target=binary --strip-all $(TOPDIR)/obj/default.elf $(TOPDIR)/xbe/$@
+xromwell.xbe: ${OBJECTS-XBE}
+	${LD} -o $(TOPDIR)/obj/xbeboot.elf ${OBJECTS-XBE} ${LDFLAGS-XBEBOOT}
+	${OBJCOPY} --output-target=binary --strip-all $(TOPDIR)/obj/xbeboot.elf $(TOPDIR)/xbe/$@
 
-image.bin:
+cromwell.bin:
 	${LD} -o $(TOPDIR)/obj/2lbimage.elf ${OBJECTS-ROMBOOT} ${LDFLAGS-ROMBOOT}
 	${OBJCOPY} --output-target=binary --strip-all $(TOPDIR)/obj/2lbimage.elf $(TOPDIR)/obj/2blimage.bin
 
@@ -221,7 +218,7 @@ bin/imagebld: lib/imagebld/imagebld.c lib/crypt/sha1.c lib/crypt/md5.c
 imagecompress: obj/image-crom.bin bin/imagebld
 	cp obj/image-crom.bin obj/image-crom.bin.tmp
 	gzip -9 obj/image-crom.bin.tmp
-	bin/imagebld -rom obj/2blimage.bin obj/image-crom.bin.tmp.gz image/image.bin image/image_1024.bin
-	bin/imagebld -xbe xbe/default.xbe obj/image-crom.bin
+	bin/imagebld -rom obj/2blimage.bin obj/image-crom.bin.tmp.gz image/cromwell.bin image/cromwell_1024.bin
+	bin/imagebld -xbe xbe/xromwell.xbe obj/image-crom.bin
 	bin/imagebld -vml boot_vml/disk/vmlboot obj/image-crom.bin 
 
