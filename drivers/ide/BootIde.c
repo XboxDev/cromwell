@@ -358,9 +358,7 @@ static int BootIdeDriveInit(unsigned uIoBase, int nIndexDrive)
 	tsIdeCommandParams tsicp = IDE_DEFAULT_COMMAND;
 	unsigned short* drive_info;
 	BYTE baBuffer[512];
-        unsigned char outbuffer[200];
-        
-        memset(outbuffer,0x00,sizeof(outbuffer));
+     
 	memset(&tsaHarddiskInfo[nIndexDrive],0x00,sizeof(struct tsHarddiskInfo));
 	
 	tsaHarddiskInfo[nIndexDrive].m_fwPortBase = uIoBase;
@@ -487,21 +485,12 @@ static int BootIdeDriveInit(unsigned uIoBase, int nIndexDrive)
 		printk("hd%c: ", nIndexDrive+'a');
 		VIDEO_ATTR=0xffc8c800;
 
-		_strncpy(outbuffer,tsaHarddiskInfo[nIndexDrive].m_szIdentityModelNumber,sizeof(tsaHarddiskInfo[nIndexDrive].m_szIdentityModelNumber));
-		printk("%s",outbuffer);
-
-		_strncpy(outbuffer,tsaHarddiskInfo[nIndexDrive].m_szSerial,sizeof(tsaHarddiskInfo[nIndexDrive].m_szSerial));
-		printk("%s",outbuffer);
-
-		_strncpy(outbuffer,tsaHarddiskInfo[nIndexDrive].m_szFirmware,sizeof(tsaHarddiskInfo[nIndexDrive].m_szFirmware));
-		printk("%s",outbuffer);
-		/*		
 		printk("%s %s %s\n",tsaHarddiskInfo[nIndexDrive].m_szIdentityModelNumber,
 			tsaHarddiskInfo[nIndexDrive].m_szIdentityModelNumber,
 			tsaHarddiskInfo[nIndexDrive].m_szSerial,
 			tsaHarddiskInfo[nIndexDrive].m_szFirmware
 		);
-		*/
+
 
 #ifndef XBE
 		{  // this is the only way to clear the ATAPI ''I have been reset'' error indication

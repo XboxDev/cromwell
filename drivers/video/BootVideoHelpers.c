@@ -463,7 +463,7 @@ void BootVideoChunkedPrint(char * szBuffer, WORD wLength) {
 }
 
 int printk(const char *szFormat, ...) {  // printk displays to video and filtror if enabled
-	char szBuffer[512];
+	char szBuffer[512*2];
 	WORD wLength=0;
 	va_list argList;
 	va_start(argList, szFormat);
@@ -472,8 +472,11 @@ int printk(const char *szFormat, ...) {  // printk displays to video and filtror
 //	memcpy(szBuffer, szFormat, wLength);
 	va_end(argList);
 
-	szBuffer[wLength]='\0';
 
+	szBuffer[sizeof(szBuffer)-1]=0;
+        if (wLength>(sizeof(szBuffer)-1)) wLength = sizeof(szBuffer)-1;
+	szBuffer[wLength]='\0';
+	        
 	#if INCLUDE_SERIAL
 	serialprint(&szBuffer[0]);
 	#endif
@@ -488,14 +491,18 @@ int printk(const char *szFormat, ...) {  // printk displays to video and filtror
 
 #if INCLUDE_SERIAL
 int serialprint(const char *szFormat, ...) {
-	char szBuffer[512];
+	char szBuffer[512*2];
 	WORD wLength=0;
 	WORD wSerialLength=0;
 	va_list argList;
 	va_start(argList, szFormat);
 	wLength=(WORD) vsprintf(szBuffer, szFormat, argList);
 	va_end(argList);
-
+	
+	szBuffer[sizeof(szBuffer)-1]=0;
+        if (wLength>(sizeof(szBuffer)-1)) wLength = sizeof(szBuffer)-1;
+	szBuffer[wLength]='\0';
+        
 	while(wSerialLength < wLength) {
 		IoOutputByte(0x03f8, szBuffer[wSerialLength]);
 		wSerialLength++;

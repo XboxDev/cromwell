@@ -172,7 +172,7 @@ DWORD BootHddKeyGenerateEepromKeyData(
         
 	for (counter=10;counter<12;counter++)
 	{
-    memset(&RC4_key,0,sizeof(rc4_key));
+    		memset(&RC4_key,0,sizeof(rc4_key));
 		memcpy(&baEepromDataLocalCopy[0], pbEeprom_data, 0x30);
                 
                 // Calculate the Key-Hash

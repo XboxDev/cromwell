@@ -17,8 +17,10 @@ int ParseConfig(char *szBuffer, CONFIGENTRY *entry, EEPROMDATA *eeprom) {
 
 
 	while(1) {
-
-		memcpy(szLine,ptr,strlen(ptr));
+                memset(szLine,0x00,sizeof(szLine));
+		memcpy(szLine,ptr,strlen(ptr));    
+                szLine[sizeof(szLine)-1]=0;	// Make sure, we are Terminated
+                
 		if(strlen(ptr) < MAX_LINE) {
 			if(_strncmp(ptr,"kernel",strlen("kernel")) == 0)  {
 				HelpGetParm(szTmp, ptr);
