@@ -89,14 +89,14 @@ void StartBios(	int nDrive, int nActivePartition ) {
 
 	szGrub[0]=0xff; szGrub[1]=0xff; szGrub[2]=nActivePartition; szGrub[3]=0x00;
 
-	MALLOC_BASE=0x02000000;
+//	MALLOC_BASE=0x02000000;
 
 	errnum=0; boot_drive=0; saved_drive=0; saved_partition=0x0001ffff; buf_drive=-1;
 	current_partition=0x0001ffff; current_drive=0xff; buf_drive=-1; fsys_type = NUM_FSYS;
 	disk_read_hook=NULL;
 	disk_read_func=NULL;
 
-	strcpy(szCommandline, "root=/dev/hda2 devfs=mount kbd-reset"); // defaul
+	strcpy(szCommandline, "root=/dev/hda2 devfs=mount kbd-reset"); // default
 	strcpy(szKernelFile, "/boot/vmlinuz");
 	strcpy(szInitrdFile, "/boot/initrd");
 
@@ -316,22 +316,28 @@ void StartBios(	int nDrive, int nActivePartition ) {
 		grub_close();
 		printk(" -  %d bytes...\n", dwKernelSize);
 
-		VIDEO_ATTR=0xffd8d8d8;
-		printk("  Loading %s ", szInitrdFile);
-		VIDEO_ATTR=0xffa8a8a8;
-
-		strcpy(&szGrub[4], szInitrdFile);
-		nRet=grub_open(szGrub);
-		if(filemax==0) {
-			printf("\nEmpty file\n"); while(1);
+		if( _strncmp(szInitrdFile, "/no", strlen("/no")) != 0) {
+			VIDEO_ATTR=0xffd8d8d8;
+			printk("  Loading %s ", szInitrdFile);
+			VIDEO_ATTR=0xffa8a8a8;
+			strcpy(&szGrub[4], szInitrdFile);
+			nRet=grub_open(szGrub);
+			if(filemax==0) {
+				printf("\nEmpty file\n"); while(1);
+			}
+			if( (nRet!=1 ) || (errnum)) {
+				printk("\nUnable to load initrd, Grub error %d\n", errnum);
+				while(1) ;
+			}
+			printk(" - %d bytes\n", filemax);
+			dwInitrdSize=grub_read((void *)0x03000000, filemax);
+			grub_close();
+		} else {
+			VIDEO_ATTR=0xffd8d8d8;
+			printk("  No initrd from config file");
+			VIDEO_ATTR=0xffa8a8a8;
+			dwInitrdSize=0;
 		}
-		if( (nRet!=1 ) || (errnum)) {
-			printk("\nUnable to load initrd, Grub error %d\n", errnum);
-			while(1) ;
-		}
-		printk(" - %d bytes\n", filemax);
-		dwInitrdSize=grub_read((void *)0x03000000, filemax);
-		grub_close();
 
 
 	} else {  // ISO9660 traversal on CDROM
@@ -354,7 +360,7 @@ void StartBios(	int nDrive, int nActivePartition ) {
 
 		if( _strncmp(szInitrdFile, "/no", strlen("/no")) != 0) {
 			VIDEO_ATTR=0xffd8d8d8;
-			printk("  Loading %s from CDROM ", szInitrdFile);
+			printk("  Loading %s from CDROM", szInitrdFile);
 			VIDEO_ATTR=0xffa8a8a8;
 
 			dwInitrdSize=BootIso9660GetFile(szInitrdFile, (void *)0x03000000, 4096*1024, 0);

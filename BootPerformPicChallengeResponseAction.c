@@ -62,7 +62,7 @@ int I2CTransmitByteGetReturn(BYTE bPicAddressI2cFormat, BYTE bDataToWrite)
 
 // transmit a word, no returned data from I2C device
 
-int I2CTransmitWord(BYTE bPicAddressI2cFormat, WORD wDataToWrite, bool fMode)
+int I2CTransmitWord(BYTE bPicAddressI2cFormat, WORD wDataToWrite)
 {
 	DWORD dwRetriesToLive=4;
 __asm __volatile__ ( "pushf; cli" );
@@ -74,11 +74,7 @@ __asm __volatile__ ( "pushf; cli" );
 		IoOutputByte(I2C_IO_BASE+8, (BYTE)(wDataToWrite>>8));
 		IoOutputByte(I2C_IO_BASE+6, (BYTE)wDataToWrite);
 		IoOutputWord(I2C_IO_BASE+0, 0x10 /*IoInputWord(I2C_IO_BASE+0)*/);
-//		if(fMode) {
-			IoOutputByte(I2C_IO_BASE+2, 0x1a);
-//		} else {
-//			IoOutputByte(I2C_IO_BASE+2, 0x0a);
-//		}
+		IoOutputByte(I2C_IO_BASE+2, 0x1a);
 
 		{
 			BYTE b=0x0;
@@ -137,9 +133,9 @@ int BootPerformPicChallengeResponseAction()
 	BYTE bC, bD, bE, bF;
 	int n;
 
-//		I2CTransmitWord( 0x10, 0x0100, false );
-//		I2CTransmitWord( 0x10, 0x130f, false );
-//		I2CTransmitWord( 0x10, 0x12f0, false );
+//		I2CTransmitWord( 0x10, 0x0100 );
+//		I2CTransmitWord( 0x10, 0x130f );
+//		I2CTransmitWord( 0x10, 0x12f0 );
 
 //	if(BootPicManipulation(0x35, 0x62, 0xcd, 0x4a) != 0x9e71) {
 //		return ERR_BOOT_PIC_ALG_BROKEN;
@@ -158,34 +154,18 @@ int BootPerformPicChallengeResponseAction()
 	if(n<0) return n;
 	bF=n;
 
-/*
-			__asm__ __volatile__ (
-		" push %edx \n"
-		" push %eax \n"
-		" mov $0x8000036c, %eax \n"
-		" movw $0xcf8, %dx \n"
-		" outl	%eax, %dx \n"
-		" movw $0xcfc, %dx \n"
-		" movl	$01000000, %eax \n"
-		" outl	%eax, %dx \n"
-//		" hlt \n"
-		" pop %eax \n"
-		" pop %edx \n"
-		);
-*/
-
 	{
 		WORD w=BootPicManipulation(bC, bD, bE, bF);
 
-		n=I2CTransmitWord( 0x10, 0x2000 | (w&0xff), false);
+		I2CTransmitWord( 0x10, 0x2000 | (w&0xff));
 //		if(n<0) return n;
 
-		n=I2CTransmitWord( 0x10, 0x2100 | (w>>8), false );
+		I2CTransmitWord( 0x10, 0x2100 | (w>>8) );
 //		if(n<0) return n;
 
 	}
 
-		n=I2CTransmitWord( 0x10, 0x0100, false );
+		n=I2CTransmitWord( 0x10, 0x0100 );
 		if(n<0) return n;
 
 /*
@@ -216,17 +196,14 @@ int BootPerformPicChallengeResponseAction()
 		" movl	$0x40000000, %eax \n"
 		" outl	%eax, %dx \n"
 		);
-
-
 	return ERR_SUCCESS;
 }
 
 extern int I2cSetFrontpanelLed(BYTE b)
 {
-	int n;
 	__asm __volatile__ ( "pushf ; cli" );
-	n=I2CTransmitWord( 0x10, 0x800 | b, true);  // sequencing thanks to Jarin the Penguin!
-	n=I2CTransmitWord( 0x10, 0x701, true);
+	I2CTransmitWord( 0x10, 0x800 | b);  // sequencing thanks to Jarin the Penguin!
+	I2CTransmitWord( 0x10, 0x701);
 	__asm __volatile__ ( "popf" );
 
 	return ERR_SUCCESS;

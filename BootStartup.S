@@ -85,7 +85,7 @@ tableGdtDescriptor:
 tableIdtDescriptor:
 
 	.word 2048
-	.long 0
+	.long 0xef000
 	.word 0
 
 
@@ -97,10 +97,31 @@ start_linux:
 	jmp bootloader2
 #endif
 	cli
+/*
+	mov %cr0, %eax
+	orl	$0x60000000, %eax
+	mov	%eax, %cr0
+	wbinvd
+*/
 		xorl	%edx, %edx
 		movl	$0x2ff, %ecx
-		movl	$0x000, %eax // edx still 0, default to NON-cacheable, Enable MTRRs
+		movl	$0x000, %eax // KILL MTRRs
 		wrmsr
+
+		mov	$0, %al
+		mov	$0x72, %dx
+		out	%al, %dx
+
+
+		movl $0x8000, %edx
+		movb	$0xff, %al
+spin80xx:
+		out %al, %dx
+		inc	%dl
+		cmp	$0, %dl
+		jnz spin80xx
+
+
 		// xcode actions first of all
 
 	mov $0x80000810, %eax ;	movw $0xcf8, %dx ; outl	%eax, %dx ;	movw $0xcfc, %dx ;	mov	$0x8001, %eax ;	outl	%eax, %dx
@@ -130,6 +151,7 @@ start_linux:
  	movl	$0x100000, %ecx
 	rep
   stosb
+
 
 	movb 0x0f000000, %al
 	cmpb $0xa1, %al
@@ -181,7 +203,10 @@ nota1b:
 	mov $0x80000914, %eax ;	movw $0xcf8, %dx ;	outl	%eax, %dx ;	movw $0xcfc, %dx ;	mov	$0x0000c001, %eax ;	outl	%eax, %dx
 	mov $0x80000918, %eax ;	movw $0xcf8, %dx ;	outl	%eax, %dx ;	movw $0xcfc, %dx ;	mov	$0x0000c201, %eax ;	outl	%eax, %dx
 
+	mov $0x8000093c, %eax ;	movw $0xcf8, %dx ;	outl	%eax, %dx ;	movw $0xcfc, %dx ;	inl %dx, %eax ; orl	$0x7, %eax ;	outl	%eax, %dx // I2C int=7
+
 	movw $0xc200, %dx ;	movb $0x70, %al ;	outb %al, %dx
+//	movw $0xc002, %dx ;	movb $0x10, %al ;	outb %al, %dx // enable I2C interrupt
 
 		// skipped unnecessary conexant init
 
@@ -270,7 +295,7 @@ donea1c:
 		// skipped dumppy read of MMIO +0 here
 
 //	mov $8, %eax ; timloop1: dec %eax ; cmp $0, %eax ; jnz timloop1
-	
+
 // 5CD
 
 	mov $0x8000036c, %eax ;	movw $0xcf8, %dx ;	outl	%eax, %dx ;	movw $0xcfc, %dx ;	mov	$0x00230801, %eax ;	outl	%eax, %dx
@@ -297,7 +322,7 @@ donea1c:
 	movw $0xc004, %dx ;	movb $0x20, %al ;	outb %al, %dx
 	movw $0xc008, %dx ;	movb $0x13, %al ;	outb %al, %dx
 	movw $0xc002, %dx ;	movb $0x0a, %al ;	outb %al, %dx
-		
+
 		// B2E
 spin2:
 	movw $0xc000, %dx
@@ -326,8 +351,6 @@ spin3:
 
 
 bootloader2:
-
-
 
 	lidt tableIdtDescriptor
 	lgdt tableGdtDescriptor
@@ -518,7 +541,6 @@ patspin2:
 	mov	%ebx, %cr0
 
 
-
 	mov	%cr4, %eax
 	or	$0x610, %eax
 	mov	%eax, %cr4
@@ -569,37 +591,468 @@ selfPipeKill:
 
 	jmp BootResetAction  // this can be found in BootResetAction.c
 
+///////////////////////////////////////////
+//
+//  Interrupt Service Routines
+//
 
-
-
+		// int 0
 
 		.global	IntHandlerTimer0
 IntHandlerTimer0:
 	pusha
 	pushf
 	call	IntHandlerCTimer0
-
 	mov	$0x20, %al
-	mov	$0x20, %dx
-	out	%al, %dx
+	outb	%al, $0x20
 	popf
-
+	sti
 	popa
+	iret
+
+		// int 1
+
+		.global	IntHandler1
+IntHandler1:
+	pusha
+	pushf
+	call	IntHandler1C
+	mov	$0x21, %al
+	outb	%al, $0x20
+	popf
+	sti
+	popa
+	iret
+
+		// int 2
+
+		.global	IntHandler2
+IntHandler2:
+	pusha
+	pushf
+	call	IntHandler2C
+	mov	$0x22, %al
+	outb	%al, $0x20
+	popf
+	sti
+	popa
+	iret
+
+		// int 3
+
+		.global	IntHandler3
+IntHandler3:
+	pusha
+	pushf
+	call	IntHandler3C
+	mov	$0x23, %al
+	outb	%al, $0x20
+	popf
+	sti
+	popa
+	iret
+
+		// int 4
+
+		.global	IntHandler4
+IntHandler4:
+	pusha
+	pushf
+	call	IntHandler4C
+	mov	$0x24, %al
+	outb	%al, $0x20
+	popf
+	sti
+	popa
+	iret
+
+		// int 5
+
+		.global	IntHandler5
+IntHandler5:
+	pusha
+	pushf
+	call	IntHandler5C
+	mov	$0x25, %al
+	outb	%al, $0x20
+	popf
+	sti
+	popa
+	iret
+
+		// int 6
+
+		.global	IntHandler6
+IntHandler6:
+	pusha
+	pushf
+	call	IntHandler6C
+	mov	$0x26, %al
+	outb	%al, $0x20
+	popf
+	sti
+	popa
+	iret
+
+		// int 7
+
+		.global	IntHandler7
+IntHandler7:
+	pusha
+	pushf
+	call	IntHandler7C
+	mov	$0x27, %al
+	outb	%al, $0x20
+	popf
+	sti
+	popa
+	iret
+
+		// Int 8 interrupts
+
+	.global IntHandler8
+IntHandler8:
+	pusha
+	pushf
+	call	IntHandler8C
+		// EOI on master and slave needed
+	mov	$0x60, %al
+	out	%al, $0xa0
+	mov	$0x62, %al
+	out	%al, $0x20
+	popf
+	popa
+	iret
+
+
+		// Int 9 interrupts
+
+	.global IntHandler9
+IntHandler9:
+	pusha
+	pushf
+	call	IntHandler9C
+		// EOI on master and slave needed
+	mov	$0x61, %al
+	out	%al, $0xa0
+	mov	$0x62, %al
+	out	%al, $0x20
+	popf
+	popa
+	iret
+
+		// Int 10 interrupts
+
+	.global IntHandler10
+IntHandler10:
+	pusha
+	pushf
+	call	IntHandler10C
+		// EOI on master and slave needed
+	mov	$0x62, %al
+	out	%al, $0xa0
+	mov	$0x62, %al
+	out	%al, $0x20
+	popf
+	popa
+	iret
+
+		// Int 11 interrupts
 
 	.global IntHandlerI2C
 IntHandlerI2C:
 	pusha
 	pushf
 	call	IntHandlerCI2C
+/*
+	mov $0xffff, %ax
+	mov	$0x8028, %dx
+	outw	%ax, %dx
+	mov	$0x80cc, %dx
+	mov	$0x40, %al
+	outb	%al, %dx
+*/
+		// EOI on master and slave needed
+	mov	$0x63, %al
+	out	%al, $0xa0
+	mov	$0x62, %al
+	out	%al, $0x20
 	popf
 	popa
-	
+	iret
+
+		// Int 12 interrupts
+
+	.global IntHandlerSmc
+IntHandlerSmc:
+	pusha
+	pushf
+	call	IntHandlerCSmc
+
+		// acknowledge EXTSMI# action (from PIC p6)
+
+	mov	$0x8020, %dx
+	inw %dx, %ax
+	or $0x0200, %ax
+	outw	%ax, %dx
+
+		// EOI on master and slave needed
+	mov	$0x64, %al // is int12
+	out	%al, $0xa0
+	mov	$0x62, %al // do cascaded master
+	out	%al, $0x20
+	popf
+	popa
+	iret
+
+		// Int 13 interrupts
+
+	.global IntHandler13
+IntHandler13:
+	pusha
+	pushf
+	call	IntHandler13C
+		// EOI on master and slave needed
+	mov	$0x65, %al
+	out	%al, $0xa0
+	mov	$0x62, %al
+	out	%al, $0x20
+	popf
+	popa
+	iret
+
+			// Int 14 interrupts
+
+	.global IntHandlerIde
+IntHandlerIde:
+	pusha
+	pushf
+	call	IntHandlerCIde
+	mov $0xffff, %ax
+	mov	$0x8028, %dx
+	outw	%ax, %dx
+	mov	$0x80cc, %dx
+	mov	$0x40, %al
+	outb	%al, %dx
+		// EOI on master and slave needed
+	mov	$0x66, %al // was $0x20
+	out	%al, $0xa0
+	mov	$0x62, %al
+	out	%al, $0x20
+	popf
+	popa
+	iret
+
+		// Int 15 interrupts
+
+	.global IntHandler15
+IntHandler15:
+	pusha
+	pushf
+	call	IntHandler15C
+		// EOI on master and slave needed
+	mov	$0x67, %al
+	out	%al, $0xa0
+	mov	$0x62, %al
+	out	%al, $0x20
+	popf
+	popa
+	iret
+
+
+		// unused interrupts on master PIC
+
+	.global IntHandlerUnused
+IntHandlerUnused:
+	pusha
+	pushf
+	call	IntHandlerUnusedC
+	mov	$0x20, %al
+	out	%al, $0x20
+	popf
+	popa
+	iret
+
+		// unused interrupts on slave PIC
+
+	.global IntHandlerUnusedPic2
+IntHandlerUnusedPic2:
+	pusha
+	pushf
+	call	IntHandlerUnusedC2
+	mov $0xffff, %ax
+	mov	$0x8028, %dx
+	outw	%ax, %dx
+	mov	$0x80cc, %dx
+	mov	$0x40, %al
+	outb	%al, %dx
+
+	mov	$0x20, %al
+	out	%al, $0xa0
+	mov	$0x62, %al
+	out	%al, $0x20
+	popf
+	popa
+	iret
+
 	.global SpareIntNop
 SpareIntNop:
 	iret
 
+		// CPU Exception Interrupts
 
+	.global IntHandlerException0
+IntHandlerException0:
+	pusha
+	pushf
+	call	IntHandlerException0C
+	popf
+	popa
+	iret
 
+	.global IntHandlerException1
+IntHandlerException1:
+	pusha
+	pushf
+	call	IntHandlerException1C
+	popf
+	popa
+	iret
+
+	.global IntHandlerException2
+IntHandlerException2:
+	pusha
+	pushf
+	call	IntHandlerException2C
+	popf
+	popa
+	iret
+
+	.global IntHandlerException3
+IntHandlerException3:
+	pusha
+	pushf
+	call	IntHandlerException3C
+	popf
+	popa
+	iret
+
+	.global IntHandlerException4
+IntHandlerException4:
+	pusha
+	pushf
+	call	IntHandlerException4C
+	popf
+	popa
+	iret
+
+	.global IntHandlerException5
+IntHandlerException5:
+	pusha
+	pushf
+	call	IntHandlerException5C
+	popf
+	popa
+	iret
+
+	.global IntHandlerException6
+IntHandlerException6:
+	pusha
+	pushf
+	call	IntHandlerException6C
+	popf
+	popa
+	iret
+
+	.global IntHandlerException7
+IntHandlerException7:
+	pusha
+	pushf
+	call	IntHandlerException7C
+	popf
+	popa
+	iret
+
+	.global IntHandlerException8
+IntHandlerException8:
+	pusha
+	pushf
+	call	IntHandlerException8C
+	popf
+	popa
+	iret
+
+	.global IntHandlerException9
+IntHandlerException9:
+	pusha
+	pushf
+	call	IntHandlerException9C
+	popf
+	popa
+	iret
+
+	.global IntHandlerExceptionA
+IntHandlerExceptionA:
+	pusha
+	pushf
+	call	IntHandlerExceptionAC
+	popf
+	popa
+	iret
+
+	.global IntHandlerExceptionB
+IntHandlerExceptionB:
+	pusha
+	pushf
+	call	IntHandlerExceptionBC
+	popf
+	popa
+	iret
+
+	.global IntHandlerExceptionC
+IntHandlerExceptionC:
+	pusha
+	pushf
+	call	IntHandlerExceptionCC
+	popf
+	popa
+	iret
+
+	.global IntHandlerExceptionD
+IntHandlerExceptionD:
+	pusha
+	pushf
+	call	IntHandlerExceptionDC
+	popf
+	popa
+	iret
+
+	.global IntHandlerExceptionE
+IntHandlerExceptionE:
+	pusha
+	pushf
+	call	IntHandlerExceptionEC
+	popf
+	popa
+	iret
+
+	.global IntHandlerExceptionF
+IntHandlerExceptionF:
+	pusha
+	pushf
+	call	IntHandlerExceptionFC
+	popf
+	popa
+	iret
+
+	.global IntHandlerException10
+IntHandlerException10:
+	pusha
+	pushf
+	call	IntHandlerException10C
+	popf
+	popa
+	iret
 
 	.section .justbehind, "ax"  // v1.1: 128 byte space here, FFFFFC80
 		.code32

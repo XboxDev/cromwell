@@ -377,7 +377,7 @@ void BootFiltrorDebugShell() {
 						while(*szc==' ') szc++;
 						nSizeArg=BootAsciiHexToDword(szc, &dwLen);
 
-						I2CTransmitWord(0x10, (dwAds<<8)|dwLen, true);
+						I2CTransmitWord(0x10, (dwAds<<8)|dwLen);
 						bprintf("PIC 0x%02X <- 0x%02X\n", dwAds, dwLen);
 					}
 					break;

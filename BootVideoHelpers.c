@@ -19,6 +19,7 @@
 
 #define WIDTH_SPACE_PIXELS 5
 
+
 // returns number of x pixels taken up by ascii character bCharacter
 
 unsigned int BootVideoGetCharacterWidth(BYTE bCharacter, bool fDouble)
@@ -80,6 +81,7 @@ void BootVideoBlit(
 	}
 }
 
+/*
 void BootGimpVideoBlit(
 	DWORD * pdwTopLeftDestination,
 	DWORD dwCountBytesPerLineDestination,
@@ -146,7 +148,46 @@ void BootGimpVideoBlitBlend(
 	}
 }
 
+*/
+void BootVideoJpegBlitBlend(
+	DWORD * pdwTopLeftDestination,
+	DWORD dwCountBytesPerLineDestination,
+	JPEG * pJpeg,
+	DWORD * pdwTopLeftInJpegBitmap,
+	RGBA m_rgbaTransparent,
+	DWORD * pdwTopLeftBackground,
+	DWORD dwCountBytesPerLineBackground,
+	int x,
+	int y
+) {
+	int n=0;
 
+	int nTransAsByte=m_rgbaTransparent>>24;
+	int nBackTransAsByte=255-nTransAsByte;
+
+	m_rgbaTransparent|=0xff000000;
+	m_rgbaTransparent&=0xffc0c0c0;
+
+	while(y--) {
+		BYTE *pbDest=(BYTE *)pdwTopLeftDestination;
+		BYTE *pbBackground=(BYTE *)pdwTopLeftBackground;
+		BYTE *pData=(BYTE *)pdwTopLeftInJpegBitmap;
+
+		for(n=0;n<x;n++) {
+			DWORD dw=((*((DWORD *)&pData[0]))|0xff000000)&0xffc0c0c0;
+			if(dw!=m_rgbaTransparent) {
+				pbDest[2]=((pData[0]*nTransAsByte)+(pbBackground[2]*nBackTransAsByte))>>8;
+				pbDest[1]=((pData[1]*nTransAsByte)+(pbBackground[1]*nBackTransAsByte))>>8;
+				pbDest[0]=((pData[2]*nTransAsByte)+(pbBackground[0]*nBackTransAsByte))>>8;
+			}
+			pbDest+=4;
+			pData+=pJpeg->m_nBytesPerPixel;
+		}
+		pdwTopLeftInJpegBitmap+=(pJpeg->m_nWidth*pJpeg->m_nBytesPerPixel)>>2;
+		pdwTopLeftDestination+=dwCountBytesPerLineDestination>>2;
+		pdwTopLeftBackground+=dwCountBytesPerLineBackground>>2;
+	}
+}
 
 
 // usable for direct write or for prebuffered write
@@ -266,7 +307,9 @@ void BootVideoVignette(
 	DWORD m_dwCountBytesPerLineDestination,
 	DWORD m_dwCountLines,
 	RGBA rgbaColour1,
-	RGBA rgbaColour2
+	RGBA rgbaColour2,
+	DWORD dwStartLine,
+	DWORD dwEndLine
 ) {
 	int x,y;
 	BYTE bDiffR, bDiffG, bDiffB;
@@ -295,30 +338,29 @@ void BootVideoVignette(
 	}
 	for(y=0;y<m_dwCountLines;y++) {
 		RGBA rgbaThisLine= 0xff000000;
-/*			((rgbaColour1&0xff0000)+((((((rgbaColour2-rgbaColour1)>>16)&0xff)*y)/m_dwCountLines)<<16)) |
-			((rgbaColour1&0xff00)+((((((rgbaColour2-rgbaColour1)>>8)&0xff)*y)/m_dwCountLines)<<8)) |
-			((rgbaColour1&0xff)+((((((rgbaColour2-rgbaColour1))&0xff)*y)/m_dwCountLines))) |
-			0xff000000
-		; */
 
-		if(fPlusR) rgbaThisLine|=((rgbaColour1&0xff0000)+(((((bDiffR)*y)/m_dwCountLines)<<16)&0xff0000))&0xff0000; else
-			rgbaThisLine|=((rgbaColour1&0xff0000)-(((((bDiffR)*y)/m_dwCountLines)<<16)&0xff0000))&0xff0000;
-		if(fPlusG) rgbaThisLine|=((rgbaColour1&0xff00)+(((((bDiffG)*y)/m_dwCountLines)<<8)&0xff00))&0xff00; else
-			rgbaThisLine|=((rgbaColour1&0xff00)-(((((bDiffG)*y)/m_dwCountLines)<<8)&0xff00))&0xff00;
-		if(fPlusB) rgbaThisLine|=((rgbaColour1&0xff)+(((((bDiffB)*y)/m_dwCountLines))&0xff))&0xff; else
-			rgbaThisLine|=((rgbaColour1&0xff)-(((((bDiffB)*y)/m_dwCountLines))&0xff))&0xff;
+		if((y>=dwStartLine) && (y<dwEndLine)) {
 
-		for(x=0;x<m_dwCountBytesPerLineDestination>>2;x++) *pdwaTopLeftDestination++=rgbaThisLine;
+			if(fPlusR) rgbaThisLine|=((rgbaColour1&0xff0000)+(((((bDiffR)*y)/m_dwCountLines)<<16)&0xff0000))&0xff0000; else
+				rgbaThisLine|=((rgbaColour1&0xff0000)-(((((bDiffR)*y)/m_dwCountLines)<<16)&0xff0000))&0xff0000;
+			if(fPlusG) rgbaThisLine|=((rgbaColour1&0xff00)+(((((bDiffG)*y)/m_dwCountLines)<<8)&0xff00))&0xff00; else
+				rgbaThisLine|=((rgbaColour1&0xff00)-(((((bDiffG)*y)/m_dwCountLines)<<8)&0xff00))&0xff00;
+			if(fPlusB) rgbaThisLine|=((rgbaColour1&0xff)+(((((bDiffB)*y)/m_dwCountLines))&0xff))&0xff; else
+				rgbaThisLine|=((rgbaColour1&0xff)-(((((bDiffB)*y)/m_dwCountLines))&0xff))&0xff;
+
+			for(x=0;x<m_dwCountBytesPerLineDestination>>2;x++) *pdwaTopLeftDestination++=rgbaThisLine;
+
+		} else {
+			pdwaTopLeftDestination+=(m_dwCountBytesPerLineDestination>>2);
+		}
 	}
 }
 
 
-BYTE * BootVideoJpegUnpackAsRgb(
+bool BootVideoJpegUnpackAsRgb(
 	BYTE *pbaJpegFileImage,
 	int nFileLength,
-	int *nWidth,
-	int *nHeight,
-	int *nBytesPerPixel
+	JPEG * pJpeg
 )
 {
 	struct jpeg_decompress_struct cinfo;
@@ -330,7 +372,8 @@ BYTE * BootVideoJpegUnpackAsRgb(
 
 	void jpeg_direct_src (j_decompress_ptr pcinfo, char * pbStartOfBuffer, unsigned int nLength);
 
-  cinfo.err = jpeg_std_error(&jerr);
+  pJpeg->m_pBitmapData=NULL;
+	cinfo.err = jpeg_std_error(&jerr);
 
   jpeg_create_decompress(&cinfo);
   jpeg_direct_src(&cinfo, pbaJpegFileImage, nFileLength);
@@ -348,9 +391,12 @@ BYTE * BootVideoJpegUnpackAsRgb(
 
 	buffer = (*(cinfo.mem->alloc_sarray))((j_common_ptr)&cinfo, JPOOL_IMAGE, row_stride, 1);
 
-	*nWidth=cinfo.output_width;
-	*nHeight=cinfo.output_height;
-	*nBytesPerPixel=cinfo.output_components;
+	pJpeg->m_nWidth=cinfo.output_width;
+	pJpeg->m_nHeight=cinfo.output_height;
+	pJpeg->m_nBytesPerPixel=cinfo.output_components;
+	pJpeg->m_pBitmapData=pbaResultAsRgbStart;
+
+//	printk("jpeg bpp=%d\n",pJpeg->m_nBytesPerPixel);
 
   while (cinfo.output_scanline < cinfo.output_height) {
     (void) jpeg_read_scanlines(&cinfo, buffer, 1);
@@ -360,53 +406,160 @@ BYTE * BootVideoJpegUnpackAsRgb(
   (void) jpeg_finish_decompress(&cinfo);
   jpeg_destroy_decompress(&cinfo);
 
-	if(jerr.num_warnings==0) return	pbaResultAsRgbStart;
+	if(jerr.num_warnings==0) return true;
 	free(pbaResultAsRgbStart);
-	return NULL;
+	return false;
 }
 
-void BootVideoClearScreen()
+void BootVideoClearScreen(JPEG * pJpeg, int nStartLine, int nEndLine)
 {
 	VIDEO_CURSOR_POSX=VIDEO_MARGINX;
 	VIDEO_CURSOR_POSY=VIDEO_MARGINY;
 
-		// do the black -> blue vignette background
-
-	BootVideoVignette((DWORD *)(FRAMEBUFFER_START), 640*4, VIDEO_HEIGHT, 0xff000000, 0xff000050);
-	WATCHDOG;
-
-	MALLOC_BASE=0x100000;
-
-		// do jpeg superimpose
+	if(nEndLine>VIDEO_HEIGHT) nEndLine=VIDEO_HEIGHT;
 
 	{
-		extern int _start_backdrop, _end_backdrop;
-		int nWidth, nHeight, nBytesPerPixel;
+		WATCHDOG;
 
-		BYTE *pbaResult=BootVideoJpegUnpackAsRgb(
-			(BYTE *)&_start_backdrop,
-			((DWORD)(&_end_backdrop)-(DWORD)(&_start_backdrop)),
-			&nWidth, &nHeight, &nBytesPerPixel
-		);
-
-		if(pbaResult!=NULL) {
-
+		if(pJpeg->m_pBitmapData!=NULL) {
 			DWORD *pdw=(DWORD *)FRAMEBUFFER_START+(640*VIDEO_MARGINY);
 			int nLine=0, n1=0;
-			while((nLine++)<nHeight) {
-				int n=0;
-				for(n=0;n<nWidth;n++) {
-					BYTE b=pbaResult[n1]/8;
-					pdw[n]=0xff000000|(((pdw[n]&0xff)+b)/1)|(((((pdw[n]>>8)&0xff)+b)/1)<<8)|(((((pdw[n]>>16)&0xff)+b)/1)<<16);
-					n1+=nBytesPerPixel;
+
+			nStartLine-=VIDEO_MARGINY; nEndLine-=VIDEO_MARGINY;
+
+			while((nLine)<480 /*pJpeg->m_nHeight*/) {
+				if((nLine>=nStartLine) && (nLine<nEndLine)) {
+					int n=0;
+					for(n=0;n<pJpeg->m_nWidth;n++) {
+/*
+						pdw[n]=0xff000000|
+							(((pdw[n]&0xff)+pJpeg->m_pBitmapData[n1+2])/1)|
+							(((((pdw[n]>>8)&0xff)+pJpeg->m_pBitmapData[n1+1])/1)<<8)|
+							(((((pdw[n]>>16)&0xff)+pJpeg->m_pBitmapData[n1])/1)<<16)
+						;
+*/
+						pdw[n]=0xff000000|
+							((pJpeg->m_pBitmapData[n1+2]>>2))|
+							((pJpeg->m_pBitmapData[n1+1]>>2)<<8)|
+							((pJpeg->m_pBitmapData[n1]>>2)<<16)
+						;
+//						pdw[n]=0xff000000 | (b<<16) | (b<<8) | (b);
+						n1+=pJpeg->m_nBytesPerPixel;
+					}
+				} else {
+					n1+=pJpeg->m_nBytesPerPixel *pJpeg->m_nWidth;
 				}
 				pdw+=640; // 640 DWORDs
+				nLine++;
 			}
 		} else{
 			printk("null jpg");
 		}
 	}
 
-	MALLOC_BASE=0x100000;
 }
+
+int VideoDumpAddressAndData(DWORD dwAds, const BYTE * baData, DWORD dwCountBytesUsable) { // returns bytes used
+	int nCountUsed=0;
+	while(dwCountBytesUsable) {
+
+		DWORD dw=(dwAds & 0xfffffff0);
+		char szAscii[17];
+		char sz[256];
+		int n=sprintf(sz, "%08X: ", dw);
+		int nBytes=0;
+
+		szAscii[16]='\0';
+		while(nBytes<16) {
+			if((dw<dwAds) || (dwCountBytesUsable==0)) {
+				n+=sprintf(&sz[n], "   ");
+				szAscii[nBytes]=' ';
+			} else {
+				BYTE b=*baData++;
+				n+=sprintf(&sz[n], "%02X ", b);
+				if((b<32) || (b>126)) szAscii[nBytes]='.'; else szAscii[nBytes]=b;
+				nCountUsed++;
+				dwCountBytesUsable--;
+			}
+			nBytes++;
+			if(nBytes==8) n+=sprintf(&sz[n], ": ");
+			dw++;
+		}
+		n+=sprintf(&sz[n], "   ");
+		n+=sprintf(&sz[n], "%s", szAscii);
+//		sz[n++]='\r';
+		sz[n++]='\n';
+		sz[n++]='\0';
+
+		printk(sz, n);
+
+		dwAds=dw;
+	}
+	return 1;
+}
+void BootVideoChunkedPrint(char * szBuffer, WORD wLength) {
+	int n, nDone=0;
+
+	szBuffer[wLength]='\0';
+
+	for(n=0;n<(int)(wLength+1);n++) {
+		if((szBuffer[n]=='\n') || (szBuffer[n]=='\0')) {
+			bool f=(n<wLength);
+			szBuffer[n]='\0';
+			if(n!=nDone) {
+				VIDEO_CURSOR_POSX+=BootVideoOverlayString(
+					(DWORD *)((FRAMEBUFFER_START) + VIDEO_CURSOR_POSY * (640*4) + VIDEO_CURSOR_POSX),
+					640*4, VIDEO_ATTR, &szBuffer[nDone]
+				)<<2;
+				nDone=n+1;
+			} else { /* f=!nDone; */}
+			if(f) { VIDEO_CURSOR_POSY+=16; VIDEO_CURSOR_POSX=VIDEO_MARGINX<<2; }
+		}
+	}
+//	__asm__ __volatile__ ( "wbinvd" );
+}
+
+int printk(const char *szFormat, ...) {  // printk displays to video and filtror if enabled
+	char szBuffer[512];
+	WORD wLength=0;
+	va_list argList;
+	va_start(argList, szFormat);
+	wLength=(WORD) vsprintf(szBuffer, szFormat, argList);
+//	wLength=strlen(szFormat); // temp!
+//	memcpy(szBuffer, szFormat, wLength);
+	va_end(argList);
+
+	szBuffer[wLength]='\0';
+
+	#if INCLUDE_FILTROR
+	BootFiltrorSendArrayToPcModal(&szBuffer[0], wLength);
+	#endif
+
+	#if INCLUDE_SERIAL
+	serialprint(&szBuffer[0]);
+	#endif
+
+	BootVideoChunkedPrint(szBuffer, wLength);
+	return wLength;
+}
+
+#if INCLUDE_SERIAL
+int serialprint(const char *szFormat, ...) {
+	char szBuffer[512];
+	WORD wLength=0;
+	WORD wSerialLength=0;
+	va_list argList;
+	va_start(argList, szFormat);
+	wLength=(WORD) vsprintf(szBuffer, szFormat, argList);
+	va_end(argList);
+
+	while(wSerialLength < wLength) {
+		IoOutputByte(0x03f8, szBuffer[wSerialLength]);
+		wSerialLength++;
+	}
+
+	return wLength;
+}
+#endif
+
 

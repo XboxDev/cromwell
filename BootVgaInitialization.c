@@ -750,32 +750,35 @@ BYTE BootVgaInitializationKernel(int nLinesPref)
 
 				IoOutputByte(0x80d3, 5);  // definitively kill video out
 
-		*((BYTE *)0xfd6013d4)=0x1f;
-		*((BYTE *)0xfd6013d5)=0x57;
-		*((BYTE *)0xfd0c03c4)=0x06;
-		*((BYTE *)0xfd0c03c5)=0x57;
+		*((volatile BYTE *)0xfd6013d4)=0x1f;
+		*((volatile BYTE *)0xfd6013d5)=0x57;
+		*((volatile BYTE *)0xfd0c03c4)=0x06;
+		*((volatile BYTE *)0xfd0c03c5)=0x57;
 	WATCHDOG;
 	TRACE;
 
 		{
 /* RJS  There is a nasty instability problem right here.
- * 	On my xbox,  this code hangs unless the xbox has been 
- * 	powered off for ~10 minutes.  Other people have not reported 
+ * 	On my xbox,  this code hangs unless the xbox has been
+ * 	powered off for ~10 minutes.  Other people have not reported
  * 	this yet.  Please send to the mailing list if you see this,
- * 	or fix it.  I added delay loops to verify it has nothing to 
- * 	do with timing.  
+ * 	or fix it.  I added delay loops to verify it has nothing to
+ * 	do with timing.
+ 
+ andy@warmcat.com 2003-01-11  I saw the same behaviour during edits in BootResetAction.c
+                              Adding a WATCHDOG; before the call to this function made it go away
  */
-	
-			bool fMore=true;
-			int hackcount=0;
 
-			while(fMore && hackcount < 3000) {  // some kind of wait for ready loop?
+			bool fMore=true;
+//			int hackcount=0;
+
+			while(fMore /* && (hackcount < 3000) */) {  // some kind of wait for ready loop?
 				dwStash=vinl(0xfd6806A0);  // var_18
 				if( ! (((!(dwStash >> 4)) ^ (!dwStash)) & 1) ) fMore=false;
-				hackcount++;
+//				hackcount++;
 			}
 
-	bprintf("hackcount %d\n\r", hackcount);
+//	bprintf("hackcount %d\n\r", hackcount);
 			vgaout(0xfd6013D4, 0x1f, 0x57);
 	TRACE;
 			vgaout(0xfd6013D4, 0x21, 0xff);
@@ -793,13 +796,13 @@ BYTE BootVgaInitializationKernel(int nLinesPref)
 		{
 			int n=0;
 			while(n<13) {
-				I2CTransmitWordDelay(0x45, (((DWORD)baConextantAddressesToWrite[n])<<8)|baConextantValuesToWriteDependingOnVideoType[nVideoEncodingType][n], false);
+				I2CTransmitWordDelay(0x45, (((DWORD)baConextantAddressesToWrite[n])<<8)|baConextantValuesToWriteDependingOnVideoType[nVideoEncodingType][n]);
 				n++;
 			}
 		}
 
 		for(i=0;i<(sizeof(waConextantInitNon10CommandMSB)/sizeof(WORD));i++) {  // issue Encoder setup table
-			I2CTransmitWordDelay(0x45, waConextantInitNon10CommandMSB[i], false);
+			I2CTransmitWordDelay(0x45, waConextantInitNon10CommandMSB[i]);
 		}
 
 		for(i=0;i<0x3f;i++) {  // issue Encoder setup table
@@ -976,7 +979,7 @@ BYTE BootVgaInitializationKernel(int nLinesPref)
 //		if(nCtr==2) bAvPack=bTrue;
 
 	{
-		DWORD *pdw=(DWORD *)0xfd680800;
+		volatile DWORD *pdw=(volatile DWORD *)0xfd680800;
 		int n=0, n1=0;
 		const DWORD dwa[][0x28] = {
 /*	{ // scart (original )
@@ -1370,15 +1373,15 @@ BYTE BootVgaInitializationKernel(int nLinesPref)
 
 		for(n=0;n1<(sizeof(baCrtc[0]));n++) {
 			if((n!=0x11) && (n!=0x1f)) {
-				*((BYTE *)0xfd6013d4)=(BYTE)n;
-				*((BYTE *)0xfd6013d5)=baCrtc[bAvPack][n1++];
+				*((volatile BYTE *)0xfd6013d4)=(BYTE)n;
+				*((volatile BYTE *)0xfd6013d5)=baCrtc[bAvPack][n1++];
 			}
 		}
 
 
 		for(n=0;n<sizeof(baConexant[0]);n++) {
 			if(n!=(0xb8>>1)) {
-				I2CTransmitWord(0x45, (n<<9)|baConexant[bAvPack][n], false);
+				I2CTransmitWord(0x45, (n<<9)|baConexant[bAvPack][n]);
 				WATCHDOG;
 			}
 		}
@@ -1394,7 +1397,7 @@ BYTE BootVgaInitializationKernel(int nLinesPref)
 	voutl(0xFD609140, 0);
 
 	voutl(0xFD680600, 0);  // without this, blue horrors
-	(*(unsigned int*)0xFD600800)= (60 * 1024 * 1024);
+	(*(volatile unsigned int*)0xFD600800)= (60 * 1024 * 1024);
 
 	if(bAvPack!=7) {
 		VIDEO_HEIGHT=480;
@@ -1493,9 +1496,9 @@ BYTE BootVgaInitializationKernel(int nLinesPref)
 	}
 
 
-	I2CTransmitWord(0x45, 0x6c46, false);
+	I2CTransmitWord(0x45, 0x6c46);
 	BootVideoDelay();
-	I2CTransmitWord(0x45, 0x6cc6, false);
+	I2CTransmitWord(0x45, 0x6cc6);
 }
 
 	TRACE;

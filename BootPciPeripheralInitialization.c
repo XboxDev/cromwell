@@ -80,24 +80,11 @@ void BootPciPeripheralInitialization()
 // Bus 0, Device 9, Function 0 = nForce ATA Controller
 //
 
-
-
 	PciWriteDword(BUS_0, DEV_9, FUNC_0, 0x20, 0x0000ff61);	// (BMIBA) Set Busmaster regs I/O base address 0xff60
-//	PciWriteDword(BUS_0, DEV_9, FUNC_0, 4, PciReadDword(BUS_0, DEV_9, FUNC_0, 4) | 5 );
 	PciWriteDword(BUS_0, DEV_9, FUNC_0, 4, 0x00b00005 );
 	PciWriteDword(BUS_0, DEV_9, FUNC_0, 8, 0x01018ab1 ); // was fffffaff
-
-
-//	PciWriteDword(BUS_0, DEV_9, FUNC_0, 0x28, 0x00000403); // new
-//	PciWriteDword(BUS_0, DEV_9, FUNC_0, 0x34, 0x00000044); // new
-
 	PciWriteDword(BUS_0, DEV_9, FUNC_0, 0x40, 0x000084bb); // new
-//	PciWriteDword(BUS_0, DEV_9, FUNC_0, 0x44, 0x00020001); // new
 	PciWriteDword(BUS_0, DEV_9, FUNC_0, 0x50, 0x00000003);  // without this there is no register footprint at IO 1F0
-//	PciWriteDword(BUS_0, DEV_9, FUNC_0, 0x58, 0x20202020);
-//	PciWriteDword(BUS_0, DEV_9, FUNC_0, 0x5c, 0xffff00ff);
-//	PciWriteDword(BUS_0, DEV_9, FUNC_0, 0x60, 0xc0c0c0c0);
-
 
 
 //
@@ -107,9 +94,6 @@ void BootPciPeripheralInitialization()
 	PciWriteDword(BUS_0, DEV_4, FUNC_0, 0x10, 0xfef00000); // memory base address 0xfef00000
 	PciWriteDword(BUS_0, DEV_4, FUNC_0, 0x14, 0x0000e001); // I/O base address 0xe000
 	PciWriteDword(BUS_0, DEV_4, FUNC_0, 0x3c, (PciReadDword(BUS_0, DEV_4, FUNC_0, 0x3c) &0xffff0000) | 0x0004 );
-
-
-
 
 //
 // Bus 0, Device 2, Function 0 = nForce OHCI USB Controller
@@ -149,13 +133,13 @@ void BootPciPeripheralInitialization()
 //
 // Bus 0, Device 1, Function 0 = nForce HUB Interface - ISA Bridge
 //
+	PciWriteDword(BUS_0, DEV_1, FUNC_0, 0x8c, 0x40000000 ); // from after pic challenge originally
 	PciWriteDword(BUS_0, DEV_1, FUNC_0, 0x8c, (PciReadDword(BUS_0, DEV_1, FUNC_0, 0x8c) &0xfbffffff) | 0x08000000 );
 
-
 //
-// What's this doing??
+// ACPI pin init
 //
-	IoOutputByte(0x80cd, 0x08); // was wrongly 4
+	IoOutputByte(0x80cd, 0x08); // Set PRDY pin on ACPI to be PRDY function
 
 
 //
@@ -177,31 +161,26 @@ void BootPciPeripheralInitialization()
 //
 	PciWriteDword(BUS_0, DEV_0, FUNC_0, 0x48, 0x00000114);
 
+	PciWriteByte(BUS_0, DEV_0, 0, 0x42, 0x17);
+	PciWriteByte(BUS_0, DEV_0, 1, 0x42, 0x17);
+	PciWriteByte(BUS_0, DEV_0, 2, 0x42, 0x17);
+	PciWriteByte(BUS_0, DEV_0, 3, 0x42, 0x17);
+	PciWriteByte(BUS_0, DEV_1, 0, 0x42, 0x17);
+	PciWriteByte(BUS_0, DEV_1, 1, 0x42, 0x17);
+	PciWriteByte(BUS_0, DEV_1, 2, 0x42, 0x17);
+	PciWriteByte(BUS_0, DEV_1, 3, 0x42, 0x17);
+
+	PciWriteByte(BUS_0, DEV_0, FUNC_0, 0x4b,0x00);
+
 //
 // Bus 1, Device 0, Function 0 = NV2A GeForce3 Integrated GPU
 //
 	PciWriteDword(BUS_1, DEV_0, FUNC_0, 4, PciReadDword(BUS_1, DEV_0, FUNC_0, 4) | 7 );
 	PciWriteDword(BUS_1, DEV_0, FUNC_0, 0x3c, (PciReadDword(BUS_1, DEV_0, FUNC_0, 0x3c) &0xffff0000) | 0x0103 );
-
-	PciWriteDword(BUS_1, DEV_0, FUNC_0, 0x4c,0x00000114);
-
-
-	PciWriteDword(BUS_0, DEV_1, FUNC_0, 0x15, (PciReadDword(BUS_0, DEV_1, FUNC_0, 0x15)) | 0x88000000 );  // from 2bl
-	PciWriteDword(BUS_0, DEV_0, FUNC_0, 0x19, (PciReadDword(BUS_0, DEV_0, FUNC_0, 0x19)) | 0x88000000 );  // from 2bl
-
-	{
-		DWORD dw=PciReadDword(BUS_0, DEV_0, FUNC_0, 0x1b);
-		PciWriteDword(BUS_0, DEV_0, FUNC_0, 0x1b, (dw&0xfffffffe) );  // from 2bl
-		PciWriteDword(BUS_0, DEV_0, FUNC_0, 0x1b, (dw) );  // from 2bl
-	}
-
-	PciWriteDword(BUS_0, DEV_0, FUNC_0, 0x20, 0x100 );  // from 2bl
+	PciWriteDword(BUS_1, DEV_0, FUNC_0, 0x4c, 0x00000114);
 
 #if 1
-
 		__asm__ __volatile__(
-
-		"cli \n"
 
 		" push %edx \n"
 		" push %eax \n"
@@ -214,9 +193,6 @@ void BootPciPeripheralInitialization()
 		" orl $0x88000000, %eax \n"
 		" outl	%eax, %dx \n"
 
-		// any subsequent one uncommented causes lockup (tested with original xcodes)
-
-
 		" mov $0x80000064, %eax \n"
 		" movw $0xcf8, %dx \n"
 		" outl	%eax, %dx \n"
@@ -224,7 +200,6 @@ void BootPciPeripheralInitialization()
 		" in %dx, %eax \n"
 		" orl $0x88000000, %eax \n"
 		" outl	%eax, %dx \n"
-
 
 		" mov $0x8000006c, %eax \n"
 		" movw $0xcf8, %dx \n"
@@ -244,12 +219,22 @@ void BootPciPeripheralInitialization()
 		" movl $0x100, %eax \n"
 		" outl	%eax, %dx \n"
 
+		" mov $0x8000088C, %eax \n"
+		" movw $0xcf8, %dx \n"
+		" outl	%eax, %dx \n"
+		" movw $0xcfc, %dx \n"
+		" movl $0x40000000, %eax \n"
+		" outl	%eax, %dx \n"
+
 		" pop %eax\n"
 		" pop %edx \n"
+//		" sti\n"
 
 		);
 
 #endif
+
+
 
 }
 

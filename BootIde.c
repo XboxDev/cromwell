@@ -24,7 +24,7 @@
  */
 
 #include  "boot.h"
-#include "string.h"
+//#include "string.h"
 #include "grub/shared.h"
 
 ////////////////////////////////////

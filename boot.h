@@ -32,13 +32,13 @@
 
 // enable trace message printing for debugging - with filtror or serial only
 #define PRINT_TRACE 0
-
-
 #if PRINT_TRACE
 #define TRACE bprintf(__FILE__ " :%d\n\r",__LINE__);
 #else
 #define TRACE
 #endif
+
+// #define DO_ETHERNET 1
 
 /////////////////////////////////
 // some typedefs to make for easy sizing
@@ -46,7 +46,9 @@
   typedef unsigned int DWORD;
   typedef unsigned short WORD;
   typedef unsigned char BYTE;
-  typedef int bool;
+#ifndef bool_already_defined_
+	typedef int bool;
+#endif
 	typedef unsigned long RGBA; // LSB=R -> MSB = A
 	typedef long long __int64;
 
@@ -60,6 +62,8 @@
 #define NULL ((void *)0)
 #endif
 
+#define ASSERT(exp) { if(!(exp)) { bprintf("Assert failed file " __FILE__ " line %d\n", __LINE__); } }
+
 #include "BootFilesystemIso9660.h"
 
 
@@ -67,16 +71,17 @@
 
 #define FRAMEBUFFER_START ( 0xf0000000 + /*(0x04000000-(640*480*4) -(640*4*4)-(256*4))*/ (*((DWORD *)0xfd600800)) )
 
-#define VIDEO_CURSOR_POSX (*((DWORD *)0x430))
-#define VIDEO_CURSOR_POSY (*((DWORD *)0x434))
-#define VIDEO_ATTR (*((DWORD *)0x438))
-#define VIDEO_LUMASCALING (*((DWORD *)0x43c))
-#define VIDEO_RSCALING (*((DWORD *)0x440))
-#define VIDEO_BSCALING (*((DWORD *)0x444))
-#define MALLOC_BASE (*((DWORD *)0x448))
-#define VIDEO_HEIGHT (*((DWORD *)0x44c))
-#define VIDEO_MARGINX (*((DWORD *)0x450))
-#define VIDEO_MARGINY (*((DWORD *)0x454))
+#define VIDEO_CURSOR_POSX (*((volatile DWORD *)0x430))
+#define VIDEO_CURSOR_POSY (*((volatile DWORD *)0x434))
+#define VIDEO_ATTR (*((volatile DWORD *)0x438))
+#define VIDEO_LUMASCALING (*((volatile DWORD *)0x43c))
+#define VIDEO_RSCALING (*((volatile DWORD *)0x440))
+#define VIDEO_BSCALING (*((volatile DWORD *)0x444))
+//#define MALLOC_BASE (*((volatile DWORD *)0x448))
+#define VIDEO_HEIGHT (*((volatile DWORD *)0x44c))
+#define VIDEO_MARGINX (*((volatile DWORD *)0x450))
+#define VIDEO_MARGINY (*((volatile DWORD *)0x454))
+#define BIOS_TICK_COUNT (*((volatile DWORD *)0x46c))
 
 /////////////////////////////////
 // Superfunky i386 internal structures
@@ -133,8 +138,6 @@ typedef struct {  // this is the retained knowledge about an IDE device after in
 /* the initrd resides at 1 MB from the top of RAM */
 #define INITRD_DEST (RAMSIZE_USE - 1024*1024)
 
-
-#define PDW_BIOS_TICK_PTR ((DWORD *)0x46c)
 
 /////////////////////////////////
 // LED-flashing codes
@@ -221,13 +224,9 @@ static __inline DWORD IoInputDword(WORD wAds) {
 #define BootPciInterruptGlobalStackStateAndDisable() {	__asm__ __volatile__ (  "pushf; cli" ); }
 #define BootPciInterruptGlobalPopState()  {	__asm__ __volatile__  (  "popf" ); }
 
-	// main I2C traffic functions
-int I2CTransmitByteGetReturn(BYTE bPicAddressI2cFormat, BYTE bDataToWrite);
-int I2CTransmitWord(BYTE bPicAddressI2cFormat, WORD wDataToWrite, bool fMode);
-//#define I2CTransmit2Bytes(bPicAddressI2cFormat, bCommand, bData) I2CTransmitWord(bPicAddressI2cFormat, (((WORD)bCommand)<<8)|(WORD)bData, false)
 
 	// boot process
-int BootPerformPicChallengeResponseAction();
+int BootPerformPicChallengeResponseAction(void);
 	// LED control (see associated enum above)
 int I2cSetFrontpanelLed(BYTE b);
 
@@ -245,9 +244,9 @@ int I2cSetFrontpanelLed(BYTE b);
 	extern BOOTFILTROR_CHANNEL_QUALITY_STATS bfcqs;
 
 		// helpers
-	int BootFiltrorGetIncomingMessageLength();
-	void BootFiltrorMarkIncomingMessageAsHavingBeenRead() ;
-	bool BootFiltrorDoesPcHaveAMessageWaitingForItToRead();
+	int BootFiltrorGetIncomingMessageLength(void);
+	void BootFiltrorMarkIncomingMessageAsHavingBeenRead(void) ;
+	bool BootFiltrorDoesPcHaveAMessageWaitingForItToRead(void);
 	void BootFiltrorSetMessageLengthForPcToRead(WORD wChecksum, WORD wLength) ;
 	int DumpAddressAndData(DWORD dwAds, const BYTE * baData, DWORD dwCountBytesUsable);
 		// main functions
@@ -305,7 +304,7 @@ int I2cSetFrontpanelLed(BYTE b);
 
 ////////// BootPerformXCodeActions.c
 
-int BootPerformXCodeActions();
+int BootPerformXCodeActions(void);
 
 ////////// BootStartBios.c
 
@@ -321,7 +320,7 @@ BYTE BiosCmosRead(BYTE bAds);
 
 ////////// BootPciPeripheralInitialization.c
 
-void BootPciPeripheralInitialization();
+void BootPciPeripheralInitialization(void);
 extern void	ReadPCIByte(unsigned int bus, unsigned int dev, unsigned intfunc, 	unsigned int reg_off, unsigned char *pbyteval);
 extern void	WritePCIByte(unsigned int bus, unsigned int dev, unsigned int func,	unsigned int reg_off, unsigned char byteval);
 extern void	ReadPCIDword(unsigned int bus, unsigned int dev, unsigned int func,	unsigned int reg_off, unsigned int *pdwordval);
@@ -331,12 +330,12 @@ extern void	WritePCIBlock(unsigned int bus, unsigned int dev, unsigned int func,
 
 ///////// BootPerformPicChallengeResponseAction.c
 
-int I2CTransmitWord(BYTE bPicAddressI2cFormat, WORD wDataToWrite, bool fMode);
+int I2CTransmitWord(BYTE bPicAddressI2cFormat, WORD wDataToWrite);
 int I2CTransmitByteGetReturn(BYTE bPicAddressI2cFormat, BYTE bDataToWrite);
 
 ///////// BootVgaInitialization.c
 
-void BootVgaInitialization() ;
+void BootVgaInitialization(void) ;
 BYTE BootVgaInitializationKernel(int nLinesPref);  // returns AV pack index, call with 480 or 576
 
 ///////// BootIde.c
@@ -346,8 +345,13 @@ int BootIdeInit(void);
 int BootIdeReadSector(int nDriveIndex, void * pbBuffer, unsigned int block, int byte_offset, int n_bytes);
 int BootIdeBootSectorHddOrElTorito(int nDriveIndex, BYTE * pbaResult);
 int BootIdeAtapiAdditionalSenseCode(int nDrive, BYTE * pba, int nLengthMaxReturn);
-BYTE BootIdeGetTrayState();
+BYTE BootIdeGetTrayState(void);
 int BootIdeSetTransferMode(int nIndexDrive, int nMode);
+
+///////// BootEthernet.c
+
+int BootStartUpEthernet(void);
+
 
 	// video helpers
 
@@ -358,7 +362,7 @@ void BootVideoBlit(
 	DWORD dwCountBytesPerLineSource,
 	DWORD dwCountLines
 );
-
+/*
 void BootGimpVideoBlitBlend(
 	DWORD * pdwTopLeftDestination,
 	DWORD dwCountBytesPerLineDestination,
@@ -374,42 +378,62 @@ void BootGimpVideoBlit(
 	void * pgimpstruct,
 	RGBA m_rgbaTransparent
 );
-
+*/
 void BootVideoVignette(
 	DWORD * pdwaTopLeftDestination,
 	DWORD m_dwCountBytesPerLineDestination,
 	DWORD m_dwCountLines,
 	RGBA rgbaColour1,
-	RGBA rgbaColour2
+	RGBA rgbaColour2,
+	DWORD dwStartLine,
+	DWORD dwEndLine
 );
 
-#define VIDEO_CURSOR_POSX (*((DWORD *)0x430))
-#define VIDEO_CURSOR_POSY (*((DWORD *)0x434))
-#define VIDEO_ATTR (*((DWORD *)0x438))
-#define VIDEO_LUMASCALING (*((DWORD *)0x43c))
-#define VIDEO_RSCALING (*((DWORD *)0x440))
-#define VIDEO_BSCALING (*((DWORD *)0x444))
 
+typedef struct {
+	BYTE * m_pBitmapData;
+	int m_nWidth;
+	int m_nHeight;
+	int m_nBytesPerPixel;
+} JPEG;
 
 int BootVideoOverlayString(DWORD * pdwaTopLeftDestination, DWORD m_dwCountBytesPerLineDestination, RGBA rgbaOpaqueness, const char * szString);
 void BootVideoChunkedPrint(char * szBuffer, WORD wLength);
 int VideoDumpAddressAndData(DWORD dwAds, const BYTE * baData, DWORD dwCountBytesUsable);
 unsigned int BootVideoGetStringTotalWidth(const char * szc);
-void BootVideoClearScreen();
+void BootVideoClearScreen(JPEG * pJpeg, int nStartLine, int nEndLine);
+void BootVideoJpegBlitBlend(
+	DWORD * pdwTopLeftDestination,
+	DWORD dwCountBytesPerLineDestination,
+	JPEG * pJpeg,
+	DWORD * pdwTopLeftInJpegBitmap,
+	RGBA m_rgbaTransparent,
+	DWORD * pdwTopLeftBackground,
+	DWORD dwCountBytesPerLineBackground,
+	int x,
+	int y
+);
 
-BYTE * BootVideoJpegUnpackAsRgb(
+bool BootVideoJpegUnpackAsRgb(
 	BYTE *pbaJpegFileImage,
 	int nFileLength,
-	int *nWidth,
-	int *nHeight,
-	int *nBytesPerPixel
+	JPEG * pJpeg
 );
 
 void BootVideoEnableOutput(BYTE bAvPack);
 
-
 void * memcpy(void *dest, const void *src,  size_t size);
 void * memset(void *dest, int data,  size_t size);
 
+void MemoryManagementInitialization(void * pvStartAddress, DWORD dwTotalMemoryAllocLength);
 void * malloc(size_t size);
 void free(void *);
+
+extern volatile int nCountI2cinterrupts, nCountUnusedInterrupts, nCountUnusedInterruptsPic2, nCountInterruptsSmc, nCountInterruptsIde;
+extern volatile bool fSeenPowerdown;
+extern BYTE baBackdrop[60*72*4];
+extern JPEG jpegBackdrop;
+
+
+void BootInterruptsWriteIdt(void);
+
