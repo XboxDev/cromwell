@@ -236,7 +236,7 @@ void BootVgaInitializationKernelNG(CURRENT_VIDEO_MODE_DETAILS * pcurrentvideomod
 		gpu.nvvstart = newmode.ext.vsyncstart;
 		gpu.nvvtotal = newmode.ext.vtotal;
 		gpu.pixelDepth = (32 + 1) / 8;
-		gpu.crtchdispend = pcurrentvideomodedetails->m_dwHeightInLines;
+		gpu.crtchdispend = pcurrentvideomodedetails->m_dwWidthInPixels;
 		gpu.crtcvstart = newmode.ext.vsyncstart;
 		gpu.crtcvtotal = newmode.ext.vtotal;
 	}
