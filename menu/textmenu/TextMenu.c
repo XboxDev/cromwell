@@ -83,10 +83,13 @@ void TextMenu(void) {
 	TEXTMENUITEM *itemPtr;
 	TEXTMENU *menuPtr;
 	
-	//Back up the current framebuffer contents
+	//Back up the current framebuffer contents - restore at exit.
 	textmenusavepage = malloc(FB_SIZE);
 	memcpy(textmenusavepage,(void*)FB_START,FB_SIZE);
 
+	//Clear the screen fully.
+	BootVideoClearScreen(&jpegBackdrop, 0, 0xffff);
+	
 	TextMenuDraw();
 	
 	//Main menu event loop.
