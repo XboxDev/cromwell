@@ -330,10 +330,6 @@ int BootLoadConfigFATX(CONFIGENTRY *config) {
 int BootLoadConfigCD(CONFIGENTRY *config) {
 
 	DWORD dwConfigSize=0, dw;
-	BYTE ba[2048],baBackground[640*64*4]; 
-	ISO_PRIMARY_VOLUME_DESCRIPTOR * pipvd;
-	char sz[64];
-	BYTE bCount=0, bCount1;
 	int n;
 	int cdromId=0;
 	DWORD dwY=VIDEO_CURSOR_POSY;
@@ -348,22 +344,12 @@ int BootLoadConfigCD(CONFIGENTRY *config) {
 	I2CTransmitWord(0x10, 0x0c00); // eject DVD tray
 	wait_ms(2000); // Wait for DVD to become responsive to inject command
 		
-selectinsert:
-	BootVideoBlit(
-		(DWORD *)&baBackground[0], 640*4,
-		(DWORD *)(FRAMEBUFFER_START+(VIDEO_CURSOR_POSY*currentvideomodedetails.m_dwWidthInPixels*4)+VIDEO_CURSOR_POSX),
-		currentvideomodedetails.m_dwWidthInPixels*4, 64
-	);
+	VIDEO_ATTR=0xffeeeeff;
+	VIDEO_CURSOR_POSX=dwX;
+	VIDEO_CURSOR_POSY=dwY;
+	printk("Please insert CD and press Button A\n");
 
-	
 	while(1) {
-                int n;
-		
-		if (DVD_TRAY_STATE == DVD_CLOSING) {
-			wait_ms(500);
-			break;
-		}
-		
 		if (risefall_xpad_BUTTON(TRIGGER_XPAD_KEY_A) == 1) {
 			I2CTransmitWord(0x10, 0x0c01); // close DVD tray
 			wait_ms(500);
@@ -371,105 +357,27 @@ selectinsert:
 		}
                 USBGetEvents();
 		wait_ms(10);
-
-		VIDEO_CURSOR_POSX=dwX;
-		VIDEO_CURSOR_POSY=dwY;
-		bCount++;
-		bCount1=bCount; if(bCount1&0x80) { bCount1=(-bCount1)-1; }
-		VIDEO_ATTR=0xff000000|(((bCount1>>1)+64)<<16)|(((bCount1>>1)+64)<<8)|0 ;
-		printk("\2Please insert CD and press Button A\n\2");
 	}						
 
 	VIDEO_ATTR=0xffffffff;
 
-	VIDEO_CURSOR_POSX=dwX;
-	VIDEO_CURSOR_POSY=dwY;
-	BootVideoBlit(
-		(DWORD *)(FRAMEBUFFER_START+(VIDEO_CURSOR_POSY*currentvideomodedetails.m_dwWidthInPixels*4)+VIDEO_CURSOR_POSX),
-		currentvideomodedetails.m_dwWidthInPixels*4, (DWORD *)&baBackground[0], 640*4, 64
-	);
+	// wait until the media is readable
 
-		// wait until the media is readable
-
-	{
-		bool fMore=true, fOkay=true;
-		int timeoutcount = 0;
-		
-		while(fMore) {
-			timeoutcount++;
-			// We waited very long now for a Good read sector, but we did not get one, so we
-			// jump back and try again
-			if (timeoutcount>200) {
-				VIDEO_ATTR=0xffffffff;
-				VIDEO_CURSOR_POSX=dwX;
-				VIDEO_CURSOR_POSY=dwY;
-				BootVideoBlit(
-				(DWORD *)(FRAMEBUFFER_START+(VIDEO_CURSOR_POSY*currentvideomodedetails.m_dwWidthInPixels*4)+VIDEO_CURSOR_POSX),
-				currentvideomodedetails.m_dwWidthInPixels*4, (DWORD *)&baBackground[0], 640*4, 64
-				);
-				I2CTransmitWord(0x10, 0x0c00); // eject DVD tray	
-				wait_ms(2000); // Wait for DVD to become responsive to inject command
-
-				goto selectinsert;
-			}
-			wait_ms(200);
+	while(1) {
+		wait_ms(200);
 			
-			if(BootIdeReadSector(cdromId, &ba[0], 0x10, 0, 2048)) { // starts at 16
-				VIDEO_CURSOR_POSX=dwX;
-				VIDEO_CURSOR_POSY=dwY;
-				bCount++;
-				bCount1=bCount; if(bCount1&0x80) { bCount1=(-bCount1)-1; }
-
-				VIDEO_ATTR=0xff000000|(((bCount1)+64)<<16)|(((bCount1>>1)+128)<<8)|(((bCount1)+128)) ;
-
-				printk("\2Waiting for drive\2\n");
-	
-			} else {  // read it successfully
-				fMore=false;
-				fOkay=true;
-			}
+		if(BootIso9660GetFile(cdromId,"/linuxboo.cfg", (BYTE *)KERNEL_SETUP, 0x800)) {
+			break;
 		}
 
-		if(!fOkay) {
-			void BootFiltrorDebugShell(void);
-			printk("cdrom unhappy\n");
-#if INCLUDE_FILTROR
-			BootFiltrorDebugShell();
-#endif
-			while(1);
-		} else {
-			printk("\n");
-		}
 	}
 
-	VIDEO_CURSOR_POSX=dwX;
-	VIDEO_CURSOR_POSY=dwY;
-	BootVideoBlit(
-		(DWORD *)(FRAMEBUFFER_START+(VIDEO_CURSOR_POSY*currentvideomodedetails.m_dwWidthInPixels*4)+VIDEO_CURSOR_POSX),
-		currentvideomodedetails.m_dwWidthInPixels*4, (DWORD *)&baBackground[0], 640*4, 64
-	);
- 
-	pipvd = (ISO_PRIMARY_VOLUME_DESCRIPTOR *)&ba[0];
-	memset(&sz,0x00,sizeof(sz));
-	BootIso9660DescriptorToString(pipvd->m_szSystemIdentifier, sizeof(pipvd->m_szSystemIdentifier), sz);
-	VIDEO_ATTR=0xffeeeeee;
 	printk("Cdrom: ");
-	VIDEO_ATTR=0xffeeeeff;
-	printk("%s", sz);
-	VIDEO_ATTR=0xffeeeeee;
-	printk(" - ");
-	VIDEO_ATTR=0xffeeeeff;
-	BootIso9660DescriptorToString(pipvd->m_szVolumeIdentifier, sizeof(pipvd->m_szVolumeIdentifier), sz);
-	printk("%s\n", sz);
-
 	printk("  Loading linuxboot.cfg from CDROM... \n");
 	
-	dwConfigSize=BootIso9660GetFile(cdromId,"/linuxboot.cfg", (BYTE *)KERNEL_SETUP, 0x800, 0x0);
+	dwConfigSize=BootIso9660GetFile(cdromId,"/linuxboo.cfg", (BYTE *)KERNEL_SETUP, 0x800);
 
-	if(((int)dwConfigSize)<0) // not found, try mangled 8.3 version
-		dwConfigSize=BootIso9660GetFile(cdromId,"/LINUXBOO.CFG", (BYTE *)KERNEL_SETUP, 0x800, 0x0);
-		
-	if(((int)dwConfigSize)<0) { // has to be there on CDROM
+	if( !dwConfigSize ) { // has to be there on CDROM
 		printk("linuxboot.cfg not found on CDROM... Halting\n");
 		while(1) ;
 	}
@@ -482,45 +390,25 @@ selectinsert:
 
 	// Use INITRD_START as temporary location for loading the Kernel 
 	tempBuf = (BYTE*)INITRD_START;
-	dwKernelSize=BootIso9660GetFile(cdromId,config->szKernel, tempBuf, MAX_KERNEL_SIZE, 0);
+	dwKernelSize=BootIso9660GetFile(cdromId,config->szKernel, tempBuf, MAX_KERNEL_SIZE);
 
-	// If failed, lets look for an other name ...
-	if(((int)dwKernelSize)<0) { // not found, try 8.3
-		strcpy(config->szKernel, "/VMLINUZ.");
-		dwKernelSize=BootIso9660GetFile(cdromId,config->szKernel, tempBuf, MAX_KERNEL_SIZE, 0);
-		if(((int)dwKernelSize)<0) { 
-			strcpy(config->szKernel, "/VMLINUZ_.");
-			dwKernelSize=BootIso9660GetFile(cdromId,config->szKernel, tempBuf, MAX_KERNEL_SIZE, 0);
-			if(((int)dwKernelSize)<0) { 
-				printk("Not Found, error %d\nHalting\n", dwKernelSize); 
-				while(1);
-			}
-		}
-	}
-	
-	if (dwKernelSize>0) 
-	{
-		memPlaceKernel(tempBuf, dwKernelSize);
-		printk(" -  %d bytes...\n", dwKernelSize);
-	} else {
+	if( !dwKernelSize ) {
 		printk("Not Found, error %d\nHalting\n", dwKernelSize); 
 		while(1);
-	}	
+	} else {
+		memPlaceKernel(tempBuf, dwKernelSize);
+		printk(" -  %d bytes...\n", dwKernelSize);
+	}
 
 	if( (_strncmp(config->szInitrd, "/no", strlen("/no")) != 0) && config->szInitrd) {
 		VIDEO_ATTR=0xffd8d8d8;
 		printk("  Loading %s from CDROM", config->szInitrd);
 		VIDEO_ATTR=0xffa8a8a8;
 		
-		dwInitrdSize=BootIso9660GetFile(cdromId,config->szInitrd, (void*)INITRD_START, MAX_INITRD_SIZE, 0);
-		if((int)dwInitrdSize<0) { // not found, try 8.3
-			strcpy(config->szInitrd, "/INITRD.");
-			dwInitrdSize=BootIso9660GetFile(cdromId,config->szInitrd, (void*)INITRD_START, MAX_INITRD_SIZE, 0);
-			if((int)dwInitrdSize<0) { // not found, try 8.3
-				strcpy(config->szInitrd, "/INITRD_I.");
-				dwInitrdSize=BootIso9660GetFile(cdromId,config->szInitrd, (void*)INITRD_START, MAX_INITRD_SIZE, 0);
-				if((int)dwInitrdSize<0) { printk("Not Found, error %d\nHalting\n", dwInitrdSize); while(1) ; }
-			}
+		dwInitrdSize=BootIso9660GetFile(cdromId,config->szInitrd, (void*)INITRD_START, MAX_INITRD_SIZE);
+		if( !dwInitrdSize ) {
+			printk("Not Found, error %d\nHalting\n", dwInitrdSize); 
+			while(1);
 		}
 		
 		printk(" - %d bytes\n", dwInitrdSize);
@@ -658,7 +546,7 @@ selectinsert:
 	printk("%s\n", sz);
     
 	dwConfigSize=0;
-	dwConfigSize=BootIso9660GetFile("/IMAGE.BIN", (BYTE *)KERNEL_PM_CODE, 256*1024, 0x0);   
+	dwConfigSize=BootIso9660GetFile("/IMAGE.BIN", (BYTE *)KERNEL_PM_CODE, 256*1024);   
 	printk("Image size: %i\n", dwConfigSize);   
 	if (dwConfigSize!=256*1024) {
 		printk("Image != 256kbyte image\n");           	

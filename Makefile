@@ -1,4 +1,4 @@
-CC	= gcc
+CC	= gcc-3.2
 # prepare check for gcc 3.3, $(GCC_3.3) will either be 0 or 1
 GCC_3.3 := $(shell expr `$(CC) -dumpversion` \>= 3.3)
 
@@ -76,7 +76,7 @@ OBJECTS-CROM += $(TOPDIR)/obj/vsprintf.o
 #OBJECTS-CROM += $(TOPDIR)/obj/filtror.o
 OBJECTS-CROM += $(TOPDIR)/obj/BootStartBios.o
 OBJECTS-CROM += $(TOPDIR)/obj/setup.o
-OBJECTS-CROM += $(TOPDIR)/obj/BootFilesystemIso9660.o
+OBJECTS-CROM += $(TOPDIR)/obj/iso9660.o
 OBJECTS-CROM += $(TOPDIR)/obj/BootLibrary.o
 OBJECTS-CROM += $(TOPDIR)/obj/cputools.o
 OBJECTS-CROM += $(TOPDIR)/obj/microcode.o

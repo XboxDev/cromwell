@@ -48,8 +48,7 @@ static inline double max (double a, double b)
 
 #define ASSERT(exp) { if(!(exp)) { bprintf("Assert failed file " __FILE__ " line %d\n", __LINE__); } }
 
-#include "BootFilesystemIso9660.h"
-
+#include "iso_fs.h"
 
 extern void WATCHDOG(void);
 

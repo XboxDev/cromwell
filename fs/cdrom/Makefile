@@ -1,4 +1,4 @@
 
-O_TARGET := BootFilesystemIso9660.o
+O_TARGET := iso9660.o
 
 include $(TOPDIR)/Rules.make
