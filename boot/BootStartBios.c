@@ -87,6 +87,38 @@ void BootPrintConfig(CONFIGENTRY *config) {
 	VIDEO_ATTR=0xffa8a8a8;
 }
 
+
+int button_history_A=0;
+
+int risefall_xpad_BUTTONA(unsigned char Button) {
+
+        int Button_actual=0;
+        
+        if (Button==0x0)
+        {
+              	Button_actual = 0;	
+        }
+        
+	if (Button>0x80)
+	{
+		Button_actual = 1;
+	}
+
+	if ((Button_actual==1)&(button_history_A==0)) {
+		// Button Rising Edge
+		button_history_A = Button_actual;		
+		return 1;
+	}	
+	
+	if ((Button_actual==0)&(button_history_A==1)) {
+		// Button Falling Edge
+		button_history_A = Button_actual;		
+		return -1;
+	}	
+	return 0;
+}
+
+
 // if fJustTestingForPossible is true, returns 0 if this kind of boot not possible, 1 if it is worth trying
 
 int BootLodaConfigNative(int nActivePartition, CONFIGENTRY *config, bool fJustTestingForPossible) {
@@ -306,15 +338,10 @@ selectinsert:
 	}
 */
 
-	while(XPAD_current[0].keys[0] != 0x0) {
-		USBGetEvents();
-		wait_ms(10);
-	}
 	
 	while(1) {
                 int n;
-
-                if (XPAD_current[0].keys[0]>0x80) {
+		if (risefall_xpad_BUTTONA(XPAD_current[0].keys[0])==1) {
 			I2CTransmitWord(0x10, 0x0c01); // close DVD tray
 			wait_ms(500);
 			break;
@@ -724,46 +751,17 @@ void RecoverMbrArea(void)
 		VIDEO_CURSOR_POSY=nTempCursorMbrY;
 }
 
-#define DOWN 0
-#define UP 1
-
-int GetMenuEntry(int direction) {
-	
-	int i;
-	int nFound = 0;
-
-	if(direction == UP) {
-		for(i = 0; i < ICONCOUNT; i++) {
-			if(icon[i].nSelected) {
-				nFound = 1;
-			}
-			if(nFound && icon[i].nEnabled && !icon[i].nSelected) {
-				return i;
-			}
-		}
-	}else if(direction == DOWN) {
-		for(i = ICONCOUNT - 1; i >= 0; i--) {
-			if(icon[i].nSelected) {
-				nFound = 1;
-			}
-			if(nFound && icon[i].nEnabled && !icon[i].nSelected) {
-				return i;
-			}
-		}
-	}
-	return -1;
-}
 
 
 int BootMenue(CONFIGENTRY *config,int nDrive,int nActivePartition, int nFATXPresent){
 	
 	int old_nIcon = 0;
-	int new_nIcon = 0;
 	int nSelected = -1;
 	unsigned int menu=0;
 	int change=0;
 	int curx,cury;
-
+       	int XPAD_PAD_LEFT_history =0;
+       	int XPAD_PAD_RIGHT_history =0;
 
 	int nTempCursorResumeX, nTempCursorResumeY, nTempStartMessageCursorX, nTempStartMessageCursorY;
 	int nTempCursorX, nTempCursorY, nTempEntryX, nTempEntryY;
@@ -854,28 +852,42 @@ int BootMenue(CONFIGENTRY *config,int nDrive,int nActivePartition, int nFATXPres
 	{
 		int n;
 		USBGetEvents();
-
-		if (XPAD_current[0].pad&XPAD_PAD_LEFT)
+		
+        	// Rising Edge
+		if (((XPAD_current[0].pad&XPAD_PAD_LEFT) != 0) & (XPAD_PAD_LEFT_history == 0))
 		{
-			new_nIcon = GetMenuEntry(DOWN);
-			if(new_nIcon != -1) {
-				change=1;
-				old_nIcon = menu;
-				menu = new_nIcon;
+			XPAD_PAD_LEFT_history = 1;
+			change=1;
+			menu = menu+3;
+			menu = menu%4;
+			
+			while(icon[menu].nEnabled==0) {
+				menu = menu+3;
+				menu = menu%4;
+			}
+			
+		}
+		// Falling Edge
+		if (((XPAD_current[0].pad&XPAD_PAD_LEFT) == 0) & (XPAD_PAD_LEFT_history == 1)) XPAD_PAD_LEFT_history = 0;
+		
+		// Rising Edge
+		if (((XPAD_current[0].pad&XPAD_PAD_RIGHT) != 0) & (XPAD_PAD_RIGHT_history == 0))
+		{
+                        XPAD_PAD_RIGHT_history = 1;
+			change=1;
+			menu = menu+5;
+			menu = menu%4;
+			
+			while(icon[menu].nEnabled==0) {
+				menu = menu+5;
+				menu = menu%4;
 			}
 		}
-		if (XPAD_current[0].pad&XPAD_PAD_RIGHT)
-		{
-
-			new_nIcon = GetMenuEntry(UP);
-			if(new_nIcon != -1) {
-				change=1;
-				old_nIcon = menu;
-				menu = new_nIcon;
-			}
-		}
-		if (XPAD_current[0].keys[0]>0x80)
-		{
+                // Falling Edge
+                if (((XPAD_current[0].pad&XPAD_PAD_RIGHT) == 0) & (XPAD_PAD_RIGHT_history == 1)) XPAD_PAD_RIGHT_history = 0;
+                
+		if (risefall_xpad_BUTTONA(XPAD_current[0].keys[0]) == 1) {
+		
 			change=1; 
 			
 			RecoverMbrArea();
@@ -895,23 +907,13 @@ int BootMenue(CONFIGENTRY *config,int nDrive,int nActivePartition, int nFATXPres
 			return menu;			
 			
 		}
-		for(n=0;n<40;n++)
-		{
-			USBGetEvents();
-			wait_ms(10);
-			if (XPAD_current[0].pad==0)
-				break;
-		}
-		
 		
 		if (change) 
 		{
 			
-			icon[old_nIcon].nSelected = 0;
-			icon[menu].nSelected = 1;
-
 		        BootVideoClearScreen(&jpegBackdrop, nTempCursorY, VIDEO_CURSOR_POSY+1);
 			BootStartBiosDoIcon(&icon[old_nIcon], TRANPARENTNESS);
+			old_nIcon = menu;
 			BootStartBiosDoIcon(&icon[menu], SELECTED);
 
                         VIDEO_CURSOR_POSX=icon[menu].nTextX;
