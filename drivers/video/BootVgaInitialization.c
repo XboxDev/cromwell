@@ -106,8 +106,7 @@ void BootVgaInitializationKernelNG(CURRENT_VIDEO_MODE_DETAILS * pcurrentvideomod
 	MMIO_H_OUT32(riva.PRAMDAC,0,0x894,0x10000000);
 	MMIO_H_OUT32(riva.PRAMDAC,0,0x898,0x10000000);
 	MMIO_H_OUT32(riva.PRAMDAC,0,0x89c,0x10000000);
-	MMIO_H_OUT32(riva.PRAMDAC,0,0x84c,0x0); // remove magenta borders in RGB mode
-
+	
 	writeCrtNv (&riva, 0, 0x14, 0x00);
 	writeCrtNv (&riva, 0, 0x17, 0xe3); // Set CRTC mode register
 	writeCrtNv (&riva, 0, 0x19, 0x10); // ?
