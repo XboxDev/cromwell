@@ -113,8 +113,10 @@ struct riva_regs {
     	u8 encoder_mode[255];
 };
 
-
-
+typedef enum enumEncoderType {
+	        ENCODER_CONEXANT,
+	        ENCODER_FOCUS
+} xbox_encoder_type;
 
 /*static const conexant_video_parameter vidstda[];
 

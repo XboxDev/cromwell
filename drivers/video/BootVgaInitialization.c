@@ -25,27 +25,34 @@
 
 void DetectVideoEncoder(void)
 {
-	if (I2CTransmitByteGetReturn(0x6a,0x000) == ERR_I2C_ERROR_BUS) VideoEncoder = VIDEO_CONEXANT;
-	else VideoEncoder = VIDEO_FOCUS;
+	if (I2CTransmitByteGetReturn(0x6a,0x000) == ERR_I2C_ERROR_BUS) video_encoder = ENCODER_CONEXANT;
+	else video_encoder = ENCODER_FOCUS;
 }
 
 
 void BootVgaInitializationKernelNG(CURRENT_VIDEO_MODE_DETAILS * pcurrentvideomodedetails) {
-	xbox_tv_encoding videoStd;
-	xbox_av_type avType;
+	xbox_tv_encoding tv_encoding; 
+	xbox_av_type av_type;
 	TV_MODE_PARAMETER parameter;
 	BYTE b;
 	RIVA_HW_INST riva;
+        struct riva_regs newmode;
+	int bpp, width, hDisplaySize, crtc_hDisplay, crtc_hStart,
+	          crtc_hEnd, crtc_hTotal, height, crtc_vDisplay, crtc_vStart,
+	          crtc_vEnd, crtc_vTotal, dotClock,
+	          hStart, hTotal, vStart, vTotal;
+	int encoder_ok = 0;
+	int i=0;
 
-	videoStd = DetectVideoStd();
+	
+	tv_encoding = DetectVideoStd();
 	DetectVideoEncoder();
 	
+	av_type = DetectAvType();
         // Dump to global variable
 	VIDEO_AV_MODE=I2CTransmitByteGetReturn(0x10, 0x04);
 
-
    	memset((void *)pcurrentvideomodedetails,0,sizeof(CURRENT_VIDEO_MODE_DETAILS));
-
 
 	if(((BYTE *)&eeprom)[0x96]&0x01) { // 16:9 widescreen TV
 		pcurrentvideomodedetails->m_nVideoModeIndex=VIDEO_MODE_1024x576;
@@ -53,7 +60,7 @@ void BootVgaInitializationKernelNG(CURRENT_VIDEO_MODE_DETAILS * pcurrentvideomod
 		pcurrentvideomodedetails->m_nVideoModeIndex=VIDEO_PREFERRED_MODE;
 	}
 
-	if (VideoEncoder == VIDEO_FOCUS) {
+	if (video_encoder == ENCODER_FOCUS) {
 		pcurrentvideomodedetails->m_nVideoModeIndex =VIDEO_MODE_640x480;
 	} else {
 		pcurrentvideomodedetails->m_nVideoModeIndex =VIDEO_MODE_800x600;
@@ -117,44 +124,49 @@ void BootVgaInitializationKernelNG(CURRENT_VIDEO_MODE_DETAILS * pcurrentvideomod
 	writeCrtNv (&riva, 0, 0x1b, 0x05); // arbitration0
 	writeCrtNv (&riva, 0, 0x22, 0xff); // ?
 	writeCrtNv (&riva, 0, 0x33, 0x11); // ?
+	
+	if((av_type == AV_VGA) || (av_type == AV_VGA_SOG) || (av_type == AV_HDTV)) {
+		unsigned char pll_int = (unsigned char)((double)dotClock * 6.0 / 13.5e3 + 0.5);
+		if (av_type == AV_HDTV) {
+			xbox_hdtv_mode hdtv_mode = HDTV_480p;
+		//	if (video_mode->yres > 800) {
+		//		hdtv_mode = HDTV_1080i;
+		//	}
+		//	else if (video_mode->yres > 600) {
+		//		hdtv_mode = HDTV_720p;
+		//	}
+			if (video_encoder == ENCODER_CONEXANT)
+				encoder_ok = conexant_calc_hdtv_mode(hdtv_mode, pll_int, newmode.encoder_mode);
+			else if (video_encoder == ENCODER_FOCUS)
+				encoder_ok = focus_calc_hdtv_mode(hdtv_mode, pll_int, newmode.encoder_mode);
+			else printk("Error - unknown encoder type detected\n");
+		}
+		else {
+			if (video_encoder == ENCODER_CONEXANT)
+				encoder_ok = conexant_calc_vga_mode(av_type, pll_int, newmode.encoder_mode);
+			else if (video_encoder == ENCODER_FOCUS);
+				//No focus VGA functions yet
+			else printk("Error - unknown encoder type detected\n");
+		}
+		/*newmode.ext.vend = video_mode->yres - 1;
+		newmode.ext.vtotal = vTotal;
+		newmode.ext.vcrtc = video_mode->yres - 1;
+		newmode.ext.vsyncstart = vStart;
+		newmode.ext.vsyncend = vStart + 3;
+		newmode.ext.vvalidstart = 0;
+		newmode.ext.vvalidend = video_mode->yres - 1;
+		newmode.ext.hend = video_mode->xres - 1;
+		newmode.ext.htotal = hTotal;
+		newmode.ext.hcrtc = video_mode->xres - 1;
+		newmode.ext.hsyncstart = hStart;
+		newmode.ext.hsyncend = hStart + 32;
+		newmode.ext.hvalidstart = 0;
+		newmode.ext.hvalidend = video_mode->xres - 1;
+	*/
+	}
+	else {	
 
-	avType = DetectAvType();
-	if ((avType == AV_VGA) || (avType == AV_VGA_SOG)) {
-		VGA_MODE_PARAMETER mode;
-		// Settings for 800x600@56Hz, 35 kHz HSync
-		pcurrentvideomodedetails->m_dwWidthInPixels=800;
-		pcurrentvideomodedetails->m_dwHeightInLines=600;
-		pcurrentvideomodedetails->m_dwMarginXInPixelsRecommended=20;
-		pcurrentvideomodedetails->m_dwMarginYInLinesRecommended=20;
-		mode.bpp = 32;
-		mode.xres = 800;
-		mode.hsyncstart = 900;
-		mode.htotal =  1028;
-		mode.yres = 600;
-		mode.vsyncstart = 614;
-		mode.vtotal = 630;
-		mode.pixclock = 36000000;
-		SetVgaHdtvModeParameter(&mode, pcurrentvideomodedetails->m_pbBaseAddressVideo);
-	}
-	else if (avType == AV_HDTV) {
-		VGA_MODE_PARAMETER mode;
-		// Settings for 720x480@60Hz (480p)
-		pcurrentvideomodedetails->m_dwWidthInPixels=720;
-		pcurrentvideomodedetails->m_dwHeightInLines=480;
-		pcurrentvideomodedetails->m_dwMarginXInPixelsRecommended=0;
-		pcurrentvideomodedetails->m_dwMarginYInLinesRecommended=0;
-		mode.bpp = 32;
-		mode.xres = 720;
-		mode.hsyncstart = 738;
-		mode.htotal =  858;
-		mode.yres = 480;
-		mode.vsyncstart = 489;
-		mode.vtotal = 525;
-		mode.pixclock = 27027000;
-		SetVgaHdtvModeParameter(&mode, pcurrentvideomodedetails->m_pbBaseAddressVideo);
-	}
-	else
-	{
+	/* Normal composite */
 		switch(pcurrentvideomodedetails->m_nVideoModeIndex) {
 			case VIDEO_MODE_640x480:
 				pcurrentvideomodedetails->m_dwWidthInPixels=640;
@@ -185,137 +197,166 @@ void BootVgaInitializationKernelNG(CURRENT_VIDEO_MODE_DETAILS * pcurrentvideomod
 				pcurrentvideomodedetails->m_dwHeightInLines=576;
 				pcurrentvideomodedetails->m_dwMarginXInPixelsRecommended=20;
 				pcurrentvideomodedetails->m_dwMarginYInLinesRecommended=20; // lines
-				if (VideoEncoder == VIDEO_CONEXANT) {
+				if (video_encoder == ENCODER_CONEXANT) {
 					I2CTransmitWord(0x45, (0x60<<8)|0xc7);
 					I2CTransmitWord(0x45, (0x62<<8)|0x0);
 					I2CTransmitWord(0x45, (0x64<<8)|0x0);
 				}
 				break;
+		}	
+		xbox_video_mode encoder_mode;
+		encoder_mode.xres = pcurrentvideomodedetails->m_dwWidthInPixels; 
+		encoder_mode.yres = pcurrentvideomodedetails->m_dwHeightInLines;
+		encoder_mode.tv_encoding = tv_encoding;
+		encoder_mode.bpp = 32;
+		encoder_mode.hoc = pcurrentvideomodedetails->hoc;
+		encoder_mode.voc = pcurrentvideomodedetails->voc;
+		encoder_mode.av_type = av_type;
+		encoder_mode.tv_encoding = tv_encoding;
+
+		if (video_encoder == ENCODER_CONEXANT) {
+			encoder_ok = conexant_calc_mode(&encoder_mode, &newmode);
 		}
-		// Use TV settings
-		if(FindOverscanValues(pcurrentvideomodedetails->m_dwWidthInPixels,
-		pcurrentvideomodedetails->m_dwHeightInLines,
-		pcurrentvideomodedetails->hoc, pcurrentvideomodedetails->voc,
-		pcurrentvideomodedetails->m_bBPP,
-		videoStd, &parameter)) {
-				SetTvModeParameter(&parameter, pcurrentvideomodedetails->m_pbBaseAddressVideo);
-	
+		else if (video_encoder == ENCODER_FOCUS) {
+			encoder_ok = focus_calc_mode(&encoder_mode, &newmode);
+		}
+		else printk("Error - unknown encoder type detected\n");
+		/*
+		crtc_hDisplay = (newmode.ext.crtchdispend / 8) - 1;
+		crtc_hStart = (newmode.ext.htotal - 32) / 8;
+		crtc_hEnd = crtc_hStart + 1;
+		crtc_hTotal = (newmode.ext.htotal) / 8 - 1;
+		crtc_vDisplay = video_mode->yres - 1;
+		crtc_vStart = newmode.ext.crtcvstart;
+		crtc_vEnd = newmode.ext.crtcvstart + 3;
+		crtc_vTotal = newmode.ext.crtcvtotal;
+		*/
+	}
+
+	if (encoder_ok) {
+		//Set up the GPU 
+		GPU_PARAMETER gpu;
+        	gpu.xres = newmode.ext.width;
+	       	gpu.nvhstart = newmode.ext.hsyncstart;
+		gpu.nvhtotal = newmode.ext.htotal;
+		gpu.yres = newmode.ext.height;
+		gpu.nvvstart = newmode.ext.vsyncstart;
+		gpu.nvvtotal = newmode.ext.vtotal;
+		gpu.pixelDepth = (32 + 1) / 8;
+		gpu.crtchdispend = newmode.ext.width;
+		gpu.crtcvstart = newmode.ext.vsyncstart;
+		gpu.crtcvtotal = newmode.ext.vtotal;
+		
+		SetGPURegister(&gpu, pcurrentvideomodedetails->m_pbBaseAddressVideo);
+		//Load registers into chip
+		if (video_encoder == ENCODER_CONEXANT) {
+			int n1=0;
+		   	I2CWriteBytetoRegister(0x45,0xc4, 0x00); // EN_OUT = 1
+		        // Conexant init (starts at register 0x2e)
+		        n1=0;
+		        for(i=0x2e;i<0x100;i+=2) {
+		        	switch(i) {
+		        		case 0x6c: // reset
+		          			I2CWriteBytetoRegister(0x45,i, newmode.encoder_mode[n1] & 0x7f);
+	                          		break;
+	                    		case 0xc4: // EN_OUT
+						I2CWriteBytetoRegister(0x45,i, newmode.encoder_mode[n1] & 0xfe);
+				 		break;
+					case 0xb8: // autoconfig
+						break;
+					default:
+						I2CWriteBytetoRegister(0x45,i, newmode.encoder_mode[n1]);
+						break;
+				}
+				n1++;
+				
+			}
+                	// Timing Reset
+			b=I2CTransmitByteGetReturn(0x45,0x6c) & (0x7f);
+			I2CWriteBytetoRegister(0x45, 0x6c, 0x80|b);
+			b=I2CTransmitByteGetReturn(0x45,0xc4) & (0xfe);
+			I2CWriteBytetoRegister(0x45, 0xc4, 0x01|b); // EN_OUT = 1
+
+			I2CWriteBytetoRegister(0x45, 0xA8, 0x81);
+			I2CWriteBytetoRegister(0x45, 0xAA, 0x49);
+			I2CWriteBytetoRegister(0x45, 0xAC, 0x8C);
+		}
+		else if (video_encoder == ENCODER_FOCUS) {
+	             	for (i=0; i<0xc4; ++i) {
+                        	I2CWriteBytetoRegister(0x6a, i, newmode.encoder_mode[i]);
+				wait_us(800);
+               		}
+        		//UGLY - this needs to be moved
+			*((DWORD *)&pcurrentvideomodedetails->m_pbBaseAddressVideo[0x680630]) = 2; // switch GPU to YCrCb
+        		*((DWORD *)&pcurrentvideomodedetails->m_pbBaseAddressVideo[0x68084c]) =0x801080;
 		}
 	}
-	// FOCUS HACK FROM HERE
-	if (VideoEncoder == VIDEO_FOCUS)
-	{
-		int i;
-		unlockCrtNv(&riva,0);
-                        xbox_video_mode mode;
-                     	struct riva_regs riva_out;
 
-                       mode.xres = pcurrentvideomodedetails->m_dwWidthInPixels;
-                       mode.yres = pcurrentvideomodedetails->m_dwHeightInLines;
-                      mode.hoc = 0.1;
-                      mode.voc = 0.1;
-                      mode.bpp=32;
-                     focus_calc_mode(&mode,  &riva_out);
-
-                     GPU_PARAMETER gpu;
-        		gpu.xres = riva_out.ext.width;
-	        	gpu.nvhstart = riva_out.ext.hsyncstart;
-			gpu.nvhtotal = riva_out.ext.htotal;
-			gpu.yres = riva_out.ext.height;
-			gpu.nvvstart = riva_out.ext.vsyncstart;
-			gpu.nvvtotal = riva_out.ext.vtotal;
-			gpu.pixelDepth = (mode.bpp + 1) / 8;
-			gpu.crtchdispend = riva_out.ext.width;
-			gpu.crtcvstart = riva_out.ext.vsyncstart;
-			 gpu.crtcvtotal = riva_out.ext.vtotal;
-                      
-			 SetGPURegister(&gpu, pcurrentvideomodedetails->m_pbBaseAddressVideo);
-
-                   //Write the regs
-                     for (i=0; i<0xc4; ++i) {
-                               I2CWriteBytetoRegister(0x6a, i, riva_out.encoder_mode[i]);
-               			wait_us(800);
-		     }
-                 //Clear soft reset flag
-               b = I2CTransmitByteGetReturn(0x6a,0x0c);
-              b &= ~0x01;
-           I2CWriteBytetoRegister(0x6a,0x0c,b);
-              b = I2CTransmitByteGetReturn(0x6a,0x0d);
-          I2CWriteBytetoRegister(0x6a,0x0d,b);
-                  
-	  
-	  *((DWORD *)&pcurrentvideomodedetails->m_pbBaseAddressVideo[0x680630]) = 2; // switch GPU to YCrCb
-	  *((DWORD *)&pcurrentvideomodedetails->m_pbBaseAddressVideo[0x68084c]) =0x801080;
-	}
-	
-	
-	NVDisablePalette (&riva, 0);
+        NVDisablePalette (&riva, 0);
 	writeCrtNv (&riva, 0, 0x44, 0x03);
 	NVInitGrSeq(&riva);
 	writeCrtNv (&riva, 0, 0x44, 0x00);
 	NVInitAttr(&riva,0);
-
 	IoOutputByte(0x80d8, 4);  // ACPI IO thing seen in kernel, set to 4
 	IoOutputByte(0x80d6, 5);  // ACPI IO thing seen in kernel, set to 4 or 5
-
 	NVVertIntrEnabled (&riva,0);
 	NVSetFBStart (&riva, 0, pcurrentvideomodedetails->m_dwFrameBufferStart);
-	
 	IoOutputByte(0x80d3, 4);  // ACPI IO video enable REQUIRED <-- particularly crucial to get composite out
-
 	pcurrentvideomodedetails->m_bFinalConexantA8 = 0x81;
 	pcurrentvideomodedetails->m_bFinalConexantAA = 0x49;
 	pcurrentvideomodedetails->m_bFinalConexantAC = 0x8c;
-	// We dimm the Video OFF
-	if (VideoEncoder == VIDEO_CONEXANT) {
+	// We dimm the Video OFF - focus video is implicitly disabled.
+	if (video_encoder == ENCODER_CONEXANT) {
 		I2CTransmitWord(0x45, (0xa8<<8)|0);
 		I2CTransmitWord(0x45, (0xaa<<8)|0);
 		I2CTransmitWord(0x45, (0xac<<8)|0);
 	}
 	NVWriteSeq(&riva, 0x01, 0x01);  /* reenable display */
-
-        // We reenable the Video
-	if (VideoEncoder == VIDEO_CONEXANT) {
-        	I2CTransmitWord(0x45, 0xa800 | pcurrentvideomodedetails->m_bFinalConexantA8);
-        	I2CTransmitWord(0x45, 0xaa00 | pcurrentvideomodedetails->m_bFinalConexantAA);
-        	I2CTransmitWord(0x45, 0xac00 | pcurrentvideomodedetails->m_bFinalConexantAC);
-	}	
-
+	if (video_encoder == ENCODER_CONEXANT) {
+		I2CTransmitWord(0x45, 0xa800 | pcurrentvideomodedetails->m_bFinalConexantA8);
+		I2CTransmitWord(0x45, 0xaa00 | pcurrentvideomodedetails->m_bFinalConexantAA);
+		I2CTransmitWord(0x45, 0xac00 | pcurrentvideomodedetails->m_bFinalConexantAC);
+	}
+	else if (video_encoder == ENCODER_FOCUS) {
+	     	b = I2CTransmitByteGetReturn(0x6a,0x0c);
+		b &= ~0x01;
+		I2CWriteBytetoRegister(0x6a,0x0c,b);
+		b = I2CTransmitByteGetReturn(0x6a,0x0d);
+		I2CWriteBytetoRegister(0x6a,0x0d,b);
+	}
 }
 
+
 static void NVSetFBStart (RIVA_HW_INST *riva, int head, DWORD dwFBStart) {
-
-	MMIO_H_OUT32 (riva->PCRTC, head, 0x8000, dwFBStart);
-	MMIO_H_OUT32 (riva->PMC, head, 0x8000, dwFBStart);
-
+       MMIO_H_OUT32 (riva->PCRTC, head, 0x8000, dwFBStart);
+       MMIO_H_OUT32 (riva->PMC, head, 0x8000, dwFBStart);
 }
 
 static void NVVertIntrEnabled (RIVA_HW_INST *riva, int head)
 {
-	MMIO_H_OUT32 (riva->PCRTC, head, 0x140, 0x1);
-	MMIO_H_OUT32 (riva->PCRTC, head, 0x100, 0x1);
-	MMIO_H_OUT32 (riva->PCRTC, head, 0x140, 1);
-	MMIO_H_OUT32 (riva->PMC, head, 0x140, 0x1);
-	MMIO_H_OUT32 (riva->PMC, head, 0x100, 0x1);
-	MMIO_H_OUT32 (riva->PMC, head, 0x140, 1);
-
+        MMIO_H_OUT32 (riva->PCRTC, head, 0x140, 0x1);
+        MMIO_H_OUT32 (riva->PCRTC, head, 0x100, 0x1);
+        MMIO_H_OUT32 (riva->PCRTC, head, 0x140, 1);
+        MMIO_H_OUT32 (riva->PMC, head, 0x140, 0x1);
+        MMIO_H_OUT32 (riva->PMC, head, 0x100, 0x1);
+        MMIO_H_OUT32 (riva->PMC, head, 0x140, 1);
 }
 
 static inline void unlockCrtNv (RIVA_HW_INST *riva, int head)
 {
-  writeCrtNv (riva, head, 0x1f, 0x57); /* unlock extended registers */
+	writeCrtNv (riva, head, 0x1f, 0x57); /* unlock extended registers */
 }
 
 static inline void lockCrtNv (RIVA_HW_INST *riva, int head)
 {
-  writeCrtNv (riva, head, 0x1f, 0x99); /* lock extended registers */
+	writeCrtNv (riva, head, 0x1f, 0x99); /* lock extended registers */
 }
 
 
 static void writeCrtNv (RIVA_HW_INST *riva, int head, int reg, BYTE val)
 {
-	VGA_WR08(riva->PCIO, CRT_INDEX(head), reg);
-	VGA_WR08(riva->PCIO, CRT_DATA(head), val);
+        VGA_WR08(riva->PCIO, CRT_INDEX(head), reg);
+        VGA_WR08(riva->PCIO, CRT_DATA(head), val);
 }
 
 static void mapNvMem (RIVA_HW_INST *riva, BYTE *IOAddress)
@@ -334,73 +375,71 @@ static void mapNvMem (RIVA_HW_INST *riva, BYTE *IOAddress)
 
 static void NVDisablePalette (RIVA_HW_INST *riva, int head)
 {
-    volatile CARD8 tmp;
-
-    tmp = VGA_RD08(riva->PCIO + head * HEAD, VGA_IOBASE_COLOR + VGA_IN_STAT_1_OFFSET);
-    VGA_WR08(riva->PCIO + head * HEAD, VGA_ATTR_INDEX, 0x20);
+	volatile CARD8 tmp;
+	tmp = VGA_RD08(riva->PCIO + head * HEAD, VGA_IOBASE_COLOR + VGA_IN_STAT_1_OFFSET);
+	VGA_WR08(riva->PCIO + head * HEAD, VGA_ATTR_INDEX, 0x20);
 }
+
 
 static void NVWriteSeq(RIVA_HW_INST *riva, CARD8 index, CARD8 value)
 {
 
-	VGA_WR08(riva->PVIO, VGA_SEQ_INDEX, index);
-	VGA_WR08(riva->PVIO, VGA_SEQ_DATA,  value);
+        VGA_WR08(riva->PVIO, VGA_SEQ_INDEX, index);
+		        VGA_WR08(riva->PVIO, VGA_SEQ_DATA,  value);
 
 }
 
 static void NVWriteGr(RIVA_HW_INST *riva, CARD8 index, CARD8 value)
 {
-	VGA_WR08(riva->PVIO, VGA_GRAPH_INDEX, index);
-	VGA_WR08(riva->PVIO, VGA_GRAPH_DATA,  value);
+        VGA_WR08(riva->PVIO, VGA_GRAPH_INDEX, index);
+        VGA_WR08(riva->PVIO, VGA_GRAPH_DATA,  value);
 }
 
 static void NVInitGrSeq (RIVA_HW_INST *riva)
 {
-	NVWriteSeq(riva, 0x00, 0x03);
-	NVWriteSeq(riva, 0x01, 0x21);
-	NVWriteSeq(riva, 0x02, 0x0f);
-	NVWriteSeq(riva, 0x03, 0x00);
-	NVWriteSeq(riva, 0x04, 0x06);
-	NVWriteGr(riva, 0x00, 0x00);
-	NVWriteGr(riva, 0x01, 0x00);
-	NVWriteGr(riva, 0x02, 0x00);
-	NVWriteGr(riva, 0x03, 0x00);
-	NVWriteGr(riva, 0x04, 0x00);    /* depth != 1 */
-	NVWriteGr(riva, 0x05, 0x40);    /* depth != 1 && depth != 4 */
-	NVWriteGr(riva, 0x06, 0x05);
-	NVWriteGr(riva, 0x07, 0x0f);
-	NVWriteGr(riva, 0x08, 0xff);
+        NVWriteSeq(riva, 0x00, 0x03);
+        NVWriteSeq(riva, 0x01, 0x21);
+       	NVWriteSeq(riva, 0x02, 0x0f);
+       	NVWriteSeq(riva, 0x03, 0x00);
+       	NVWriteSeq(riva, 0x04, 0x06);
+       	NVWriteGr(riva, 0x00, 0x00);
+       	NVWriteGr(riva, 0x01, 0x00);
+       	NVWriteGr(riva, 0x02, 0x00);
+      	NVWriteGr(riva, 0x03, 0x00);
+      	NVWriteGr(riva, 0x04, 0x00);    /* depth != 1 */
+     	NVWriteGr(riva, 0x05, 0x40);    /* depth != 1 && depth != 4 */
+     	NVWriteGr(riva, 0x06, 0x05);
+      	NVWriteGr(riva, 0x07, 0x0f);
+    	NVWriteGr(riva, 0x08, 0xff);
 }
 
 static void NVWriteAttr(RIVA_HW_INST *riva, int head, CARD8 index, CARD8 value)
 {
-	MMIO_H_OUT8(riva->PCIO, head, VGA_ATTR_INDEX,  index);
-	MMIO_H_OUT8(riva->PCIO, head, VGA_ATTR_DATA_W, value);
+ 	MMIO_H_OUT8(riva->PCIO, head, VGA_ATTR_INDEX,  index);
+        MMIO_H_OUT8(riva->PCIO, head, VGA_ATTR_DATA_W, value);
 }
 
 static void NVInitAttr (RIVA_HW_INST *riva, int head)
 {
-	NVWriteAttr(riva,0, 0, 0x01);
-	NVWriteAttr(riva,0, 1, 0x02);
-	NVWriteAttr(riva,0, 2, 0x03);
-	NVWriteAttr(riva,0, 3, 0x04);
-	NVWriteAttr(riva,0, 4, 0x05);
-	NVWriteAttr(riva,0, 5, 0x06);
-	NVWriteAttr(riva,0, 6, 0x07);
-	NVWriteAttr(riva,0, 7, 0x08);
-	NVWriteAttr(riva,0, 8, 0x09);
-	NVWriteAttr(riva,0, 9, 0x0a);
-	NVWriteAttr(riva,0, 10, 0x0b);
-	NVWriteAttr(riva,0, 11, 0x0c);
-	NVWriteAttr(riva,0, 12, 0x0d);
-	NVWriteAttr(riva,0, 13, 0x0e);
-	NVWriteAttr(riva,0, 14, 0x0f);
-	NVWriteAttr(riva,0, 15, 0x01);
-	NVWriteAttr(riva,0, 16, 0x4a);
-	NVWriteAttr(riva,0, 17, 0x0f);
-	NVWriteAttr(riva,0, 18, 0x00);
-	NVWriteAttr(riva,0, 19, 0x00);
+        NVWriteAttr(riva,0, 0, 0x01);
+        NVWriteAttr(riva,0, 1, 0x02);
+        NVWriteAttr(riva,0, 2, 0x03);
+        NVWriteAttr(riva,0, 3, 0x04);
+        NVWriteAttr(riva,0, 4, 0x05);
+        NVWriteAttr(riva,0, 5, 0x06);
+       	NVWriteAttr(riva,0, 6, 0x07);
+        NVWriteAttr(riva,0, 7, 0x08);
+        NVWriteAttr(riva,0, 8, 0x09);
+       	NVWriteAttr(riva,0, 9, 0x0a);
+        NVWriteAttr(riva,0, 10, 0x0b);
+        NVWriteAttr(riva,0, 11, 0x0c);
+      	NVWriteAttr(riva,0, 12, 0x0d);
+     	NVWriteAttr(riva,0, 13, 0x0e);
+     	NVWriteAttr(riva,0, 14, 0x0f);
+        NVWriteAttr(riva,0, 15, 0x01);
+       	NVWriteAttr(riva,0, 16, 0x4a);
+        NVWriteAttr(riva,0, 17, 0x0f);
+      	NVWriteAttr(riva,0, 18, 0x00);
+      	NVWriteAttr(riva,0, 19, 0x00);
 }
-
-
 
