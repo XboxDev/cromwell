@@ -26,6 +26,10 @@ $(patsubst %, _dir_%, $(SUBDIRS)) : dummy
 
 dummy:
 
+install:
+	lmilk -f -p $(TOPDIR)/image/image.bin
+	lmilk -f -a c0000 -p $(TOPDIR)/image/image.bin -q
+
 clean:
 	find . \( -name '*.[oas]' -o -name core -o -name '.*.flags' \) -type f -print \
 		| grep -v lxdialog/ | xargs rm -f
@@ -44,5 +48,5 @@ image.elf:
 image.bin:
 	${OBJCOPY} --output-target=binary --strip-all $(TOPDIR)/obj/image.elf $(TOPDIR)/image/$@
 	cat $(TOPDIR)/image/$@ $(TOPDIR)/image/$@ $(TOPDIR)/image/$@ $(TOPDIR)/image/$@ > $(TOPDIR)/image/image_1024.bin
-	@ls -l $(TOPDIR)/image/$@		
+	@ls -l $(TOPDIR)/image/$@
 
