@@ -12,6 +12,7 @@ extern struct pci_device_id  *module_table_pci_ids;
 
 // straigth call...
 int usb_hcd_pci_probe (struct pci_dev *dev, const struct pci_device_id *id);
+void usb_hcd_pci_remove (struct pci_dev *dev);
 
 void XPADInit(void);
 void XPADRemove(void);
@@ -77,24 +78,27 @@ void USBGetEvents(void)
 /*------------------------------------------------------------------------*/ 
 void BootStopUSB(void)
 {
-	/*
-	hub_thread_handler=NULL;
-	
-	usb_hcd_pci_remove(&xx_ohci_dev);
-	*/
-	//ohci_stop (&xx_ohci_dev);
+	int n;
         
         XPADRemove();
 	XRemoteRemove();
 	UsbKeyBoardRemove();
 	
-	driver_unregister(&usb_generic_driver);
-//	usb_major_cleanup();
-	//usbfs_cleanup();
-//	usb_hub_cleanup();
-	bus_unregister(&usb_bus_type);
+	for(n=0;n<100;n++)
+	{
+		USBGetEvents();
+		wait_ms(1);
+	}	
 
-	//memset((void*)0x0,0x0,10);
+	usb_hcd_pci_remove(&xx_ohci_dev);
+	
+	for(n=0;n<100;n++)
+	{
+		USBGetEvents();
+		wait_ms(1);
+	}
+
+	//memset((void*)0x0,0x0,100);
 	memset((void*)0xfed00006,0x0,40);
 	memset((void*)0xfed08006,0x0,40);
 }	
