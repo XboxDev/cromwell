@@ -56,6 +56,7 @@ typedef struct {  // this is the retained knowledge about an IDE device after in
 
 #define IDE_REG_DATA(base)          ((base) + 0u) /* word register */
 #define IDE_REG_ERROR(base)         ((base) + 1u)
+#define IDE_REG_FEATURE(base)         ((base) + 1u)
 #define IDE_REG_SECTOR_COUNT(base)  ((base) + 2u)
 #define IDE_REG_SECTOR_NUMBER(base) ((base) + 3u)
 #define IDE_REG_CYLINDER_LSB(base)  ((base) + 4u)
@@ -99,6 +100,8 @@ typedef enum {
     IDE_CMD_SET_MULTIMODE = 0xC6,
     IDE_CMD_STANDBY_IMMEDIATE2 = 0xE0,
     IDE_CMD_GET_INFO = 0xEC,
+
+		IDE_CMD_SET_FEATURES = 0xef,
 
 		IDE_CMD_ATAPI_PACKET = 0xa0,
 
@@ -576,6 +579,7 @@ static int BootIdeDriveInit(unsigned uIoBase, int nIndexDrive)
 
 		unsigned char ba[512];
 
+
 			// report on the FATX-ness of the drive contents
 
 		if(BootIdeReadSector(nIndexDrive, &ba[0], 3, 0, 512)) {
@@ -932,5 +936,34 @@ int get_diskinfo (int drive, struct geometry *geometry)
 
 	return 0; // success
 }
+
+int BootIdeSetTransferMode(int nIndexDrive, int nMode)
+{
+	tsIdeCommandParams tsicp = IDE_DEFAULT_COMMAND;
+	unsigned int uIoBase = tsaHarddiskInfo[nIndexDrive].m_fwPortBase;
+
+	tsicp.m_bDrivehead = IDE_DH_DEFAULT | IDE_DH_HEAD(0) | IDE_DH_CHS | IDE_DH_DRIVE(nIndexDrive);
+	IoOutputByte(IDE_REG_DRIVEHEAD(uIoBase), tsicp.m_bDrivehead);
+
+	if(BootIdeWaitNotBusy(uIoBase)) {
+			printk_debug("  Drive %d: Not Ready\n", nIndexDrive);
+			return 1;
+	}
+	{
+		int nReturn=0;
+
+		tsicp.m_bCountSector = (BYTE)nMode;
+		IoOutputByte(IDE_REG_FEATURE(uIoBase), 3); // set transfer mode subcmd
+
+		nReturn=BootIdeIssueAtaCommand(uIoBase, IDE_CMD_SET_FEATURES, &tsicp);
+
+//		printk("BootIdeSetTransferMode nReturn = %x/ error %02X\n", nReturn, IoInputByte(IDE_REG_ERROR(uIoBase)) );
+
+		return nReturn;
+
+	}
+	return 0;
+}
+
 
 

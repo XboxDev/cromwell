@@ -100,6 +100,10 @@ void StartBios() {
 
 			setup( (void *)0x90000, (void *)0x03000000, (void *)nRet, "root=/dev/hda2 devfs=mount kbd-reset");
 
+			// force the HDD into a good mode 0x40 ==UDMA | 2 == UDMA2
+			BootIdeSetTransferMode(0, 0x42); // best transfer mode without 80-pin cable
+
+
     __asm __volatile__ (
 
 //	"wbinvd \n"
