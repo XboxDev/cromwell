@@ -101,7 +101,7 @@ typedef struct _EEPROMDATA {
 
 EEPROMDATA eeprom;
 
-void ReadEEPROM();
-void PrintInfo();
+void ReadEEPROM(void);
+void PrintInfo(void);
 
 #endif // _BootEEPROM_H_
