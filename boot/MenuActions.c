@@ -16,6 +16,13 @@ void BootFromCD(void) {
 	ExittoLinux(&config);
 }
 
+#ifdef ETHERBOOT 
+extern int etherboot(void);
+void BootFromEtherboot(void) {
+	etherboot();
+}
+#endif
+
 void BootFromFATX(void) {
 	CONFIGENTRY config;
 	BootLoadConfigFATX(&config);

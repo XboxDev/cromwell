@@ -90,7 +90,7 @@ void BootIcons(int nXOffset, int nYOffset, int nTextOffsetX, int nTextOffsetY) {
 	icon[ICON_ETHERBOOT].nTextX = (nTextOffsetX+451)<<2;
 	icon[ICON_ETHERBOOT].nTextY = nTextOffsetY;
 	icon[ICON_ETHERBOOT].szCaption = "Etherboot";
-	icon[ICON_ETHERBOOT].functionPtr = 0l;
+	icon[ICON_ETHERBOOT].functionPtr = BootFromEtherboot;
 #endif	
 }
 
