@@ -17,7 +17,7 @@ int etherboot(void)
 	}
 	else 
 	{
-		if (!eth_load_configuration(dev))
+		if (eth_load_configuration(dev) != 0)
 		{
 			printk("eth_load_configuration failed\n");
 		}
