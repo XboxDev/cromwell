@@ -1,7 +1,7 @@
 #include "etherboot.h"
 #include "pci.h"
 
-static struct pci_driver forcedeth_driver;
+extern struct pci_driver forcedeth_driver;
 
 static struct meminfo meminfo = 
 {
@@ -19,5 +19,5 @@ static struct meminfo meminfo =
 
 static unsigned long virt_offset = 0;
 
-static struct pci_driver* pci_drivers = &forcedeth_driver;
-static struct pci_driver* pci_drivers_end = &forcedeth_driver + 1;
+struct pci_driver* pci_drivers = &forcedeth_driver;
+struct pci_driver* pci_drivers_end = &forcedeth_driver + 1;

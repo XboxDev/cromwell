@@ -14,7 +14,6 @@
 #include	"isa.h"
 #endif
 
-
 void print_config(void)
 {
 	printf("Etherboot " VERSION " (GPL) http://etherboot.org "
@@ -46,7 +45,6 @@ void print_config(void)
 		"SafeBoot "
 #endif
 		"for ");
-
 #ifdef CONFIG_PCI
 {
 	const struct pci_driver *driver;

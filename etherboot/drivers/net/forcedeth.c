@@ -1014,7 +1014,7 @@ static struct pci_id forcedeth_nics[] = {
 	PCI_ROM(0x10de, 0x00D6, "nforce3", "nForce3 Ethernet Controller"),
 };
 
-static struct pci_driver forcedeth_driver __pci_driver = {
+struct pci_driver forcedeth_driver __pci_driver = {
 	.type = NIC_DRIVER,
 	.name = "forcedeth",
 	.probe = forcedeth_probe,
@@ -1022,3 +1022,4 @@ static struct pci_driver forcedeth_driver __pci_driver = {
 	.id_count = sizeof(forcedeth_nics) / sizeof(forcedeth_nics[0]),
 	.class = 0,
 };
+

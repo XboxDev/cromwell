@@ -347,8 +347,8 @@ struct pci_driver {
 };
 
 #define __pci_driver  
-static struct pci_driver* pci_drivers;
-static struct pci_driver* pci_drivers_end;
+extern struct pci_driver* pci_drivers;
+extern struct pci_driver* pci_drivers_end;
 
 #define PCI_ROM(VENDOR_ID, DEVICE_ID, IMAGE, DESCRIPTION) \
 	{ VENDOR_ID, DEVICE_ID, IMAGE, }
