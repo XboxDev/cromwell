@@ -1,11 +1,20 @@
 CC	= gcc
+# prepare check for gcc 3.3, $(GCC_3.3) will either be 0 or 1
+GCC_3.3 := $(shell expr `$(CC) -dumpversion` \>= 3.3)
+
 INCLUDE = -I$(TOPDIR)/grub -I$(TOPDIR)/include -I$(TOPDIR)/ -I./ -I$(TOPDIR)/fs/cdrom \
 	-I$(TOPDIR)/fs/fatx -I$(TOPDIR)/lib/eeprom -I$(TOPDIR)/lib/crypt \
 	-I$(TOPDIR)/drivers/video -I$(TOPDIR)/drivers/flash -I$(TOPDIR)/lib/misc \
 	-I$(TOPDIR)/boot_xbe/ -I$(TOPDIR)/fs/grub -I$(TOPDIR)/lib/font -I$(TOPDIR)/lib/jpeg-6b \
 	-I$(TOPDIR)/startuploader -I$(TOPDIR)/drivers/cpu
 
-CFLAGS	= -O2 -mcpu=pentium -Werror $(INCLUDE) -Wstrict-prototypes -fomit-frame-pointer -fno-zero-initialized-in-bss -pipe 
+CFLAGS	= -O2 -mcpu=pentium -Werror $(INCLUDE) -Wstrict-prototypes -fomit-frame-pointer -pipe 
+
+# add the option for gcc 3.3 only
+ifeq ($(GCC_3.3), 1)
+CFLAGS += -fno-zero-initialized-in-bss
+endif
+
 LD      = ld
 OBJCOPY = objcopy
 
@@ -23,7 +32,12 @@ LDFLAGS-ETHBOOT = -s -S -T $(TOPDIR)/boot_eth/eth_start.ld
 
 #### Etherboot specific stuff
 ETH_INCLUDE = 	-I$(TOPDIR)/etherboot/include -I$(TOPDIR)/etherboot/arch/i386/include	
-ETH_CFLAGS  = 	-O2 -mcpu=pentium -Werror $(ETH_INCLUDE) -Wstrict-prototypes -fomit-frame-pointer -fno-zero-initialized-in-bss -pipe -Ui386
+ETH_CFLAGS  = 	-O2 -mcpu=pentium -Werror $(ETH_INCLUDE) -Wstrict-prototypes -fomit-frame-pointer -pipe -Ui386
+
+# add the option for gcc 3.3 only
+ifeq ($(GCC_3.3), 1)
+ETH_CFLAGS += -fno-zero-initialized-in-bss
+endif
 #### End Etherboot specific stuff
 
 OBJECTS-IMAGEBLD = $(TOPDIR)/bin/imagebld.o
