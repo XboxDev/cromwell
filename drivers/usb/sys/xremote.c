@@ -126,6 +126,7 @@ static void xremote_disconnect(struct usb_interface *intf)
 static struct usb_device_id xremote_id_table [] = {
 	{ USB_DEVICE(0x040b, 0x6521) }, /* Gamester Xbox DVD Movie Playback Kit IR */
 	{ USB_DEVICE(0x045e, 0x0284) }, /* Microsoft Xbox DVD Movie Playback Kit IR */
+	{ USB_DEVICE(0x0000, 0x0000) }, // nothing detected - FAIL
 	{ } /* Terminating entry */
 };
 
