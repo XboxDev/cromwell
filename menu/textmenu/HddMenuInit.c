@@ -17,7 +17,7 @@ TEXTMENU *HddMenuInit(void) {
 	TEXTMENU *menuPtr;
 	int i=0;
 
-	menuPtr = (TEXTMENU*)malloc(sizeof(TEXTMENU));
+	menuPtr = malloc(sizeof(TEXTMENU));
 	memset(menuPtr,0x00,sizeof(TEXTMENU));
 	strcpy(menuPtr->szCaption, "Hdd Menu");
 
@@ -26,7 +26,7 @@ TEXTMENU *HddMenuInit(void) {
 			//If it's not ATAPI, it must be IDE
 			if((tsaHarddiskInfo[i].m_securitySettings &0x0004)==0x0004) {
 				//This drive is locked - produce an unlock menu
-				itemPtr = (TEXTMENUITEM*)malloc(sizeof(TEXTMENUITEM));
+				itemPtr = malloc(sizeof(TEXTMENUITEM));
 				memset(itemPtr,0x00,sizeof(TEXTMENUITEM));
 				sprintf(itemPtr->szCaption,"Unlock HDD (hd%c)",i ? 'b':'a');
 				itemPtr->functionPtr= UnlockHdd;
@@ -36,7 +36,7 @@ TEXTMENU *HddMenuInit(void) {
 			}
 			else {
 				//This drive is unlocked - produce an lock menu
-				itemPtr = (TEXTMENUITEM*)malloc(sizeof(TEXTMENUITEM));
+				itemPtr = malloc(sizeof(TEXTMENUITEM));
 				memset(itemPtr,0x00,sizeof(TEXTMENUITEM));
 				sprintf(itemPtr->szCaption,"Lock HDD (hd%c)",i ? 'b':'a');
 				itemPtr->functionPtr= LockHdd;
@@ -46,7 +46,7 @@ TEXTMENU *HddMenuInit(void) {
 			}
 	
 			//Add a 'display password' menu
-			itemPtr = (TEXTMENUITEM*)malloc(sizeof(TEXTMENUITEM));
+			itemPtr = malloc(sizeof(TEXTMENUITEM));
 			memset(itemPtr,0x00,sizeof(TEXTMENUITEM));
 			sprintf(itemPtr->szCaption,"Display HDD password (hd%c)",i ? 'b':'a');
 			itemPtr->functionPtr= DisplayHddPassword;

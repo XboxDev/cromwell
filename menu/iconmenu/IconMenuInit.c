@@ -26,7 +26,7 @@ void IconMenuInit(void) {
 		if (tsaHarddiskInfo[i].m_fAtapi) {
 			char *driveName=malloc(sizeof(char)*14);
 			sprintf(driveName,"CD-ROM (hd%c)",i ? 'b':'a');
-			iconPtr = (ICON *)malloc(sizeof(ICON));
+			iconPtr = malloc(sizeof(ICON));
 			iconPtr->iconSlot = ICON_SOURCE_SLOT2;
 			iconPtr->szCaption = driveName;
 			iconPtr->functionPtr = BootFromCD;
@@ -41,7 +41,7 @@ void IconMenuInit(void) {
 	
 #ifdef ETHERBOOT
 	//Etherboot icon - if it's compiled in, it's always available.
-	iconPtr = (ICON *)malloc(sizeof(ICON));
+	iconPtr = malloc(sizeof(ICON));
 	iconPtr->iconSlot = ICON_SOURCE_SLOT3;
 	iconPtr->szCaption = "Etherboot";
 	iconPtr->functionPtr = BootFromEtherboot;
@@ -49,7 +49,7 @@ void IconMenuInit(void) {
 #endif	
 
 #ifdef ADVANCED_MENU
-	iconPtr = (ICON *)malloc(sizeof(ICON));
+	iconPtr = malloc(sizeof(ICON));
 	iconPtr->iconSlot = ICON_SOURCE_SLOT0;
 	iconPtr->szCaption = "Advanced";
 	iconPtr->functionPtr = AdvancedMenu;
@@ -74,7 +74,7 @@ void InitFatXIcons(void) {
 			CONFIGENTRY *entry = (CONFIGENTRY*)LoadConfigFatX();
 			if (entry !=NULL) {
 				//There is a config file present.
-				iconPtr = (ICON *)malloc(sizeof(ICON));
+				iconPtr = malloc(sizeof(ICON));
 		   		iconPtr->iconSlot = ICON_SOURCE_SLOT4;
 				iconPtr->szCaption="FatX (E:)";
 				iconPtr->functionPtr = DrawBootMenu;
@@ -113,7 +113,7 @@ void InitNativeIcons(void) {
 					if (entry!=NULL) {
 						//There is a valid config file here.
 						//Add an icon for this partition 
-						iconPtr = (ICON *)malloc(sizeof(ICON));
+						iconPtr = malloc(sizeof(ICON));
 			  			iconPtr->iconSlot = ICON_SOURCE_SLOT1;
 						iconPtr->szCaption=malloc(10);
 						sprintf(iconPtr->szCaption, "hd%c%d", driveId+'a', n);

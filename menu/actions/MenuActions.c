@@ -80,7 +80,7 @@ void DrawBootMenu(void *rootEntry) {
 	for (currentConfigEntry = configEntry; currentConfigEntry != NULL; 
 		currentConfigEntry = currentConfigEntry->nextConfigEntry) {
 	
-		menuPtr = (TEXTMENUITEM *)malloc(sizeof(TEXTMENUITEM*));
+		menuPtr = malloc(sizeof(TEXTMENUITEM*));
 		memset(menuPtr, 0x00, sizeof(menuPtr));
 		if (currentConfigEntry->title == NULL) {
 			strcpy(menuPtr->szCaption,"Untitled");
