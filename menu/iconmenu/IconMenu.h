@@ -22,7 +22,7 @@
 
 struct ICON;
 
-typedef struct {
+typedef struct ICON {
 	int iconSlot;
 	char *szCaption;
 	void (*functionPtr) (void *);

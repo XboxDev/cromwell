@@ -42,7 +42,7 @@ void AddIcon(ICON *newIcon) {
 	ICON *currentIcon = NULL;
 	while (iconPtr != NULL) {
 		currentIcon = iconPtr;
-		iconPtr = (ICON*)iconPtr->nextIcon;
+		iconPtr = iconPtr->nextIcon;
 	}
 	
 	if (currentIcon==NULL) { 
@@ -50,10 +50,10 @@ void AddIcon(ICON *newIcon) {
 		firstIcon = newIcon;
 	}
 	//Append to the end of the chain
-	else currentIcon->nextIcon = (struct ICON*)newIcon;
+	else currentIcon->nextIcon = newIcon;
 	iconPtr = newIcon;
 	iconPtr->nextIcon = NULL;
-	iconPtr->previousIcon = (struct ICON*)currentIcon; 
+	iconPtr->previousIcon = currentIcon; 
 }
 
 static void IconMenuDraw(int nXOffset, int nYOffset) {
@@ -90,7 +90,7 @@ static void IconMenuDraw(int nXOffset, int nYOffset) {
 			(u8 *)(jpegBackdrop.pBackdrop + ((jpegBackdrop.width * (nYOffset-74)) + nXOffset+(112*(iconcount+1))) * jpegBackdrop.bpp),
 			ICON_WIDTH, ICON_HEIGHT
 		);
-		iconPtr = (ICON *)iconPtr->nextIcon;
+		iconPtr = iconPtr->nextIcon;
 	}
 }
 
@@ -140,15 +140,15 @@ void IconMenu(void) {
 				int i=0;
 				for (i=0; i<3; i++) {
 					if (lastVisibleIcon->nextIcon==NULL) break;
-					lastVisibleIcon = (ICON *)lastVisibleIcon->nextIcon;
+					lastVisibleIcon = lastVisibleIcon->nextIcon;
 				}
 				if (selectedIcon == lastVisibleIcon) { 
 					//We are moving further right, so slide all the icons along. 
-					firstVisibleIcon = (ICON *)firstVisibleIcon->nextIcon;	
+					firstVisibleIcon = firstVisibleIcon->nextIcon;	
 					//As all the icons have moved, we need to refresh the entire page.
 					memcpy((void*)FB_START,videosavepage,FB_SIZE);
 				}
-				selectedIcon = (ICON *)selectedIcon->nextIcon;
+				selectedIcon = selectedIcon->nextIcon;
 				changed=1;
 			}
 			temp=0;
@@ -158,11 +158,11 @@ void IconMenu(void) {
 			if (selectedIcon->previousIcon!=NULL) {
 				if (selectedIcon == firstVisibleIcon) {
 					//We are moving further left, so slide all the icons along. 
-					firstVisibleIcon = (ICON*)selectedIcon->previousIcon;
+					firstVisibleIcon = selectedIcon->previousIcon;
 					//As all the icons have moved, we need to refresh the entire page.
 					memcpy((void*)FB_START,videosavepage,FB_SIZE);
 				}
-				selectedIcon = (ICON *)selectedIcon->previousIcon;
+				selectedIcon = selectedIcon->previousIcon;
 				changed=1;
 			}
 			temp=0;

@@ -17,7 +17,7 @@ void TextMenuAddItem(TEXTMENU *menu, TEXTMENUITEM *newMenuItem) {
 	
 	while (menuItem != NULL) {
 		currentMenuItem = menuItem;
-		menuItem = (TEXTMENUITEM*)menuItem->nextMenuItem;
+		menuItem = menuItem->nextMenuItem;
 	}
 	
 	if (currentMenuItem==NULL) { 
@@ -25,9 +25,9 @@ void TextMenuAddItem(TEXTMENU *menu, TEXTMENUITEM *newMenuItem) {
 		menu->firstMenuItem = newMenuItem;
 	}
 	//Append to the end of the chain
-	else currentMenuItem->nextMenuItem = (struct TEXTMENUITEM*)newMenuItem;
+	else currentMenuItem->nextMenuItem = newMenuItem;
 	newMenuItem->nextMenuItem = NULL;
-	newMenuItem->previousMenuItem = (struct TEXTMENUITEM*)currentMenuItem; 
+	newMenuItem->previousMenuItem = currentMenuItem; 
 }
 
 void TextMenuDraw(TEXTMENU* menu, TEXTMENUITEM *firstVisibleMenuItem, TEXTMENUITEM *selectedItem) {
@@ -58,7 +58,7 @@ void TextMenuDraw(TEXTMENU* menu, TEXTMENUITEM *firstVisibleMenuItem, TEXTMENUIT
 		else VIDEO_ATTR=0xffffff;
 		//Font size 2=big.
 		printk("\n\2               %s\n",item->szCaption);
-		item=(TEXTMENUITEM *)item->nextMenuItem;
+		item=item->nextMenuItem;
 	}
 	VIDEO_ATTR=0xffffff;
 }
@@ -83,10 +83,10 @@ void TextMenu(TEXTMENU *menu, TEXTMENUITEM *selectedItem) {
 		{
 			if (selectedMenuItem->previousMenuItem!=NULL) {
 				if (firstVisibleMenuItem == selectedMenuItem) {
-					firstVisibleMenuItem = (TEXTMENUITEM*)selectedMenuItem->previousMenuItem;
+					firstVisibleMenuItem = selectedMenuItem->previousMenuItem;
 					BootVideoClearScreen(&jpegBackdrop, 0, 0xffff);
 				}
-				selectedMenuItem = (TEXTMENUITEM*)selectedMenuItem->previousMenuItem;
+				selectedMenuItem = selectedMenuItem->previousMenuItem;
 				TextMenuDraw(menu, firstVisibleMenuItem, selectedMenuItem);
 			}
 		} 
@@ -97,13 +97,13 @@ void TextMenu(TEXTMENU *menu, TEXTMENUITEM *selectedItem) {
 				//8 menu items per page.
 				for (i=0; i<7; i++) {
 					if (lastVisibleMenuItem->nextMenuItem==NULL) break;
-					lastVisibleMenuItem = (TEXTMENUITEM *)lastVisibleMenuItem->nextMenuItem;
+					lastVisibleMenuItem = lastVisibleMenuItem->nextMenuItem;
 				}
 				if (selectedMenuItem == lastVisibleMenuItem) {
-					firstVisibleMenuItem = (TEXTMENUITEM *)firstVisibleMenuItem->nextMenuItem;
+					firstVisibleMenuItem = firstVisibleMenuItem->nextMenuItem;
 					BootVideoClearScreen(&jpegBackdrop, 0, 0xffff);
 				}
-				selectedMenuItem = (TEXTMENUITEM*)selectedMenuItem->nextMenuItem;
+				selectedMenuItem = selectedMenuItem->nextMenuItem;
 				TextMenuDraw(menu, firstVisibleMenuItem, selectedMenuItem);
 			}
 		}

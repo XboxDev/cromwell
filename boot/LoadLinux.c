@@ -166,8 +166,6 @@ int LoadKernelNative(CONFIGENTRY *config) {
 	
 	I2CTransmitWord(0x10, 0x0c01); // Close DVD tray
 	
-	BootPrintConfig(config);
-
         strncpy(&szGrub[4], config->szKernel,strlen(config->szKernel));
 
 	nRet=grub_open(szGrub);
@@ -256,8 +254,6 @@ int LoadKernelFatX(CONFIGENTRY *config) {
 	memset(&infoinitrd,0x00,sizeof(infoinitrd));
 
 	I2CTransmitWord(0x10, 0x0c01); // Close DVD tray
-	
-	BootPrintConfig(config);
 	
 	partition = OpenFATXPartition(0,
 			SECTOR_STORE,
@@ -379,8 +375,6 @@ CONFIGENTRY *LoadConfigCD(int cdromId) {
 int LoadKernelCdrom(CONFIGENTRY *config) {
 	u8* tempBuf;
 	
-	BootPrintConfig(config);
-
 	// Use INITRD_START as temporary location for loading the Kernel 
 	tempBuf = (u8*)INITRD_START;
 	dwKernelSize=BootIso9660GetFile(config->drive,config->szKernel, tempBuf, MAX_KERNEL_SIZE);
@@ -505,6 +499,7 @@ int BootLoadFlashCD(int cdromId) {
 
 int ExittoLinux(CONFIGENTRY *config) {
 	VIDEO_ATTR=0xff8888a8;
+	BootPrintConfig(config);
 	printk("     Kernel:  %s\n", (char *)(0x00090200+(*((u16 *)0x9020e)) ));
 	printk("\n");
 	{

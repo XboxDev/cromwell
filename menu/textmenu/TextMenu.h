@@ -23,7 +23,7 @@
 struct TEXTMENUITEM;
 struct TEXTMENU;
 
-typedef struct {
+typedef struct TEXTMENUITEM {
 	//Menu item text
 	char *szCaption;
 	//Pointer to function to run when menu item selected.
@@ -36,7 +36,7 @@ typedef struct {
 	struct TEXTMENUITEM *nextMenuItem;
 } TEXTMENUITEM;
 
-typedef struct {
+typedef struct TEXTMENU {
 	//Menu title e.g. "Main Menu"
 	char *szCaption;
 	//A pointer to the first item of the linked list of menuitems that
@@ -47,6 +47,4 @@ typedef struct {
 	struct TEXTMENU* parentMenu;
 } TEXTMENU;
 
-extern TEXTMENU *firstMenu;
-extern TEXTMENU *currentMenu;
 #endif
