@@ -116,7 +116,7 @@ CONFIGENTRY* LoadConfigNative(int drive, int partition) {
 
 	config = ParseConfig((char *)KERNEL_SETUP, nLen, NULL);
 
-	for (currentConfigItem = (CONFIGENTRY*) config; config; config = (CONFIGENTRY*)config->nextConfigEntry) {
+	for (currentConfigItem = (CONFIGENTRY*) config; currentConfigItem; currentConfigItem = (CONFIGENTRY*)currentConfigItem->nextConfigEntry) {
 		//Set the drive ID and partition IDs for the returned config items
 		currentConfigItem->drive=drive;
 		currentConfigItem->partition=partition;

@@ -113,7 +113,7 @@ void InitNativeIcons(void) {
 		
 				CONFIGENTRY *entry;
 							//FIXME - need to try multiple drives. Sigh. ANOTHER nested for loop.
-				for (entry = (CONFIGENTRY*)LoadConfigNative(0, pb); entry; entry=(CONFIGENTRY*)entry->nextConfigEntry) {
+				for (entry = (CONFIGENTRY*)LoadConfigNative(0, n); entry; entry=(CONFIGENTRY*)entry->nextConfigEntry) {
 					//Got a partition with a linuxboot.cfg on - lets add an icon for it
 					iconPtr = (ICON *)malloc(sizeof(ICON));
 		  				iconPtr->iconSlot = ICON_SOURCE_SLOT1;
