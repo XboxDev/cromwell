@@ -14,6 +14,7 @@ extern struct pci_device_id  *module_table_pci_ids;
 int usb_hcd_pci_probe (struct pci_dev *dev, const struct pci_device_id *id);
 
 void XPADInit(void);
+void XPADRemove(void);
 
 extern int (*thread_handler)(void*);
 int (*hub_thread_handler)(void*);
@@ -69,6 +70,11 @@ void USBGetEvents(void)
 /*------------------------------------------------------------------------*/ 
 void BootStopUSB(void)
 {
+	/*
+	hub_thread_handler=NULL;
+	XPADRemove();
+	usb_hcd_pci_remove(&xx_ohci_dev);
+	*/
 	memset((void*)0xfed00006,0x0,40);
 	memset((void*)0xfed08006,0x0,40);
 }	
