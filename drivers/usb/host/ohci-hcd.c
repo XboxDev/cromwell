@@ -629,6 +629,8 @@ static void ohci_irq (struct usb_hcd *hcd, struct pt_regs *ptregs)
 static void ohci_stop (struct usb_hcd *hcd)
 {	
 	struct ohci_hcd		*ohci = hcd_to_ohci (hcd);
+	struct ohci_regs	*regs = ohci->regs;
+	int ints;
 
 	ohci_dbg (ohci, "stop %s controller%s\n",
 		hcfs2string (ohci->hc_control & OHCI_CTRL_HCFS),
@@ -638,6 +640,14 @@ static void ohci_stop (struct usb_hcd *hcd)
 
 	if (!ohci->disabled)
 		hc_reset (ohci);
+
+	// Disable all interrupts
+	writel (OHCI_INTR_MIE, &regs->intrdisable);	
+	// acknowledge all pending interrupts
+	ints = readl(&regs->intrstatus);
+	writel (ints, &regs->intrstatus);
+	// flush register writes
+	(void) readl (&ohci->regs->control);
 	
 	remove_debug_files (ohci);
 	ohci_mem_cleanup (ohci);
