@@ -20,18 +20,7 @@ unsigned int wait_ms_time;
 
 volatile int nInteruptable = 0;
 
-#ifndef DEBUG_MODE
-/*
-extern volatile AC97_DEVICE ac97device;
-extern volatile AUDIO_ELEMENT_SINE aesTux;
-extern volatile AUDIO_ELEMENT_NOISE aenTux;
-*/
-#endif
-void BlinkTux(void);
-
-
 // interrupt service stubs defined in BootStartup.S
-
 extern void IntHandlerTimer0(void);
 extern void IntHandlerI2C(void);
 extern void IntHandlerSmc(void);
@@ -193,10 +182,7 @@ void wait_ms(DWORD ticks) {
 
 }
 
-
-
 void BootInterruptsWriteIdt() {
-
 
 	volatile ts_pm_interrupt * ptspmi=(volatile ts_pm_interrupt *)(0xb0000);  // ie, start of IDT area
 	int n, n1=0;
@@ -249,11 +235,7 @@ void BootInterruptsWriteIdt() {
 	if (cromwell_config==CROMWELL) 	IoOutputByte(0xa1, 0x00);
 
 	// enable interrupts
-
-	
 	intel_interrupts_on();
-
-		
 }
 
 
@@ -370,15 +352,11 @@ void IntHandlerCSmc(void)
 				case 7: // UNKNOWN
 					bprintf("SMC Interrupt %d: b7 Reason code\n", nCountInterruptsSmc);
 					break;
-				
-				
 			}
 		}
 		nBit++;
 		bStatus>>=1;
 	}
-	
-	
 }
 
 void IntHandlerCIde(void)
