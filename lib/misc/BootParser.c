@@ -71,10 +71,10 @@ int ParseConfig(char *szBuffer, CONFIGENTRY *entry, EEPROMDATA *eeprom) {
 	if(entry->nXboxFB == 1) {
 		switch(*((VIDEO_STANDARD *)&eeprom->VideoStandard)) {
 			case NTSC_M:
-				strcpy(szNorm," video=xbox:640x480,nomtrr,nohwcursor,tv=NTSC ");
+				strcpy(szNorm," video=xbox:640x480,nohwcursor ");
 				break;
 			case PAL_I:
-				strcpy(szNorm," video=xbox:640x480,nomtrr,nohwcursor,tv=PAL ");
+				strcpy(szNorm," video=xbox:640x480,nohwcursor ");
 				break;
 			case VID_INVALID:
 			default:

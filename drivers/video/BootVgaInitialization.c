@@ -25,7 +25,7 @@
 
 void BootVgaInitializationKernelNG(CURRENT_VIDEO_MODE_DETAILS * pcurrentvideomodedetails) {
 	EVIDEOSTD videoStd;
-     EAVTYPE avType;
+	EAVTYPE avType;
 	TV_MODE_PARAMETER parameter;
 	BYTE b;
 	RIVA_HW_INST riva;
@@ -78,12 +78,9 @@ void BootVgaInitializationKernelNG(CURRENT_VIDEO_MODE_DETAILS * pcurrentvideomod
 	mapNvMem(&riva,pcurrentvideomodedetails->m_pbBaseAddressVideo);
 	unlockCrtNv(&riva,0);
 
-	if (xbox_ram == 128)
-	{
+	if (xbox_ram == 128) {
 		MMIO_H_OUT32(riva.PFB    ,0,0x200,0x03070103);
-	}
-	else
-	{
+	} else {
 		MMIO_H_OUT32(riva.PFB    ,0,0x200,0x03070003);
 	}
 
@@ -91,11 +88,6 @@ void BootVgaInitializationKernelNG(CURRENT_VIDEO_MODE_DETAILS * pcurrentvideomod
 
 	IoOutputByte(0x80d3, 5);  // definitively kill video out using an ACPI control pin
 
-/*	writeCrtNv(&riva, 0, 0x1f, 0x57);
-	NVWriteSeq(&riva,0x06,0x57);
-	writeCrtNv(&riva, 0, 0x21, 0xff);
-*/
-//	MMIO_H_OUT32(riva.PRAMDAC,0,0x880,0x21121111);
 	MMIO_H_OUT32(riva.PRAMDAC,0,0x880,0);
 	MMIO_H_OUT32(riva.PRAMDAC,0,0x884,0x0);
 	MMIO_H_OUT32(riva.PRAMDAC,0,0x888,0x0);
@@ -113,24 +105,9 @@ void BootVgaInitializationKernelNG(CURRENT_VIDEO_MODE_DETAILS * pcurrentvideomod
 	writeCrtNv (&riva, 0, 0x22, 0xff); // ?
 	writeCrtNv (&riva, 0, 0x33, 0x11); // ?
 
-     avType = DetectAvType();
+	avType = DetectAvType();
 	if ((avType == AV_VGA) || (avType == AV_VGA_SOG)) {
 		VGA_MODE_PARAMETER mode;
-/*
-		// Settings for 640x480@60Hz, 31.5 kHz HSync (should work on every VGA monitor)
-		pcurrentvideomodedetails->m_dwWidthInPixels=640;
-		pcurrentvideomodedetails->m_dwHeightInLines=480;
-		pcurrentvideomodedetails->m_dwMarginXInPixelsRecommended=0;
-		pcurrentvideomodedetails->m_dwMarginYInLinesRecommended=0;
-		mode.bpp = 32
-		mode.xres = 640;
-		mode.hsyncstart = 737;
-		mode.htotal =  857;
-		mode.yres = 480;
-		mode.vsyncstart = 488;
-		mode.vtotal = 524;
-		mode.pixclock = 27000000;
-*/
 		// Settings for 800x600@56Hz, 35 kHz HSync
 		pcurrentvideomodedetails->m_dwWidthInPixels=800;
 		pcurrentvideomodedetails->m_dwHeightInLines=600;
@@ -216,15 +193,6 @@ void BootVgaInitializationKernelNG(CURRENT_VIDEO_MODE_DETAILS * pcurrentvideomod
 	I2CTransmitWord(0x45, (0xac<<8)|0);
 
 	NVWriteSeq(&riva, 0x01, 0x01);  /* reenable display */
-
-/*
-	MMIO_H_OUT8(riva.PCIO, 0, 0x3c0, 0x01);
-	MMIO_H_OUT8(riva.PVIO, 0, 0x3c2, 0xe3);
-
-	MMIO_H_OUT32 (riva.PCRTC, 0, 0x800, pcurrentvideomodedetails->m_dwFrameBufferStart);
-
-	writeCrtNv (&riva, 0, 0x11, 0x20);
-*/
 
         // We reenable the Video
         I2CTransmitWord(0x45, 0xa800 | pcurrentvideomodedetails->m_bFinalConexantA8);

@@ -6,7 +6,7 @@
 struct kernel_setup_t {
 	unsigned char  orig_x;                  /* 0x00 */
 	unsigned char  orig_y;                  /* 0x01 */
-	unsigned short ext_mem_k;   /*   2 */
+	unsigned short ext_mem_k;		/* 0x02 -- EXT_MEM_K sits here */
 	unsigned short orig_video_page;         /* 0x04 */
 	unsigned char  orig_video_mode;         /* 0x06 */
 	unsigned char  orig_video_cols;         /* 0x07 */

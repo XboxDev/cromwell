@@ -78,18 +78,6 @@ void * memset(void *dest, int data,  size_t size)
 	}
 }
                               
-int memcmp(const void *buffer1, const void *buffer2, size_t num) 
-{
-  	register int r;
-  	register const char *d=buffer1;
-  	register const char *s=buffer2;
-  	while (num--) {
-    		if ((r=(*d - *s))) return r;
-    		++d;
-    		++s;
-  	}
-  	return 0;
-}
 
 char * strcpy(char *sz, const char *szc)
 {
