@@ -12,7 +12,6 @@ typedef struct _CONFIGENTRY {
         char szInitrd[MAX_LINE];
         char szAppend[MAX_LINE];
         int nXboxFB;
-        int nRivaFB;
 	int nVesaFB;
 } CONFIGENTRY, *LPCONFIGENTRY;
 

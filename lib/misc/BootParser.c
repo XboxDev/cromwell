@@ -15,7 +15,6 @@ int ParseConfig(char *szBuffer, CONFIGENTRY *entry, EEPROMDATA *eeprom, char *sz
 	ptr = HelpGetToken(szBuffer,10);
 	entry->nValid = 1;
 
-//	printk("Entered Parseconfig\n");
 	while(1) {
                 memset(szLine,0x00,MAX_LINE);
                 _strncpy(szLine,ptr,MAX_LINE);
@@ -45,10 +44,6 @@ int ParseConfig(char *szBuffer, CONFIGENTRY *entry, EEPROMDATA *eeprom, char *sz
 				sprintf(entry->szInitrd,"%s%s",entry->szInitrd,szTmp);
 			}
 			
-			if(_strncmp(ptr,"rivafb",strlen("rivafb")) == 0) {
-				entry->nRivaFB = 1;
-			}
-			
 			if(_strncmp(ptr,"xboxfb",strlen("xboxfb")) == 0) {
 				entry->nXboxFB = 1;
 			}
@@ -67,48 +62,11 @@ int ParseConfig(char *szBuffer, CONFIGENTRY *entry, EEPROMDATA *eeprom, char *sz
 		
 	}
 
-
-	if(entry->nRivaFB == 1) {
-		switch(*((VIDEO_STANDARD *)&eeprom->VideoStandard)) {
-			case NTSC_M:
-				strcpy(szNorm," video=riva:640x480,nomtrr,nohwcursor,tv=NTSC ");
-				break;
-			case PAL_I:
-				strcpy(szNorm," video=riva:640x480,nomtrr,nohwcursor,tv=PAL ");
-				break;
-			case VID_INVALID:
-			default:
-				printk("%X  ", (int)((VIDEO_STANDARD )eeprom->VideoStandard));
-				break;
-		}
-	}
 	if(entry->nXboxFB == 1) {
-		switch(*((VIDEO_STANDARD *)&eeprom->VideoStandard)) {
-			case NTSC_M:
-				strcpy(szNorm," video=xbox:640x480,nomtrr,nohwcursor,tv=NTSC ");
-				break;
-			case PAL_I:
-				strcpy(szNorm," video=xbox:640x480,nomtrr,nohwcursor,tv=PAL ");
-				break;
-			case VID_INVALID:
-			default:
-				printk("%X  ", (int)((VIDEO_STANDARD )eeprom->VideoStandard));
-				break;
-		}
+		strcpy(szNorm," video=xbox:640x480,nomtrr,nohwcursor ");
 	}
 	if(entry->nVesaFB == 1) {
-		switch(*((VIDEO_STANDARD *)&eeprom->VideoStandard)) {
-			case NTSC_M:
-				strcpy(szNorm," video=vesa:640x480,tv=NTSC ");
-				break;
-			case PAL_I:
-				strcpy(szNorm," video=vesa:640x480,tv=PAL ");
-				break;
-			case VID_INVALID:
-			default:
-				printk("%X  ", (int)((VIDEO_STANDARD )eeprom->VideoStandard));
-				break;
-		}
+		strcpy(szNorm," video=vesa:640x480 ");
 	}
 	if(szNorm[0] != 0) {
 		sprintf(entry->szAppend,"%s%s",entry->szAppend,szNorm);
