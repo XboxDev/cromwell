@@ -13,14 +13,9 @@
  * We thus must separate this file from jdapimin.c to avoid linking the
  * whole decompression library into a transcoder.
  */
-#define SIZE_T_EXISTS
-#include "boot.h"
 #define JPEG_INTERNALS
-#include "jpeglib.h"
 #include "jinclude.h"
-
-#include "jpegint.h"
-#include "jerror.h"
+#include "jpeglib.h"
 
 
 /* Forward declarations */

@@ -12,14 +12,9 @@
  * Note that this code is bypassed in raw-data mode, since the application
  * supplies the equivalent of the main buffer in that case.
  */
-#define SIZE_T_EXISTS
-#include "boot.h"
 #define JPEG_INTERNALS
-#include "jpeglib.h"
 #include "jinclude.h"
-
-#include "jpegint.h"
-#include "jerror.h"
+#include "jpeglib.h"
 
 
 

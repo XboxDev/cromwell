@@ -1,12 +1,10 @@
 // Functions for processing FATX partitions
 // (c) 2001 Andrew de Quincey
 
-#include <fcntl.h>
-#include <unistd.h>
-#include <sys/types.h>
 #include "boot.h"
-#include <string.h>
 #include "BootFATX.h"
+#include <sys/types.h>
+
 
 #undef FATX_DEBUG
 

@@ -16,21 +16,9 @@
 
 /* this is not a core library module, so it doesn't define JPEG_INTERNALS */
 
-#define SIZE_T_EXISTS
-#include "boot.h"
-#define JPEG_INTERNALS
-#include "jpeglib.h"
-#include "jinclude.h"
-
-#include "jpegint.h"
-#include "jerror.h"
-/*
 #include "jinclude.h"
 #include "jpeglib.h"
 #include "jerror.h"
-#define SIZE_T_EXISTS
-#include "../boot.h"
-*/
 
 /* Expanded data source object for direct input */
 

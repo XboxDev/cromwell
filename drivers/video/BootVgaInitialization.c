@@ -20,6 +20,8 @@
 #include "BootEEPROM.h"
 #include "config.h"
 #include "BootVideo.h"
+#include "video.h"
+#include "memory_layout.h"
 #include "VideoInitialization.h"
 #include "BootVgaInitialization.h"
 #include "encoder.h"

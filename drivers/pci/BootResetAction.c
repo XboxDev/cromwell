@@ -20,9 +20,9 @@
 #include "xbox.h"
 #include "cpu.h"
 #include "config.h"
-
-
-
+#include "audio.h"
+#include "video.h"
+#include "memory_layout.h"
 
 DWORD *dwaTitleArea;
 

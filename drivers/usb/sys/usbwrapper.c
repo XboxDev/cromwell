@@ -6,6 +6,8 @@
  */
 
 #include "boot.h"
+#include <stdarg.h>
+#include "video.h"
 
 /*------------------------------------------------------------------------*/ 
 void my_wait_ms(int x)

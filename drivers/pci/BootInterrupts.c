@@ -12,6 +12,7 @@
 #include "boot.h"
 #include "config.h"
 #include "cpu.h"
+#include "audio.h"
 
 volatile int nCountI2cinterrupts, nCountUnusedInterrupts, nCountUnusedInterruptsPic2, nCountInterruptsSmc, nCountInterruptsIde;
 volatile bool fSeenPowerdown;

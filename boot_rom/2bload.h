@@ -10,10 +10,9 @@
  *                                                                         *
  ***************************************************************************/
 
-
-
 #include "2bconsts.h"
-
+#include "stdint.h"
+#include "cromwell_types.h"
 
 static inline double min (double a, double b)
 {
@@ -28,32 +27,6 @@ static inline double max (double a, double b)
 // filtror is a debugging device designed to make code available over LPC and allow a debug shell
 // details are at http://warmcat.com/milksop
 // if you don't have one, or are building a final ROM image, keep this at zero
-
-
-/////////////////////////////////
-// some typedefs to make for easy sizing
-
-typedef unsigned long ULONG;
-typedef unsigned int DWORD;
-typedef unsigned short WORD;
-typedef unsigned char BYTE;
-typedef int bool;
-typedef unsigned int size_t;
-
-typedef unsigned long RGBA; // LSB=R -> MSB = A
-typedef long long __int64;
-
-#define guint int
-#define guint8 unsigned char
-
-#define true 1
-#define false 0
-
-#ifndef NULL
-#define NULL ((void *)0)
-#endif
-
-
 
 
 /////////////////////////////////

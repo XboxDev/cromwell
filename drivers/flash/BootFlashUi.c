@@ -12,6 +12,7 @@
 
 #include "boot.h"
 #include "BootFlash.h"
+#include "memory_layout.h"
 
 
 const KNOWN_FLASH_TYPE aknownflashtypesDefault[] = {

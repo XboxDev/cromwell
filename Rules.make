@@ -31,15 +31,6 @@ SUB_DIRS	:= $(subdir)
 BootPerformPicChallengeResponseAction.o: BootPerformPicChallengeResponseAction.c
 	$(CC) $(CFLAGSBR) $(INCLUDE) -o $(TOPDIR)/obj/$@ -c $<
 
-# This is a local executable, so don't use a cross compiler...
-imagebld.o: imagebld.c
-	gcc $(CFLAGS) $(EXTRA_CFLAGS) -o $(TOPDIR)/bin/$@ -c $<
-
-# Must build two version of this (one for target [may be cross compiler], one for local execution)
-sha1.o: sha1.c
-	gcc $(CFLAGS) $(EXTRA_CFLAGS) -o $(TOPDIR)/bin/$@ -c $<
-	$(CC) $(CFLAGS) $(EXTRA_CFLAGS) -o $(TOPDIR)/obj/$@ -c $<
-	
 %.o     : %.c
 	$(CC) $(CFLAGS) $(EXTRA_CFLAGS) -o $(TOPDIR)/obj/$@ -c $<
 

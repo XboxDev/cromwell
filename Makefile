@@ -40,10 +40,6 @@ ETH_CFLAGS += -fno-zero-initialized-in-bss
 endif
 #### End Etherboot specific stuff
 
-OBJECTS-IMAGEBLD = $(TOPDIR)/bin/imagebld.o
-OBJECTS-IMAGEBLD += $(TOPDIR)/bin/sha1.o
-OBJECTS-IMAGEBLD += $(TOPDIR)/obj/lzari.o
-
 OBJECTS-XBE = $(TOPDIR)/boot_xbe/xbeboot.o
 
 OBJECTS-VML = $(TOPDIR)/boot_vml/vml_Startup.o
@@ -221,9 +217,16 @@ default.xbe: ${OBJECTS-XBE}
 image.bin:
 	${LD} -o $(TOPDIR)/obj/2lbimage.elf ${OBJECTS-ROMBOOT} ${LDFLAGS-ROMBOOT}
 	${OBJCOPY} --output-target=binary --strip-all $(TOPDIR)/obj/2lbimage.elf $(TOPDIR)/obj/2blimage.bin
+
+# This is a local executable, so don't use a cross compiler...
+bin/imagebld: lib/imagebld/imagebld.c lib/imagebld/lzari.c lib/crypt/sha1.c
+	gcc -Ilib/imagebld -o bin/lzari.o -c lib/imagebld/lzari.c
+	gcc -Ilib/crypt -o bin/sha1.o -c lib/crypt/sha1.c
+	gcc -Ilib/crypt -o bin/imagebld.o -c lib/imagebld/imagebld.c
+	gcc -o bin/imagebld bin/imagebld.o bin/lzari.o bin/sha1.o 
 	
-imagecompress: obj/image-crom.bin 
-	gcc $(OBJECTS-IMAGEBLD) -o $(TOPDIR)/bin/imagebld $(INCLUDE)
-	$(TOPDIR)/bin/imagebld -rom $(TOPDIR)/obj/2blimage.bin $(TOPDIR)/obj/image-crom.bin $(TOPDIR)/image/image.bin $(TOPDIR)/image/image_1024.bin
-	$(TOPDIR)/bin/imagebld -xbe $(TOPDIR)/xbe/default.xbe $(TOPDIR)/obj/image-crom.bin
-	$(TOPDIR)/bin/imagebld -vml $(TOPDIR)/boot_vml/disk/vmlboot $(TOPDIR)/obj/image-crom.bin 
+imagecompress: obj/image-crom.bin bin/imagebld
+	bin/imagebld -rom obj/2blimage.bin obj/image-crom.bin image/image.bin image/image_1024.bin
+	bin/imagebld -xbe /xbe/default.xbe obj/image-crom.bin
+	bin/imagebld -vml boot_vml/disk/vmlboot obj/image-crom.bin 
+
