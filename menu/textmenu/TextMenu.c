@@ -12,29 +12,29 @@
 void TextMenuDraw(void);
 void TextMenuBack(void);
 
-TEXTMENUITEM *firstVisibleMenuItem=0l;
-TEXTMENUITEM *selectedMenuItem=0l;
-TEXTMENU *firstMenu=0l;
-TEXTMENU *currentMenu=0l;
+TEXTMENUITEM *firstVisibleMenuItem=NULL;
+TEXTMENUITEM *selectedMenuItem=NULL;
+TEXTMENU *firstMenu=NULL;
+TEXTMENU *currentMenu=NULL;
 		
 unsigned char *textmenusavepage;
 
 void TextMenuAddItem(TEXTMENU *menu, TEXTMENUITEM *newMenuItem) {
 	TEXTMENUITEM *menuItem = menu->firstMenuItem;
-	TEXTMENUITEM *currentMenuItem=0l;
+	TEXTMENUITEM *currentMenuItem=NULL;
 	
-	while (menuItem != 0l) {
+	while (menuItem != NULL) {
 		currentMenuItem = menuItem;
 		menuItem = (TEXTMENUITEM*)menuItem->nextMenuItem;
 	}
 	
-	if (currentMenuItem==0l) { 
+	if (currentMenuItem==NULL) { 
 		//This is the first icon in the chain
 		menu->firstMenuItem = newMenuItem;
 	}
 	//Append to the end of the chain
 	else currentMenuItem->nextMenuItem = (struct TEXTMENUITEM*)newMenuItem;
-	newMenuItem->nextMenuItem = 0l;
+	newMenuItem->nextMenuItem = NULL;
 	newMenuItem->previousMenuItem = (struct TEXTMENUITEM*)currentMenuItem; 
 }
 
@@ -47,15 +47,15 @@ void TextMenuBack(void) {
 }
 
 void TextMenuDraw(void) {
-	TEXTMENUITEM *item=0l;
+	TEXTMENUITEM *item=NULL;
 	int menucount;
 	
 	VIDEO_CURSOR_POSX=75;
 	VIDEO_CURSOR_POSY=125;
 	
-	if (currentMenu==0l) currentMenu = firstMenu;
-	if (selectedMenuItem==0l) selectedMenuItem = currentMenu->firstMenuItem;
-	if (firstVisibleMenuItem==0l) firstVisibleMenuItem = currentMenu->firstMenuItem;
+	if (currentMenu==NULL) currentMenu = firstMenu;
+	if (selectedMenuItem==NULL) selectedMenuItem = currentMenu->firstMenuItem;
+	if (firstVisibleMenuItem==NULL) firstVisibleMenuItem = currentMenu->firstMenuItem;
 	
 	//Draw the menu title.
 	VIDEO_ATTR=0x000000;
@@ -66,7 +66,7 @@ void TextMenuDraw(void) {
 	VIDEO_CURSOR_POSX=150;
 	item=firstVisibleMenuItem;
 	for (menucount=0; menucount<8; menucount++) {
-		if (item==0l) {
+		if (item==NULL) {
 			//No more menu items to draw
 			return;
 		}
@@ -99,7 +99,7 @@ void TextMenu(void) {
 
 		if (risefall_xpad_BUTTON(TRIGGER_XPAD_PAD_UP) == 1)
 		{
-			if (selectedMenuItem->previousMenuItem!=0l) {
+			if (selectedMenuItem->previousMenuItem!=NULL) {
 				if (selectedMenuItem == firstVisibleMenuItem) {
 					firstVisibleMenuItem = (TEXTMENUITEM *)selectedMenuItem->previousMenuItem;
 					BootVideoClearScreen(&jpegBackdrop, 0, 0xffff);
@@ -109,12 +109,12 @@ void TextMenu(void) {
 			}
 		} 
 		else if (risefall_xpad_BUTTON(TRIGGER_XPAD_PAD_DOWN) == 1) {
-			if (selectedMenuItem->nextMenuItem!=0l) {
+			if (selectedMenuItem->nextMenuItem!=NULL) {
 				TEXTMENUITEM *lastVisibleMenuItem = firstVisibleMenuItem;
 				int i=0;
 				//8 menu items per page.
 				for (i=0; i<7; i++) {
-					if (lastVisibleMenuItem->nextMenuItem==0l) break;
+					if (lastVisibleMenuItem->nextMenuItem==NULL) break;
 					lastVisibleMenuItem = (TEXTMENUITEM *)lastVisibleMenuItem->nextMenuItem;
 				}
 				if (selectedMenuItem == lastVisibleMenuItem) {
@@ -129,9 +129,9 @@ void TextMenu(void) {
 		else if (risefall_xpad_BUTTON(TRIGGER_XPAD_KEY_A) == 1 || risefall_xpad_BUTTON(TRIGGER_XPAD_KEY_START) == 1) {
 			BootVideoClearScreen(&jpegBackdrop, 0, 0xffff);
 			//Menu item selected - invoke function pointer.
-			if (selectedMenuItem->functionPtr!=0l) selectedMenuItem->functionPtr(selectedMenuItem->functionDataPtr);
+			if (selectedMenuItem->functionPtr!=NULL) selectedMenuItem->functionPtr(selectedMenuItem->functionDataPtr);
 			//Display the childmenu, if this menu item has one.	
-			if (selectedMenuItem->childMenu!=0l) {
+			if (selectedMenuItem->childMenu!=NULL) {
 				currentMenu = (TEXTMENU*)selectedMenuItem->childMenu;
 				selectedMenuItem = currentMenu->firstMenuItem;
 				firstVisibleMenuItem = currentMenu->firstMenuItem;
@@ -140,7 +140,7 @@ void TextMenu(void) {
 		}
 		else if (risefall_xpad_BUTTON(TRIGGER_XPAD_KEY_B) == 1 || risefall_xpad_BUTTON(TRIGGER_XPAD_KEY_BACK) == 1) {
 			//B or Back button takes us back up a menu
-			if (currentMenu->parentMenu==0l) {
+			if (currentMenu->parentMenu==NULL) {
 				//If this is the top level menu, replace the original framebuffer contents and quit the text menu.
 				memcpy((void*)FB_START,textmenusavepage,FB_SIZE);
 				free(textmenusavepage);

@@ -20,7 +20,7 @@ void InitNativeIcons(void);
 
 void IconMenuInit(void) {
 	int i=0;
-	ICON *iconPtr=0l;
+	ICON *iconPtr=NULL;
 	for (i=0; i<2; ++i) {
 		//Add the cdrom icon - if you have two cdroms, you'll get two icons!
 		if (tsaHarddiskInfo[i].m_fAtapi) {
@@ -48,17 +48,6 @@ void IconMenuInit(void) {
 	AddIcon(iconPtr);
 #endif	
 
-#ifdef FLASH
-/*
-	//Flash icon - if it's compiled in, it's always available.
-	iconPtr = (ICON *)malloc(sizeof(ICON));
-	iconPtr->iconSlot = ICON_SOURCE_SLOT0;
-	iconPtr->szCaption = "Flash Bios";
-	iconPtr->functionPtr = FlashBios;
-	AddIcon(iconPtr);
-*/
-#endif	
-
 	//Uncomment this one to test the new text menu system.
 	iconPtr = (ICON *)malloc(sizeof(ICON));
 	iconPtr->iconSlot = ICON_SOURCE_SLOT0;
@@ -71,14 +60,14 @@ void IconMenuInit(void) {
 }
 
 void InitFatXIcons(void) {
-	ICON *iconPtr=0l;
+	ICON *iconPtr=NULL;
 	u8 ba[512];
 	int driveId=0;
 	
 	if (tsaHarddiskInfo[driveId].m_fDriveExists && !tsaHarddiskInfo[driveId].m_fAtapi) {
 		memset(ba,0x00,512);
-		BootIdeReadSector(driveId, &ba[0], 3, 0, 512);
-		if (!strncmp("BRFR",&ba[0],4)) {
+		BootIdeReadSector(driveId, ba, 3, 0, 512);
+		if (!strncmp("BRFR",ba,4)) {
 			//Got a FATX formatted HDD
 			CONFIGENTRY dummyconfig;
 			if (BootTryLoadConfigFATX(&dummyconfig)) {
@@ -97,7 +86,7 @@ void InitFatXIcons(void) {
 }
 
 void InitNativeIcons(void) {
-	ICON *iconPtr=0l;
+	ICON *iconPtr=NULL;
 	u8 ba[512];
 	int driveId=0;	
 
@@ -105,14 +94,14 @@ void InitNativeIcons(void) {
 		//This needs enhancing to check multiple HDDs, and support multiple
 		//boot entries.
 		memset(ba,0x00,512);
-		BootIdeReadSector(driveId, &ba[0], 0, 0, 512);
+		BootIdeReadSector(driveId, ba, 0, 0, 512);
 		        
 		//Is there an MBR here?
 		if( (ba[0x1fe]==0x55) && (ba[0x1ff]==0xaa) ) {
-			volatile u8 * pb;
+			volatile u8 *pb;
 			int n=0, nPos=0;
 			(volatile u8 *)pb=&ba[0x1be];
-			//Check the first four partitions (this isn't good enough!)
+			//Check the primary partitions
 			for (n=0; n<4; n++,pb+=16) {
 				//Is this partition bootable?
 				if(pb[0]&0x80) {

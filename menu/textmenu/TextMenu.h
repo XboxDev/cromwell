@@ -32,7 +32,7 @@ typedef struct {
 	char *szCaption;
 	//Pointer to function to run when menu item selected.
 	void (*functionPtr) (void *);
-	//Pointer data, 0l if none.
+	//Pointer data, NULL if none.
 	void *functionDataPtr;
 	//Child menu, if any, attached to this menu item
 	struct TEXTMENU *childMenu;
@@ -47,7 +47,7 @@ typedef struct {
 	//A pointer to the first item of the linked list of menuitems that
 	//make up this menu.
 	TEXTMENUITEM* firstMenuItem;
-	//If 0l, we're a top level menu, otherwise a "BACK" menu item will be created,
+	//If NULL, we're a top level menu, otherwise a "BACK" menu item will be created,
 	//which takes us back to the parent menu..
 	struct TEXTMENU* parentMenu;
 } TEXTMENU;

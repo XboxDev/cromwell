@@ -32,26 +32,26 @@
 #define TRANSPARENTNESS 0x30
 #define SELECTED 0xff
 
-ICON *firstIcon=0l;
-ICON *selectedIcon=0l;
-ICON *firstVisibleIcon=0l;
+ICON *firstIcon=NULL;
+ICON *selectedIcon=NULL;
+ICON *firstVisibleIcon=NULL;
 
 void AddIcon(ICON *newIcon) {
 	ICON *iconPtr = firstIcon;
-	ICON *currentIcon = 0l;
-	while (iconPtr != 0l) {
+	ICON *currentIcon = NULL;
+	while (iconPtr != NULL) {
 		currentIcon = iconPtr;
 		iconPtr = (ICON*)iconPtr->nextIcon;
 	}
 	
-	if (currentIcon==0l) { 
+	if (currentIcon==NULL) { 
 		//This is the first icon in the chain
 		firstIcon = newIcon;
 	}
 	//Append to the end of the chain
 	else currentIcon->nextIcon = (struct ICON*)newIcon;
 	iconPtr = newIcon;
-	iconPtr->nextIcon = 0l;
+	iconPtr->nextIcon = NULL;
 	iconPtr->previousIcon = (struct ICON*)currentIcon; 
 }
 
@@ -59,13 +59,13 @@ static void IconMenuDraw(int nXOffset, int nYOffset) {
 	ICON *iconPtr;
 	int iconcount;
 	
-	if (firstVisibleIcon==0l) firstVisibleIcon = firstIcon;
-	if (selectedIcon==0l) selectedIcon = firstIcon;
+	if (firstVisibleIcon==NULL) firstVisibleIcon = firstIcon;
+	if (selectedIcon==NULL) selectedIcon = firstIcon;
 	iconPtr = firstVisibleIcon;
 	//There are max four 'bays' for displaying icons in - we only draw the four.
 	for (iconcount=0; iconcount<4; iconcount++) {
 		u8 opaqueness;
-		if (iconPtr==0l) {
+		if (iconPtr==NULL) {
 			//No more icons to draw
 			return;
 		}
@@ -98,7 +98,7 @@ void IconMenu(void) {
         
         u32 COUNT_start;
         u32 temp=1;
-	ICON *iconPtr=0l;
+	ICON *iconPtr=NULL;
 
 	extern int nTempCursorMbrX, nTempCursorMbrY; 
 	int nTempCursorResumeX, nTempCursorResumeY ;
@@ -132,13 +132,13 @@ void IconMenu(void) {
 		wait_ms(75);	
 		if (risefall_xpad_BUTTON(TRIGGER_XPAD_PAD_RIGHT) == 1)
 		{
-			if (selectedIcon->nextIcon!=0l) {
+			if (selectedIcon->nextIcon!=NULL) {
 				//A bit ugly, but need to find the last visible icon, and see if 
 				//we are moving further right from it.
 				ICON *lastVisibleIcon=firstVisibleIcon;
 				int i=0;
 				for (i=0; i<3; i++) {
-					if (lastVisibleIcon->nextIcon==0l) break;
+					if (lastVisibleIcon->nextIcon==NULL) break;
 					lastVisibleIcon = (ICON *)lastVisibleIcon->nextIcon;
 				}
 				if (selectedIcon == lastVisibleIcon) { 
@@ -154,7 +154,7 @@ void IconMenu(void) {
 		}
 		else if (risefall_xpad_BUTTON(TRIGGER_XPAD_PAD_LEFT) == 1)
 		{
-			if (selectedIcon->previousIcon!=0l) {
+			if (selectedIcon->previousIcon!=NULL) {
 				if (selectedIcon == firstVisibleIcon) {
 					//We are moving further left, so slide all the icons along. 
 					firstVisibleIcon = (ICON*)selectedIcon->previousIcon;
@@ -179,7 +179,7 @@ void IconMenu(void) {
 			VIDEO_CURSOR_POSX=nTempCursorResumeX;
 			VIDEO_CURSOR_POSY=nTempCursorResumeY;
 			//Icon selected - invoke function pointer.
-			if (selectedIcon->functionPtr!=0l) selectedIcon->functionPtr(selectedIcon->functionDataPtr);
+			if (selectedIcon->functionPtr!=NULL) selectedIcon->functionPtr(selectedIcon->functionDataPtr);
 			//Shouldn't usually come back but at least if we do, the menu can
 			//continue to work.
 			//Setting changed means the icon menu will redraw itself.

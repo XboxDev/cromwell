@@ -20,8 +20,8 @@ void TextMenuInit(void) {
 	//Create the root menu - MANDATORY
 	firstMenu = malloc(sizeof(TEXTMENU));
 	firstMenu->szCaption="Main Menu\n";
-	firstMenu->parentMenu=0l;
-	firstMenu->firstMenuItem=0l;
+	firstMenu->parentMenu=NULL;
+	firstMenu->firstMenuItem=NULL;
 	
 	//VIDEO SETTINGS MENU
 	itemPtr = (TEXTMENUITEM*)malloc(sizeof(TEXTMENUITEM));

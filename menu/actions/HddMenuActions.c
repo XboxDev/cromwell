@@ -16,7 +16,7 @@ void LockHdd(void *driveId) {
 		printk("Unable to calculate drive password - eeprom corrupt?");
 		return;
 	}
-	if (DriveSecurityChange(uIoBase, nIndexDrive, IDE_CMD_SECURITY_SET_PASSWORD, &password[0])) {
+	if (DriveSecurityChange(uIoBase, nIndexDrive, IDE_CMD_SECURITY_SET_PASSWORD, password)) {
 		printk("Failed!");
 	}
 	wait_ms(5000);
@@ -31,7 +31,7 @@ void UnlockHdd(void *driveId) {
 		printk("Unable to calculate drive password - eeprom corrupt?");
 		return;
 	}
-	if (DriveSecurityChange(uIoBase, nIndexDrive, IDE_CMD_SECURITY_DISABLE, &password[0])) {
+	if (DriveSecurityChange(uIoBase, nIndexDrive, IDE_CMD_SECURITY_DISABLE, password)) {
 		printk("Failed!");
 	}
 	BootVideoClearScreen(&jpegBackdrop, 0, 0xffff);
