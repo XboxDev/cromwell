@@ -38,6 +38,8 @@ unsigned long boot_drive;
 
 void console_putchar(char c) { printk("%c", c); }
 extern unsigned long current_drive;
+char * strcpy(char *sz, const char *szc);
+int _strncmp(const char *sz1, const char *sz2, int nMax);
 
 void setup(void* KernelPos, void* PhysInitrdPos, void* InitrdSize, char* kernel_cmdline);
 
@@ -56,29 +58,20 @@ void setup(void* KernelPos, void* PhysInitrdPos, void* InitrdSize, char* kernel_
 		0x00, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
 	};
 
-int strlen(const char *sz) {
-	int n=0; while(*sz++) n++;
-	return n;
-}
-
-char * strcpy(char *sz, const char *szc)
+void BootStartBiosDoIcon(int nDestX, int nDestY, int nSrcX, int nSrcLength, int nSrcHeight, BYTE bOpaqueness)
 {
-	char *szStart=sz;
-	while(*szc) *sz++=*szc++;
-	*sz='\0';
-	return szStart;
+		BootVideoJpegBlitBlend(
+			(DWORD *)(FRAMEBUFFER_START+(640*4*VIDEO_MARGINY)+(VIDEO_MARGINX*4)+(nDestX<<2)+(640*4*nDestY)),
+			640 * 4, // dest bytes per line
+			&jpegBackdrop, // source jpeg object
+			(DWORD *)(((BYTE *)jpegBackdrop.m_pBitmapData)+(640*480*jpegBackdrop.m_nBytesPerPixel)+(nSrcX *jpegBackdrop.m_nBytesPerPixel)),
+			0xff00ff|(((DWORD)bOpaqueness)<<24),
+			(DWORD *)(((BYTE *)jpegBackdrop.m_pBitmapData)+(jpegBackdrop.m_nWidth * (nDestY) *jpegBackdrop.m_nBytesPerPixel)+((nDestX+VIDEO_MARGINX) *jpegBackdrop.m_nBytesPerPixel)),
+			jpegBackdrop.m_nWidth*jpegBackdrop.m_nBytesPerPixel,
+			nSrcLength, nSrcHeight
+		);
 }
 
-int _strncmp(const char *sz1, const char *sz2, int nMax) {
-
-	while((*sz1) && (*sz2) && nMax--) {
-		if(*sz1 != *sz2) return (*sz1 - *sz2);
-		sz1++; sz2++;
-	}
-	if(nMax==0) return 0;
-	if((*sz1) || (*sz2)) return 0;
-	return 0; // used up nMax
-}
 
 void StartBios(	int nDrive, int nActivePartition ) {
 	char szKernelFile[128], szInitrdFile[128], szCommandline[1024];
@@ -88,8 +81,6 @@ void StartBios(	int nDrive, int nActivePartition ) {
 	char szGrub[256+4];
 
 	szGrub[0]=0xff; szGrub[1]=0xff; szGrub[2]=nActivePartition; szGrub[3]=0x00;
-
-//	MALLOC_BASE=0x02000000;
 
 	errnum=0; boot_drive=0; saved_drive=0; saved_partition=0x0001ffff; buf_drive=-1;
 	current_partition=0x0001ffff; current_drive=0xff; buf_drive=-1; fsys_type = NUM_FSYS;
@@ -103,39 +94,89 @@ void StartBios(	int nDrive, int nActivePartition ) {
 #ifndef IS_XBE_BOOTLOADER
 #ifdef MENU
 	{
-		BYTE b;
-		int n,m;
+		int nTempCursorX;
+		int nTempCursorY;
+		#define DELAY_TICKS 72
+		#define TRANPARENTNESS 0x30
+		#define OPAQUENESS 0xc0
+		#define SELECTED 0xff
 
-		for(n=0;n<6000;n++){for(m=0;m<100000;m++){;}} // wait for door to open
+		nTempCursorX=VIDEO_CURSOR_POSX;
+		nTempCursorY=VIDEO_CURSOR_POSY+80;
+
+		VIDEO_CURSOR_POSX=(195<<2)+VIDEO_MARGINX;
+		VIDEO_CURSOR_POSY-=16;
+		VIDEO_ATTR=0xffc8c8c8;
+		printk("Close DVD tray to select\n");
+		VIDEO_ATTR=0xffffffff;
+
+		BootStartBiosDoIcon(80, nTempCursorY-112, 396, 90, 64, TRANPARENTNESS);
+		BootStartBiosDoIcon(200, nTempCursorY-112, 396, 90, 64, TRANPARENTNESS);
+		BootStartBiosDoIcon(310, nTempCursorY-112, 488, 555-488, 64, TRANPARENTNESS);
+		BootStartBiosDoIcon(400, nTempCursorY-112, 556, 639-556, 64, TRANPARENTNESS);
+
 		if(nDrive != 1)  // if no MBR, don't ask, just boot CDROM
 		{
-			printk("Close tray now to boot from /boot/linuxboot.cfg\n");
-			for(n=0;n<6000;n++){for(m=0;m<100000;m++){;}}
-			if((b=BootIdeGetTrayState())<=8)
-				fUseConfig=TRUE;
-
-			if(b>8)
-			{
-				printk("Close tray now to boot from /boot/vmlinuz with default settings\n");
-				for(n=0;n<6000;n++){for(m=0;m<100000;m++){;}}
-				if((b=BootIdeGetTrayState())<=8)
-					fUseConfig=FALSE;
-			
-				if(b>8)
-				{
-					printk("Close tray now to boot from CDROM\n");
-					for(n=0;n<6000;n++){for(m=0;m<100000;m++){;}}
-					if((b=BootIdeGetTrayState())<=8) {
-						fUseConfig=TRUE;
+			DWORD dwTick=BIOS_TICK_COUNT;
+			VIDEO_CURSOR_POSX=60<<2;
+			VIDEO_CURSOR_POSY=nTempCursorY;
+			printk("/dev/hda/boot/linuxboot.cfg\n");
+			while((BIOS_TICK_COUNT<(dwTick+DELAY_TICKS)) && (traystate==ETS_OPEN_OR_OPENING)) {
+				BootStartBiosDoIcon(80, nTempCursorY-112, 396, 90, 64, OPAQUENESS-((OPAQUENESS-TRANPARENTNESS)*(BIOS_TICK_COUNT-dwTick))/DELAY_TICKS);
+			}
+			if(traystate!=ETS_OPEN_OR_OPENING) {
+				BootStartBiosDoIcon(80, nTempCursorY-112, 396, 90, 64, SELECTED);
+				fUseConfig=true;
+			} else {
+				dwTick=BIOS_TICK_COUNT;
+				BootVideoClearScreen(&jpegBackdrop, nTempCursorY, VIDEO_CURSOR_POSY+1);  // blank out volatile data area
+				VIDEO_CURSOR_POSX=200<<2;
+				VIDEO_CURSOR_POSY=nTempCursorY;
+				printk("/dev/hda/boot/vmlinuz\n");
+				while((BIOS_TICK_COUNT<(dwTick+DELAY_TICKS)) && (traystate==ETS_OPEN_OR_OPENING)) {
+					BootStartBiosDoIcon(200, nTempCursorY-112, 396, 90, 64, OPAQUENESS-((OPAQUENESS-TRANPARENTNESS)*(BIOS_TICK_COUNT-dwTick))/DELAY_TICKS);
+				}
+				if(traystate!=ETS_OPEN_OR_OPENING) {
+					BootStartBiosDoIcon(200, nTempCursorY-112, 396, 90, 64, SELECTED);
+					fUseConfig=false;
+				} else {
+					dwTick=BIOS_TICK_COUNT;
+					BootVideoClearScreen(&jpegBackdrop, nTempCursorY, VIDEO_CURSOR_POSY+1);  // blank out volatile data area
+					VIDEO_CURSOR_POSX=(340<<2)+VIDEO_MARGINX;
+					VIDEO_CURSOR_POSY=nTempCursorY;
+					printk("/dev/hdb\n");
+					while((BIOS_TICK_COUNT<(dwTick+DELAY_TICKS)) && (traystate==ETS_OPEN_OR_OPENING)) {
+						BootStartBiosDoIcon(310, nTempCursorY-112, 488, 555-488, 64, OPAQUENESS-((OPAQUENESS-TRANPARENTNESS)*(BIOS_TICK_COUNT-dwTick))/DELAY_TICKS);
+					}
+					if(traystate!=ETS_OPEN_OR_OPENING) {
+						BootStartBiosDoIcon(310, nTempCursorY-112, 488, 555-488, 64, SELECTED);
+						fUseConfig=true;
 						nDrive=1;
+					} else {
+						dwTick=BIOS_TICK_COUNT;
+						BootVideoClearScreen(&jpegBackdrop, nTempCursorY, VIDEO_CURSOR_POSY+1);  // blank out volatile data area
+						VIDEO_CURSOR_POSX=(430<<2)+VIDEO_MARGINX;
+						VIDEO_CURSOR_POSY=nTempCursorY;
+						printk("Setup [TBD]\n");
+						while((BIOS_TICK_COUNT<(dwTick+DELAY_TICKS)) && (traystate==ETS_OPEN_OR_OPENING)) {
+							BootStartBiosDoIcon(400, nTempCursorY-112, 556, 639-556, 64, OPAQUENESS-((OPAQUENESS-TRANPARENTNESS)*(BIOS_TICK_COUNT-dwTick))/DELAY_TICKS);
+						}
+						if(traystate!=ETS_OPEN_OR_OPENING) {
+							BootStartBiosDoIcon(400, nTempCursorY-112, 556, 639-556, 64, SELECTED);
+							// settings mode
+						} else {
+							BootStartBiosDoIcon(80, nTempCursorY-112, 396, 90, 64, SELECTED);
+							BootVideoClearScreen(&jpegBackdrop, nTempCursorY, VIDEO_CURSOR_POSY+1);  // blank out volatile data area
+							VIDEO_CURSOR_POSX=nTempCursorX;
+							VIDEO_CURSOR_POSY=nTempCursorY;
+							printk("Defaulting to HDD boot\n");
+						}
 					}
 				}
 			}
 		}
-		for(n=0;n<6000;n++){for(m=0;m<100000;m++){;}} // wait for door to close and spin up
-
 	}
-#endif 
+#endif
 #endif
 
 
@@ -242,8 +283,7 @@ void StartBios(	int nDrive, int nActivePartition ) {
 //			while(1);
 		}
 
-
-
+	
 	VIDEO_ATTR=0xffd8d8d8;
 
 	if(nDrive==0) { // grub/reiserfs on HDD
@@ -372,7 +412,6 @@ void StartBios(	int nDrive, int nActivePartition ) {
 			dwInitrdSize=0;
 			printk("");
 		}
-
 	}
 
 	VIDEO_ATTR=0xff8888a8;
@@ -393,7 +432,7 @@ void StartBios(	int nDrive, int nActivePartition ) {
 		// inaccessible and so crashing if we leave the GDT in BIOS
 
 	memcpy((void *)0xa0000, (void *)&baGdt[0], 0x50);
-	
+
 		// prep the Linux startup struct
 
 	setup( (void *)0x90000, (void *)0x03000000, (void *)dwInitrdSize, szCommandline);
@@ -416,9 +455,6 @@ void StartBios(	int nDrive, int nActivePartition ) {
 
 //	"wbinvd \n"
 
-//	"movl %cr0, %eax \n"
-//	"orl $0x60000000, %eax \n"
-//	"movl %eax, %cr0 \n"
 		// kill the cache
 
 	"mov %cr0, %eax \n"
@@ -516,7 +552,8 @@ void StartBios(	int nDrive, int nActivePartition ) {
 	"xor %edi, %edi \n"
 
 	"lgdt 0xa0030 \n"
-   "ljmp $0x10, $0x100000 \n" );
+  "ljmp $0x10, $0x100000 \n"
+);
 
 
 //		DumpAddressAndData(0x100000, (void *)0x100000, 1024);

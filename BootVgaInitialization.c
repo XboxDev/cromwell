@@ -250,7 +250,7 @@ const DWORD dwaKernelVideoLookupTable[] = {
 
 	// mode 2
 	0x10000000, 0x10000000, 0x0, 0x40801080,	0x801080, 0x2, 0x1DF, 0x20C, 
-	0x1DF, 0x1EA, 0x1ED, 0x0, 0x1DF, 0x2CF, 0x365, 0x2A7,	
+	0x1DF, 0x1EA, 0x1ED, 0x0, 0x1DF, 0x2CF, 0x365, 0x2A7,
 	0x2DF, 0x2FF, 0x0, 0x2CF, 0x10100111,	0x0DF05C, 0x20D, 0x0AE,
 	0x2B8, 0x0,
 
@@ -398,12 +398,12 @@ DWORD vinl(int nAds) {
 DWORD Checkerboard(DWORD dwA, DWORD dwB) { return ( dwA | (dwB<<4) |	(dwA<<8) | (dwB<<12) | (dwA<<16) | (dwB<<20) | (dwA<<24) | (dwB<<28) ); }
 
 void BootVgaInitialization() {
-
 			////////////
 			///  2bl Video init
 			///////////////
 
- 
+	__asm__ __volatile__ ( "pushf ; cli" );
+
 
 		{  // functionality as in 2bl
 		const BYTE * pbaVideoInitSelected = baVideoInitTable2Alternate;
@@ -713,6 +713,16 @@ void BootVgaInitialization() {
 			}
 		}
 	}
+
+		*((volatile BYTE *)0xfd009100)=0x0;
+		*((volatile BYTE *)0xfd009140)=0x0;
+		*((volatile BYTE *)0xfd009200)=0x0;
+		*((volatile BYTE *)0xfd009400)=0x0;
+		*((volatile BYTE *)0xfd009410)=0x0;
+		*((volatile BYTE *)0xfd009420)=0x0;
+
+	__asm__ __volatile__ ( "sti" );
+
 }
 
 #endif
@@ -727,11 +737,15 @@ BYTE BootVgaInitializationKernel(int nLinesPref)
 	int arg_8=1, nArg10=640, arg_C=0x43, arg_14=0x01;
 	DWORD dwStash=0;
 	int nCtr=0;
+	BYTE bAvPack;
+	BYTE bTvStandard;
 
+	__asm__ __volatile__ ( "pushf ; cli" );
 
-	BYTE bAvPack=I2CTransmitByteGetReturn(0x10, 0x04);
+	I2CTransmitWord(0x45, 0x6c46);
 
-	BYTE bTvStandard=I2CTransmitByteGetReturn(0x54, 0x5A);
+	bAvPack=I2CTransmitByteGetReturn(0x10, 0x04);
+	bTvStandard=I2CTransmitByteGetReturn(0x54, 0x5A);
 
 	if(bTvStandard != 0x40) {
 		bTvStandard = 0x80;
@@ -743,17 +757,17 @@ BYTE BootVgaInitializationKernel(int nLinesPref)
 		bprintf("NTSC\n");
 		if(bAvPack==6) bAvPack = 8;  // NTSC only works on composite so far
 	}
-	
+
 			////////////
 			///  Kernel Video init
 			///////////////
 
-				IoOutputByte(0x80d3, 5);  // definitively kill video out
+	IoOutputByte(0x80d3, 5);  // definitively kill video out
 
-		*((volatile BYTE *)0xfd6013d4)=0x1f;
-		*((volatile BYTE *)0xfd6013d5)=0x57;
-		*((volatile BYTE *)0xfd0c03c4)=0x06;
-		*((volatile BYTE *)0xfd0c03c5)=0x57;
+	*((volatile BYTE *)0xfd6013d4)=0x1f;
+	*((volatile BYTE *)0xfd6013d5)=0x57;
+	*((volatile BYTE *)0xfd0c03c4)=0x06;
+	*((volatile BYTE *)0xfd0c03c5)=0x57;
 	WATCHDOG;
 	TRACE;
 
@@ -764,7 +778,7 @@ BYTE BootVgaInitializationKernel(int nLinesPref)
  * 	this yet.  Please send to the mailing list if you see this,
  * 	or fix it.  I added delay loops to verify it has nothing to
  * 	do with timing.
- 
+
  andy@warmcat.com 2003-01-11  I saw the same behaviour during edits in BootResetAction.c
                               Adding a WATCHDOG; before the call to this function made it go away
  */
@@ -1385,10 +1399,7 @@ BYTE BootVgaInitializationKernel(int nLinesPref)
 				WATCHDOG;
 			}
 		}
-
-
 	}
-
 
 //		memset((BYTE *)0x04000000-(640*480*4), 0xff000020, 640*480*4);
 
@@ -1495,11 +1506,27 @@ BYTE BootVgaInitializationKernel(int nLinesPref)
 			break;
 	}
 
+	voutl(0xfd600800, 0x83c00000);   // new guy, move the video out of the way
 
-	I2CTransmitWord(0x45, 0x6c46);
-	BootVideoDelay();
+			// enable VSYNC interrupt action
+
+	*((volatile DWORD *)0xfd600140)=0x1;  // enable VSYNC interrupts
+	*((volatile DWORD *)0xfd600100)=0x1;  // clear VSYNC int
+	*((volatile DWORD *)0xfd608000)=0x3c00000;  //
+	*((volatile DWORD *)0xfd600140)=1;  // enable VSYNC int
+	*((volatile DWORD *)0xfd000140)=0x1;  // enable VSYNC interrupts
+	*((volatile DWORD *)0xfd000100)=0x1;  // clear VSYNC int
+	*((volatile DWORD *)0xfd008000)=0x3c00000;  //
+	*((volatile DWORD *)0xfd000140)=1;  // enable VSYNC int
+
+
+//	BootVideoDelay();
 	I2CTransmitWord(0x45, 0x6cc6);
-}
+	}
+
+
+	__asm__ __volatile__ ( "sti" );
+
 
 	TRACE;
 	return bAvPack;
@@ -1508,19 +1535,33 @@ BYTE BootVgaInitializationKernel(int nLinesPref)
 
 void BootVideoEnableOutput(BYTE bAvPack)
 {
-	void BootFiltrorDebugShell();
 	IoOutputByte(0x80d3, 5);  // some kind of MCPX thing REQUIRED
-	IoOutputByte(0x80d6, 4);  // some kind of MCPX thing seen in kernel, set to 4 or 5
+	IoOutputByte(0x80d6, 5);  // some kind of MCPX thing seen in kernel, set to 4 or 5
 	IoOutputByte(0x80d8, 4);  // some kind of MCPX thing seen in kernel, set to 4
-//	IoOutputByte(0x80d3, 4);  // some kind of MCPX thing REQUIRED
 	IoOutputByte(0x80d3, 4);  // some kind of MCPX thing REQUIRED
+	IoOutputByte(0x80d3, 4);  // some kind of MCPX thing REQUIRED
+
+	vgaout(0xfd0C03C4, 1, 1); // screen on REQUIRED
 	vgaout(0xfd0C03C4, 1, 1); // screen on REQUIRED
 	voutw(0xfd6013c0, 1|(0x20 <<8));  // kernel: video on REQUIRED
 //	voutb(0xfd6013c0, 0x01);
 //	voutb(0xfd6013c0, 0x01);
-//	voutb(0xfd6013c0, 0x01);
+	voutb(0xfd6013c0, 0x01);
 
-//	BootFiltrorDebugShell();
+	voutb(0xfd0C03C2, 0xe3);
+	vgaout(0xfd6013D4, 0x11, 0x20);
+
+		// enable VSYNC interrupt action
+
+	*((volatile DWORD *)0xfd600140)=0x1;  // enable VSYNC interrupts
+	*((volatile DWORD *)0xfd600100)=0x1;  // clear VSYNC int
+	*((volatile DWORD *)0xfd608000)=0x3c00000;  //
+	*((volatile DWORD *)0xfd600140)=1;  // enable VSYNC int
+	*((volatile DWORD *)0xfd000140)=0x1;  // enable VSYNC interrupts
+	*((volatile DWORD *)0xfd000100)=0x1;  // clear VSYNC int
+	*((volatile DWORD *)0xfd008000)=0x3c00000;  //
+	*((volatile DWORD *)0xfd000140)=1;  // enable VSYNC int
+
 }
 
 

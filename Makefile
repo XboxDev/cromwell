@@ -5,6 +5,17 @@
 # free bios project.
 #
 # $Log$
+# Revision 1.3  2003/01/13 13:33:02  huceke
+# Added a little function for reading the EEPROM content.
+# Added support for setting the MAC Address at boottime.
+# Updatet the Makefile and linkagescript for the xbe part.
+#
+# Revision 1.2  2003/01/13 12:33:52  warmcat
+# Updated Makefile.rom
+#
+# Revision 1.9  2003/01/13 12:29:07  warmcat
+# Left off BootInterrupts.c from last commit :-)
+#
 # Revision 1.5  2002/12/18 10:38:25  warmcat
 # ISO9660 support added allowing CD boot; linuxboot.cfg support; some extra compiletime options and CD tray management stuff
 #
@@ -65,7 +76,7 @@ jpeg-6b/jdinput.o jpeg-6b/jdmarker.o jpeg-6b/jdhuff.o jpeg-6b/jdphuff.o jpeg-6b/
 jpeg-6b/jdpostct.o jpeg-6b/jddctmgr.o jpeg-6b/jidctfst.o jpeg-6b/jidctflt.o jpeg-6b/jidctint.o jpeg-6b/jidctred.o \
 jpeg-6b/jdsample.o jpeg-6b/jdcolor.o jpeg-6b/jquant1.o jpeg-6b/jquant2.o jpeg-6b/jdmerge.o jpeg-6b/jmemnobs.o \
 jpeg-6b/jmemmgr.o jpeg-6b/jcomapi.o jpeg-6b/jutils.o jpeg-6b/jerror.o \
-BootFlash.o \
+BootFlash.o BootEEPROM.o\
 # !!! killed temporarily to allow clean CVS checkin
 #BootEthernet.o \
 #nvn/nvnetlib.o

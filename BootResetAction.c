@@ -24,9 +24,7 @@
 
 #include "boot.h"
 #include "BootEEPROM.h"
-
-void ReadEEPROM();
-void PrintInfo();
+#include "BootFlash.h"
 
 #ifdef XBE
 #include "config-xbe.h"
@@ -43,6 +41,16 @@ void PrintInfo();
 
 BYTE baBackdrop[60*72*4];
 JPEG jpegBackdrop;
+
+const KNOWN_FLASH_TYPE aknownflashtypesDefault[] = {
+	{ 0xbf, 0x61, "SST49LF020", 0x40000 },  // default flash types
+	{ 0x01, 0xd5, "Am29F080B", 0x100000 },  // default flash types
+	{ 0x04, 0xd5, "Fujitsu MBM29F080A", 0x100000 },  // default flash types
+	{ 0xad, 0xd5, "Hynix HY29F080", 0x100000 },  // default flash types
+	{ 0x20, 0xf1, "ST M29F080A", 0x100000 },  // default flash types
+	{ 0x89, 0xA6, "Sharp LHF08CH1", 0x100000 }, // default flash types
+	{ 0, 0, "", 0 }
+};
 
 /*
 Hints:
@@ -90,6 +98,7 @@ extern void BootResetAction ( void ) {
 	bprintf("\nBOOT: starting BootResetAction()\n\r");
 
 		// init malloc() and free() structures
+
 #ifdef XBE
 	MemoryManagementInitialization((void *)0x0800000, 0x1000000);
 #else
@@ -100,7 +109,6 @@ extern void BootResetAction ( void ) {
 	// RJS - I tried to enable interrupts earlier to fix some instability
 	// but there was no improvement -  table setup left here
 
-	BootInterruptsWriteIdt();
 
 		// prep our BIOS console print state
 
@@ -122,13 +130,10 @@ extern void BootResetAction ( void ) {
 	bprintf("BOOT: done with VGA initialization\n\r");
 #endif
 
-	ReadEEPROM();
+	BootEepromReadEntireEEPROM();
 
+	WATCHDOG;
 	bAvPackType=BootVgaInitializationKernel(VIDEO_PREFERRED_LINES);
-
-#ifndef XBE
-		// initial framebuffer cleardown
-	memset(((DWORD *)(FRAMEBUFFER_START)), 0, 640*4*VIDEO_HEIGHT);
 
 	{ // decode and malloc backdrop bitmap
 		extern int _start_backdrop, _end_backdrop;
@@ -140,7 +145,7 @@ extern void BootResetAction ( void ) {
 	}
 
 	WATCHDOG; 	TRACE;
-	
+
 		// paint the backdrop
 
 	BootVideoClearScreen(&jpegBackdrop, 0, 0xffff);
@@ -151,12 +156,10 @@ extern void BootResetAction ( void ) {
 	BootVideoBlit((DWORD *)&baBackdrop[0], 60*4, (DWORD *)(FRAMEBUFFER_START+640*4*VIDEO_MARGINY+VIDEO_MARGINX*4), 640*4, 72);
 	TRACE;
 
-#endif
-	
-	// finally bring up video
-
+		// finally bring up video
+#ifndef XBE
 	BootVideoEnableOutput(bAvPackType);
-
+#endif
 		// initialize the PCI devices
 
 	BootPciPeripheralInitialization();
@@ -170,6 +173,7 @@ extern void BootResetAction ( void ) {
 		i64Timestamp=((__int64)a3)|(((__int64)a2)<<32);
 	}
 
+	BootInterruptsWriteIdt();
 	WATCHDOG;
 
 		// display solid red frontpanel LED while we start up
@@ -211,6 +215,10 @@ extern void BootResetAction ( void ) {
 	nTempCursorY=VIDEO_CURSOR_POSY;
 
 #ifdef REPORT_VIDEO_MODE
+	
+	VIDEO_ATTR=0xffc8c8c8;
+	printk("AV Cable : ");
+	VIDEO_ATTR=0xffc8c800;
 
 	switch(bAvPackType) {
 		case 0:
@@ -242,7 +250,6 @@ extern void BootResetAction ( void ) {
 			break;
 	}
 
-	printk(" video detected");
 //	printk("  - Time=0x%08X/0x%08X", (DWORD)(i64Timestamp>>32), (DWORD)i64Timestamp);
 	printk("\n");
 #endif
@@ -305,6 +312,16 @@ extern void BootResetAction ( void ) {
 //			BiosCmosWrite(0x3d, 0); // boot method: default=0=do not attempt boot (set in BootIde.c)
 		}
 
+			// configure ACPI hardware to generate interrupt on PIC-chip pin6 action (via EXTSMI#)
+
+	IoOutputByte(0x80c0, 0x08);  // from 2bl
+	IoOutputByte(0x8004, IoInputByte(0x8004)|1);  // KERN: SCI enable == SCI interrupt generated
+	IoOutputByte(0x8022, IoInputByte(0x8022)|2);  // KERN: Interrupt enable register, b1 RESERVED in AMD docs
+	IoOutputByte(0x8002, IoInputByte(0x8002)|1);  // KERN: Enable SCI interrupt when timer status goes high
+	IoOutputByte(0x8028, IoInputByte(0x8028)|1);  // KERN: setting readonly trap event???
+
+
+			// gggb while waiting for Ethernet & Hdd
 
 		I2cSetFrontpanelLed(I2C_LED_GREEN0 | I2C_LED_GREEN1 | I2C_LED_GREEN2);
 
@@ -317,9 +334,32 @@ extern void BootResetAction ( void ) {
 		}
 #endif
 
+		BootEepromPrintInfo();
+
+		{
+			OBJECT_FLASH of;
+			of.m_pbMemoryMappedStartAddress=(BYTE *)0xff000000;
+			BootFlashCopyCodeToRam();
+			BootFlashGetDescriptor(&of, (KNOWN_FLASH_TYPE *)&aknownflashtypesDefault[0]);
+			VIDEO_ATTR=0xffc8c8c8;
+			printk("Flash type: ");
+			VIDEO_ATTR=0xffc8c800;
+			printk("%s\n", of.m_szFlashDescription);
+		}
+
 			// init the HDD and DVD
 		VIDEO_ATTR=0xffc8c8c8;
 		printk("Initializing IDE Controller\n");
+
+			// wait around for HDD to become ready
+
+		BootIdeWaitNotBusy(0x1f0);
+
+			// reuse BIOS status area
+
+		BootVideoClearScreen(&jpegBackdrop, nTempCursorY, VIDEO_CURSOR_POSY+1);  // blank out volatile data area
+		VIDEO_CURSOR_POSX=nTempCursorX;
+		VIDEO_CURSOR_POSY=nTempCursorY;
 
 		BootIdeInit();
 		printk("\n");
@@ -327,12 +367,6 @@ extern void BootResetAction ( void ) {
 		I2CTransmitWord(0x10, 0x0b01); // unknown, done immediately after reading out eeprom data
 		I2CTransmitWord(0x10, 0x0b00); // unknown, done after video update
 		I2CTransmitWord(0x10, 0x1a01); // unknown, done immediately after reading out eeprom data
-
-			// reuse BIOS status area
-
-		BootVideoClearScreen(&jpegBackdrop, nTempCursorY, VIDEO_CURSOR_POSY+1);  // blank out volatile data area
-		VIDEO_CURSOR_POSX=nTempCursorX;
-		VIDEO_CURSOR_POSY=nTempCursorY;
 
 			// HDD Partition Table dump
 

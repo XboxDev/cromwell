@@ -77,10 +77,7 @@ void setup(void* KernelPos, void* PhysInitrdPos, void* InitrdSize, char* kernel_
     kernel_setup->heap_end_ptr = 0xffff;	/* 64K heap */
     kernel_setup->flags = 0x81;			/* loaded high, heap existant */
     kernel_setup->start = PM_KERNEL_DEST;
-//    if (resolution==480)
-		kernel_setup->ext_mem_k = (60 * 1024)-1024; // RAMSIZE_USE_480/1024-1024; /* *extended* (minus first MB) memory in kilobytes */
-//	else
-//		kernel_setup->ext_mem_k = RAMSIZE_USE_576/1024-1024; /* *extended* (minus first MB) memory in kilobytes */
+		kernel_setup->ext_mem_k = ((60-1) * 1024); /* *extended* (minus first MB) memory in kilobytes */
 
     /* initrd */
     /* ED : only if initrd */
@@ -88,10 +85,7 @@ void setup(void* KernelPos, void* PhysInitrdPos, void* InitrdSize, char* kernel_
     if((long)InitrdSize != 0) {
 	    kernel_setup->ramdisk = (long)PhysInitrdPos;
 	    kernel_setup->ramdisk_size = (long)InitrdSize;
-//	    if (resolution==480)
-	    	kernel_setup->initrd_addr_max =  (60 * 1024 * 1024)-1; // RAMSIZE_USE_480;
-//		else
-//	    	kernel_setup->initrd_addr_max = RAMSIZE_USE_576;
+    	kernel_setup->initrd_addr_max =  (60 * 1024 * 1024)-1;
     }
 
     /* Framebuffer setup */
@@ -106,18 +100,14 @@ void setup(void* KernelPos, void* PhysInitrdPos, void* InitrdSize, char* kernel_
     kernel_setup->orig_video_points = 16;
     kernel_setup->lfb_depth = 32;
     kernel_setup->lfb_width = SCREEN_WIDTH;
-//    if (resolution==480) {
-	    kernel_setup->lfb_height = VIDEO_HEIGHT; // SCREEN_HEIGHT_480;
-			memcpy((void *)(60 * 1024 * 1024), (void *)(*(unsigned int*)0xFD600800), 640*480*4);
-			(*(unsigned int*)0xFD600800)= (60 * 1024 * 1024);
-	    kernel_setup->lfb_base = (0xf0000000+*(unsigned int*)0xFD600800); // 0xF0000000+NEW_FRAMEBUFFER_480;
-//			printk("kernel_setup->lfb_base=0x%08X\n", kernel_setup->lfb_base);
-			kernel_setup->lfb_size = (4 * 1024 * 1024)/0x10000; // (FRAMEBUFFER_SIZE_480+0xFFFF)/0x10000;
-//	} else {
- //   	kernel_setup->lfb_height = SCREEN_HEIGHT_576;
-  //  	kernel_setup->lfb_base = 0xF0000000+NEW_FRAMEBUFFER_576;
-//	    kernel_setup->lfb_size = (FRAMEBUFFER_SIZE_576+0xFFFF)/0x10000;
-//	}
+	    
+		kernel_setup->lfb_height = VIDEO_HEIGHT; // SCREEN_HEIGHT_480;
+		memcpy((void *)(60 * 1024 * 1024), (void *)((*(unsigned int*)0xFD600800)&0x7fffffff), 640*480*4);
+		(*(unsigned int*)0xFD600800)= (60 * 1024 * 1024)|0x80000000;
+	  kernel_setup->lfb_base = (0xf0000000|*(unsigned int*)0xFD600800); // 0xF0000000+NEW_FRAMEBUFFER_480;
+//	printk("kernel_setup->lfb_base=0x%08X\n", kernel_setup->lfb_base);
+		kernel_setup->lfb_size = (4 * 1024 * 1024)/0x10000; // (FRAMEBUFFER_SIZE_480+0xFFFF)/0x10000;
+
     kernel_setup->lfb_linelength = SCREEN_WIDTH*4;
     kernel_setup->pages=1;
     kernel_setup->vesapm_seg = 0;

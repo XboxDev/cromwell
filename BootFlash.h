@@ -58,9 +58,20 @@ typedef struct {
 
 #define MEM_ADDRESS_RAM_EXEC_FLASH 0x90000
 
+void BootFlashCopyCodeToRam(void);
+
  	// requires pof->m_pbMemoryMappedStartAddress set to start address of flash in memory on entry
 
-bool BootFlashGetDescriptor( OBJECT_FLASH *pof, KNOWN_FLASH_TYPE * pkft );
+typedef bool (*typeBootFlashGetDescriptor)(OBJECT_FLASH *pof, KNOWN_FLASH_TYPE * pkft);
+typedef bool (*typeBootFlashEraseMinimalRegion)( OBJECT_FLASH *pof);
+typedef bool (*typeBootFlashProgram)( OBJECT_FLASH *pof, BYTE *pba );
+
+
+bool BootFlashGetDescriptor( OBJECT_FLASH *pof, KNOWN_FLASH_TYPE * pkft )
+#ifdef CROMWELL
+ __attribute__ ((section ("RamCopy")))
+#endif
+;
 bool BootFlashEraseMinimalRegion( OBJECT_FLASH *pof)
 #ifdef CROMWELL
  __attribute__ ((section ("RamCopy")))

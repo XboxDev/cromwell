@@ -6,6 +6,9 @@
  * and work by Johan Rydberg and Daniel Kahlin.
  *
  * $Log$
+ * Revision 1.5  2003/01/13 12:29:07  warmcat
+ * Left off BootInterrupts.c from last commit :-)
+ *
  * Revision 1.4  2002/12/18 10:38:25  warmcat
  * ISO9660 support added allowing CD boot; linuxboot.cfg support; some extra compiletime options and CD tray management stuff
  *
@@ -62,8 +65,6 @@ SECTIONS {
 		_end_low_rom = . ;
 	}
 
-
-
 	.xcodes11 (0xfffc0080) : AT (0x80) {
 		_start_xcodes11 = . ;
 		*(.xcodes11);
@@ -107,7 +108,7 @@ SECTIONS {
 		}
 
 	RamCopy (0x90000) : AT( 0xc80 + SIZEOF(.text)+ SIZEOF(.rodata) +SIZEOF(.data)) {
-			_start_ramcopy = .;
+			_start_ramcopy = . - 0x90000 + 0xc80 + SIZEOF(.text)+ SIZEOF(.rodata) +SIZEOF(.data);
 				*(RamCopy);
 		_end_ramcopy = .;
 		}

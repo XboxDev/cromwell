@@ -26,12 +26,14 @@ int I2CTransmitByteGetReturn(BYTE bPicAddressI2cFormat, BYTE bDataToWrite)
 
 	__asm __volatile__ ( "pushf ; cli" );
 
+	while(IoInputWord(I2C_IO_BASE+0)&0x0800) ;  // Franz's spin while bus busy with any master traffic
+
 	while(dwRetriesToLive--) {
-		DWORD dwSpinsToLive=0x800000;
+		DWORD dwSpinsToLive=0x8000000;
 
 		IoOutputByte(I2C_IO_BASE+4, (bPicAddressI2cFormat<<1)|1);
 		IoOutputByte(I2C_IO_BASE+8, bDataToWrite);
-		IoOutputWord(I2C_IO_BASE+0, 0x10 /*IoInputWord(I2C_IO_BASE+0)*/);
+		IoOutputWord(I2C_IO_BASE+0, 0xffff); // clear down all preexisting errors
 		IoOutputByte(I2C_IO_BASE+2, 0x0a);
 
 		{
@@ -45,10 +47,19 @@ int I2CTransmitByteGetReturn(BYTE bPicAddressI2cFormat, BYTE bDataToWrite)
 
 				continue; // retry
 			}
-			__asm __volatile__ ( "popf" );
 
-			if(b&0x24) return ERR_I2C_ERROR_BUS;
-			if(!(b&0x10)) return ERR_I2C_ERROR_BUS;
+			if(b&0x24) {
+				bprintf("I2CTransmitByteGetReturn error %x\n", b);
+				continue;
+//				return ERR_I2C_ERROR_BUS;
+			}
+			if(!(b&0x10)) {
+				bprintf("I2CTransmitByteGetReturn no complete, retry\n");
+//				return ERR_I2C_ERROR_BUS;
+				continue;
+			}
+
+			__asm __volatile__ ( "popf" );
 
 				// we are okay, fetch returned byte
 			return (int)IoInputByte(I2C_IO_BASE+6);
@@ -66,6 +77,9 @@ int I2CTransmitWord(BYTE bPicAddressI2cFormat, WORD wDataToWrite)
 {
 	DWORD dwRetriesToLive=4;
 __asm __volatile__ ( "pushf; cli" );
+
+	while(IoInputWord(I2C_IO_BASE+0)&0x0800) ;  // Franz's spin while bus busy with any master traffic
+
 	while(dwRetriesToLive--) {
 		DWORD dwSpinsToLive=0x8000000;
 
@@ -73,7 +87,7 @@ __asm __volatile__ ( "pushf; cli" );
 
 		IoOutputByte(I2C_IO_BASE+8, (BYTE)(wDataToWrite>>8));
 		IoOutputByte(I2C_IO_BASE+6, (BYTE)wDataToWrite);
-		IoOutputWord(I2C_IO_BASE+0, 0x10 /*IoInputWord(I2C_IO_BASE+0)*/);
+		IoOutputWord(I2C_IO_BASE+0, 0xffff);  // clear down all preexisting errors
 		IoOutputByte(I2C_IO_BASE+2, 0x1a);
 
 		{
@@ -81,12 +95,21 @@ __asm __volatile__ ( "pushf; cli" );
 			while( (b!= 0x10) && ((b&0x26)==0) && (dwSpinsToLive--) ) { b=IoInputByte(I2C_IO_BASE+0); }
 
 			if(dwSpinsToLive==0) { 		__asm __volatile__ ( "popf" ); return ERR_I2C_ERROR_TIMEOUT; }
-			if(b&0x2) continue; // retry
+			if(b&0x2) {
+				continue; // retry
+			}
+			if(b&0x24) {
+				bprintf("I2CTransmitWord error %x\n", b);
+				continue;
+//				return ERR_I2C_ERROR_BUS;
+			}
+			if(!(b&0x10)) {
+				bprintf("I2CTransmitWord no complete, retry\n");
+//				return ERR_I2C_ERROR_BUS;
+				continue;
+			}
 
-					__asm __volatile__ ( "popf" );
-
-			if(b&0x24) return ERR_I2C_ERROR_BUS;
-			if(!(b&0x10)) return ERR_I2C_ERROR_BUS;
+			__asm __volatile__ ( "popf" );
 
 				// we are okay, return happy code
 			return ERR_SUCCESS;

@@ -14,6 +14,15 @@
 #include "BootFlash.h"
 #include <stdio.h>
 
+void BootFlashCopyCodeToRam(void)
+{ // copy the erase and program functions into RAM - otherwise they would erase and reprogram themselves :-)
+#ifdef CROMWELL
+		extern int _end_ramcopy, _start_ramcopy;
+		bprintf("_start_ramcopy=%x, _end_ramcopy=%x\n", 0xfffc0000+ (DWORD)&_start_ramcopy, &_end_ramcopy);
+		memcpy((void *)MEM_ADDRESS_RAM_EXEC_FLASH, (void *)(0xfffc0000+(DWORD)&_start_ramcopy), (DWORD)((BYTE *)&_end_ramcopy)-MEM_ADDRESS_RAM_EXEC_FLASH);
+#endif
+}
+
 	// gets device ID, sets pof up accordingly
 	// returns true if device okay or false for unrecognized device
 
@@ -36,7 +45,7 @@ bool BootFlashGetDescriptor( OBJECT_FLASH *pof, KNOWN_FLASH_TYPE * pkft )
 	pof->m_bDeviceId=pof->m_pbMemoryMappedStartAddress[1];
 	pof->m_pbMemoryMappedStartAddress[0x5555]=0xf0;
 
-		__asm__ __volatile__ ( "popf ");
+	__asm__ __volatile__ ( " popf ");
 
 		// interpret device ID info
 
@@ -58,15 +67,13 @@ bool BootFlashGetDescriptor( OBJECT_FLASH *pof, KNOWN_FLASH_TYPE * pkft )
 		}
 	}
 
-#ifdef CROMWELL
-	{
-		extern int _end_ramcopy, _start_ramcopy;
-		memcpy((void *)MEM_ADDRESS_RAM_EXEC_FLASH, (void *)_start_ramcopy, _end_ramcopy-_start_ramcopy);
-	}
-#endif
 
 	if(!fSeen) {
-		sprintf(pof->m_szFlashDescription, "manf=0x%02X, dev=0x%02X", pof->m_bManufacturerId, pof->m_bDeviceId);
+		if((pof->m_bManufacturerId==0x09) && (pof->m_bDeviceId==0x00)) {
+			sprintf(pof->m_szFlashDescription, "Flash is read-only");
+		} else {
+			sprintf(pof->m_szFlashDescription, "manf=0x%02X, dev=0x%02X", pof->m_bManufacturerId, pof->m_bDeviceId);
+		}
 	}
 
 	return fSeen;

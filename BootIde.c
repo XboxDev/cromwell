@@ -368,8 +368,11 @@ static int BootIdeDriveInit(unsigned uIoBase, int nIndexDrive)
 
 		tsaHarddiskInfo[nIndexDrive].m_fAtapi=true;
 
-		printk("  %d: %s %s\n",
-			nIndexDrive,
+		VIDEO_ATTR=0xffc8c8c8;
+		printk("hd%c: ", nIndexDrive+'a');
+		VIDEO_ATTR=0xffc8c800;
+
+		printk("%s %s\n",
 			tsaHarddiskInfo[nIndexDrive].m_szIdentityModelNumber,
 			tsaHarddiskInfo[nIndexDrive].m_szSerial
 		);
@@ -397,17 +400,22 @@ static int BootIdeDriveInit(unsigned uIoBase, int nIndexDrive)
 	} else { // HDD
 		BYTE bAdsBase=0x1b;
 		unsigned long ulDriveCapacity1024=((tsaHarddiskInfo[nIndexDrive].m_dwCountSectorsTotal /1000)*512)/1000;
+/*
 		int nAta=0;
 		if(tsaHarddiskInfo[nIndexDrive].m_wAtaRevisionSupported&2) nAta=1;
 		if(tsaHarddiskInfo[nIndexDrive].m_wAtaRevisionSupported&4) nAta=2;
 		if(tsaHarddiskInfo[nIndexDrive].m_wAtaRevisionSupported&8) nAta=3;
 		if(tsaHarddiskInfo[nIndexDrive].m_wAtaRevisionSupported&16) nAta=4;
 		if(tsaHarddiskInfo[nIndexDrive].m_wAtaRevisionSupported&32) nAta=5;
-		printk("  %d: %s %s UDMA%d %u.%uGB  ",
-			nIndexDrive,
+*/
+		VIDEO_ATTR=0xffc8c8c8;
+		printk("hd%c: ", nIndexDrive+'a');
+		VIDEO_ATTR=0xffc8c800;
+		
+		printk("%s %u.%uGB ",
 			tsaHarddiskInfo[nIndexDrive].m_szIdentityModelNumber,
-			tsaHarddiskInfo[nIndexDrive].m_szSerial,
-			nAta,
+//			tsaHarddiskInfo[nIndexDrive].m_szSerial,
+//			nAta,
 // 			tsaHarddiskInfo[nIndexDrive].m_wCountHeads,
 //  		tsaHarddiskInfo[nIndexDrive].m_wCountCylinders,
 //   		tsaHarddiskInfo[nIndexDrive].m_wCountSectorsPerTrack,
@@ -469,7 +477,7 @@ static int BootIdeDriveInit(unsigned uIoBase, int nIndexDrive)
 		);
 		int nEepromAttempts=3;  // three goes at getting uncorrupted EEPROM only
 
-		printk("  Locked");
+		printk(" Locked");
 
 //		BootCpuCache(true);  // operate at good speed
 
@@ -574,9 +582,9 @@ static int BootIdeDriveInit(unsigned uIoBase, int nIndexDrive)
 		} else {
 			if( (ba[0]=='B') && (ba[1]=='R') && (ba[2]=='F') && (ba[3]=='R') ) {
 				tsaHarddiskInfo[nIndexDrive].m_enumDriveType=EDT_UNKNOWN;
-				printk("  -  FATX sig", nIndexDrive);
+				printk(" - FATX", nIndexDrive);
 			} else {
-				printk("  -  No FATX", nIndexDrive);
+				printk(" - No FATX", nIndexDrive);
 			}
 		}
 
@@ -586,12 +594,12 @@ static int BootIdeDriveInit(unsigned uIoBase, int nIndexDrive)
 			printk("     Unable to get first sector");
 		} else {
 			if( (ba[0x1fe]==0x55) && (ba[0x1ff]==0xaa) ) {
-				printk("  -  MBR OK", nIndexDrive);
+				printk(" - MBR", nIndexDrive);
 				if(nIndexDrive==0) {
 					BiosCmosWrite(0x3d, 2);  // boot from HDD
 				}
 			} else {
-				printk("  -  No MBR", nIndexDrive);
+				printk(" - No MBR", nIndexDrive);
 			}
 		}
 
@@ -635,8 +643,9 @@ int BootIdeInit(void)
 			}
 		}
 	}
+	
 	if(tsaHarddiskInfo[0].m_bCableConductors==40) {
-		printk("Default 40 conductor IDE cable, limiting to UDMA2\n");
+		printk("UDMA2\n");
 	} else {
 		int nAta=0;
 		if(tsaHarddiskInfo[0].m_wAtaRevisionSupported&2) nAta=1;
@@ -644,7 +653,7 @@ int BootIdeInit(void)
 		if(tsaHarddiskInfo[0].m_wAtaRevisionSupported&8) nAta=3;
 		if(tsaHarddiskInfo[0].m_wAtaRevisionSupported&16) nAta=4;
 		if(tsaHarddiskInfo[0].m_wAtaRevisionSupported&32) nAta=5;
-		printk("Enhanced 80 conductor IDE cable, using full UDMA%d\n", nAta);
+		printk("UDMA%d\n", nAta);
 	}
 
 	return 0;

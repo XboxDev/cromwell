@@ -1,32 +1,57 @@
 #include "boot.h"
 #include "BootEEPROM.h"
 
-void ReadEEPROM() {
+void BootEepromReadEntireEEPROM() {
 	int i;
-	unsigned char ret[256];
+	BYTE *pb=(BYTE *)&eeprom;
 
 	for(i = 0; i < 256; i++) {
-		ret[i] = I2CTransmitByteGetReturn(0x54, i);
+		*pb++ = I2CTransmitByteGetReturn(0x54, i);
 	}
-	memcpy(&eeprom,ret,sizeof(ret));
 }
-void PrintInfo() {
 
-	VIDEO_STANDARD vdo = (VIDEO_STANDARD)eeprom.VideoStandard;
+void BootEepromPrintInfo() {
 
+
+
+	VIDEO_ATTR=0xffc8c8c8;
+	printk("MAC : ");
 	VIDEO_ATTR=0xffc8c800;
-	printk("XBOX EEPROM Info\n");
+	printk("%02X%02X%02X%02X%02X%02X  ",
+		eeprom.MACAddress[0], eeprom.MACAddress[1], eeprom.MACAddress[2],
+		eeprom.MACAddress[3], eeprom.MACAddress[4], eeprom.MACAddress[5]
+	);
 
-	printk("HW MAC : %02X %02X %02X %02X %02X %02X\n",eeprom.MACAddress[0],eeprom.MACAddress[1],eeprom.MACAddress[2],eeprom.MACAddress[3],eeprom.MACAddress[4],eeprom.MACAddress[5]);
-	if(vdo == NTSC_M) {
-		printk("Videostandard : NTSC\n");
-	} 
-	if(vdo == VID_INVALID) {
-		printk("Videostandard : Invalid\n");
-	} 
-	if(vdo == PAL_I) {
-		printk("Videostandard : PAL\n");
+	VIDEO_ATTR=0xffc8c8c8;
+	printk("Vid: ");
+	VIDEO_ATTR=0xffc8c800;
+
+	switch(*((VIDEO_STANDARD *)&eeprom.VideoStandard)) {
+		case VID_INVALID:
+			printk("0  ");
+			break;
+		case NTSC_M:
+			printk("NTSC-M  ");
+			break;
+		case PAL_I:
+			printk("PAL-I  ");
+			break;
+		default:
+			printk("%X  ", (int)*((VIDEO_STANDARD *)&eeprom.VideoStandard));
+			break;
 	}
+
+	VIDEO_ATTR=0xffc8c8c8;
+	printk("Serial: ");
+	VIDEO_ATTR=0xffc8c800;
+	
+	{
+		char sz[13];
+		memcpy(sz, &eeprom.SerialNumber[0], 12);
+		sz[12]='\0';
+		printk(" %s", sz);
+	}
+
 	printk("\n");
 	VIDEO_ATTR=0xffc8c8c8;
 }

@@ -36,6 +36,30 @@ void PciWriteByte (unsigned int bus, unsigned int dev, unsigned int func,
 }
 
 
+WORD PciReadWord(unsigned int bus, unsigned int dev, unsigned int func, unsigned int reg_off)
+{
+	DWORD base_addr = 0x80000000;
+	base_addr |= ((bus & 0xFF) << 16);	// bus #
+	base_addr |= ((dev & 0x1F) << 11);	// device #
+	base_addr |= ((func & 0x07) << 8);	// func #
+
+		IoOutputDword(0xcf8, (base_addr + (reg_off & 0xfc)));
+		return IoInputWord(0xcfc + (reg_off & 3));
+}
+
+
+void PciWriteWord(unsigned int bus, unsigned int dev, unsigned int func, unsigned int reg_off, WORD w)
+{
+	DWORD base_addr = 0x80000000;
+	base_addr |= ((bus & 0xFF) << 16);	// bus #
+	base_addr |= ((dev & 0x1F) << 11);	// device #
+	base_addr |= ((func & 0x07) << 8);	// func #
+
+		IoOutputDword(0xcf8, (base_addr + (reg_off & 0xfc)));
+		IoOutputWord(0xcfc + (reg_off & 3), w);
+
+}
+
 DWORD PciReadDword(unsigned int bus, unsigned int dev, unsigned int func, unsigned int reg_off)
 {
 	DWORD base_addr = 0x80000000;
@@ -61,7 +85,6 @@ void PciWriteDword(unsigned int bus, unsigned int dev, unsigned int func, unsign
 }
 
 
-
 void BootPciPeripheralInitialization()
 {
 
@@ -70,8 +93,8 @@ void BootPciPeripheralInitialization()
 //
 // Bus 0, Device 1, Function 0 = nForce HUB Interface - ISA Bridge
 //
-	PciWriteByte(BUS_0, DEV_1, FUNC_0, 0x6a, 0x03);
 	PciWriteDword(BUS_0, DEV_1, FUNC_0, 0x6c, 0x0e065491);
+	PciWriteWord(BUS_0, DEV_1, FUNC_0, 0x6a, 0x0003); // ??? gets us an int3?
 	PciWriteDword(BUS_0, DEV_1, FUNC_0, 0x64, 0x00000b0c);
 	PciWriteByte(BUS_0, DEV_1, FUNC_0, 0x81, PciReadByte(BUS_0, DEV_1, FUNC_0, 0x81)|8);
 
@@ -154,6 +177,7 @@ void BootPciPeripheralInitialization()
 	PciWriteDword(BUS_0, DEV_1e, FUNC_0, 0x18, (PciReadDword(BUS_0, DEV_1e, FUNC_0, 0x18) &0xff000000) | 0x010100);
 	PciWriteDword(BUS_0, DEV_1e, FUNC_0, 0x20, 0xfe70fc70);
 	PciWriteDword(BUS_0, DEV_1e, FUNC_0, 0x24, 0xf440ec30);
+	PciWriteDword(BUS_0, DEV_1e, FUNC_0, 0x3c, 7);  // trying to get video irq
 
 
 //
@@ -176,8 +200,10 @@ void BootPciPeripheralInitialization()
 // Bus 1, Device 0, Function 0 = NV2A GeForce3 Integrated GPU
 //
 	PciWriteDword(BUS_1, DEV_0, FUNC_0, 4, PciReadDword(BUS_1, DEV_0, FUNC_0, 4) | 7 );
-	PciWriteDword(BUS_1, DEV_0, FUNC_0, 0x3c, (PciReadDword(BUS_1, DEV_0, FUNC_0, 0x3c) &0xffff0000) | 0x0103 );
+	PciWriteDword(BUS_1, DEV_0, FUNC_0, 0x3c, (PciReadDword(BUS_1, DEV_0, FUNC_0, 0x3c) &0xffff0000) | 0x0101 );  // should get vid irq!!
 	PciWriteDword(BUS_1, DEV_0, FUNC_0, 0x4c, 0x00000114);
+
+	PciWriteByte(BUS_0, DEV_0, FUNC_0, 0x87, 3); // kern 8001FC21
 
 #if 1
 		__asm__ __volatile__(

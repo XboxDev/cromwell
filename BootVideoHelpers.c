@@ -176,12 +176,13 @@ void BootVideoJpegBlitBlend(
 		for(n=0;n<x;n++) {
 			DWORD dw=((*((DWORD *)&pData[0]))|0xff000000)&0xffc0c0c0;
 			if(dw!=m_rgbaTransparent) {
-				pbDest[2]=((pData[0]*nTransAsByte)+(pbBackground[2]*nBackTransAsByte))>>8;
+				pbDest[2]=((pData[0]*nTransAsByte)+(pbBackground[0]*nBackTransAsByte))>>8;
 				pbDest[1]=((pData[1]*nTransAsByte)+(pbBackground[1]*nBackTransAsByte))>>8;
-				pbDest[0]=((pData[2]*nTransAsByte)+(pbBackground[0]*nBackTransAsByte))>>8;
+				pbDest[0]=((pData[2]*nTransAsByte)+(pbBackground[2]*nBackTransAsByte))>>8;
 			}
 			pbDest+=4;
 			pData+=pJpeg->m_nBytesPerPixel;
+			pbBackground+=pJpeg->m_nBytesPerPixel;
 		}
 		pdwTopLeftInJpegBitmap+=(pJpeg->m_nWidth*pJpeg->m_nBytesPerPixel)>>2;
 		pdwTopLeftDestination+=dwCountBytesPerLineDestination>>2;
@@ -422,32 +423,36 @@ void BootVideoClearScreen(JPEG * pJpeg, int nStartLine, int nEndLine)
 		WATCHDOG;
 
 		if(pJpeg->m_pBitmapData!=NULL) {
-			DWORD *pdw=(DWORD *)FRAMEBUFFER_START+(640*VIDEO_MARGINY);
-			int nLine=0, n1=0;
+			DWORD *pdw=(DWORD *)FRAMEBUFFER_START /*+(640*VIDEO_MARGINY)*/;
+			int nLine=0, n1=0, nBorderLines=VIDEO_MARGINY; // (VIDEO_HEIGHT-480)/2;
 
-			nStartLine-=VIDEO_MARGINY; nEndLine-=VIDEO_MARGINY;
+//			nStartLine-=VIDEO_MARGINY; nEndLine-=VIDEO_MARGINY;
 
-			while((nLine)<480 /*pJpeg->m_nHeight*/) {
+			while((nLine)<VIDEO_HEIGHT) {
 				if((nLine>=nStartLine) && (nLine<nEndLine)) {
-					int n=0;
-					for(n=0;n<pJpeg->m_nWidth;n++) {
-/*
-						pdw[n]=0xff000000|
-							(((pdw[n]&0xff)+pJpeg->m_pBitmapData[n1+2])/1)|
-							(((((pdw[n]>>8)&0xff)+pJpeg->m_pBitmapData[n1+1])/1)<<8)|
-							(((((pdw[n]>>16)&0xff)+pJpeg->m_pBitmapData[n1])/1)<<16)
-						;
-*/
-						pdw[n]=0xff000000|
-							((pJpeg->m_pBitmapData[n1+2]>>2))|
-							((pJpeg->m_pBitmapData[n1+1]>>2)<<8)|
-							((pJpeg->m_pBitmapData[n1]>>2)<<16)
-						;
-//						pdw[n]=0xff000000 | (b<<16) | (b<<8) | (b);
-						n1+=pJpeg->m_nBytesPerPixel;
+					if((nLine>=nBorderLines) && ((nLine-nBorderLines)<480 /*pJpeg->m_nHeight*/)) {
+						int n=0;
+						for(n=0;n<pJpeg->m_nWidth;n++) {
+							pdw[n]=0xff000000|
+								((pJpeg->m_pBitmapData[n1+2]))|
+								((pJpeg->m_pBitmapData[n1+1])<<8)|
+								((pJpeg->m_pBitmapData[n1])<<16)
+							;
+							n1+=pJpeg->m_nBytesPerPixel;
+						}
+					} else { // above or below the centered JPEG area
+							int n=0;
+							DWORD dw=0xff00001d /*|
+									((pJpeg->m_pBitmapData[0x18+2]))|
+									((pJpeg->m_pBitmapData[0x18+1])<<8)|
+									((pJpeg->m_pBitmapData[0x18])<<16) */
+							;
+							for(n=0;n<pJpeg->m_nWidth;n++) pdw[n]=dw;
 					}
 				} else {
-					n1+=pJpeg->m_nBytesPerPixel *pJpeg->m_nWidth;
+					if((nLine>=nBorderLines) && ((nLine-nBorderLines)<480 /*pJpeg->m_nHeight*/)) {
+						n1+=pJpeg->m_nBytesPerPixel *pJpeg->m_nWidth;
+					}
 				}
 				pdw+=640; // 640 DWORDs
 				nLine++;

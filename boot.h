@@ -69,7 +69,7 @@
 
 #define WATCHDOG __asm__ __volatile__ ( "push %eax; push %edx; movw $0x80cf, %dx ; mov $5, %al ; out %al, %dx ; mov $10000, %eax ; 0: dec %eax ; cmp $0, %eax ; jnz 0b ; mov $4, %al ; out %al, %dx ; pop %edx ; pop %eax " );
 
-#define FRAMEBUFFER_START ( 0xf0000000 + /*(0x04000000-(640*480*4) -(640*4*4)-(256*4))*/ (*((DWORD *)0xfd600800)) )
+#define FRAMEBUFFER_START ( /*0xf0000000 |*/ /*(0x04000000-(640*480*4) -(640*4*4)-(256*4))*/ (*((DWORD *)0xfd600800)) & 0x7fffffff )
 
 #define VIDEO_CURSOR_POSX (*((volatile DWORD *)0x430))
 #define VIDEO_CURSOR_POSY (*((volatile DWORD *)0x434))
@@ -347,6 +347,7 @@ int BootIdeBootSectorHddOrElTorito(int nDriveIndex, BYTE * pbaResult);
 int BootIdeAtapiAdditionalSenseCode(int nDrive, BYTE * pba, int nLengthMaxReturn);
 BYTE BootIdeGetTrayState(void);
 int BootIdeSetTransferMode(int nIndexDrive, int nMode);
+int BootIdeWaitNotBusy(unsigned uIoBase);
 
 ///////// BootEthernet.c
 
@@ -433,6 +434,12 @@ extern volatile int nCountI2cinterrupts, nCountUnusedInterrupts, nCountUnusedInt
 extern volatile bool fSeenPowerdown;
 extern BYTE baBackdrop[60*72*4];
 extern JPEG jpegBackdrop;
+typedef enum {
+	ETS_OPEN_OR_OPENING=0,
+	ETS_CLOSING,
+	ETS_CLOSED
+} TRAY_STATE;
+extern volatile TRAY_STATE traystate;
 
 
 void BootInterruptsWriteIdt(void);

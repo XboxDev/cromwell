@@ -70,11 +70,11 @@ mcpx_magic:  // needs to be DWORD aligned
 tableGdt:
 
 	.byte 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 // 0x00 dummy
-	.byte 0xff, 0xff, 0x00, 0x00, 0x00, 0x9a, 0xcf, 0x00 // 0x08 code32
-	.byte 0xff, 0xff, 0x00, 0x00, 0x00, 0x9a, 0xcf, 0x00 // 0x10 code32
-	.byte 0xff, 0xff, 0x00, 0x00, 0x00, 0x92, 0xcf, 0x00 // 0x18 data32
-	.byte 0xff, 0xff, 0x00, 0x00, 0x00, 0x9a, 0x8f, 0x00 // 0x20 code16 (8f indicates 4K granularity, ie, huge limit)
-	.byte 0xff, 0xff, 0x00, 0x00, 0x00, 0x92, 0x8f, 0x00 // 0x28 data16
+	.byte 0xff, 0xff, 0x00, 0x00, 0x00, 0x9b, 0xcf, 0x00 // 0x08 code32
+	.byte 0xff, 0xff, 0x00, 0x00, 0x00, 0x9b, 0xcf, 0x00 // 0x10 code32
+	.byte 0xff, 0xff, 0x00, 0x00, 0x00, 0x93, 0xcf, 0x00 // 0x18 data32
+	.byte 0xff, 0xff, 0x00, 0x00, 0x00, 0x9b, 0x8f, 0x00 // 0x20 code16 (8f indicates 4K granularity, ie, huge limit)
+	.byte 0xff, 0xff, 0x00, 0x00, 0x00, 0x93, 0x8f, 0x00 // 0x28 data16
 
 tableGdtDescriptor:
 
@@ -88,8 +88,6 @@ tableIdtDescriptor:
 	.long 0xef000
 	.word 0
 
-
-
 	.globl start_linux
 start_linux:
 
@@ -97,30 +95,31 @@ start_linux:
 	jmp bootloader2
 #endif
 	cli
-/*
+
 	mov %cr0, %eax
 	orl	$0x60000000, %eax
 	mov	%eax, %cr0
-	wbinvd
-*/
+//	wbinvd
+
 		xorl	%edx, %edx
 		movl	$0x2ff, %ecx
 		movl	$0x000, %eax // KILL MTRRs
 		wrmsr
-
+/*
 		mov	$0, %al
 		mov	$0x72, %dx
 		out	%al, %dx
+*/
 
-
+/*
 		movl $0x8000, %edx
-		movb	$0xff, %al
+		movb	$1, %al
 spin80xx:
 		out %al, %dx
 		inc	%dl
 		cmp	$0, %dl
 		jnz spin80xx
-
+*/
 
 		// xcode actions first of all
 
@@ -130,6 +129,9 @@ spin80xx:
 	movw $0x8049, %dx ;	movb $8, %al ;	outb %al, %dx
 	movw $0x80d9, %dx ;	movb $0, %al ;	outb %al, %dx
 	movw $0x8026, %dx ;	movb $1, %al ;	outb %al, %dx
+
+	mov $0x8000036c, %eax ;	movw $0xcf8, %dx ;	outl	%eax, %dx ;	movw $0xcfc, %dx ;	mov	$0x0, %eax ;	outl	%eax, %dx
+	mov $0x80000340, %eax ;	movw $0xcf8, %dx ;	outl	%eax, %dx ;	movw $0xcfc, %dx ;	mov	$0xf81c4400, %eax ;	outl	%eax, %dx
 
 	mov $0x8000f04c, %eax ;	movw $0xcf8, %dx ;	outl	%eax, %dx ;	movw $0xcfc, %dx ;	mov	$0x00000001, %eax ;	outl	%eax, %dx
 	mov $0x8000f018, %eax ;	movw $0xcf8, %dx ;	outl	%eax, %dx ;	movw $0xcfc, %dx ;	mov	$0x00010100, %eax ;	outl	%eax, %dx
@@ -141,14 +143,14 @@ spin80xx:
 	mov $0x80010004, %eax ;	movw $0xcf8, %dx ;	outl	%eax, %dx ;	movw $0xcfc, %dx ;	mov	$0x00000007, %eax ;	outl	%eax, %dx
 	mov $0x8000f004, %eax ;	movw $0xcf8, %dx ;	outl	%eax, %dx ;	movw $0xcfc, %dx ;	mov	$0x00000007, %eax ;	outl	%eax, %dx
 
-	movl $0x03c00000, 0x0f600800  // new guy, move the video out of the way
+	movl $0x83c00000, 0x0f600800  // new guy, move the video out of the way
 
 
 	cld             // clear direction flag
 
-	movl $0, %edi
+	movl $0x0f680000, %edi
 	xor	%eax, %eax
- 	movl	$0x100000, %ecx
+ 	movl	$0x1000, %ecx
 	rep
   stosb
 
@@ -397,7 +399,7 @@ selftarget:
 			// MTRR for BIOS
 
 		movl	$0x00000000, %edx // 0x00
-		movl	$0xFFF00006, %eax // == WB cache  NOTE SIZING!  Only first 64K cached!
+		movl	$0xFFF00006, %eax // == WB cache  NOTE SIZING!  Only last 1M cached!
 		wrmsr
 		inc		%ecx
 
@@ -644,7 +646,7 @@ IntHandler2:
 IntHandler3:
 	pusha
 	pushf
-	call	IntHandler3C
+	call	IntHandler3VsyncC
 	mov	$0x23, %al
 	outb	%al, $0x20
 	popf

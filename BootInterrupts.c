@@ -19,8 +19,11 @@
 #include "config-rom.h"
 #endif
 
+
+
 volatile int nCountI2cinterrupts, nCountUnusedInterrupts, nCountUnusedInterruptsPic2, nCountInterruptsSmc, nCountInterruptsIde;
 volatile bool fSeenPowerdown;
+volatile TRAY_STATE traystate;
 
 	// interrupt service stubs defined in BootStartup.S
 
@@ -127,6 +130,7 @@ void BootInterruptsWriteIdt(void) {
 	nCountInterruptsSmc=0;
 	nCountInterruptsIde=0;
 	fSeenPowerdown=false;
+	traystate=ETS_OPEN_OR_OPENING;
 
 		// set up default exception, interrupt vectors to dummy stubs
 
@@ -161,18 +165,9 @@ void BootInterruptsWriteIdt(void) {
 	IoOutputByte(0xa1, 0x00);		// enable all ints
 #endif
 
-			// configure ACPI hardware to generate interrupt on PIC-chip pin6 action (via EXTSMI#)
-
-	IoOutputByte(0x80c0, 0x08);  // from 2bl
-	IoOutputByte(0x8004, IoInputByte(0x8004)|1);  // KERN: SCI enable == SCI interrupt generated
-	IoOutputByte(0x8022, IoInputByte(0x8022)|2);  // KERN: Interrupt enable register, b1 RESERVED in AMD docs
-	IoOutputByte(0x8002, IoInputByte(0x8002)|1);  // KERN: Enable SCI interrupt when timer status goes high
-	IoOutputByte(0x8028, IoInputByte(0x8028)|1);  // KERN: setting readonly trap event???
-
 			// enable interrupts
 
-	 __asm __volatile (	" sti "	);  // and allow interrupt processing
-   __asm__ __volatile__("push %ecx ; push %edx ; push %eax ; mov $0x1b, %cx ; rdmsr ; andl $0xfffff7ff, %eax ; wrmsr; pop %eax ; pop %edx ; pop %ecx" );
+	__asm__ __volatile__(" push %ecx ; push %edx ; push %eax ; mov $0x1b, %cx ; rdmsr ; andl $0xfffff7ff, %eax ; wrmsr; pop %eax ; pop %edx ; pop %ecx ; sti" );
 
 }
 
@@ -195,21 +190,31 @@ void IntHandlerCSmc(void)
 				case 0: // POWERDOWN EVENT
 					bprintf("SMC Interrupt: Powerdown\n");
 					fSeenPowerdown=true;
+/*
+						// sequence in 2bl at halt_it
+					IoOutputDword(0xcf8, 0x8000036C); // causes weird double-height video, jittery, like it screwed with clock
+					IoOutputDword(0xcfc, 0x1000000);
+					__asm__ __volatile__("hlt" );
+*/
 					break;
 
 				case 1: // CDROM TRAY IS NOW CLOSED
+					traystate=ETS_CLOSED;
 					bprintf("SMC Interrupt: CDROM Tray now Closed\n");
 					break;
 
 				case 2: // CDROM TRAY IS STARTING OPENING
+					traystate=ETS_OPEN_OR_OPENING;
 					I2CTransmitWord(0x10, 0x0d04);
 					bprintf("SMC Interrupt: CDROM starting opening\n");
 					break;
 
 				case 3: // AV CABLE HAS BEEN PLUGGED IN
 					bprintf("SMC Interrupt: AV cable plugged in\n");
+#ifndef XBE
 					bAvPackType=BootVgaInitializationKernel(VIDEO_PREFERRED_LINES);
 					BootVideoEnableOutput(bAvPackType);
+#endif
 					break;
 
 				case 4: // AV CABLE HAS BEEN UNPLUGGED
@@ -217,12 +222,14 @@ void IntHandlerCSmc(void)
 					break;
 
 				case 5: // BUTTON PRESSED REQUESTING TRAY OPEN
+					traystate=ETS_OPEN_OR_OPENING;
 					I2CTransmitWord(0x10, 0x0d04);
 					I2CTransmitWord(0x10, 0x0c00);
 					bprintf("SMC Interrupt: CDROM tray opening by Button press\n");
 					break;
 
 				case 6: // CDROM TRAY IS STARTING CLOSING
+					traystate=ETS_CLOSING;
 					bprintf("SMC Interrupt: CDROM tray starting closing\n");
 					break;
 
@@ -305,18 +312,16 @@ void IntHandlerCTimer0(void)
 		DWORD dw=c;
 		if(c<0) dw=((-(int)c)-1);
 		dw|=128; dw<<=24;
-/*
-		BootGimpVideoBlitBlend(
-			(DWORD *)(FRAMEBUFFER_START+640*4*VIDEO_MARGINY+VIDEO_MARGINX*4), 640 * 4, (void *)&gimp_image,
-			0x00000001 | dw, (DWORD *)&baBackdrop[0], 60*4
-		);
-*/
 		BootVideoJpegBlitBlend(
 			(DWORD *)(FRAMEBUFFER_START+640*4*VIDEO_MARGINY+VIDEO_MARGINX*4), 640 * 4, &jpegBackdrop,
 			(DWORD *)(((BYTE *)jpegBackdrop.m_pBitmapData)+(640*480*jpegBackdrop.m_nBytesPerPixel)),
-			0x00ff00ff | dw, (DWORD *)&baBackdrop[0], 60*4,
+			0x00ff00ff | dw, 
+//			(DWORD *)&baBackdrop[0],
+			(DWORD *)(((BYTE *)jpegBackdrop.m_pBitmapData)+(640 * 0 *jpegBackdrop.m_nBytesPerPixel)+(0 *jpegBackdrop.m_nBytesPerPixel)),
+			640*jpegBackdrop.m_nBytesPerPixel,
 			54, 64
 		);
+
 	}
 }
 
@@ -328,9 +333,10 @@ void IntHandler2C(void)
 {
 	bprintf("Interrupt 2\n");
 }
-void IntHandler3C(void)
+void IntHandler3VsyncC(void)  // video VSYNC
 {
-	bprintf("Interrupt 3\n");
+//	bprintf("Interrupt 3\n");
+	*((volatile DWORD *)0xfd600100)=0x1;  // clear VSYNC int
 }
 void IntHandler4C(void)
 {
