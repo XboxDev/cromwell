@@ -12,13 +12,17 @@
 //For the text menu jump
 void MoveToTextMenu(void *nothing);
 
+void SetLEDColor(void *);
+void BootFromCD(void *);
+void BootFromNative(void *);
+void BootFromFATX(void *);
+
+#ifdef FLASH
+void FlashBios(void *);
+#endif
 
 #ifdef ETHERBOOT
 void BootFromEtherboot(void *);
 #endif
 
-void SetLEDColor(void *);
-void BootFromCD(void *);
-void BootFromNative(void *);
-void BootFromFATX(void *);
 #endif

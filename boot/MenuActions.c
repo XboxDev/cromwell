@@ -37,6 +37,12 @@ void BootFromEtherboot(void *data) {
 }
 #endif
 
+#ifdef FLASH
+void FlashBios(void *data) {
+	BootLoadFlashCD();
+}
+#endif
+
 void BootFromFATX(void *configEntry) {
 	CONFIGENTRY config;
 	BootLoadConfigFATX(&config);

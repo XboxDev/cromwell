@@ -46,6 +46,16 @@ void IconMenuInit(void) {
 	iconPtr->functionPtr = BootFromEtherboot;
 	AddIcon(iconPtr);
 #endif	
+
+#ifdef FLASH
+	//Flash icon - if it's compiled in, it's always available.
+	iconPtr = (ICON *)malloc(sizeof(ICON));
+	iconPtr->iconSlot = ICON_SOURCE_SLOT0;
+	iconPtr->szCaption = "Flash Bios";
+	iconPtr->functionPtr = FlashBios;
+	AddIcon(iconPtr);
+#endif	
+
 	//Uncomment this one to test the new text menu system.
 	/*	
 	iconPtr = (ICON *)malloc(sizeof(ICON));

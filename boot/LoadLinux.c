@@ -383,7 +383,7 @@ int BootLoadConfigCD(int cdromId, CONFIGENTRY *config) {
 }
 
 #ifdef FLASH 
-int BootLoadFlashCD(CONFIGENTRY *config) {
+int BootLoadFlashCD(void) {
 	
 	DWORD dwConfigSize=0, dw;
 	int n;
