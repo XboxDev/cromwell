@@ -1,5 +1,4 @@
-/**************************************************************************/
-/*  2003-07-04 georg@acher.org  added USB input demo                       *
+/***************************************************************************
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -662,8 +661,6 @@ selectinsert:
 	);
  
         
-//	printk("STILL HAPPY\n");
-
 	{
 		ISO_PRIMARY_VOLUME_DESCRIPTOR * pipvd = (ISO_PRIMARY_VOLUME_DESCRIPTOR *)&ba[0];
 		char sz[64];
@@ -890,31 +887,36 @@ int BootMenu(CONFIGENTRY *config,int nDrive,int nActivePartition, int nFATXPrese
 		int n;
 		USBGetEvents();
 		
-
 		if (risefall_xpad_BUTTON(TRIGGER_XPAD_PAD_LEFT) == 1)
 		{
-			change=1;
-			menu = menu+3;
-			menu = menu%4;
-			
-			while(icon[menu].nEnabled==0) {
-				menu = menu+3;
-				menu = menu%4;
-			}
+			icon[menu].nSelected = 0;
+			menu--;
+			while (menu>0 && !icon[menu].nEnabled) 
+				menu--;
+			/* If there are no more enabled icons this way,
+			 * leave the currently enabled icon enabled.
+			 * Hence, no change */
+			if (menu<0 || !icon[menu].nEnabled) menu = old_nIcon;
+			else change = 1;
+			icon[menu].nSelected = 1;
+
 			COUNT_start = IoInputDword(0x8008);
 		}
 		
 
 		if (risefall_xpad_BUTTON(TRIGGER_XPAD_PAD_RIGHT) == 1)
 		{
-			change=1;
-			menu = menu+1;
-			menu = menu%4;
+			icon[menu].nSelected = 0;
+			menu++;		
+			while (menu<ICONCOUNT && !icon[menu].nEnabled) 
+				menu++;
+			/* If there are no more enabled icons this way,
+			 * leave the currently enabled icon enabled.
+			 * Hence, no change */
+			if (menu==ICONCOUNT || !icon[menu].nEnabled) menu = old_nIcon;
+			else change = 1;
+			icon[menu].nSelected = 1;
 			
-			while(icon[menu].nEnabled==0) {
-				menu = menu+5;
-				menu = menu%4;
-			}
 			COUNT_start = IoInputDword(0x8008);
 		}
                 
@@ -922,7 +924,6 @@ int BootMenu(CONFIGENTRY *config,int nDrive,int nActivePartition, int nFATXPrese
 		temp = HH-COUNT_start;
 
 		if ((risefall_xpad_BUTTON(TRIGGER_XPAD_KEY_A) == 1) || (temp>(0x369E99*BOOT_TIMEWAIT))) {
-		
 			change=1; 
 			memcpy((void*)FRAMEBUFFER_START,videosavepage,FRAMEBUFFER_SIZE);
 			free(videosavepage);
@@ -930,14 +931,12 @@ int BootMenu(CONFIGENTRY *config,int nDrive,int nActivePartition, int nFATXPrese
 			VIDEO_CURSOR_POSX=nTempCursorResumeX;
 			VIDEO_CURSOR_POSY=nTempCursorResumeY;
 			
-        		// We return the selected Menu
+        		// We return the selected menu item
 			return menu;			
-			
 		}
 		
 		if (change) 
 		{
-			
 		        BootVideoClearScreen(&jpegBackdrop, nTempCursorY, VIDEO_CURSOR_POSY+1);
 			BootStartBiosDoIcon(&icon[old_nIcon], TRANPARENTNESS);
 			old_nIcon = menu;
@@ -1036,7 +1035,6 @@ void StartBios(CONFIGENTRY *config, int nActivePartition , int nFATXPresent,int 
 			ExittoLinux(config);
 			break;
 		case ICON_CD:
-			//hddclone();
 			BootLoadConfigCD(config);
 			ExittoLinux(config);
 			break;
