@@ -126,7 +126,7 @@ dummy:
 resources:
 	# Background
 	${LD} -r --oformat elf32-i386 -o $(TOPDIR)/obj/backdrop.elf -T $(TOPDIR)/scripts/backdrop.ld -b binary $(TOPDIR)/pics/backdrop.jpg	
-	${LD} -r --oformat elf32-i386 -o $(TOPDIR)/obj/pcrombios.elf -T $(TOPDIR)/scripts/pcrombios.ld -b binary $(TOPDIR)/pcbios/rompcbios.bin
+	${LD} -r --oformat elf32-i386 -o $(TOPDIR)/obj/pcrombios.elf -T $(TOPDIR)/scripts/pcrombios.ld -b binary $(TOPDIR)/pcbios/rombios.bin
 
 install:
 	lmilk -f -p $(TOPDIR)/image/image.bin
@@ -147,7 +147,6 @@ clean:
 	mkdir $(TOPDIR)/image -p
 	mkdir $(TOPDIR)/obj -p
 	mkdir $(TOPDIR)/bin -p
-	echo "" > $(TOPDIR)/pcbios/rompcbios.bin
 
 #rombios.bin:
 #	${GCC295} -E $< > _rombios_.c

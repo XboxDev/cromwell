@@ -1273,7 +1273,7 @@ int ExittoRomBios(void) {
 		"mov $0x0000,%ax \n"
 		"mov  %ax, %ds \n"
 		"mov  %ax, %es \n"
-#if 1
+#if 0
 		"mov $0xc004, %dx \n"
 		"mov $0x20, %al \n"
 		"out %al, %dx \n"
