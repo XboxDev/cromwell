@@ -90,9 +90,13 @@ void StartBios(	int nDrive, int nActivePartition ) {
 	bool fUseConfig=true;
 	bool fSettings=false;
 	char szGrub[256+4];
+#ifndef IS_XBE_BOOTLOADER
 	int nTempCursorResumeX, nTempCursorResumeY;
+#endif
 
+#ifndef XBE
 	BootPciInterruptEnable();
+#endif
 
 	szGrub[0]=0xff; szGrub[1]=0xff; szGrub[2]=nActivePartition; szGrub[3]=0x00;
 

@@ -119,7 +119,6 @@ extern void BootResetAction ( void ) {
 	BootPciPeripheralInitialization();
 	bprintf("BOOT: done with PCI initialization\n\r");
 
-
 	// bring up Video (2BL portion)
 #ifndef XBE
 	BootVgaInitialization();
@@ -130,7 +129,8 @@ extern void BootResetAction ( void ) {
 	bprintf("BOOT: Read EEPROM\n\r");
 //	DumpAddressAndData(0, (BYTE *)&eeprom, 256);
 
-			// configure ACPI hardware to generate interrupt on PIC-chip pin6 action (via EXTSMI#)
+#ifndef XBE
+	// configure ACPI hardware to generate interrupt on PIC-chip pin6 action (via EXTSMI#)
 	{
 		DWORD dw;
 		BootPciInterruptGlobalStackStateAndDisable(&dw);
@@ -146,8 +146,14 @@ extern void BootResetAction ( void ) {
 		I2CTransmitWord( 0x10, 0x1b04); // unknown
 		BootPciInterruptGlobalPopState(dw);
 	}
+#endif
 
+#ifdef XBE
+	bAvPackType=BootVgaInitializationKernel(VIDEO_PREFERRED_LINES, false);
+#else
 	bAvPackType=BootVgaInitializationKernel(VIDEO_PREFERRED_LINES, true);
+#endif
+	
 	bprintf("BOOT: kern VGA init done\n\r");
 
 	{ // decode and malloc backdrop bitmap
@@ -163,20 +169,10 @@ extern void BootResetAction ( void ) {
 	bprintf("BOOT: done backdrop\n\r");
 
 		// finally bring up video
-#ifndef XBE
 	BootVideoEnableOutput(bAvPackType);
-#endif
 	bprintf("BOOT: video up\n\r");
 
-/*
-	{ // instability tracking, looking for duration changes
-		int a2, a3;
-		 __asm__ __volatile__ (" rdtsc" :"=a" (a3), "=d" (a2));
-		i64Timestamp=((__int64)a3)|(((__int64)a2)<<32);
-	}
-*/
-
-		// display solid red frontpanel LED while we start up
+	// display solid red frontpanel LED while we start up
 	I2cSetFrontpanelLed(I2C_LED_RED0 | I2C_LED_RED1 | I2C_LED_RED2 | I2C_LED_RED3 );
 
 	{
@@ -191,21 +187,12 @@ extern void BootResetAction ( void ) {
 #endif
 		BootPciInterruptGlobalPopState(dw);
 	}
-		// start up Timer 0 so we get the 18.2Hz tick interrupts
+	// start up Timer 0 so we get the 18.2Hz tick interrupts
 
 	IoOutputByte(0x43, 0x36);
 	IoOutputByte(0x40, 0xff);
 	IoOutputByte(0x40, 0xff);
 
-/*
-	while(1) {
-		int n;
-//		__asm__ __volatile__ ("wbinvd");
-		BootPciInterruptEnable();
-		for(n=0;n<0x10000000;n++) ;
-		BootVideoClearScreen(&jpegBackdrop, 0, 0xffff);
-	}
-*/
 	VIDEO_CURSOR_POSY=VIDEO_MARGINY;
 	VIDEO_CURSOR_POSX=(VIDEO_MARGINX/*+64*/)*4;
 #ifdef XBE

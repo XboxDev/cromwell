@@ -1494,6 +1494,7 @@ BYTE BootVgaInitializationKernel(int nLinesPref, bool fFakeEncoderAllBlackForSta
 
 			// enable VSYNC interrupt action
 
+#ifndef XBE
 	*((volatile DWORD *)0xfd600140)=0x1;  // enable VSYNC interrupts
 	*((volatile DWORD *)0xfd600100)=0x1;  // clear VSYNC int
 	*((volatile DWORD *)0xfd608000)=0x3c00000;  //
@@ -1506,6 +1507,7 @@ BYTE BootVgaInitializationKernel(int nLinesPref, bool fFakeEncoderAllBlackForSta
 
 //	BootVideoDelay();
 	I2CTransmitWord(0x45, 0x6cc6);
+#endif
 	}
 
 	BootPciInterruptGlobalPopState(dwTempIntState);
@@ -1531,6 +1533,7 @@ void BootVideoEnableOutput(BYTE bAvPack)
 
 		// enable VSYNC interrupt action
 
+#ifndef XBE
 	*((volatile DWORD *)0xfd600140)=0x1;  // enable VSYNC interrupts
 	*((volatile DWORD *)0xfd600100)=0x1;  // clear VSYNC int
 	*((volatile DWORD *)0xfd608000)=0x3c00000;  //
@@ -1539,6 +1542,7 @@ void BootVideoEnableOutput(BYTE bAvPack)
 	*((volatile DWORD *)0xfd000100)=0x1;  // clear VSYNC int
 	*((volatile DWORD *)0xfd008000)=0x3c00000;  //
 	*((volatile DWORD *)0xfd000140)=1;  // enable VSYNC int
+#endif
 
 }
 

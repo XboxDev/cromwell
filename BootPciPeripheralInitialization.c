@@ -131,6 +131,7 @@ void BootPciPeripheralInitialization()
 	IoInputByte(0x71);
 
 
+#ifndef XBE
 			// configure ACPI hardware to generate interrupt on PIC-chip pin6 action (via EXTSMI#)
 
 	IoOutputByte(0x80ce, 0x08);  // from 2bl RI#
@@ -141,6 +142,7 @@ void BootPciPeripheralInitialization()
 	IoOutputByte(0x8002, IoInputByte(0x8002)|1);  // KERN: Enable SCI interrupt when timer status goes high
 	IoOutputWord(0x8028, IoInputByte(0x8028)|1);  // KERN: setting readonly trap event???
 
+#endif
 	/*
 			// Setup paging tables
 
@@ -244,12 +246,13 @@ void BootPciPeripheralInitialization()
 	IoOutputByte(0x80c8, 0x04); // Set CACHEZZ pin to low
 	IoOutputDword(0x80b4, 0xffff);  // any interrupt resets ACPI system inactivity timer
 */
+#ifndef XBE
 	IoOutputDword(0x80b4, 0xffff);  // any interrupt resets ACPI system inactivity timer
 	IoOutputByte(0x80cc, 0x08); // Set EXTSMI# pin to be pin function
 	IoOutputByte(0x80cd, 0x08); // Set PRDY pin on ACPI to be PRDY function
 
 	IoOutputWord(0x8020, IoInputWord(0x8020)|0x200); // ack any preceding ACPI int
-
+#endif
 
 	bprintf("b\n");
 
