@@ -436,8 +436,6 @@ void IntHandler3VsyncC(void)  // video VSYNC
         
 	VIDEO_VSYNC_COUNT++;
 	
-	memset((void*)FRAMEBUFFER_START,0x66,5000);
-	
 	// We write back the CPU cache to the Memory
 	asm volatile ("wbinvd\n");
         
