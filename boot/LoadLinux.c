@@ -18,6 +18,7 @@
 #include "BootFlash.h"
 #include "cpu.h"
 #include "BootIde.h"
+#include "BootParser.h"
 
 #include "config.h"
 
@@ -67,7 +68,7 @@ void memPlaceKernel(const u8* kernelOrg, u32 kernelSize)
 CONFIGENTRY* LoadConfigNative(int drive, int partition) {
 	CONFIGENTRY *config;
 	CONFIGENTRY *currentConfigItem;
-	int nLen;
+	unsigned int nLen;
 	u32 dwConfigSize=0;
 	char *szGrub;
 	u8* tempBuf;
@@ -88,7 +89,7 @@ CONFIGENTRY* LoadConfigNative(int drive, int partition) {
 	saved_partition=0x0001ffff;
 	buf_drive=-1;
 	current_partition=0x0001ffff;
-	current_drive=0xff;
+	current_drive=drive;
 	buf_drive=-1;
 	fsys_type = NUM_FSYS;
 	disk_read_hook=NULL;
@@ -114,6 +115,8 @@ CONFIGENTRY* LoadConfigNative(int drive, int partition) {
 	
 	nLen=grub_read((void *)KERNEL_SETUP, filemax);
 
+	if (nLen > MAX_CONFIG_FILESIZE) nLen = MAX_CONFIG_FILESIZE;
+	
 	config = ParseConfig((char *)KERNEL_SETUP, nLen, NULL);
 
 	for (currentConfigItem = (CONFIGENTRY*) config; currentConfigItem; currentConfigItem = (CONFIGENTRY*)currentConfigItem->nextConfigEntry) {
@@ -149,7 +152,7 @@ int LoadKernelNative(CONFIGENTRY *config) {
 	saved_partition=0x0001ffff;
 	buf_drive=-1;
 	current_partition=0x0001ffff;
-	current_drive=0xff;
+	current_drive=config->drive;
 	buf_drive=-1;
 	fsys_type = NUM_FSYS;
 	disk_read_hook=NULL;

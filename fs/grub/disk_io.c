@@ -121,37 +121,38 @@ struct geometry buf_geom;
 int filepos;
 int filemax;
 
+//Cromwell hooks
 int
 rawread (int drive, int sector, int byte_offset, int byte_len, char *buf)
 {
-        sector+=byte_offset/512;
-	       byte_offset%=512;
-
-       while(byte_len) {
-	                int nThisTime=512;
-	                if(byte_len<512) nThisTime=byte_len;
-
-				                if(byte_offset) {
-						                        u8 ba[512];
-
-                      if(BootIdeReadSector(drive, buf, sector, 0, 512)) {
-                            bprintf("Unable to get first sector\n");
-                             return 1;
-																							                        }
-                       memcpy(buf, &ba[byte_offset], nThisTime-byte_offset);
-                      buf+=nThisTime-byte_offset;
-                   byte_len-=nThisTime-byte_offset;
-                      byte_offset=0;
-             } else {
-                     if(BootIdeReadSector(drive, buf, sector, 0, nThisTime)) {
-                           bprintf("Unable to get first sector\n");
-                             return 1;
-                     }
-                   buf+=nThisTime;
-                   byte_len-=nThisTime;
-              }
-     sector++;
-  }
+	sector+=byte_offset/512;
+	byte_offset%=512;
+	
+	while(byte_len) {
+		int nThisTime=512;
+	       	if(byte_len<512) nThisTime=byte_len;
+		if(byte_offset) {
+			u8 ba[512];
+			if(BootIdeReadSector(drive, buf, sector, 0, 512)) {
+				bprintf("Unable to get first sector\n");
+                             	return 1;
+			}
+			memcpy(buf, &ba[byte_offset], nThisTime-byte_offset);
+                      	buf+=nThisTime-byte_offset;
+                   	byte_len-=nThisTime-byte_offset;
+                      	byte_offset=0;
+             	} else {
+                     	if(BootIdeReadSector(drive, buf, sector, 0, nThisTime)) {
+                      		bprintf("Unable to get first sector\n");
+                             	return 1;
+                     	}
+                   	buf+=nThisTime;
+                   	byte_len-=nThisTime;
+              	}
+		sector++;
+	}
+	return (!errnum);
+}
 
 			
 
@@ -290,10 +291,10 @@ rawread (int drive, int sector, int byte_offset, int byte_len, char *buf)
       slen -= num_sect;
       byte_offset = 0;
     }
-#endif
   return (!errnum);
 }
 
+#endif
 
 int
 devread (int sector, int byte_offset, int byte_len, char *buf)

@@ -1,8 +1,9 @@
 #ifndef _BootParser_H_
-#define _BootParesr_H_
+#define _BootParser_H_
 
 #include "BootEEPROM.h"
 
+#define MAX_CONFIG_FILESIZE 1024*256
 #define MAX_LINE 2048
 
 struct CONFIGENTRY;

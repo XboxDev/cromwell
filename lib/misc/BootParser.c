@@ -16,9 +16,10 @@ CONFIGENTRY *ParseConfig(char *szBuffer, unsigned int fileLen, char *szPath) {
 		
 		param = (char *)strsep(&linePtr," \t");
 	
-		if (linePtr==NULL) {
+/*		if (linePtr==NULL) {
 			continue;
 		}
+*/
 		p=param+strlen(param)+1;
 		//Strip off leading whitespace
 		while (isspace(*p)) p++;
