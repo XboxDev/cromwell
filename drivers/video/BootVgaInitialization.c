@@ -556,8 +556,6 @@ static void SetTVConexantRegister(const MODE_PARAMETER* mode, const BLANKING_PAR
 	ULONG v_activeo = CalcV_ACTIVEO(mode);
 	double dPllOutputFrequency;
 
-	I2CTransmitWord(0x45, (0xba<<8) | 0x80); // Conexant reset
-	I2CTransmitByteGetReturn(0x45, 0xb8);    // dummy read to wait for completion
 	I2CTransmitWord(0x45, (0xb8<<8) | 0x07); // Set autoconfig, 800x600, PAL, YCrCb in
 	I2CTransmitByteGetReturn(0x45, 0xb8);    // dummy read to wait for completion
 	I2CTransmitWord(0x45, (0xa0<<8) | 0x13); // Switch to Pseudo-Master mode
