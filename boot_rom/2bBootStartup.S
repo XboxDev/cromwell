@@ -25,31 +25,44 @@
 
 .section .low_rom, "ax"
 
-		/* MCPX Magic Values */
-
-		.long 0xff000009
-		.long 0xff000008
-mcpx_magic:  // needs to be DWORD aligned
-    		.long 0x2b16d065, 0x3346322d
-    		.byte 1, 1, 1, 1, 8, 8, 8, 8, 1, 8, 0, 0
-		.byte 0x8a, 0x7c, 0xfc, 0xc8
-		.byte 0x13, 0x02, 0x29, 0x44, 0x98, 0x49, 0x00, 0x90
-		.long 0x0, 0xffffffff, 0xffffffff
-
-		.org 0x40
-		.long _start_checksum
-
+.org 0x0
+	/* MCPX Magic Values */
+	
+	.long 0xff000009
+	.long 0xff000008
+	.long 0x2b16d065
+	.long 0x3346322d
+	.long 0x01010101
+	.long 0x08080808
+	.long 0x00000801
+	.long 0xc8fc7c8a
+	
+	.long 0x44290213
+	.long 0x90004998		
+	
+	.long 0x0
+	.long 0xffffffff
+	.long 0xffffffff
+	
+	.org 0x40
+	.long _start_checksum	// This number will be overwritten  
+				// With imagebld, but we need a temp value
+	
+	// Strange, we need this ? Theoretically no, but really, we need it !	
+	.org 0x60
+	jmp	start_bootloader
+	
+	.org 0x6c
+	.long 0x00000107
+	
+	.org 0x70		// MCPX Config Area
+	.long 0x0000000f
+	.long 0x40004400
+	
+	.long 0x12d10070
+	.long 0x00000c90
 		
-		.org 0x60
 
-		jmp	start_bootloader
-
-		.org 0x6c
-		.byte 0x07, 0x01
-		.org 0x70
-
-		.byte 0x0f, 0x00, 0x00, 0x00, 0x00, 0x44, 0x00, 0x40
-		.byte 0x70, 0x00, 0xd1, 0x12, 0x90, 0x0c, 0x00, 0x00
 
 .section rom, "ax"
 
@@ -408,43 +421,6 @@ nota1b:
 
 	// skipped unnecessary conexant init
 
-/* The following code just locks out debug boxes - it's not needed for
-  Cromwell
-
-	movw $0xc000, %dx ;	movb $0x10, %al ;	outb %al, %dx
-	movw $0xc004, %dx ;	movb $0x20, %al ;	outb %al, %dx
-	movw $0xc008, %dx ;	movb $0x01, %al ;	outb %al, %dx
-	movw $0xc006, %dx ;	movb $0x00, %al ;	outb %al, %dx
-	movw $0xc002, %dx ;	movb $0x0a, %al ;	outb %al, %dx
-
-spin1:
-	movw 	$0xc000, %dx
-	inb 	%dx, %al
-	cmp 	$0x10, %al
-	jnz	spin1
-
-	  // (skipped PIC test here)
-	movw $0xc000, %dx ;	movb $0x10, %al ;	outb %al, %dx
-	movw $0xc004, %dx ;	movb $0x21, %al ;	outb %al, %dx
-	movw $0xc008, %dx ;	movb $0x01, %al ;	outb %al, %dx
-	movw $0xc002, %dx ;	movb $0x0a, %al ;	outb %al, %dx
-
-spin1a:
-	movw 	$0xc000, %dx
-	inb 	%dx, %al
-	cmp 	$0x10, %al
-	jnz	spin1a
-
-	movw 	$0xc006, %dx
-	inb 	%dx, %al
-	cmp 	$0x50, %al
-	jz 	skipPicDecidedInit
-
-	mov $0x8000036c, %eax ;	movw $0xcf8, %dx ;	outl	%eax, %dx ;	movw $0xcfc, %dx ;	mov	$0x01000000, %eax ;	outl	%eax, %dx
-
-skipPicDecidedInit:
-*/
-
 	movb 	0x0f000000, %al
 	cmpb 	$0xa1, %al
 	jnz 	nota1c
@@ -544,8 +520,19 @@ spin3:
 	movb 	$0x10, %al 
 	outb 	%al, %dx
 
-	mov $0x8000f020, %eax ;	movw $0xcf8, %dx ;	outl	%eax, %dx ;	movw $0xcfc, %dx ;	mov	$0xfdf0fd00, %eax ;	outl	%eax, %dx
-	mov $0x80010010, %eax ;	movw $0xcf8, %dx ;	outl	%eax, %dx ;	movw $0xcfc, %dx ;	mov	$0xfd000000, %eax ;	outl	%eax, %dx
+	mov 	$0x8000f020, %eax 
+	movw 	$0xcf8, %dx 
+	outl	%eax, %dx 
+	movw 	$0xcfc, %dx 
+	mov	$0xfdf0fd00, %eax 
+	outl	%eax, %dx
+	
+	mov 	$0x80010010, %eax 
+	movw 	$0xcf8, %dx 
+	outl	%eax, %dx 
+	movw 	$0xcfc, %dx 
+	mov	$0xfd000000, %eax 
+	outl	%eax, %dx
 
 	jmp 	BootStartBiosLoader  // this can be found in BootResetAction.c
                          
@@ -568,13 +555,11 @@ We finishes here, the code below is for the upper section of the MCPX swapout
 		.code32
 		.global sizeof_top
 		.equ start_top, .
-
-
-//		jmp start_bootloader
-		ljmp $8, $start_bootloader				// nop's fall through to here which
-								// jumps to our code earlier in this file at start_bootloader
-
-	nop
+                
+                cld
+		ljmp $8, $start_bootloader	// nop's fall through to here which
+						// jumps to our code earlier in this file at start_bootloader
+		nop
 
 gdt_table:
 		.quad 0			// beginning of gdt

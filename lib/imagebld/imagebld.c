@@ -298,7 +298,8 @@ int romcopy (
                 
 		// Ok, we start with the real programm                
                 
-		memcpy(&bootloderpos,&loaderimage[0x40],4);   // This can be foun in the 2bBootStartup.S
+		memcpy(&bootloderpos,&loaderimage[0x40],4);   	// This can be foun in the 2bBootStartup.S
+		memset(&loaderimage[0x40],0x0,4);    		// We do not need this helper sum anymore
 		memcpy(&bootloaderstruct,&loaderimage[bootloderpos],sizeof(struct Checksumstruct));
 		
 		memcpy(flash256,loaderimage,256*1024);
