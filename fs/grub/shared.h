@@ -350,7 +350,7 @@ extern char *grub_scratch_mem;
 //#define memset grub_memset
 #define isspace grub_isspace
 #define printf grub_printf
-#define sprintf grub_sprintf
+//#define sprintf grub_sprintf
 #undef putchar
 #define putchar grub_putchar
 #define strncat grub_strncat
