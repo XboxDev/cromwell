@@ -36,6 +36,7 @@
 
 BYTE baBackdrop[60*72*4];
 
+BYTE i2cinterrupt;
 
 /*
 Hints:
@@ -122,9 +123,14 @@ void IntHandlerCTimer0(void)
 
 }
 
-
+/* RJS - in process of adding i2c interrupt support not done yet */
+void IntHandlerCI2C(void)
+{
+	i2cinterrupt++;
+}
 
 extern void IntHandlerTimer0(void);
+extern void IntHandlerI2C(void);
 
 
 
@@ -132,6 +138,7 @@ extern void BootResetAction ( void ) {
 	BYTE bAvPackType;
 	__int64 i64Timestamp;
 	bool fMbrPresent=false;
+	bool fSeenActive=false;
 	int nActivePartitionIndex=0;
 
 #if INCLUDE_FILTROR
@@ -142,9 +149,8 @@ extern void BootResetAction ( void ) {
 	bfcqs.m_dwCountTimeoutErrorsSeenToPc=0;
 #endif
 
-#if INCLUDE_FILTROR
-	BootFiltrorSendArrayToPc("\nBOOT: starting BootResetAction()\n", 34);
-#endif
+	bprintf("\nBOOT: starting BootResetAction()\n\r");
+	TRACE;
 
 	WATCHDOG;
 	WATCHDOG;
@@ -153,6 +159,28 @@ extern void BootResetAction ( void ) {
 	// if we don't make the PIC happy within 200mS, the damn thing will reset us
 	BootPerformPicChallengeResponseAction();
 	WATCHDOG;
+	bprintf("BOOT: done with PIC challenge\n\r");
+
+	// then setup the interrupt table
+	// RJS - I tried to enable interrupts earlier to fix some instability
+	// but there was no improvement -  table setup left here
+
+	{  // init all of the interrupts to default to default handler (which spins complaining down Filtror)
+		ts_pm_interrupt * ptspmi=(ts_pm_interrupt *)(0);  // ie, right down at start of RAM
+		int n;
+		for(n=0;n<32;n++) {  // have to do 256
+	//		ptspmi[n].m_wHandlerHighAddressLow16=(WORD)InterruptUnhandledSpin;
+			ptspmi[n].m_wHandlerHighAddressLow16=(WORD)IntHandlerI2C;
+			ptspmi[n].m_wSelector=0x10;
+			ptspmi[n].m_wType=0x8e00;  // interrupt gate, 32-bit
+	//		ptspmi[n].m_wHandlerLinearAddressHigh16=(WORD)(((DWORD)InterruptUnhandledSpin)>>16);
+			ptspmi[n].m_wHandlerLinearAddressHigh16=(WORD)(((DWORD)IntHandlerI2C)>>16);
+		}
+
+		ptspmi[8].m_wHandlerHighAddressLow16=(WORD)IntHandlerTimer0;
+		ptspmi[8].m_wHandlerLinearAddressHigh16=(WORD)(((DWORD)IntHandlerTimer0)>>16);
+
+	}
 
 #ifdef IS_XBE_BOOTLOADER
 	I2CTransmitWord( 0x10, 0x0c01, false );  // close tray
@@ -164,12 +192,17 @@ extern void BootResetAction ( void ) {
 #ifndef XBE
 	BootVgaInitialization();
 	WATCHDOG;
+	bprintf("BOOT: done with VGA initialization\n\r");
 #endif
+
 	bAvPackType=BootVgaInitializationKernel(VIDEO_PREFERRED_LINES);
 	WATCHDOG;
+	bprintf("BOOT: done with VGA kernel initialization\n\r");
+
 	// initialize the PCI devices
 	BootPciPeripheralInitialization();
 	WATCHDOG;
+	bprintf("BOOT: done with PCI initialization\n\r");
 
 	{ // instability tracking, looking for duration changes
 		int a2, a3;
@@ -185,17 +218,27 @@ extern void BootResetAction ( void ) {
 	VIDEO_RSCALING=0;
 	VIDEO_BSCALING=0;
 
+	TRACE;
 	BootVideoClearScreen();
+	TRACE;
 
 	// get icon background into storage array
 	BootVideoBlit((DWORD *)&baBackdrop[0], 60*4, (DWORD *)(FRAMEBUFFER_START+640*4*VIDEO_MARGINY+VIDEO_MARGINX*4), 640*4, 72);
+	TRACE;
 
 	// bring up video - initially blank raster until time code brings up luma and chroma
 
 	BootVideoEnableOutput(bAvPackType);
+	TRACE;	
 	
 	// display solid red frontpanel LED while we start up
 	I2cSetFrontpanelLed(I2C_LED_RED0 | I2C_LED_RED1 | I2C_LED_RED2 | I2C_LED_RED3 );
+
+	intel_interrupts_on();  // let the processor respond to interrupts
+
+	*PDW_BIOS_TICK_PTR=0;
+	i2cinterrupt=0;
+ 
 
 	I2CTransmitWord(0x45, 0x0d04, false);  // fake int ack??
 	I2CTransmitWord(0x45, 0x1b04, false);  // native BIOS to go to dashboard next time
@@ -207,30 +250,7 @@ extern void BootResetAction ( void ) {
 	I2CTransmitWord(0x45, 0x0c00, false); // eject DVD tray
 #endif
 
-
-	// then setup the interrupt table
-
-	{  // init all of the interrupts to default to default handler (which spins complaining down Filtror)
-		ts_pm_interrupt * ptspmi=(ts_pm_interrupt *)(0);  // ie, right down at start of RAM
-		int n;
-		for(n=0;n<32;n++) {  // have to do 256
-			ptspmi[n].m_wHandlerHighAddressLow16=(WORD)InterruptUnhandledSpin;
-			ptspmi[n].m_wSelector=0x10;
-			ptspmi[n].m_wType=0x8e00;  // interrupt gate, 32-bit
-			ptspmi[n].m_wHandlerLinearAddressHigh16=(WORD)(((DWORD)InterruptUnhandledSpin)>>16);
-		}
-
-		ptspmi[8].m_wHandlerHighAddressLow16=(WORD)IntHandlerTimer0;
-		ptspmi[8].m_wHandlerLinearAddressHigh16=(WORD)(((DWORD)IntHandlerTimer0)>>16);
-
-	}
-
-	intel_interrupts_on();  // let the processor respond to interrupts
-
-
-	*PDW_BIOS_TICK_PTR=0;
-
-		// set up the Programmable Inetrrupt Controllers
+	// set up the Programmable Inetrrupt Controllers
 
 	IoOutputByte(0x20, 0x15);  // master PIC setup
 	IoOutputByte(0x21, 0x08);
@@ -254,7 +274,7 @@ extern void BootResetAction ( void ) {
 
 
 	WATCHDOG;
-
+	TRACE;
 
 	VIDEO_CURSOR_POSY=VIDEO_MARGINY;
 	VIDEO_CURSOR_POSX=(VIDEO_MARGINX+64)*4;
@@ -293,10 +313,13 @@ extern void BootResetAction ( void ) {
 			printk("Type 5");
 			break;
 		case 6:
-			printk("Composite 480");
+			printk("Composite 480 PAL");
 			break;
 		case 7:
-			printk("Composite 576");
+			printk("Composite 576 PAL");
+			break;
+		case 8:
+			printk("Composite 480 NTSC");
 			break;
 	}
 
@@ -449,7 +472,6 @@ extern void BootResetAction ( void ) {
 				if(fMbrPresent) {
 					BYTE * pb;
 					int n=0, nPos=0;
-					bool fSeenActive=false;
 #ifdef DISPLAY_MBR_INFO
 					char sz[512];
 
@@ -534,6 +556,7 @@ extern void BootResetAction ( void ) {
 		I2cSetFrontpanelLed(I2C_LED_GREEN0 | I2C_LED_GREEN1 | I2C_LED_GREEN2 | I2C_LED_GREEN3);
 
 
+	bprintf("i2cinterrupt %d\n\r", i2cinterrupt);
 
 
 	// Used to start Bochs; now a misnomer as it runs vmlinux
@@ -678,12 +701,32 @@ int printk(const char *szFormat, ...) {  // printk displays to video and filtror
 	BootFiltrorSendArrayToPcModal(&szBuffer[0], wLength);
 	#endif
 
+	#if INCLUDE_SERIAL
+	serialprint(&szBuffer[0]);
+	#endif
+
 	BootVideoChunkedPrint(szBuffer, wLength);
 	return wLength;
 }
 
+#if INCLUDE_SERIAL
+int serialprint(const char *szFormat, ...) {
+	char szBuffer[512];
+	WORD wLength=0;
+	WORD wSerialLength=0;
+	va_list argList;
+	va_start(argList, szFormat);
+	wLength=(WORD) vsprintf(szBuffer, szFormat, argList);
+	va_end(argList);
 
+	while(wSerialLength < wLength) {
+		IoOutputByte(0x03f8, szBuffer[wSerialLength]);
+		wSerialLength++;
+	}
 
+	return wLength;
+}
+#endif
 
 void * memset(void *dest, int data,  size_t size) {
 //    bprintf("memset(0x%x,0x%x,0x%x);\n", dest, data, size);

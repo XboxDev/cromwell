@@ -585,6 +585,14 @@ IntHandlerTimer0:
 	popf
 
 	popa
+
+	.global IntHandlerI2C
+IntHandlerI2C:
+	pusha
+	pushf
+	call	IntHandlerCI2C
+	popf
+	popa
 	
 	.global SpareIntNop
 SpareIntNop:

@@ -25,6 +25,20 @@
 
 #define INCLUDE_FILTROR 0
 
+// enable logging to serial port.  You probably don't have this.
+
+#define INCLUDE_SERIAL 0
+
+
+// enable trace message printing for debugging - with filtror or serial only
+#define PRINT_TRACE 0
+
+
+#if PRINT_TRACE
+#define TRACE bprintf(__FILE__ " :%d\n\r",__LINE__);
+#else
+#define TRACE
+#endif
 
 /////////////////////////////////
 // some typedefs to make for easy sizing
@@ -244,7 +258,15 @@ int I2cSetFrontpanelLed(BYTE b);
 		// alias
 #define bprintf BootFiltrorSendStringToPcModal
 #else
+#if INCLUDE_SERIAL
+#define bprintf serialprint
+#else
 #define bprintf(...)
+#endif
+#endif
+
+#if INCLUDE_SERIAL
+	int serialprint(const char *szFormat, ...);
 #endif
 
 #define SPAMI2C() 				__asm__ __volatile__ (\

@@ -84,6 +84,7 @@ void StartBios(	int nDrive, int nActivePartition ) {
 	char szKernelFile[128], szInitrdFile[128], szCommandline[1024];
 	DWORD dwConfigSize=0;
 	bool fHaveConfig=false;
+	bool fUseConfig=true;
 	char szGrub[256+4];
 
 	szGrub[0]=0xff; szGrub[1]=0xff; szGrub[2]=nActivePartition; szGrub[3]=0x00;
@@ -95,7 +96,48 @@ void StartBios(	int nDrive, int nActivePartition ) {
 	disk_read_hook=NULL;
 	disk_read_func=NULL;
 
-	strcpy(szCommandline, "root=/dev/hda2 devfs=mount kbd-reset"); // default
+	strcpy(szCommandline, "root=/dev/hda2 devfs=mount kbd-reset"); // defaul
+	strcpy(szKernelFile, "/boot/vmlinuz");
+	strcpy(szInitrdFile, "/boot/initrd");
+
+#ifndef IS_XBE_BOOTLOADER
+#ifdef MENU
+	{
+		BYTE b;
+		int n,m;
+
+		for(n=0;n<6000;n++){for(m=0;m<100000;m++){;}} // wait for door to open
+		if(nDrive != 1)  // if no MBR, don't ask, just boot CDROM
+		{
+			printk("Close tray now to boot from /boot/linuxboot.cfg\n");
+			for(n=0;n<6000;n++){for(m=0;m<100000;m++){;}}
+			if((b=BootIdeGetTrayState())<=8)
+				fUseConfig=TRUE;
+
+			if(b>8)
+			{
+				printk("Close tray now to boot from /boot/vmlinuz with default settings\n");
+				for(n=0;n<6000;n++){for(m=0;m<100000;m++){;}}
+				if((b=BootIdeGetTrayState())<=8)
+					fUseConfig=FALSE;
+			
+				if(b>8)
+				{
+					printk("Close tray now to boot from CDROM\n");
+					for(n=0;n<6000;n++){for(m=0;m<100000;m++){;}}
+					if((b=BootIdeGetTrayState())<=8) {
+						fUseConfig=TRUE;
+						nDrive=1;
+					}
+				}
+			}
+		}
+		for(n=0;n<6000;n++){for(m=0;m<100000;m++){;}} // wait for door to close and spin up
+
+	}
+#endif 
+#endif
+
 
 	{
 		char c='1'+nActivePartition;
@@ -205,23 +247,22 @@ void StartBios(	int nDrive, int nActivePartition ) {
 	VIDEO_ATTR=0xffd8d8d8;
 
 	if(nDrive==0) { // grub/reiserfs on HDD
-		printk("  Looking for optional /boot/linuxboot.cfg... ");
-		VIDEO_ATTR=0xffa8a8a8;
+		if(fUseConfig) {
+			printk("  Looking for optional /boot/linuxboot.cfg... \n");
+			VIDEO_ATTR=0xffa8a8a8;
 
-		strcpy(&szGrub[4], "/boot/linuxboot.cfg");
-		nRet=grub_open(szGrub);
-		dwConfigSize=filemax;
-		nRet=2;
-		if(nRet!=1) {
-			printk("Not found, using defaults\n");
-			strcpy(szKernelFile, "/boot/vmlinuz");
-			strcpy(szInitrdFile, "/boot/initrd");
-		} else {
-			printk("okay\n");
-			grub_read((void *)0x90000, 0x400);
-			fHaveConfig=true;
+			strcpy(&szGrub[4], "/boot/linuxboot.cfg");
+			nRet=grub_open(szGrub);
+			dwConfigSize=filemax;
+			if(nRet!=1 || (errnum)) {
+				printk("linuxboot.cfg not found, using defaults\n");
+			} else {
+				grub_read((void *)0x90000, filemax);
+				printf("linuxboot.cfg is %d bytes long.\n", dwConfigSize);
+				fHaveConfig=true;
+			}
+			grub_close();
 		}
-		grub_close();
 	} else {  // ISO9660 traversal on CDROM
 
 		printk("  Loading linuxboot.cfg from CDROM... ");
@@ -256,16 +297,15 @@ void StartBios(	int nDrive, int nActivePartition ) {
 		if(szCommandline[0] == '/') szCommandline[0] = ' ';
 	}
 
-
 	if(nDrive==0) { // grub/reiserfs on HDD
-
+		printk("  Command line: %s\n", szCommandline);
 		printk("  Loading %s ", szKernelFile);
 		VIDEO_ATTR=0xffa8a8a8;
 		strcpy(&szGrub[4], szKernelFile);
 		nRet=grub_open(szGrub);
 
 		if(nRet!=1) {
-			printk("Unable to load vmlinuz, Grub error %d\n", errnum);
+			printk("\nUnable to load kernel, Grub error %d\n", errnum);
 			while(1) ;
 		}
 		dwKernelSize=grub_read((void *)0x90000, 0x400);
@@ -283,14 +323,14 @@ void StartBios(	int nDrive, int nActivePartition ) {
 		strcpy(&szGrub[4], szInitrdFile);
 		nRet=grub_open(szGrub);
 		if(filemax==0) {
-			printf("Empty file\n"); while(1);
+			printf("\nEmpty file\n"); while(1);
 		}
 		if( (nRet!=1 ) || (errnum)) {
-			printk("Unable to load initrd, Grub error %d\n", errnum);
+			printk("\nUnable to load initrd, Grub error %d\n", errnum);
 			while(1) ;
 		}
+		printk(" - %d bytes\n", filemax);
 		dwInitrdSize=grub_read((void *)0x03000000, filemax);
-		printk(" - %d bytes\n", dwInitrdSize);
 		grub_close();
 
 

@@ -13,8 +13,10 @@
 //#define IS_XBE_BOOTLOADER
 
 // display a line like Composite 480 detected if uncommented
-//#define REPORT_VIDEO_MODE
+#define REPORT_VIDEO_MODE
 
 // show the MBR table if the MBR is valid
 #define DISPLAY_MBR_INFO
 
+// show simple menu selection
+#define MENU

@@ -18,7 +18,7 @@ Improvements!
  - *NEW* honours linuxboot.cfg if found in HDD /boot or CD
  - *NEW* extra compile-time options at BootResetAction.c line 24+
  - now capable of booting a Mandrake 9 Linux install by itself
- - VIDEO IS FULLY UP (Composite cable only, PAL) at boottime and
+ - VIDEO IS FULLY UP (Composite cable only) at boottime and
    inside Linux; works with Oliver's accellerated X driver (reserves
 	 4MByte of RAM for video)
  - the ROM image is now 256KByte, works with all flashable modchips
@@ -26,6 +26,7 @@ Improvements!
  - auto-unlocks the HDD according to your EEPROM information
  - boots using MBR -> active partition -> reiserfs native loader,
    so it does not use LILO or GRUB, or keep any private HDD space.
+ - *NEW* menu to change between /boot/linuxboot.cfg, /boot/vmlinuz, and CD
 
 LEGAL NOTE 1:
 
@@ -56,6 +57,7 @@ Limitations
  - Boot instability has been reported on different machines.  Cause
     not understood, effect is sometimes it may not boot.  Being looked
 		at, but its perfectly stable on my machine :-(
+ - weird things with CMOS and RTC
 
 ALSO NOTE: this version is for v1.0 boxes only.  The preferred method
 of running the BIOS on v1.1 needs the original Xcodes.  We will be
@@ -92,7 +94,7 @@ make to generate image.bin)
 
 Compile-time options defaults
 
-See BootResetAction.c line 24 onwards
+See config-rom.h
 
 // selects between the supported video modes, both PAL at the moment
 #define VIDEO_PREFERRED_LINES 576
@@ -103,10 +105,13 @@ See BootResetAction.c line 24 onwards
 //#define FORCE_CD_BOOT
 
 // display a line like Composite 480 detected if uncommented
-//#define REPORT_VIDEO_MODE
+#define REPORT_VIDEO_MODE
 
 // show the MBR table if the MBR is valid
 #define DISPLAY_MBR_INFO
+
+// show simple menu selection
+#define MENU
 
 Todo
 
