@@ -120,6 +120,8 @@ void MemoryManagementInitialization(void * pvStartAddress, DWORD dwTotalMemoryAl
 
 void * malloc(size_t size) {
 	MEM_MGT * pmemmgt=pmemmgtStartAddressMemoryMangement;
+	DWORD dwInterruptState;
+	BootPciInterruptGlobalStackStateAndDisable(&dwInterruptState);
 
 	size+=sizeof(MEM_MGT);  // account for the fact that any block is prepended with management structure
 
@@ -131,6 +133,7 @@ void * malloc(size_t size) {
 			if((pmemmgt->m_nLength - size) <= (sizeof(MEM_MGT)+MERGE_IF_LESS_THAN_THIS_LEFT_OVER)) {
 					// use whole of this block, there's not enough left to split it off
 				pmemmgt->m_nLength=-pmemmgt->m_nLength;
+				BootPciInterruptGlobalPopState(dwInterruptState);
 				return (void *)(((BYTE *)pmemmgt)+sizeof(MEM_MGT));
 			} else {
 					// new guy takes up space at end of donor block
@@ -146,12 +149,13 @@ void * malloc(size_t size) {
 					ASSERT(pmemmgtNext->m_pvPrev == (void *)pmemmgt);
 					pmemmgtNext->m_pvPrev=pmemmgtNew;
 				}
+				BootPciInterruptGlobalPopState(dwInterruptState);
 				return (void *)(((BYTE *)pmemmgtNew)+sizeof(MEM_MGT));
 			}
 		}
 		pmemmgt=(MEM_MGT *)pmemmgt->m_pvNext;
 	}
-
+	BootPciInterruptGlobalPopState(dwInterruptState);
 	return NULL; // screwed, not enough memory
 }
 
@@ -159,6 +163,9 @@ void free (void *ptr) {
 	MEM_MGT * pmemmgt=(MEM_MGT *)(((BYTE *)ptr)-sizeof(MEM_MGT));
 	MEM_MGT * pmemmgtPrev=(MEM_MGT *)pmemmgt->m_pvPrev;
 	MEM_MGT * pmemmgtNext=(MEM_MGT *)pmemmgt->m_pvNext;
+	DWORD dwInterruptState;
+	BootPciInterruptGlobalStackStateAndDisable(&dwInterruptState);
+
 	ASSERT(pmemmgt->m_dwSentinel == SENTINEL_CONST);
 
 	pmemmgt->m_nLength=-pmemmgt->m_nLength; // change over to being free memory
@@ -172,6 +179,7 @@ void free (void *ptr) {
 			if(pmemmgtNext!=NULL) {
 				pmemmgtNext->m_pvPrev =pmemmgtPrev;
 			}
+			BootPciInterruptGlobalPopState(dwInterruptState);
 			return; // done
 		}
 	}
@@ -185,10 +193,10 @@ void free (void *ptr) {
 				ASSERT(pmemmgtNextNext->m_pvPrev==pmemmgtNext);
 				pmemmgtNextNext->m_pvPrev =pmemmgt;
 			}
-			return; // done
 		}
 	}
 		// otherwise we have to leave it isolated, but marked as free now
+	BootPciInterruptGlobalPopState(dwInterruptState);
 }
 
 int grub_strlen(const char *sz) {

@@ -1,7 +1,8 @@
 ////////////////////// compile-time options ////////////////////////////////
 
 // selects between the supported video modes, both PAL at the moment
-#define VIDEO_PREFERRED_LINES 576
+#define VIDEO_PREFERRED_LINES 600
+//#define VIDEO_PREFERRED_LINES 576
 //#define VIDEO_PREFERRED_LINES 480
 //
 // uncomment to force CD boot mode even if MBR present
@@ -20,3 +21,7 @@
 
 // show simple menu selection
 #define MENU
+
+// uncomment to do Ethernet init
+//#define DO_ETHERNET 1
+

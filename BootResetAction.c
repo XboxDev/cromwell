@@ -33,7 +33,7 @@
 #endif
 
 
-extern DWORD dwaTitleArea[640*64];
+extern DWORD dwaTitleArea[1024*64];
 JPEG jpegBackdrop;
 BYTE bAvPackType;
 int nTempCursorMbrX, nTempCursorMbrY;
@@ -208,7 +208,7 @@ extern void BootResetAction ( void ) {
 	printk("\n");
 
 		// capture title area
-	BootVideoBlit(&dwaTitleArea[0], 640*4, ((DWORD *)FRAMEBUFFER_START)+(VIDEO_MARGINY*640), 640*4, 64);
+	BootVideoBlit(&dwaTitleArea[0], VIDEO_WIDTH*4, ((DWORD *)FRAMEBUFFER_START)+(VIDEO_MARGINY*VIDEO_WIDTH), VIDEO_WIDTH*4, 64);
 
 	nTempCursorX=VIDEO_CURSOR_POSX;
 	nTempCursorY=VIDEO_CURSOR_POSY;

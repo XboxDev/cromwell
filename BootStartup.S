@@ -510,7 +510,7 @@ patspin2:
 	mov $0xf063, %eax  // 4K page page table itself
 	mov %eax, 0xc00(%edi) // page table fc00
 
-	mov $0xff0000e3, %eax  // 4M page, flash area area
+	mov $0xff0000f3, %eax  // 4M page, flash area area NOT CACHEABLE
 	mov %eax, 0xff0(%edi)// page table entry fffc
 	mov $0xff4000e3, %eax  // 4M page, flash area area
 	mov %eax, 0xff4(%edi)// page table entry fffc
@@ -537,6 +537,26 @@ patspin2:
 	add	$4, %edi
 	add	$0x400000, %eax
 	mov	%eax, (%edi)
+
+	mov $0xfe0000fb, %eax // not cacheable 4M area starting 0xfd000000
+	mov	%eax, %ebx
+
+	shr	$0x14, %ebx  // divide ebx by 1M, 0xfd0
+	add	%ebx, %edi // add to page table base 0xffd0
+
+		// contiguous 16M area starting 0xfe000000 - 0xfeffffff in page tbl at 0xffe0+
+
+	mov	%eax, (%edi)
+	add	$4, %edi
+	add	$0x400000, %eax
+	mov	%eax, (%edi)
+	add	$4, %edi
+	add	$0x400000, %eax
+	mov	%eax, (%edi)
+	add	$4, %edi
+	add	$0x400000, %eax
+	mov	%eax, (%edi)
+
 
 	mov	%cr0, %eax
 	mov	%eax, %ebx

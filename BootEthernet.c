@@ -14,43 +14,86 @@
 // killed temporarily to allow clean CVS checkin
 
 
+#include "boot.h"
+#include "config-rom.h"
+#include "BootEEPROM.h"
+
 #include "nvn/basetype.h"
 #include "nvn/adapter.h"
 #include "nvn/os.h"
 #include "nvn/nvnet.h"
 
-#define bool_already_defined_
-#include "boot.h"
-#include "BootEEPROM.h"
+
 
 #ifdef DO_ETHERNET
 
 extern EEPROMDATA eeprom;
 
-#define DEBUG_ETH 0
+#define DEBUG_ETH 1
+
+void dev_skb_destructor(struct sk_buff * skb)
+{
+	printk("dev_skb_destructor\n");
+	free(skb);
+}
 
 
-typedef struct {
-	char szName32[32];
-} CROMWELL_DEVICE_DESCRIPTOR;
+struct sk_buff * dev_alloc_skb(CROMWELL_DEVICE_DESCRIPTOR *pcromwelldevice, int nMemHeadroom)
+{
+	struct sk_buff *skb = malloc(sizeof(skb) + 16 + nMemHeadroom);
+	if(skb!=NULL) {
+		skb->next=NULL;
+		skb->prev=NULL;
+		skb->list=&pcromwelldevice->skbuffhead;
+		skb->sk=NULL;
+		skb->dev=pcromwelldevice;
+		skb->h.raw=NULL;
+		skb->nh.raw=NULL;
+		skb->mac.raw=NULL;
+		skb->dst=NULL;
+		skb->len=0;
+		skb->csum=0;
+		skb->used=0;
+		skb->cloned=0;
+		skb->pkt_type=0;
+		skb->ip_summed=0;
+		skb->priority=0;
+		skb->users=1;
+		skb->protocol=0;
+		skb->security=0;
+		skb->truesize=sizeof(skb) + 16 + nMemHeadroom;
+		skb->head=((BYTE *)skb) + sizeof(skb);
+		skb->data=skb->head;
+		skb->tail=skb->head;
+		skb->end=skb->head+16 + nMemHeadroom;
+		skb->destructor=dev_skb_destructor;
+
+		if(pcromwelldevice->skbuffhead.next==NULL) {
+			pcromwelldevice->skbuffhead.next=skb;
+		}
+	}
+	return skb;
+}
 
 
 // these are service we have to provide from our "Operating System"
 
 int BootEthernetMemoryAlloc(PVOID pOSCX, PMEMORY_BLOCK pMem) {
-//	printk("BootEthernetMemoryAlloc(0x%x)\n", pMem->uiLength);
 	pMem->pLogical=pMem->pPhysical=malloc(pMem->uiLength);
+	printk("BootEthernetMemoryAlloc(0x%x) -> %x\n", pMem->uiLength, pMem->pLogical);
 	return 1;
 }
+
 int BootEthernetMemoryFree(PVOID pOSCX, PMEMORY_BLOCK pMem) {
 #if DEBUG_ETH
 	printk("BootEthernetMemoryFree()\n");
 #endif
+	free(pMem->pLogical);
 	return 1;
 }
 int BootEthernetClearMemory(PVOID pOSCX, PVOID pMem, int iLength) {
 #if DEBUG_ETH
-//	printk("BootEthernetClearMemory()\n");
+	printk("BootEthernetClearMemory(p=%x, len=%x)\n", (int)pMem, iLength);
 #endif
 	memset(pMem, 0, iLength);
 	return 1;
@@ -62,12 +105,44 @@ int BootEthernetStallExecution(PVOID pOSCX, ULONG ulTimeInMicroseconds) {
 #endif
 	return 1;
 }
+
 int BootEthernetAllocRxBuffer(PVOID pOSCX, PMEMORY_BLOCK pMem, PVOID *ppvID) {
 #if DEBUG_ETH
-	printk("BootEthernetAllocRxBuffer()\n");
+	printk("BootEthernetAllocRxBuffer(uiLength=%x).. ", pMem->uiLength);
+#endif
+		CROMWELL_DEVICE_DESCRIPTOR *pcromwelldevice   = (CROMWELL_DEVICE_DESCRIPTOR *)pOSCX;
+    struct nvnet_private *ppriv = (struct nvnet_private *)pcromwelldevice->m_ppriv;
+    struct sk_buff *skb;
+    struct nvnet_rx_info *info;
+
+    skb = dev_alloc_skb(pcromwelldevice, MAX_PACKET_SIZE + 2 + sizeof(struct nvnet_rx_info));
+    if(!skb)
+    {
+        printk("BootEthernetAllocRxBuffer - skb allocation failed\n");
+        return 0;
+    }
+
+    info = (struct nvnet_rx_info *)((BYTE *)skb->tail + 2 + MAX_PACKET_SIZE);
+
+    info->skb      = skb;
+    info->uiLength = MAX_PACKET_SIZE;
+
+    pMem->pLogical = (void *)skb;
+    pMem->uiLength = MAX_PACKET_SIZE;
+    *ppvID           = (void *)info;
+
+		/*
+    info->dma  = pci_map_single(m_ppriv->pdev, skb->tail, MAX_PACKET_SIZE, PCI_DMA_FROMDEVICE);
+    mem->pPhysical = (void *)cpu_to_le32(info->dma);
+		*/
+		 pMem->pPhysical = pMem->pLogical;
+#if DEBUG_ETH
+	printk("Done\n ");
 #endif
 	return 1;
 }
+
+
 int BootEthernetFreeRxBuffer (PVOID pOSCX, PMEMORY_BLOCK pMem, PVOID pvID) {
 #if DEBUG_ETH
 	printk("BootEthernetFreeRxBuffer()\n");
@@ -145,20 +220,24 @@ int BootEthernetIndicatePackets (PVOID pvContext, PVOID *ppvID, ULONG *pulStatus
 }
 int BootEthernetLockAlloc (PVOID pOSCX, int iLockType, PVOID *ppvLock) {
 #if DEBUG_ETH
-	printk("BootEthernetLockAlloc()\n");
+	printk("BootEthernetLockAlloc(type =%d)\n", iLockType);
 #endif
+	ppvLock=malloc(sizeof(struct spinlock));
+	((struct spinlock *)*(int *)ppvLock)->m_fAcquired=false;
 	return 1;
 }
 int BootEthernetLockAcquire (PVOID pOSCX, int iLockType, PVOID pvLock) {
 #if DEBUG_ETH
-	printk("BootEthernetLockAcquire()\n");
+	printk("BootEthernetLockAcquire(type=%d, initial=%d)\n", iLockType, ((struct spinlock *)*(int *)pvLock)->m_fAcquired);
 #endif
+	((struct spinlock *)*(int *)pvLock)->m_fAcquired=true;
 	return 1;
 }
 int BootEthernetLockRelease (PVOID pOSCX, int iLockType, PVOID pvLock) {
 #if DEBUG_ETH
-	printk("BootEthernetLockRelease()\n");
+	printk("BootEthernetLockRelease(type=%d, initial=%d)\n", iLockType, ((struct spinlock *)*(int *)pvLock)->m_fAcquired);
 #endif
+	((struct spinlock *)*(int *)pvLock)->m_fAcquired=false;
 	return 1;
 }
 
@@ -180,6 +259,9 @@ int BootStartUpEthernet()
 	CROMWELL_DEVICE_DESCRIPTOR cromwellDeviceDescriptor;
 
 	cromwellapi.pOSCX=&cromwellDeviceDescriptor; // confirmed action from nvnet.c
+	cromwellDeviceDescriptor.m_ppriv = &priv;
+	cromwellDeviceDescriptor.skbuffhead.prev=NULL;
+	cromwellDeviceDescriptor.skbuffhead.next=NULL;
 
 	cromwellapi.pfnAllocMemory=BootEthernetMemoryAlloc;
   cromwellapi.pfnFreeMemory=BootEthernetMemoryFree;
@@ -237,14 +319,16 @@ int BootStartUpEthernet()
 		&priv.phyaddr
 	);
 
-        realmac[0] = eeprom.MACAddress[5];
-        realmac[1] = eeprom.MACAddress[4];
-        realmac[2] = eeprom.MACAddress[3];
-        realmac[3] = eeprom.MACAddress[2];
-        realmac[4] = eeprom.MACAddress[1];
-        realmac[5] = eeprom.MACAddress[0];
-        priv.hwapi->pfnSetNodeAddress(priv.hwapi->pADCX, realmac);
-								
+	printk("AdapterOpen returned %d\n", n);
+
+  realmac[0] = eeprom.MACAddress[5];
+  realmac[1] = eeprom.MACAddress[4];
+  realmac[2] = eeprom.MACAddress[3];
+  realmac[3] = eeprom.MACAddress[2];
+  realmac[4] = eeprom.MACAddress[1];
+  realmac[5] = eeprom.MACAddress[0];
+  priv.hwapi->pfnSetNodeAddress(priv.hwapi->pADCX, realmac);
+
 /*
 	int n=PHY_Open(&baOsStruct[0], &phyapi, &ulIsHPNAPhy, &ulPhyAddr, &ulPhyConnected);
 

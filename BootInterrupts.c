@@ -25,7 +25,7 @@ volatile int nCountI2cinterrupts, nCountUnusedInterrupts, nCountUnusedInterrupts
 volatile bool fSeenPowerdown;
 volatile TRAY_STATE traystate;
 
-DWORD dwaTitleArea[640*64];
+DWORD dwaTitleArea[1024*64];
 extern BYTE bAvPackType;
 extern BYTE bFinalConexantA8, bFinalConexantAA, bFinalConexantAC;
 
@@ -229,7 +229,7 @@ void IntHandlerCSmc(void)
 						{
 							BYTE b=I2CTransmitByteGetReturn(0x10, 0x04);
 							bprintf("Detected new AV type %d, cf %d\n", b, bAvPackType);
-							if((b!=bAvPackType ) && (!((b==6)&&((bAvPackType==7)||(bAvPackType==8)))) ) {
+							if((b!=bAvPackType ) && (!((b==6)&&((bAvPackType>=7)||(bAvPackType<=9)))) ) {
 								bAvPackType=BootVgaInitializationKernel(VIDEO_PREFERRED_LINES, false);
 								BootVideoEnableOutput(bAvPackType);
 							}
@@ -353,9 +353,9 @@ void IntHandler3VsyncC(void)  // video VSYNC
 		switch(VIDEO_VSYNC_DIR) {
 			case 0:
 //				dw+=64; dw<<=24;
-				dw=(((VIDEO_VSYNC_POSITION * 192)/640)+64)<<24;
+				dw=(((VIDEO_VSYNC_POSITION * 192)/VIDEO_WIDTH)+64)<<24;
 				VIDEO_VSYNC_POSITION+=2;
-				if(VIDEO_VSYNC_POSITION>=(640-54-VIDEO_MARGINX-VIDEO_MARGINX)) VIDEO_VSYNC_DIR=2;
+				if(VIDEO_VSYNC_POSITION>=(VIDEO_WIDTH-64-VIDEO_MARGINX)) VIDEO_VSYNC_DIR=2;
 				break;
 			case 1:
 				dw+=64; dw<<=24;
@@ -368,20 +368,20 @@ void IntHandler3VsyncC(void)  // video VSYNC
 		}
 
 		BootVideoJpegBlitBlend(
-			(DWORD *)(FRAMEBUFFER_START+640*4*VIDEO_MARGINY+VIDEO_MARGINX*4+(dwOld<<2)), 640 * 4, &jpegBackdrop,
+			(DWORD *)(FRAMEBUFFER_START+VIDEO_WIDTH*4*VIDEO_MARGINY+VIDEO_MARGINX*4+(dwOld<<2)), VIDEO_WIDTH * 4, &jpegBackdrop,
 			&dwaTitleArea[dwOld+VIDEO_MARGINX],
 			0x00ff00ff,
 			&dwaTitleArea[dwOld+VIDEO_MARGINX],
-			640*4,
+			VIDEO_WIDTH*4,
 			4,
 			54, 64
 		);
 		BootVideoJpegBlitBlend(
-			(DWORD *)(FRAMEBUFFER_START+640*4*VIDEO_MARGINY+VIDEO_MARGINX*4+(VIDEO_VSYNC_POSITION<<2)), 640 * 4, &jpegBackdrop,
-			(DWORD *)(((BYTE *)jpegBackdrop.m_pBitmapData)+(640*(jpegBackdrop.m_nHeight-64)*jpegBackdrop.m_nBytesPerPixel)),
+			(DWORD *)(FRAMEBUFFER_START+VIDEO_WIDTH*4*VIDEO_MARGINY+VIDEO_MARGINX*4+(VIDEO_VSYNC_POSITION<<2)), VIDEO_WIDTH * 4, &jpegBackdrop,
+			(DWORD *)(((BYTE *)jpegBackdrop.m_pBitmapData)+(jpegBackdrop.m_nWidth*(jpegBackdrop.m_nHeight-64)*jpegBackdrop.m_nBytesPerPixel)),
 			0x00ff00ff | dw,
 			&dwaTitleArea[VIDEO_VSYNC_POSITION+VIDEO_MARGINX],
-			640*4,
+			VIDEO_WIDTH*4,
 			4,
 			54, 64
 		);

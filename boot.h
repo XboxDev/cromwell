@@ -38,7 +38,6 @@
 #define TRACE
 #endif
 
-// #define DO_ETHERNET 1
 
 /////////////////////////////////
 // some typedefs to make for easy sizing
@@ -84,6 +83,7 @@ extern void WATCHDOG(void);
 #define BIOS_TICK_COUNT (*((volatile DWORD *)0x46c))
 #define VIDEO_VSYNC_POSITION (*((volatile DWORD *)0x470))
 #define VIDEO_VSYNC_DIR (*((volatile DWORD *)0x474))
+#define VIDEO_WIDTH (*((volatile DWORD *)0x478))
 
 /////////////////////////////////
 // Superfunky i386 internal structures
@@ -225,7 +225,7 @@ static __inline DWORD IoInputDword(WORD wAds) {
 
 void BootPciInterruptGlobalStackStateAndDisable(DWORD * dw);
 void BootPciInterruptGlobalPopState(DWORD dw);
-void BootPciInterruptEnable();
+void BootPciInterruptEnable(void);
 
 	// boot process
 int BootPerformPicChallengeResponseAction(void);
@@ -416,6 +416,7 @@ bool BootVideoJpegUnpackAsRgb(
 );
 
 void BootVideoEnableOutput(BYTE bAvPack);
+BYTE * BootVideoGetPointerToEffectiveJpegTopLeft(JPEG * pJpeg);
 
 void * memcpy(void *dest, const void *src,  size_t size);
 void * memset(void *dest, int data,  size_t size);

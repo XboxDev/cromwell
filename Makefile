@@ -5,6 +5,9 @@
 # free bios project.
 #
 # $Log$
+# Revision 1.11  2003/01/21 22:05:45  warmcat
+# v1.1 Xbox compatability; ability to boot Mandrake 9 boot CD as well as install CD, fix for 8.3 only CDs; Vsync-interrupt sprite :-) and other cosmetic stuff; temperature display; update backdrop JPG to 640x(576+64); improved CLI/STI code
+#
 # Revision 1.10  2003/01/14 15:24:18  warmcat
 # New menu UI.  VSYNC IRQ up.  Franz's I2C check added.  Flashtype and Ed's EEPROM report added.
 #
@@ -82,8 +85,8 @@ jpeg-6b/jmemmgr.o jpeg-6b/jcomapi.o jpeg-6b/jutils.o jpeg-6b/jerror.o \
 BootFlash.o BootEEPROM.o\
 # !!! killed temporarily to allow clean CVS checkin
 #BootEthernet.o \
-#BootUsbOhci.o \
 #nvn/nvnetlib.o
+#BootUsbOhci.o
 
 
 #RESOURCES = rombios.elf amended2bl.elf xcodes11.elf

@@ -31,18 +31,24 @@ bool BootFlashGetDescriptor( OBJECT_FLASH *pof, KNOWN_FLASH_TYPE * pkft )
 	bool fSeen=false;
 
 		// no ISRs should touch flash while we do the stuff
-	__asm__ __volatile__ ( "pushf ; cli ");
+	__asm__ __volatile__ ( "pushf ; cli ; wbinvd ");
 
 		// read flash device ID
 
 	pof->m_pbMemoryMappedStartAddress[0x5555]=0xaa;
 	pof->m_pbMemoryMappedStartAddress[0x2aaa]=0x55;
-	pof->m_pbMemoryMappedStartAddress[0x5555]=0x90;
-	pof->m_bManufacturerId=pof->m_pbMemoryMappedStartAddress[0];
+	pof->m_pbMemoryMappedStartAddress[0x5555]=0xf0;
+
 	pof->m_pbMemoryMappedStartAddress[0x5555]=0xaa;
 	pof->m_pbMemoryMappedStartAddress[0x2aaa]=0x55;
 	pof->m_pbMemoryMappedStartAddress[0x5555]=0x90;
+	pof->m_bManufacturerId=pof->m_pbMemoryMappedStartAddress[0];
+
+//	pof->m_pbMemoryMappedStartAddress[0x5555]=0xaa;
+//	pof->m_pbMemoryMappedStartAddress[0x2aaa]=0x55;
+//	pof->m_pbMemoryMappedStartAddress[0x5555]=0x90;
 	pof->m_bDeviceId=pof->m_pbMemoryMappedStartAddress[1];
+
 	pof->m_pbMemoryMappedStartAddress[0x5555]=0xf0;
 
 	__asm__ __volatile__ ( " popf ");

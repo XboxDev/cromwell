@@ -104,7 +104,7 @@ void BootVideoJpegBlitBlend(
 	while(y--) {
 		BYTE *pbDest=(BYTE *)pdwTopLeftDestination;
 		BYTE *pbBackground=(BYTE *)pdwTopLeftBackground;
-		BYTE *pData=(BYTE *)pdwTopLeftInJpegBitmap;
+		BYTE *pData=((BYTE *)pdwTopLeftInJpegBitmap);
 
 		if(dwCountBytesPerPixelBackground!=4) { // jpeg backdrop
 			for(n=0;n<x;n++) {
@@ -358,59 +358,46 @@ bool BootVideoJpegUnpackAsRgb(
 	return false;
 }
 
+BYTE * BootVideoGetPointerToEffectiveJpegTopLeft(JPEG * pJpeg)
+{
+	DWORD dwCountPixelsHorzOffsetIntoJpeg=(pJpeg->m_nWidth-VIDEO_WIDTH)/2;
+	DWORD dwCountLinesVertOffsetIntoJpeg=(pJpeg->m_nHeight-VIDEO_HEIGHT)/2;
+	return ((BYTE *)pJpeg->m_pBitmapData)+
+			(dwCountLinesVertOffsetIntoJpeg * pJpeg->m_nWidth * pJpeg->m_nBytesPerPixel)+
+			(dwCountPixelsHorzOffsetIntoJpeg * pJpeg->m_nBytesPerPixel)
+		;
+}
+
 void BootVideoClearScreen(JPEG * pJpeg, int nStartLine, int nEndLine)
 {
 	VIDEO_CURSOR_POSX=VIDEO_MARGINX;
 	VIDEO_CURSOR_POSY=VIDEO_MARGINY;
 
-	if(nEndLine>VIDEO_HEIGHT) nEndLine=VIDEO_HEIGHT;
+	if(nEndLine>=VIDEO_HEIGHT) nEndLine=VIDEO_HEIGHT-1;
 
 	{
-//		WATCHDOG();
-
 		if(pJpeg->m_pBitmapData!=NULL) {
-			DWORD *pdw=(DWORD *)FRAMEBUFFER_START /*+(640*VIDEO_MARGINY)*/;
-			int nLine=0, n1=0, nBorderLines=(((int)VIDEO_HEIGHT)-((int)pJpeg->m_nHeight-64) )/2;
+			DWORD *pdw=((DWORD *)FRAMEBUFFER_START)+VIDEO_WIDTH*nStartLine;
+			int n1=pJpeg->m_nBytesPerPixel * pJpeg->m_nWidth * nStartLine;
+			BYTE *pbJpegBitmapAdjustedDatum=BootVideoGetPointerToEffectiveJpegTopLeft(pJpeg) ;
 
-//			if(nBorderLines<0)	nBorderLines=0;
-//			nStartLine-=VIDEO_MARGINY; nEndLine-=VIDEO_MARGINY;
-
-//			printk("%d - %d\n", VIDEO_HEIGHT, nBorderLines);
-
-			while((nLine)<(int)VIDEO_HEIGHT) {
-				if((nLine>=nStartLine) && (nLine<nEndLine)) {
-					if((nLine>=nBorderLines) && ((nLine-nBorderLines)<((int)pJpeg->m_nHeight-64) /*pJpeg->m_nHeight*/)) {
-						int n=0;
-						for(n=0;n<pJpeg->m_nWidth;n++) {
-							pdw[n]=0xff000000|
-								((pJpeg->m_pBitmapData[n1+2]))|
-								((pJpeg->m_pBitmapData[n1+1])<<8)|
-								((pJpeg->m_pBitmapData[n1])<<16)
-							;
-							n1+=pJpeg->m_nBytesPerPixel;
-						}
-					} else { // above or below the centered JPEG area
-							int n=0;
-							DWORD dw=0xff00001d /*|
-									((pJpeg->m_pBitmapData[0x18+2]))|
-									((pJpeg->m_pBitmapData[0x18+1])<<8)|
-									((pJpeg->m_pBitmapData[0x18])<<16) */
-							;
-							for(n=0;n<pJpeg->m_nWidth;n++) pdw[n]=dw;
-					}
-				} else {  // not in update area
-					if((nLine>=nBorderLines) && ((nLine-nBorderLines)<(pJpeg->m_nHeight-64) /*pJpeg->m_nHeight*/)) {
-						n1+=pJpeg->m_nBytesPerPixel *pJpeg->m_nWidth;
-					}
+			while(nStartLine++<nEndLine) {
+				int n;
+				for(n=0;n<VIDEO_WIDTH;n++) {
+					pdw[n]=0xff000000|
+						((pbJpegBitmapAdjustedDatum[n1+2]))|
+						((pbJpegBitmapAdjustedDatum[n1+1])<<8)|
+						((pbJpegBitmapAdjustedDatum[n1])<<16)
+					;
+					n1+=pJpeg->m_nBytesPerPixel;
 				}
-				pdw+=640; // 640 DWORDs
-				nLine++;
+				n1+=pJpeg->m_nBytesPerPixel * (pJpeg->m_nWidth - VIDEO_WIDTH);
+				pdw+=VIDEO_WIDTH; // adding DWORD footprints
 			}
 		} else{
 			printk("null jpg");
 		}
 	}
-
 }
 
 int VideoDumpAddressAndData(DWORD dwAds, const BYTE * baData, DWORD dwCountBytesUsable) { // returns bytes used
@@ -462,8 +449,8 @@ void BootVideoChunkedPrint(char * szBuffer, WORD wLength) {
 			szBuffer[n]='\0';
 			if(n!=nDone) {
 				VIDEO_CURSOR_POSX+=BootVideoOverlayString(
-					(DWORD *)((FRAMEBUFFER_START) + VIDEO_CURSOR_POSY * (640*4) + VIDEO_CURSOR_POSX),
-					640*4, VIDEO_ATTR, &szBuffer[nDone]
+					(DWORD *)((FRAMEBUFFER_START) + VIDEO_CURSOR_POSY * (VIDEO_WIDTH*4) + VIDEO_CURSOR_POSX),
+					VIDEO_WIDTH*4, VIDEO_ATTR, &szBuffer[nDone]
 				)<<2;
 				nDone=n+1;
 			}
