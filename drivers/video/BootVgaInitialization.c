@@ -188,11 +188,6 @@ void BootVgaInitializationKernelNG(CURRENT_VIDEO_MODE_DETAILS * pcurrentvideomod
 				pcurrentvideomodedetails->m_dwHeightInLines=576;
 				pcurrentvideomodedetails->m_dwMarginXInPixelsRecommended=20;
 				pcurrentvideomodedetails->m_dwMarginYInLinesRecommended=20; // lines
-				if (video_encoder == ENCODER_CONEXANT) {
-					I2CTransmitWord(0x45, (0x60<<8)|0xc7);
-					I2CTransmitWord(0x45, (0x62<<8)|0x0);
-					I2CTransmitWord(0x45, (0x64<<8)|0x0);
-				}
 				break;
 		}	
 		xbox_video_mode encoder_mode;

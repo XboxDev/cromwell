@@ -483,6 +483,7 @@ int BootIdeDriveInit(unsigned uIoBase, int nIndexDrive,int drivetype)
 	tsaHarddiskInfo[nIndexDrive].m_wAtaRevisionSupported = drive_info[88];
 
 
+	VIDEO_ATTR=0xffc8c8c8;
         /* 48-bit LBA */   
 	if( drive_info[83] & 1ul<<10 ) 
 	{   
@@ -524,7 +525,6 @@ int BootIdeDriveInit(unsigned uIoBase, int nIndexDrive,int drivetype)
                 // We Detected a CD-DVD or so, as there are no Heads ...
 		tsaHarddiskInfo[nIndexDrive].m_fAtapi=true;
 
-		VIDEO_ATTR=0xffc8c8c8;
 		printk("hd%c: ", nIndexDrive+'a');
 		VIDEO_ATTR=0xffc8c800;
 
@@ -587,7 +587,6 @@ int BootIdeDriveInit(unsigned uIoBase, int nIndexDrive,int drivetype)
 		if(tsaHarddiskInfo[nIndexDrive].m_wAtaRevisionSupported&16) nAta=4;
 		if(tsaHarddiskInfo[nIndexDrive].m_wAtaRevisionSupported&32) nAta=5;
 */
-		VIDEO_ATTR=0xffc8c8c8;
 		printk("hd%c: ", nIndexDrive+'a');
 		VIDEO_ATTR=0xffc8c800;
 
@@ -639,24 +638,20 @@ int BootIdeDriveInit(unsigned uIoBase, int nIndexDrive,int drivetype)
 				VideoDumpAddressAndData(0, &baKeyFromEEPROM[0], 0x10);
 		#endif
 	
-				// Claculate the hdd pw from EErpom and Serial / Model Number
+				// Calculate the hdd pw from EEprom and Serial / Model Number
 				HMAC_SHA1 (&baMagic[2], baKeyFromEEPROM, 0x10,
 						 tsaHarddiskInfo[nIndexDrive].m_szIdentityModelNumber,
 						 tsaHarddiskInfo[nIndexDrive].m_length,
 						 tsaHarddiskInfo[nIndexDrive].m_szSerial,
 						 tsaHarddiskInfo[nIndexDrive].s_length);
 	                       
-				if (nVersionHashing == 0)
-				{
+				if (nVersionHashing == 0) {
 					printk("Got a 0 return from BootHddKeyGenerateEepromKeyData\n");
-					// ERRORR -- Corrupt EEprom or Newer Version of EEprom - key
+					// ERROR -- Corrupt EEprom or Newer Version of EEprom - key
 				}
 	
 	
 				nVersionSuccessfulDecrypt=nVersionHashing;
-	
-	
-	
 					// clear down the unlock packet, except for b8 set in first word (high security unlock)
 	
 				{
