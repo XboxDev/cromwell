@@ -325,7 +325,7 @@ void BootPciPeripheralInitialization()
 		PciWriteDword(BUS_1, DEV_0, FUNC_0, 0x0c, 0x0);
 		PciWriteDword(BUS_1, DEV_0, FUNC_0, 0x18, 0x08);
 
-#if 0
+#if 1
 		__asm__ __volatile__(
 
 		" wbinvd \n"

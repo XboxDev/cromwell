@@ -10,6 +10,8 @@
 
 #undef FATX_DEBUG
 
+//#define FATX_INFO
+
 int checkForLastDirectoryEntry(unsigned char* entry) {
 
 	// if the filename length byte is 0 or 0xff,
@@ -26,7 +28,9 @@ int LoadFATXFile(FATXPartition *partition,char *filename, FATXFILEINFO *fileinfo
 
 	if(partition == NULL) {
 		VIDEO_ATTR=0xffe8e8e8;
+#ifdef FATX_INFO
 		printk("LoadFATXFile : no open FATX partition\n");
+#endif
 	} else {
 		if(FATXFindFile(partition,filename,FATX_ROOT_FAT_CLUSTER,fileinfo)) {
 #ifdef FATX_DEBUG
@@ -38,11 +42,15 @@ int LoadFATXFile(FATXPartition *partition,char *filename, FATXFILEINFO *fileinfo
 			if(FATXLoadFromDisk(partition, fileinfo)) {
 				return true;
 			} else {
+#ifdef FATX_INFO
 				printk("LoadFATXFile : error loading %s\n",filename);
+#endif
 				return false;
 			}
 		} else {
+#ifdef FATX_INFO
 			printk("LoadFATXFile : file %s not found\n",filename);
+#endif
 			return false;
 		}
 	}
@@ -78,7 +86,9 @@ int FATXSignature(int nDriveIndex,unsigned int block,BYTE *ba) {
 
 	if(BootIdeReadSector(0, &ba[0], block, 0, 512)) {
 		VIDEO_ATTR=0xffe8e8e8;
+#ifdef FATX_INFO
 		printk("FATXSignature : Unable to read FATX sector\n");
+#endif
 		return false;
 	} else {
 		if( (ba[0]=='F') && (ba[1]=='A') && (ba[2]=='T') && (ba[3]=='X') ) {
@@ -101,36 +111,42 @@ FATXPartition *OpenFATXPartition(int nDriveIndex,
 	printk("OpenFATXPartition : Read partition header\n");
 #endif
 	// load the partition header
-	readSize = FATXRawRead(nDriveIndex, partitionOffset, 0, 
+	readSize = FATXRawRead(nDriveIndex, partitionOffset, 0,
 			FATX_PARTITION_HEADERSIZE, (char *)&partitionInfo);
 
   	if (readSize != FATX_PARTITION_HEADERSIZE) {
 		VIDEO_ATTR=0xffe8e8e8;
+#ifdef FATX_INFO
 		printk("OpenFATXPartition : Out of data while reading partition header\n");
+#endif
 		return NULL;
 	}
 
 	// check the magic
 	if (*((u_int32_t*) &partitionInfo) != FATX_PARTITION_MAGIC) {
 		VIDEO_ATTR=0xffe8e8e8;
+#ifdef FATX_INFO
 		printk("OpenFATXPartition : No FATX partition found at requested offset\n");
+#endif
 		return NULL;
 	}
-	
+
 #ifdef FATX_DEBUG
 	printk("OpenFATXPartition : Allocating Partition struct\n");
 #endif
 	// make up new structure
 	partition = (FATXPartition*) malloc(sizeof(FATXPartition));
 	if (partition == NULL) {
+#ifdef FATX_INFO
 		printk("OpenFATXPartition : Out of memory\n");
+#endif
 		return NULL;
-	}  
+	}
 #ifdef FATX_DEBUG
 	printk("OpenFATXPartition : Allocating Partition struct done\n");
 #endif
 	memset(partition,0,sizeof(FATXPartition));
-	
+
 	// setup the easy bits
 	partition->nDriveIndex = nDriveIndex;
 	partition->partitionStart = partitionOffset;
@@ -143,10 +159,10 @@ FATXPartition *OpenFATXPartition(int nDriveIndex,
 	chainTableSize = partition->clusterCount * partition->chainMapEntrySize;
 	if (chainTableSize % FATX_CHAINTABLE_BLOCKSIZE) {
 		// round up to nearest FATX_CHAINTABLE_BLOCKSIZE bytes
-		chainTableSize = ((chainTableSize / FATX_CHAINTABLE_BLOCKSIZE) + 1) 
+		chainTableSize = ((chainTableSize / FATX_CHAINTABLE_BLOCKSIZE) + 1)
 				* FATX_CHAINTABLE_BLOCKSIZE;
 	}
-	
+
 #ifdef FATX_DEBUG
 	printk("OpenFATXPartition : Allocating chaintable struct\n");
 #endif
@@ -154,7 +170,9 @@ FATXPartition *OpenFATXPartition(int nDriveIndex,
 	partition->clusterChainMap.words = (u_int16_t*) malloc(chainTableSize);
     	if (partition->clusterChainMap.words == NULL) {
 		VIDEO_ATTR=0xffe8e8e8;
+#ifdef FATX_INFO
 		printk("OpenFATXPartition : Out of memory\n");
+#endif
 		return NULL;
 	}
 
@@ -166,15 +184,17 @@ FATXPartition *OpenFATXPartition(int nDriveIndex,
 	printk("Part stats : Part Size	%d \n", partition->partitionSize);
 #endif
 
-	readSize = FATXRawRead(nDriveIndex, partitionOffset, FATX_PARTITION_HEADERSIZE, 
+	readSize = FATXRawRead(nDriveIndex, partitionOffset, FATX_PARTITION_HEADERSIZE,
 			chainTableSize, (char *)partition->clusterChainMap.words);
 
     	if (readSize != chainTableSize) {
 		VIDEO_ATTR=0xffe8e8e8;
+#ifdef FATX_INFO
 		printk("Out of data while reading cluster chain map table\n");
+#endif
 	}
 	partition->cluster1Address = ( ( FATX_PARTITION_HEADERSIZE + chainTableSize) );
-	
+
 	return partition;
 }
 
@@ -196,7 +216,7 @@ void _DumpFATXTree(FATXPartition* partition, int clusterId, int nesting) {
 	u_int32_t entryClusterId;
 	u_int32_t flags;
 	char flagsStr[5];
-	
+
 	// OK, output all the directory entries
 	endOfDirectory = 0;
 	while(clusterId != -1) {
@@ -237,7 +257,7 @@ void _DumpFATXTree(FATXPartition* partition, int clusterId, int nesting) {
 			flags = curEntry[1];
 			entryClusterId = *((u_int32_t*) (curEntry + 0x2c));
 			fileSize = *((u_int32_t*) (curEntry + 0x30));
-			
+
 			// wipe fileSize
 			if (flags & FATX_FILEATTR_DIRECTORY) {
 				fileSize = 0;
@@ -272,11 +292,11 @@ void _DumpFATXTree(FATXPartition* partition, int clusterId, int nesting) {
 			for(j=0; j< nesting; j++) {
 				writeBuf[j] = ' ';
 			}
-			
+
 			VIDEO_ATTR=0xffe8e8e8;
-			printk("/%s  [%s] (SZ:%i CL%x))\n",filename, flagsStr, 
+			printk("/%s  [%s] (SZ:%i CL%x))\n",filename, flagsStr,
 					fileSize, entryClusterId);
-			
+
 			// If it is a sub-directory, recurse
 			/*
 			if (flags & FATX_FILEATTR_DIRECTORY) {
@@ -321,7 +341,9 @@ int FATXLoadFromDisk(FATXPartition* partition, FATXFILEINFO *fileinfo) {
 
 	// check we actually found enough data
 	if (fileSize != 0) {
-    		printk("Hit end of cluster chain before file size was zero\n");
+#ifdef FATX_INFO
+   	printk("Hit end of cluster chain before file size was zero\n");
+#endif
 		free(fileinfo->buffer);
 		fileinfo->buffer = NULL;
 		return false;
@@ -339,7 +361,7 @@ int FATXFindFile(FATXPartition* partition,
 	VIDEO_ATTR=0xffc8c8c8;
 	printk("FATXFindFile : %s\n",filename);
 #endif
-	
+
   	// convert any '\' to '/' characters
   	while(filename[i] != 0) {
 	    	if (filename[i] == '\\') {
@@ -347,16 +369,16 @@ int FATXFindFile(FATXPartition* partition,
 	    	}
 	    	i++;
   	}
-	
+
   	// skip over any leading / characters
   	i=0;
   	while((filename[i] != 0) && (filename[i] == '/')) {
 	    	i++;
   	}
-	
+
 	return _FATXFindFile(partition,&filename[i],clusterId,fileinfo);
 }
-	
+
 int _FATXFindFile(FATXPartition* partition,
                     char* filename,
                     int clusterId, FATXFILEINFO *fileinfo) {
@@ -383,7 +405,9 @@ int _FATXFindFile(FATXPartition* partition,
 
 		// check seek filename size
 		if (strlen(filename) > FATX_FILENAME_MAX) {
+#ifdef FATX_INFO
 			printk("Bad filename supplied (one leafname is too big)\n");
+#endif
 			return false;
 		}
 
@@ -395,7 +419,9 @@ int _FATXFindFile(FATXPartition* partition,
 
 		// check seek filename size
 		if ((slashPos - filename) > FATX_FILENAME_MAX) {
+#ifdef FATX_INFO
 			printk("Bad filename supplied (one leafname is too big)\n");
+#endif
 			return false;
 		}
 
@@ -435,7 +461,9 @@ int _FATXFindFile(FATXPartition* partition,
 
 			// check size is OK
 			if ((filenameSize < 1) || (filenameSize > FATX_FILENAME_MAX)) {
+#ifdef FATX_INFO
 				printk("Invalid filename size: %i\n", filenameSize);
+#endif
 				return false;
 			}
 
@@ -456,7 +484,9 @@ int _FATXFindFile(FATXPartition* partition,
 					if (flags & FATX_FILEATTR_DIRECTORY) {
 						return _FATXFindFile(partition, slashPos+1, entryClusterId,fileinfo);
 					} else {
+#ifdef FATX_INFO
 						printk("File not found\n");
+#endif
 						return false;
 					}
 				}
@@ -470,7 +500,9 @@ int _FATXFindFile(FATXPartition* partition,
 						strcpy(fileinfo->filename,filename);
 						return true;
 					} else {
+#ifdef FATX_INFO
 						printk("File not found %s\n",filename);
+#endif
 						return false;
 					}
 				}
@@ -487,7 +519,9 @@ int _FATXFindFile(FATXPartition* partition,
 	}
 
 	// not found it!
+#ifdef FATX_INFO
 	printk("File not found\n");
+#endif
 	return false;
 }
 

@@ -35,14 +35,17 @@ typedef bool (*CALLBACK_FLASH)(void * pvoidObjectFlash, ENUM_EVENTS ee, DWORD dw
 
  typedef struct {
 
- 	volatile BYTE * m_pbMemoryMappedStartAddress; // fill on entry
+ 	volatile BYTE * volatile m_pbMemoryMappedStartAddress; // fill on entry
 	BYTE m_bManufacturerId;
 	BYTE m_bDeviceId;
- 	char m_szFlashDescription[256];
+	char m_szFlashDescription[256];
+ 	char m_szAdditionalErrorInfo[256];
 	DWORD m_dwLengthInBytes;
 	DWORD m_dwStartOffset;
 	DWORD m_dwLengthUsedArea;
 	CALLBACK_FLASH m_pcallbackFlash;
+	bool m_fDetectedUsing28xxxConventions;
+	bool m_fIsBelievedCapableOfWriteAndErase;
 
  } OBJECT_FLASH;
 
@@ -56,16 +59,16 @@ typedef struct {
 
 } KNOWN_FLASH_TYPE;
 
-#define MEM_ADDRESS_RAM_EXEC_FLASH 0x90000
+ 	// requires pof->m_pbMemoryMappedStartAddress set to start address of flash in memory on entry
 
 void BootFlashCopyCodeToRam(void);
 
- 	// requires pof->m_pbMemoryMappedStartAddress set to start address of flash in memory on entry
-
-typedef bool (*typeBootFlashGetDescriptor)(OBJECT_FLASH *pof, KNOWN_FLASH_TYPE * pkft);
-typedef bool (*typeBootFlashEraseMinimalRegion)( OBJECT_FLASH *pof);
-typedef bool (*typeBootFlashProgram)( OBJECT_FLASH *pof, BYTE *pba );
-
+void BootReflashAndReset(BYTE *pbNewData, DWORD dwStartOffset, DWORD dwLength);
+void BootReflashAndReset_RAM(BYTE *pbNewData, DWORD dwStartOffset, DWORD dwLength)
+#ifdef CROMWELL
+ __attribute__ ((section ("RamCopy")))
+#endif
+;
 
 bool BootFlashGetDescriptor( OBJECT_FLASH *pof, KNOWN_FLASH_TYPE * pkft )
 #ifdef CROMWELL
@@ -82,4 +85,5 @@ bool BootFlashProgram( OBJECT_FLASH *pof, BYTE *pba )
  __attribute__ ((section ("RamCopy")))
 #endif
 ;
+
 

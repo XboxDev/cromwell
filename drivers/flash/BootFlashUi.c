@@ -13,9 +13,84 @@
 #include "boot.h"
 #include "BootFlash.h"
 
-void BootReflashAndReset(void)
+// this is a ROM-resident wrapper for the function below
+
+int BootReflashAndReset(BYTE *pbNewData, DWORD dwStartOffset, DWORD dwLength)
 {
-
-
+	BootFlashCopyCodeToRam();
+	return BootReflashAndReset_RAM(pbNewData, dwStartOffset, dwLength);
 }
 
+
+ // callback to show progress
+
+bool BootFlashUserInterface(void * pvoidObjectFlash, ENUM_EVENTS ee, DWORD dwPos, DWORD dwExtent) __attribute__ ((section ("RamCopy"))) ;
+
+bool BootFlashUserInterface(void * pvoidObjectFlash, ENUM_EVENTS ee, DWORD dwPos, DWORD dwExtent) {
+	return true;
+}
+
+	// if things go well, we won't be coming back from this
+	// note this is copied to RAM, and the flash will be changed during its operation
+	// therefore no library code nor interrupts can be had
+
+int BootReflashAndReset_RAM(BYTE *pbNewData, DWORD dwStartOffset, DWORD dwLength)
+{
+	OBJECT_FLASH of;
+	bool fMore=true;
+
+		// prep our flash object with start address and params
+
+	of.m_pbMemoryMappedStartAddress=(BYTE *)0xff000000;
+	of.m_dwStartOffset=dwStartOffset;
+	of.m_dwLengthUsedArea=dwLength;
+	of.m_pcallbackFlash=BootFlashUserInterface;
+	BootFlashCopyCodeToRam();
+
+		// check device type and parameters are sane
+
+	if(!BootFlashGetDescriptor(&of, (KNOWN_FLASH_TYPE *)&aknownflashtypesDefault[0])) return 1; // unable to ID device - fail
+	if(!of.m_fIsBelievedCapableOfWriteAndErase) return 2; // seems to be write-protected - fail
+	if(of.m_dwLengthInBytes<(dwStartOffset+dwLength)) return 3; // requested layout won't fit device - sanity check fail
+
+		// committed to reflash now
+
+	__asm__ __volatile__ ( "cli ");  // ISRs are in flash, no interrupts possible now until reset
+
+	while(fMore) {
+		if(BootFlashEraseMinimalRegion(&of)) {
+			if(BootFlashProgram(&of) {
+				fMore=false;  // good situation
+			} else { // failed program
+				;
+			}
+		} else { // failed erase
+			;
+		}
+	}
+
+		// okay, try to restart by cycling power
+
+	__asm__ __volatile__ (
+		"mov $0xc004, %dx \n"
+		"mov $0x40, %al \n"
+		"out %al, %dx \n"
+		"mov $0xc008, %dx \n"
+		"mov $0x2, %al \n"
+		"out %al, %dx \n"
+		"mov $0xc006, %dx \n"
+		"mov $0xa6, %al \n"
+		"out %al, %dx \n"
+		"mov $0xc006, %dx \n"
+		"in %dx,%al \n"
+		"mov $0xc002, %dx \n"
+		"mov $0x1a, %al \n"
+		"out %al, %dx \n"
+		"mov $0xc000, %dx \n"
+
+		"ledspin: in %dx, %al ; cmp $0x10, %al ; jnz ledspin \n"
+		"jmp ledspin \n"  // loop forever
+	};
+
+	return 0; // keep compiler happy
+}

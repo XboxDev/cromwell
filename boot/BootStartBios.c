@@ -71,12 +71,13 @@ const BYTE baGdt[] = {
 };
 
 
-#define ICON_FATX 	0
-#define ICON_NATIVE 	1
-#define ICON_CD 	2
-#define ICON_SETUP	3
-
-#define ICONCOUNT	4
+enum {
+	ICON_FATX = 0,
+	ICON_NATIVE,
+	ICON_CD,
+	ICON_SETUP,
+	ICONCOUNT // always last
+};
 
 typedef struct {
 	int nDestX;
@@ -89,6 +90,7 @@ typedef struct {
 } ICON;
 
 ICON icon[ICONCOUNT];
+
 const int naChimeFrequencies[] = {
 	329, 349, 392, 440
 };
@@ -102,7 +104,9 @@ void BootPrintConfig(CONFIGENTRY *config) {
 	VIDEO_ATTR=0xffa8a8a8;
 }
 
-int BootLodaConfigNative(int nActivePartition, CONFIGENTRY *config) {
+// if fJustTestingForPossible is true, returns 0 if this kind of boot not possible, 1 if it is worth trying
+
+int BootLodaConfigNative(int nActivePartition, CONFIGENTRY *config, bool fJustTestingForPossible) {
 	DWORD dwConfigSize=0;
 	char szGrub[256+4];
 
@@ -120,11 +124,13 @@ int BootLodaConfigNative(int nActivePartition, CONFIGENTRY *config) {
 
 	dwConfigSize=filemax;
 	if(nRet!=1 || (errnum)) {
-		printk("linuxboot.cfg not found, using defaults\n");
+				if(!fJustTestingForPossible) printk("linuxboot.cfg not found, using defaults\n");
 	} else {
-		int nLen=grub_read((void *)0x90000, filemax);
-		if(nLen>0) { ((char *)0x90000)[nLen]='\0'; }  // needed to terminate incoming string, reboot in ParseConfig without it
-
+		if(fJustTestingForPossible) return 1; // if there's a linuxboot.cfg it must be worth trying to boot
+		{
+			int nLen=grub_read((void *)0x90000, filemax);
+			if(nLen>0) { ((char *)0x90000)[nLen]='\0'; }  // needed to terminate incoming string, reboot in ParseConfig without it
+		}
 		ParseConfig((char *)0x90000,config,&eeprom);
 		BootPrintConfig(config);
 		printf("linuxboot.cfg is %d bytes long.\n", dwConfigSize);
@@ -141,9 +147,12 @@ int BootLodaConfigNative(int nActivePartition, CONFIGENTRY *config) {
 	nRet=grub_open(szGrub);
 
 	if(nRet!=1) {
+		if(fJustTestingForPossible) return 0;
 		printk("Unable to load kernel, Grub error %d\n", errnum);
 		while(1) ;
 	}
+	if(fJustTestingForPossible) return 1; // if there's a default kernel it must be worth trying to boot
+
 	dwKernelSize=grub_read((void *)0x90000, 0x400);
 	nSizeHeader=((*((BYTE *)0x901f1))+1)*512;
 	dwKernelSize+=grub_read((void *)0x90400, nSizeHeader-0x400);
@@ -174,37 +183,41 @@ int BootLodaConfigNative(int nActivePartition, CONFIGENTRY *config) {
 		VIDEO_ATTR=0xffa8a8a8;
 		dwInitrdSize=0;
 	}
-	
+
 	return true;
 }
 
-int BootLodaConfigFATX(CONFIGENTRY *config) {
-	
+int BootLodaConfigFATX(CONFIGENTRY *config, bool fJustTestingForPossible) {
+
 	FATXPartition *partition = NULL;
 	FATXFILEINFO fileinfo;
 	FATXFILEINFO infokernel;
 	FATXFILEINFO infoinitrd;
-	
-	printk("Loading linuxboot.cfg form FATX\n");
+
+	if(!fJustTestingForPossible) printk("Loading linuxboot.cfg form FATX\n");
 	partition = OpenFATXPartition(0,
 			SECTOR_STORE,
 			STORE_SIZE);
 	if(partition != NULL) {
 		if(!LoadFATXFile(partition,"/linuxboot.cfg",&fileinfo) ) {
-			printk("linuxboot.cfg not found, using defaults\n");
+			if(!fJustTestingForPossible) printk("linuxboot.cfg not found, using defaults\n");
 		} else {
 			ParseConfig(fileinfo.buffer,config,&eeprom);
 		}
+	} else {
+		if(fJustTestingForPossible) return 0;
 	}
 
-	BootPrintConfig(config);
+	if(!fJustTestingForPossible) BootPrintConfig(config);
 	if(! LoadFATXFile(partition,config->szKernel,&infokernel)) {
+		if(fJustTestingForPossible) return 0;
 		printk("Error loading kernel %s\n",config->szKernel);
 		while(1);
 	} else {
+		if(fJustTestingForPossible) return 1; // worth trying, since the filesystem and kernel exists
 		dwKernelSize = infokernel.fileSize;
 		// moving the kernel to its final location
-		memcpy((BYTE *)0x90000,&infokernel.buffer[0],0x400);	
+		memcpy((BYTE *)0x90000,&infokernel.buffer[0],0x400);
 		nSizeHeader=((*((BYTE *)0x901f1))+1)*512;
 		memcpy((BYTE *)0x90400,&infokernel.buffer[0x400],nSizeHeader-0x400);
 		memcpy((BYTE *)0x00100000,&infokernel.buffer[nSizeHeader],infokernel.fileSize);
@@ -401,6 +414,16 @@ int BootLodaConfigCD(CONFIGENTRY *config) {
 	return true;
 }
 
+
+void BootFlashConfirm()
+{
+	I2CTransmitWord(0x10, 0x0c00); // eject DVD tray
+
+	printk("Close the DVD tray to confirm flash\n");
+	while(1) ;
+}
+
+
 void BootIcons(int nXOffset, int nYOffset, int nTextOffsetX, int nTextOffsetY) {
 	icon[ICON_FATX].nDestX = nXOffset + 120;
 	icon[ICON_FATX].nDestY = nYOffset - 74;
@@ -409,7 +432,7 @@ void BootIcons(int nXOffset, int nYOffset, int nTextOffsetX, int nTextOffsetY) {
 	icon[ICON_FATX].nSrcHeight = 64;
 	icon[ICON_FATX].nTextX = (nTextOffsetX+60)<<2;;
 	icon[ICON_FATX].nTextY = nTextOffsetY;
-	
+
 	icon[ICON_NATIVE].nDestX = nXOffset + 245;
 	icon[ICON_NATIVE].nDestY = nYOffset - 74;
 	icon[ICON_NATIVE].nSrcX = 396;
@@ -417,7 +440,7 @@ void BootIcons(int nXOffset, int nYOffset, int nTextOffsetX, int nTextOffsetY) {
 	icon[ICON_NATIVE].nSrcHeight = 64;
 	icon[ICON_NATIVE].nTextX = (nTextOffsetX+240)<<2;;
 	icon[ICON_NATIVE].nTextY = nTextOffsetY;
-	
+
 	icon[ICON_CD].nDestX = nXOffset + 350;
 	icon[ICON_CD].nDestY = nYOffset - 74;
 	icon[ICON_CD].nSrcX = 488;
@@ -425,7 +448,7 @@ void BootIcons(int nXOffset, int nYOffset, int nTextOffsetX, int nTextOffsetY) {
 	icon[ICON_CD].nSrcHeight = 64;
 	icon[ICON_CD].nTextX = (nTextOffsetX+350)<<2;
 	icon[ICON_CD].nTextY = nTextOffsetY;
-	
+
 	icon[ICON_SETUP].nDestX = nXOffset + 440;
 	icon[ICON_SETUP].nDestY = nYOffset - 74;
 	icon[ICON_SETUP].nSrcX = 556;
@@ -463,7 +486,7 @@ void StartBios(	int nDrive, int nActivePartition , int nFATXPresent) {
 	CONFIGENTRY config;
 	char szGrub[256+4];
 #ifdef MENU
-	int nTempCursorResumeX, nTempCursorResumeY;
+	int nTempCursorResumeX, nTempCursorResumeY, nTempStartMessageCursorX, nTempStartMessageCursorY;
 #endif
 	int nIcon = ICONCOUNT;
 
@@ -483,7 +506,7 @@ void StartBios(	int nDrive, int nActivePartition , int nFATXPresent) {
 #ifndef IS_XBE_CDLOADER
 #ifdef MENU
 	{
-		int nTempCursorX, nTempCursorY, nTempStartMessageCursorX, nTempStartMessageCursorY, nTempEntryX, nTempEntryY;
+		int nTempCursorX, nTempCursorY, nTempEntryX, nTempEntryY;
 		int nModeDependentOffset=(currentvideomodedetails.m_dwWidthInPixels-640)/2;  // icon offsets computed for 640 modes, retain centering in other modes
 		AUDIO_ELEMENT_SINE aesIconSound;
 
@@ -518,7 +541,6 @@ void StartBios(	int nDrive, int nActivePartition , int nFATXPresent) {
 
 		{
 			int nShowSelect = false;
-			DWORD dwTick=BIOS_TICK_COUNT;
 
 			for(nIcon = 0; nIcon < ICONCOUNT;nIcon ++) {
 #ifdef XBE
@@ -528,41 +550,51 @@ void StartBios(	int nDrive, int nActivePartition , int nFATXPresent) {
 				VIDEO_CURSOR_POSX=icon[nIcon].nTextX;
 				VIDEO_CURSOR_POSY=icon[nIcon].nTextY;
 
-				{
-					DestructAUDIO_ELEMENT_SINE(&ac97device, &aesIconSound); // harmless if not yet constructed or attached
-					ConstructAUDIO_ELEMENT_SINE(&aesIconSound, naChimeFrequencies[nIcon]);  // constructed silent
-					aesIconSound.m_saVolumePerHarmonicZeroIsNone7FFFIsFull[0]=0x1000;
-					aesIconSound.m_paudioelement.m_dwVolumeSustainRate=0x2800;
-					BootAudioAttachAudioElement(&ac97device, (AUDIO_ELEMENT *)&aesIconSound);
-				}
-
 				switch(nIcon){
+
 					case ICON_FATX:
 						if(nFATXPresent) {
+							strcpy(config.szKernel, "/vmlinuz"); // fatx default kernel, looked for to detect fs
+							if(!BootLodaConfigFATX(&config, true)) continue;  // only bother with it if the filesystem exists
 							printk("/linuxboot.cfg from FATX\n");
 							nShowSelect = true;
 						} else {
 							continue;
 						}
 						break;
+
 					case ICON_NATIVE:
 						if(nDrive != 1) {
+							strcpy(config.szKernel, "/boot/vmlinuz");  // Ext2 default kernel, looked for to detect fs
+							if(!BootLodaConfigNative(nActivePartition, &config, true)) continue; // only bother with it if the filesystem exists
 							printk("/dev/hda\n");
-							nShowSelect = true;
+							nShowSelect=true;
 						} else {
 							continue;
 						}
 						break;
+
 					case ICON_CD:
 						printk("/dev/hdb\n");
-						nShowSelect = true;
+						nShowSelect = true;  // always might want to boot from CD
 						break;
+
 					case ICON_SETUP:
-						printk("Setup [TBD]\n");
-						nShowSelect = false;
+						printk("Flash\n");
+						nShowSelect = true;
 						break;
 				}
 				if(nShowSelect) {
+
+					DWORD dwTick=BIOS_TICK_COUNT;
+
+					{
+						DestructAUDIO_ELEMENT_SINE(&ac97device, &aesIconSound); // harmless if not yet constructed or attached
+						ConstructAUDIO_ELEMENT_SINE(&aesIconSound, naChimeFrequencies[nIcon]);  // constructed silent
+						aesIconSound.m_saVolumePerHarmonicZeroIsNone7FFFIsFull[0]=0x1000;
+						aesIconSound.m_paudioelement.m_dwVolumeSustainRate=0x2800;
+						BootAudioAttachAudioElement(&ac97device, (AUDIO_ELEMENT *)&aesIconSound);
+					}
 
 					while(
 						(BIOS_TICK_COUNT<(dwTick+DELAY_TICKS)) &&
@@ -591,6 +623,7 @@ void StartBios(	int nDrive, int nActivePartition , int nFATXPresent) {
 
 					BootStartBiosDoIcon(&icon[nIcon], TRANPARENTNESS);
 				}
+
 				BootVideoClearScreen(&jpegBackdrop, nTempCursorY, VIDEO_CURSOR_POSY+1);
 			}
 		}
@@ -637,9 +670,9 @@ void StartBios(	int nDrive, int nActivePartition , int nFATXPresent) {
 
 
 	if(nIcon == ICON_FATX) {
-	        strcpy(config.szAppend, "init=/linuxrc root=/dev/ram0 pci=biosirq kbd-reset"); // default
-	        strcpy(config.szKernel, "/vmlinuz");
-	        strcpy(config.szInitrd, "/initrd");
+		strcpy(config.szAppend, "init=/linuxrc root=/dev/ram0 pci=biosirq kbd-reset"); // default
+		strcpy(config.szKernel, "/vmlinuz");
+		strcpy(config.szInitrd, "/initrd");
 	} else {
 		strcpy(config.szAppend, "root=/dev/hda2 devfs=mount kbd-reset"); // default
 		strcpy(config.szKernel, "/boot/vmlinuz");
@@ -649,17 +682,21 @@ void StartBios(	int nDrive, int nActivePartition , int nFATXPresent) {
 
 	switch(nIcon) {
 		case ICON_FATX:
-			BootLodaConfigFATX(&config);
+			BootLodaConfigFATX(&config, false);
 			break;
 		case ICON_NATIVE:
-			BootLodaConfigNative(nActivePartition, &config);
+			BootLodaConfigNative(nActivePartition, &config, false);
 			break;
 		case ICON_CD:
 			BootLodaConfigCD(&config);
 			break;
 		case ICON_SETUP:
-			printk("Settings mode not done yet :-)\nPlease reboot and try again\n");
-			while(1);
+#ifndef XBE
+			BootVideoClearScreen(&jpegBackdrop, nTempStartMessageCursorY, nTempCursorResumeY+100);
+			VIDEO_CURSOR_POSY=nTempStartMessageCursorY;
+			VIDEO_CURSOR_POSX=0;
+			BootFlashConfirm();
+#endif
 			break;
 		default:
 			printk("Selection not implemented\n");
