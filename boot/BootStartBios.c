@@ -67,6 +67,7 @@ typedef struct {
 	int nEnabled;
 	int nSelected;
 	char *szCaption;
+	void *functionPtr;
 } ICON;
 
 ICON icon[ICONCOUNT];
@@ -611,7 +612,7 @@ void BootIcons(int nXOffset, int nYOffset, int nTextOffsetX, int nTextOffsetY) {
 	icon[ICON_FATX].nTextX = (nTextOffsetX+118)<<2;;
 	icon[ICON_FATX].nTextY = nTextOffsetY;
 	icon[ICON_FATX].szCaption = "FatX (E:)";
-
+	
 	icon[ICON_NATIVE].nDestX = nXOffset + 232;
 	icon[ICON_NATIVE].nDestY = nYOffset - 74;
 	icon[ICON_NATIVE].nSrcX = ICON_WIDTH;
@@ -832,7 +833,6 @@ int BootMenu(CONFIGENTRY *config,int nDrive,int nActivePartition, int nFATXPrese
 
 int ExittoLinux(CONFIGENTRY *config);
 void startLinux(void* initrdStart, unsigned long initrdSize, const char* appendLine);
-int ExittoRomBios(void);
 #ifdef ETHERBOOT
 int etherboot(void);
 #endif
@@ -1042,163 +1042,3 @@ void startLinux(void* initrdStart, unsigned long initrdSize, const char* appendL
 	while(1);
 }
 
-
-
-int ExittoRomBios(void) {
-	
-        unsigned int tempstart;
-        unsigned int templen;
-	extern int _end_pcrombios;
- 	extern int _start_pcrombios;
- 	
- 	tempstart = (unsigned int)((BYTE *)&_start_pcrombios);
-	templen = ((DWORD)(&_end_pcrombios)-(DWORD)(&_start_pcrombios));       
-        
-	// turn off USB
-	BootStopUSB();
-
-	{
-		char *sz="\2Starting BOCHS-BIOS\2";
-		VIDEO_CURSOR_POSX=((vmode.width-BootVideoGetStringTotalWidth(sz))/2)*4;
-		VIDEO_CURSOR_POSY=vmode.height-64;
-
-		VIDEO_ATTR=0xff9f9fbf;
-		printk(sz);
-	}
-
-
-//		int n=0;
-//		DWORD dwCsum1=0, dwCsum2=0;
-//		BYTE *pb1=(BYTE *)0xf0000, *pb2=(BYTE*)&rombios;
-  //  printk("  Copying BIOS into RAM...\n");
-	
-	//extern char rombios[1];
-
-	//	I2cSetFrontpanelLed(0x77);
-
-	// copy the 64K 16-bit BIOS code into memory at 0xF0000, this is where a BIOS
-	// normally appears in 16-bit mode
-
-
-	// here we should copy .. disabled for the moment
-
-
-		
-	memcpy((void *)0xf0000, (void *)(tempstart), templen);
-        	
-        // Test code for integrity check
-	
-	
-	{
-
-	unsigned char state2[20];
-	unsigned int i;
-	struct SHA1Context context;
-	
-	VIDEO_CURSOR_POSY= 200;
-	VIDEO_CURSOR_POSX = 100;
-	
-	SHA1Reset(&context);
-	SHA1Input(&context,(void *)0xf0000,templen);
-	SHA1Result(&context,state2);
-
-	printk(" %08x\n",tempstart);
-	printk(" %08x\n", templen);
-       	printk(" SHA-1 Checksum of the pcbios/rompcbios.bin   ... this should match ..\n", templen);
-       	
-	for (i=0;i<20;i++) printk(" %02x",state2[i]); 
-
-	}
-	
-	
-	
-	// LEDs to yellow
-
-	// copy a 16-bit LJMP stub into a safe place that is visible in 16-bit mode
-	// (the BIOS isn't visible in 1MByte address space)
-
-	__asm __volatile__ (
-		
-		"cli \n"
-		"mov  $code_start, %esi \n"
-		"mov  $0x600, %edi       \n"
-		"mov  $0x100, %ecx   \n"
-		"rep movsb            \n"
-		"wbinvd \n"
-
-			// prep the segment regs with the right GDT entry for 16-bit access
-			// then LJMP to a 16-bit GDT entry, at the stub we prepared earlier
-			// the stub code does some CPU mode setting then LJMPs to F000:FFF0
-			// which starts off the BIOS as if it was a reset
-
-		"mov  $0x28, %ax     \n"
-		"mov  %ax, %ds      \n"
-		"mov  %ax, %es      \n"
-		"mov  %ax, %fs      \n"
-		"mov  %ax, %gs      \n"
-		"mov  %ax, %ss      \n"
-		"ljmp $0x20, $0x600       \n"
-
-		"code_start:          \n"  // this is the code copied to the 16-bit stub at 0x600
-		".code16 \n"
-
-		"movl %cr0, %eax     \n" // 16-bi
-		"andl $0xFFFFFFFE, %eax \n"  // this was not previously ANDL, generated 16-bit AND despite EAX
-		"movl %eax, %cr0    \n"
-
-		"mov  $0x8000, %ax      \n"
-		"mov  %ax, %sp \n"
-		"mov  $0x0000, %ax      \n"
-		"mov  %ax, %ss \n"
-		"mov $0x0000,%ax \n"
-		"mov  %ax, %ds \n"
-		"mov  %ax, %es \n"
-#if 0
-		"mov $0xc004, %dx \n"
-		"mov $0x20, %al \n"
-		"out %al, %dx \n"
-		"mov $0xc008, %dx \n"
-		"mov $0x8, %al \n"
-		"out %al, %dx \n"
-		"mov $0xc006, %dx \n"
-		"mov $0xa6, %al \n"
-		"out %al, %dx \n"
-		"mov $0xc006, %dx \n"
-		"in %dx,%al \n"
-		"mov $0xc002, %dx \n"
-		"mov $0x1a, %al \n"
-		"out %al, %dx \n"
-		"mov $0xc000, %dx \n"
-
-		"ledspin: in %dx, %al ; cmp $0x10, %al ; jnz ledspin \n"
-
-		"mov $0xc004, %dx \n"
-		"mov $0x20, %al \n"
-		"out %al, %dx \n"
-		"mov $0xc008, %dx \n"
-		"mov $0x7, %al \n"
-		"out %al, %dx \n"
-		"mov $0xc006, %dx \n"
-		"mov $0x1, %al \n"
-		"out %al, %dx \n"
-		"mov $0xc006, %dx \n"
-		"in %dx,%al \n"
-		"mov $0xc002, %dx \n"
-		"mov $0x1a, %al \n"
-		"out %al, %dx \n"
-		"mov $0xc000, %dx \n"
-
-		"ledspin1: in %dx, %al ; cmp $0x10, %al ; jnz ledspin1 \n"
-
-		"jmp ledspin1 \n"
-#endif
-		".byte 0xea          \n"  // long jump to reset vector at 0xf000:0xfff0
-		".word 0xFFF0 \n"
-		".word 0xF000 \n"
-		".code32 \n"
-		);
-
-       	// See you again in Windows ??? hihih
-	while(1);
-
-}
