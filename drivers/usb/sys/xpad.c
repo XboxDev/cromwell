@@ -135,6 +135,7 @@ static struct usb_device_id xpad_ids [] = {
 	{ USB_DEVICE(0x0738, 0x4526) },//Mad Catz Control Pad Pro
 	{ USB_DEVICE(0x0738, 0x4536) },//Mad Catz MicroCON
 	{ USB_DEVICE(0x0738, 0x4556) },//Mad Catz Lynx Wireless Controller
+	{ USB_DEVICE(0x0c12, 0x8810) },//Zeroplus Xbox Controller
 	{ USB_DEVICE(0x0c12, 0x9902) },//HAMA VibraX - *FAULTY HARDWARE*
 	{ USB_DEVICE(0x0e4c, 0x1097) },//Radica Gamester Controller
 	{ USB_DEVICE(0x0e4c, 0x2390) },//Radica Games Jtech Controller
