@@ -168,8 +168,8 @@ int BootLoadConfigNative(int nActivePartition, CONFIGENTRY *config, bool fJustTe
 	}
 	if(fJustTestingForPossible) return 1; // if there's a default kernel it must be worth trying to boot
         
-	// Use tempBuf as temporary location for loading the Kernel 
-	BYTE* tempBuf = (BYTE*)(KERNEL_PM_CODE + MAX_KERNEL_SIZE);
+	// Use INITRD_START as temporary location for loading the Kernel 
+	BYTE* tempBuf = (BYTE*)INITRD_START;
 	dwKernelSize=grub_read(tempBuf, MAX_KERNEL_SIZE);
 	memPlaceKernel(tempBuf, dwKernelSize);
 	grub_close();
@@ -230,8 +230,8 @@ int BootTryLoadConfigFATX(CONFIGENTRY *config) {
 		return 0;
 	}
 
-	// Use tempBuf as temporary location for loading the Kernel 
-	BYTE* tempBuf = (BYTE*)(KERNEL_PM_CODE + MAX_KERNEL_SIZE);
+	// Use INITRD_START as temporary location for loading the Kernel 
+	BYTE* tempBuf = (BYTE*)INITRD_START;
 	if(! LoadFATXFilefixed(partition,config->szKernel,&infokernel,tempBuf)) {
 		CloseFATXPartition(partition);
 		return 0;
@@ -472,8 +472,8 @@ selectinsert:
 	ParseConfig((char *)KERNEL_SETUP,config,&eeprom, NULL);
 	BootPrintConfig(config);
 
-	// Use tempBuf as temporary location for loading the Kernel 
-	BYTE* tempBuf = (BYTE*)(KERNEL_PM_CODE + MAX_KERNEL_SIZE);	
+	// Use INITRD_START as temporary location for loading the Kernel 
+	BYTE* tempBuf = (BYTE*)INITRD_START;
 	dwKernelSize=BootIso9660GetFile(config->szKernel, tempBuf, MAX_KERNEL_SIZE, 0);
 
 	// If failed, lets look for an other name ...
@@ -523,7 +523,6 @@ selectinsert:
 		dwInitrdSize=0;
 		printk("");
 	}
-
 	return true;
 }
 
@@ -1068,26 +1067,24 @@ void startLinux(void* initrdStart, unsigned long initrdSize, const char* appendL
 		I2C_LED_RED0 | I2C_LED_RED1 | I2C_LED_RED2 | I2C_LED_RED3
 	);
 	         
-	asm volatile ("wbinvd\n");
-	
-	// Tell Video Card we have changed the offset to higher up
+	// Set framebuffer address to final location (for vesafb driver)
 	(*(unsigned int*)0xFD600800) = (0xf0000000 | ((xbox_ram*0x100000) - FRAMEBUFFER_SIZE));
-	   
-	memset((void*)0x00700000,0x0,1024*8);
+	
+	// disable interrupts
+	asm volatile ("cli\n");
+	
+	// clear idt area
+	memset((void*)IDT_LOC,0x0,1024*8);
 	
 	__asm __volatile__ (
-       	"cli \n"
+	"wbinvd\n"
 	
 	// Flush the TLB
 	"xor %eax, %eax \n"
 	"mov %eax, %cr3 \n"
 	
-	// We kill the Local Descriptor Table        
-        "xor	%eax, %eax \n"
-	"lldt	%ax	\n"
-	
-	// We clear the IDT table (the first 8 bytes of the GDT are 0x0)
-	"lidt 	0x00700000\n"		
+	// Load IDT table (0xB0000 = IDT_LOC)
+	"lidt 	0xB0000\n"
 	
 	// DR6/DR7: Clear the debug registers
 	"xor %eax, %eax \n"
@@ -1097,9 +1094,6 @@ void startLinux(void* initrdStart, unsigned long initrdSize, const char* appendL
 	"mov %eax, %dr1 \n"
 	"mov %eax, %dr2 \n"
 	"mov %eax, %dr3 \n"
-	
-	// IMPORTANT!  Linux expects the GDT located at a specific position,
-	// 0xA0000, so we have to move it there.
 	
 	// Kill the LDT, if any
 	"xor	%eax, %eax \n"
@@ -1135,8 +1129,8 @@ void startLinux(void* initrdStart, unsigned long initrdSize, const char* appendL
 	"xor 	%ecx, %ecx \n"
 	"xor 	%edx, %edx \n"
 	"xor 	%edi, %edi \n"
-	"movl 	$0x90000, %esi\n"       // Offset of the GRUB
-  	"ljmp 	$0x10, $0x100000\n"	// Jump to Kernel
+	"movl 	$0x90000, %esi\n"       // kernel setup area
+	"ljmp 	$0x10, $0x100000\n"     // Jump to Kernel protected mode entry
 	);
 	
 	// We are not longer here, we are already in the Linux loader, we never come back here
