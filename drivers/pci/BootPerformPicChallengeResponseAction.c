@@ -24,7 +24,6 @@ int I2CTransmitByteGetReturn(BYTE bPicAddressI2cFormat, BYTE bDataToWrite)
 {
 	int nRetriesToLive=400;
 
-//	IoOutputWord(I2C_IO_BASE+0, 0xffff); // clear down all preexisting errors
 	if(IoInputWord(I2C_IO_BASE+0)&0x8000) { bprintf("Smb status=%x\n",IoInputWord(I2C_IO_BASE+0)); }
 	while(IoInputWord(I2C_IO_BASE+0)&0x0800) ;  // Franz's spin while bus busy with any master traffic
 
@@ -61,7 +60,6 @@ int I2CTransmitWord(BYTE bPicAddressI2cFormat, WORD wDataToWrite)
 {
 	int nRetriesToLive=400;
 
-//	IoOutputWord(I2C_IO_BASE+0, 0xffff); // clear down all preexisting errors
 	if(IoInputWord(I2C_IO_BASE+0)&0x8000) { bprintf("Smb status=%x\n",IoInputWord(I2C_IO_BASE+0)); }
 	while(IoInputWord(I2C_IO_BASE+0)&0x0800) ;  // Franz's spin while bus busy with any master traffic
 
@@ -129,14 +127,6 @@ int BootPerformPicChallengeResponseAction()
 	BYTE bC, bD, bE, bF;
 	int n;
 
-//		I2CTransmitWord( 0x10, 0x0100 );
-//		I2CTransmitWord( 0x10, 0x130f );
-//		I2CTransmitWord( 0x10, 0x12f0 );
-
-//	if(BootPicManipulation(0x35, 0x62, 0xcd, 0x4a) != 0x9e71) {
-//		return ERR_BOOT_PIC_ALG_BROKEN;
-//	}
-
 	n=I2CTransmitByteGetReturn( 0x10, 0x1c );
 	if(n<0) return n;
 	bC=n;
@@ -157,26 +147,7 @@ int BootPerformPicChallengeResponseAction()
 		I2CTransmitWord( 0x10, 0x2100 | (w>>8) );
 	}
 
-//	n=I2CTransmitWord( 0x10, 0x0100 );
-
-/*
-		// the following traffic was observed during a normal boot
-		// all seemed happy without it, but it is included here for completeness
-
-	n=I2CTransmitByteGetReturn( 0x10, 0x04);
-	if(n<0) return n;
-	n=I2CTransmitByteGetReturn( 0x10, 0x11);
-	if(n<0) return n;
-	I2CTransmitWord( 0x10, 0x0d04, true);
-	n=I2CTransmitByteGetReturn( 0x10, 0x1b);
-	if(n<0) return n;
-	I2CTransmitWord( 0x10, 0x1b04, true);
-	I2CTransmitWord( 0x10, 0x1901, true);
-	I2CTransmitWord( 0x10, 0x0c00, true);
-	n=I2CTransmitByteGetReturn( 0x10, 0x11);
-	if(n<0) return n;
-*/
-		// continues as part of video setup....
+	// continues as part of video setup....
 
 
 		__asm__ __volatile__ (

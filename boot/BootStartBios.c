@@ -36,7 +36,7 @@
 extern EEPROMDATA eeprom;
 
 #include "BootUsbOhci.h"
-extern volatile USB_CONTROLLER_OBJECT usbcontroller[2];
+extern volatile ohci_t usbcontroller[2];
 extern volatile AC97_DEVICE ac97device;
 
 #undef strcpy
@@ -287,8 +287,9 @@ int BootLodaConfigCD(CONFIGENTRY *config) {
 		} else {
 			VIDEO_ATTR=0xff000000|(((bCount1>>2)+192)<<16)|(((bCount1>>2)+192)<<8)|(((bCount1>>2)+192)) ;
 		}
-		printk("\2BootResetAction 0x%08X\2\n",&BootResetAction);
-		printk("\2Please insert CD\2");
+//		printk("\2BootResetAction 0x%08X\2\n",&BootResetAction);
+		printk("\2Please insert CD\n\2");
+		
 		for(n=0;n<1000000;n++) { ; }
 	}
 #endif
@@ -663,8 +664,8 @@ void StartBios(	int nDrive, int nActivePartition , int nFATXPresent) {
 	  	// turn off USB
 
 		#ifdef DO_USB
-		BootUsbTurnOff((USB_CONTROLLER_OBJECT *)&usbcontroller[0]);
-		BootUsbTurnOff((USB_CONTROLLER_OBJECT *)&usbcontroller[1]);
+		BootUsbTurnOff((ohci_t *)&usbcontroller[0]);
+		BootUsbTurnOff((ohci_t *)&usbcontroller[1]);
 		#endif
 			// silence the audio
         	

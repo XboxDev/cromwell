@@ -43,7 +43,7 @@ JPEG jpegBackdrop;
 int nTempCursorMbrX, nTempCursorMbrY;
 
 volatile CURRENT_VIDEO_MODE_DETAILS currentvideomodedetails;
-volatile USB_CONTROLLER_OBJECT usbcontroller[2];
+volatile ohci_t usbcontroller[2];
 
 volatile AC97_DEVICE ac97device;
 
@@ -143,14 +143,16 @@ extern void BootResetAction ( void ) {
 	memset((void *)0x1000000, 0x00,0x0E00000);
 	MemoryManagementInitialization((void *)0x1000000, 0x0E00000);
 
-	BootInterruptsWriteIdt();
+	memset((ohci_t *)&usbcontroller[0],0,sizeof(ohci_t));
+	memset((ohci_t *)&usbcontroller[1],0,sizeof(ohci_t));
+	
+//	BootInterruptsWriteIdt();
 //	bprintf("BOOT: done interrupts\n\r");
 
 	// if we don't make the PIC happy within 200mS, the damn thing will reset us
 
-	BootPerformPicChallengeResponseAction();
-	bprintf("BOOT: done with PIC challenge\n\r");
-
+//	BootPerformPicChallengeResponseAction();
+//	bprintf("BOOT: done with PIC challenge\n\r");
 
 	// initialize the PCI devices
 
@@ -172,16 +174,8 @@ extern void BootResetAction ( void ) {
 		currentvideomodedetails.m_nVideoModeIndex=VIDEO_PREFERRED_MODE;
 	}
 
-//		currentvideomodedetails.m_nVideoModeIndex=VIDEO_MODE_800x600;
-
-
 	currentvideomodedetails.m_pbBaseAddressVideo=(BYTE *)0xfd000000;
-//#ifdef XBE
-//	currentvideomodedetails.m_fForceEncoderLumaAndChromaToZeroInitially=0;
-//#else
 	currentvideomodedetails.m_fForceEncoderLumaAndChromaToZeroInitially=1;
-//#endif
-
         
         // Load and Init the Background image
 
@@ -478,13 +472,11 @@ extern void BootResetAction ( void ) {
 	// init USB
 #ifdef DO_USB
 	
-		const int nSizeAllocation=0x10000;
-		void * pvHostControllerCommsArea=malloc(nSizeAllocation+0x100); // 64K+256 to ensure alignment
-		void * pvHostControllerCommsArea1=malloc(nSizeAllocation+0x100); // 64K+256 to ensure alignment
-		bprintf("BOOT: start USB init\n\r");
-		BootUsbInit((USB_CONTROLLER_OBJECT *)&usbcontroller[0], "USB1", (void *)0xfed00000, (void *)(((DWORD)pvHostControllerCommsArea+0x100)&0xffffff00), nSizeAllocation);
-		BootUsbInit((USB_CONTROLLER_OBJECT *)&usbcontroller[1], "USB2", (void *)0xfed08000, (void *)(((DWORD)pvHostControllerCommsArea1+0x100)&0xffffff00), nSizeAllocation);
-		bprintf("BOOT: done USB init\n\r");
+		printk("BOOT: start USB init\n");
+
+		BootUsbInit((ohci_t *)&usbcontroller[0], "USB1", (void *)0xfed00000);
+//		BootUsbInit((ohci_t *)&usbcontroller[1], "USB1", (void *)0xfed08000);
+		printk("BOOT: done USB init\n");
 	
 
 		

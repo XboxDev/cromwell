@@ -430,6 +430,8 @@ spin3:
             mov $_size_ramcopy, %ecx
 	    rep movsb
 #endif
+	call BootInterruptsWriteIdt
+	call BootPerformPicChallengeResponseAction
         jmp BootResetAction  // this can be found in BootResetAction.c
 
 
