@@ -358,8 +358,8 @@ extern char *grub_scratch_mem;
 #define memcmp grub_memcmp
 #define strcmp grub_strcmp
 #define tolower grub_tolower
-#define strlen grub_strlen
-#define strcpy grub_strcpy
+//#define strlen grub_strlen
+//#define strcpy grub_strcpy
 #endif /* WITHOUT_LIBC_STUBS */
 
 
