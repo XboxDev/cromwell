@@ -16,6 +16,6 @@ typedef struct _CONFIGENTRY {
 	int nVesaFB;
 } CONFIGENTRY, *LPCONFIGENTRY;
 
-int ParseConfig(char *szBuffer, CONFIGENTRY *entry, EEPROMDATA *eeprom);
+int ParseConfig(char *szBuffer, CONFIGENTRY *entry, EEPROMDATA *eeprom, char *szPath);
 
 #endif // _BootParser_H_

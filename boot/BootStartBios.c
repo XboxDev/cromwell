@@ -132,7 +132,7 @@ int BootLodaConfigNative(int nActivePartition, CONFIGENTRY *config, bool fJustTe
 			nLen=grub_read((void *)0x90000, filemax);
 			if(nLen>0) { ((char *)0x90000)[nLen]='\0'; }  // needed to terminate incoming string, reboot in ParseConfig without it
 		}
-		ParseConfig((char *)0x90000,config,&eeprom);
+		ParseConfig((char *)0x90000,config,&eeprom, NULL);
 		BootPrintConfig(config);
 		printf("linuxboot.cfg is %d bytes long.\n", dwConfigSize);
 	}
@@ -200,13 +200,19 @@ int BootTryLoadConfigFATX(CONFIGENTRY *config) {
 	FATXPartition *partition = NULL;
 	FATXFILEINFO fileinfo;
 	FATXFILEINFO infokernel;
+	int nConfig = 0;
 
 	partition = OpenFATXPartition(0,SECTOR_STORE,STORE_SIZE);
 	
 	if(partition != NULL) {
 
-		if(LoadFATXFile(partition,"/linuxboot.cfg",&fileinfo) ) {
-			ParseConfig(fileinfo.buffer,config,&eeprom);
+		if(!LoadFATXFile(partition,"/linuxboot.cfg",&fileinfo)) {
+			if(LoadFATXFile(partition,"/debian/linuxboot.cfg",&fileinfo) ) {
+				ParseConfig(fileinfo.buffer,config,&eeprom,"/debian");
+				free(fileinfo.buffer);
+			}
+		} else {
+			ParseConfig(fileinfo.buffer,config,&eeprom,NULL);
 			free(fileinfo.buffer);
 		}
 	} else {
@@ -248,14 +254,21 @@ int BootLodaConfigFATX(CONFIGENTRY *config) {
 			STORE_SIZE);
 	
 	if(partition != NULL) {
-		if(!LoadFATXFile(partition,"/linuxboot.cfg",&fileinfo) ) {
+		if(LoadFATXFile(partition,"/linuxboot.cfg",&fileinfo) ) {
 			wait_ms(50);
-			printk("linuxboot.cfg not found, using defaults\n");
-		} else {
-			wait_ms(50);
-			ParseConfig(fileinfo.buffer,config,&eeprom);
+			ParseConfig(fileinfo.buffer,config,&eeprom, NULL);
 			free(fileinfo.buffer);
+		} else {
+			if(LoadFATXFile(partition,"/debian/linuxboot.cfg",&fileinfo) ) {
+				wait_ms(50);
+				ParseConfig(fileinfo.buffer,config,&eeprom, "/debian");
+				free(fileinfo.buffer);
+			} else {
+				wait_ms(50);
+				printk("linuxboot.cfg not found, using defaults\n");
+			}
 		}
+
 	} 
 
 	BootPrintConfig(config);
@@ -457,7 +470,7 @@ selectinsert:
         
         // LinuxBoot.cfg File Loaded
         
-	ParseConfig((char *)INITRD_POS,config,&eeprom);
+	ParseConfig((char *)INITRD_POS,config,&eeprom, NULL);
 	BootPrintConfig(config);
 
 	// We use the INITRD_POS as temporary location for the Loading of the Kernel into intermediate Ram

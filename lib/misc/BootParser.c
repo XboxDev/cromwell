@@ -3,7 +3,7 @@
 
 
 
-int ParseConfig(char *szBuffer, CONFIGENTRY *entry, EEPROMDATA *eeprom) {
+int ParseConfig(char *szBuffer, CONFIGENTRY *entry, EEPROMDATA *eeprom, char *szPath) {
 	static char szLine[MAX_LINE];
 	static char szTmp[MAX_LINE];
 	static char szNorm[MAX_LINE];
@@ -24,14 +24,19 @@ int ParseConfig(char *szBuffer, CONFIGENTRY *entry, EEPROMDATA *eeprom) {
 		if(strlen(ptr) < MAX_LINE) {
 			if(_strncmp(ptr,"kernel",strlen("kernel")) == 0)  {
 				HelpGetParm(szTmp, ptr);
+				if(strlen(szPath) > 0) 
+					sprintf(entry->szKernel,"%s",szPath);
 				if(szTmp[0] != '/')
-					sprintf(entry->szKernel,"%s","/");
+					sprintf(entry->szKernel,"%s%s",entry->szKernel,"/");
 				sprintf(entry->szKernel,"%s%s",entry->szKernel,szTmp);
 			}
 			if(_strncmp(ptr,"initrd",strlen("initrd")) == 0) {
 				HelpGetParm(szTmp, ptr);
+				if((strlen(szPath) > 0) &&
+					(_strncmp(szTmp, "no", strlen("no")) != 0))
+					sprintf(entry->szInitrd,"%s",szPath);
 				if(szTmp[0] != '/')
-					sprintf(entry->szInitrd,"%s","/");
+					sprintf(entry->szInitrd,"%s%s",entry->szInitrd,"/");
 				sprintf(entry->szInitrd,"%s%s",entry->szInitrd,szTmp);
 			}
 			if(_strncmp(ptr,"rivafb",strlen("rivafb")) == 0) {
