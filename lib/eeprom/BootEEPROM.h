@@ -99,5 +99,7 @@ EEPROMDATA eeprom;
 
 void BootEepromReadEntireEEPROM(void);
 void BootEepromPrintInfo(void);
-
+void EepromCRC(unsigned char *crc, unsigned char *data, long dataLen);
+void EepromSetVideoStandard(xbox_tv_encoding standard);
+void EepromSetWidescreen(int enable);
 #endif // _BootEEPROM_H_
