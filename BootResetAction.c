@@ -90,8 +90,11 @@ extern void BootResetAction ( void ) {
 	bprintf("\nBOOT: starting BootResetAction()\n\r");
 
 		// init malloc() and free() structures
-
+#ifdef XBE
+	MemoryManagementInitialization((void *)0x0800000, 0x1000000);
+#else
 	MemoryManagementInitialization((void *)0x1000000, 0x2000000);
+#endif
 
 	// then setup the interrupt table
 	// RJS - I tried to enable interrupts earlier to fix some instability
@@ -123,6 +126,7 @@ extern void BootResetAction ( void ) {
 
 	bAvPackType=BootVgaInitializationKernel(VIDEO_PREFERRED_LINES);
 
+#ifndef XBE
 		// initial framebuffer cleardown
 	memset(((DWORD *)(FRAMEBUFFER_START)), 0, 640*4*VIDEO_HEIGHT);
 
@@ -147,7 +151,9 @@ extern void BootResetAction ( void ) {
 	BootVideoBlit((DWORD *)&baBackdrop[0], 60*4, (DWORD *)(FRAMEBUFFER_START+640*4*VIDEO_MARGINY+VIDEO_MARGINX*4), 640*4, 72);
 	TRACE;
 
-		// finally bring up video
+#endif
+	
+	// finally bring up video
 
 	BootVideoEnableOutput(bAvPackType);
 

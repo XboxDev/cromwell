@@ -155,7 +155,11 @@ void BootInterruptsWriteIdt(void) {
 	IoOutputByte(0xa1, 0x70);  // base interrupt vector address
 	IoOutputByte(0xa1, 0x02);  // am slave, hooked to INT2 on master
 	IoOutputByte(0xa1, 0x01);  // x86 mode normal EOI
+#ifdef XBE
+	IoOutputByte(0xa1, 0xff);		// enable all ints
+#else
 	IoOutputByte(0xa1, 0x00);		// enable all ints
+#endif
 
 			// configure ACPI hardware to generate interrupt on PIC-chip pin6 action (via EXTSMI#)
 
