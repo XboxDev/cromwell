@@ -118,7 +118,7 @@ int BootIconMenu(CONFIGENTRY *config,int nDrive,int nActivePartition, int nFATXP
 	nTempCursorX=VIDEO_CURSOR_POSX;
 	nTempCursorY=vmode.height-80;
 	
-	// We save the complete Video Page to a memory (we restore at exit)
+	// We save the complete framebuffer to memory (we restore at exit)
 	videosavepage = malloc(FB_SIZE);
 	memcpy(videosavepage,(void*)FB_START,FB_SIZE);
 	
@@ -130,8 +130,9 @@ int BootIconMenu(CONFIGENTRY *config,int nDrive,int nActivePartition, int nFATXP
 	VIDEO_ATTR=0xffffffff;
 	
 	//Add the icons we want.
-		
 	if (nFATXPresent) {
+		//Need to check linuxboot.cfg presence, not just fatx.
+		
 		//FATX icon
 		ICON *icon1 = (ICON *)malloc(sizeof(ICON));
 		icon1->iconSlot = ICON_SOURCE_SLOT4;
@@ -141,6 +142,9 @@ int BootIconMenu(CONFIGENTRY *config,int nDrive,int nActivePartition, int nFATXP
 	}
 		
 	if (nActivePartition) {
+		//Again, need to check linuxboot.cfg is present in one of
+		//the 'acceptable' places.
+		
 		//Native icon
 		ICON *icon2 = (ICON *)malloc(sizeof(ICON));
 		icon2->iconSlot = ICON_SOURCE_SLOT1;
@@ -166,9 +170,17 @@ int BootIconMenu(CONFIGENTRY *config,int nDrive,int nActivePartition, int nFATXP
 	icon4->functionPtr = BootFromEtherboot;
 	AddIcon(icon4);
 #endif	
+	
+	//Uncomment this one to test the new text menu system.
+	//It's NOT production ready.
+	/*ICON *icon5 = (ICON *)malloc(sizeof(ICON));
+	icon5->iconSlot = ICON_SOURCE_SLOT0;
+	icon5->szCaption = "Advanced";
+	extern void BootTextMenu(void);
+	icon5->functionPtr = BootTextMenu;
+	AddIcon(icon5);
+	*/
 
-	
-	
 	//For now, mark the first icon as selected.
 	selectedIcon = firstIcon;
 	firstVisibleIcon = firstIcon;
@@ -229,7 +241,7 @@ int BootIconMenu(CONFIGENTRY *config,int nDrive,int nActivePartition, int nFATXP
 			VIDEO_CURSOR_POSX=nTempCursorResumeX;
 			VIDEO_CURSOR_POSY=nTempCursorResumeY;
 			//Icon selected - invoke function pointer.
-			selectedIcon->functionPtr();
+			if (selectedIcon->functionPtr!=0l) selectedIcon->functionPtr();
 			//Should never come back but at least if we do, the menu can
 			//continue to work.
 			//Setting changed means the icon menu will redraw itself.
