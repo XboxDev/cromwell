@@ -1,7 +1,7 @@
-#ifdef	DOWNLOAD_PROTO_NFS
-
 #include "etherboot.h"
 #include "nic.h"
+
+#ifdef	DOWNLOAD_PROTO_NFS
 
 /* NOTE: the NFS code is heavily inspired by the NetBSD netboot code (read:
  * large portions are copied verbatim) as distributed in OSKit 0.97.  A few
