@@ -125,7 +125,8 @@ extern void BootResetAction ( void ) {
         memcpy(&cromwell_config,(void*)(0x03A00000+20),4);
         memcpy(&cromwell_retryload,(void*)(0x03A00000+24),4);
 	memcpy(&cromwell_loadbank,(void*)(0x03A00000+28),4);
-          
+        memcpy(&cromwell_Biostype,(void*)(0x03A00000+32),4);
+
 	// Very cosmetic, but very secure
        	memset((void*)0x00090000,0x00,0x70000);  // Linux Kernel Info Space
       	memset((void*)0x00100000,0x00,0x200000);  // Kompressed Kernel
@@ -249,7 +250,12 @@ extern void BootResetAction ( void ) {
 	VIDEO_CURSOR_POSX=(currentvideomodedetails.m_dwMarginXInPixelsRecommended/*+64*/)*4;
 	printk( __DATE__ " -  http://xbox-linux.sf.net\n");
 	VIDEO_CURSOR_POSX=(currentvideomodedetails.m_dwMarginXInPixelsRecommended/*+64*/)*4;
-	printk("(C)2002-2003 Xbox Linux Team - Licensed under the GPL  (Load Trys: %d Bank: %d) \n",cromwell_retryload,cromwell_loadbank);
+	printk("(C)2002-2003 Xbox Linux Team - Licensed under the GPL  ");
+	if (cromwell_config==CROMWELL) {
+		printk("(Load Trys: %d Bank: %d ",cromwell_retryload,cromwell_loadbank);
+		if (cromwell_Biostype == 0) printk("Bios: 256k)");
+		if (cromwell_Biostype == 1) printk("Bios: 1MB)");
+	}
 	printk("\n");
 
 	// capture title area

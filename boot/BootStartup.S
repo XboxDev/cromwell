@@ -25,6 +25,7 @@ Cromwellconfig:
         .long 0x0	// if XBE, then this bit is 0, if Cromwell mode, the bit is set to 1 by the Startuploader
         .long 0x0	// ImageRetryLoads
         .long 0x0	// Bank, from where Loaded
+        .long 0x0	// 0 .. Bios = 256 k, 1 .. Bios = 1MB
         
 	.org 0x100
 	jmp	start_linux        

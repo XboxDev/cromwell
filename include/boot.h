@@ -25,6 +25,7 @@
 unsigned int cromwell_config;
 unsigned int cromwell_retryload;
 unsigned int cromwell_loadbank;
+unsigned int cromwell_Biostype;
 
 #define XROMWELL	0
 #define CROMWELL	1

@@ -237,6 +237,8 @@ MemoryChecksum:
 	.long _size_ramcopy
 	.long 0x00  // Will be dumped in by imagebld ->compressed_image_start;
 	.long 0x00  // Will be dumped in by imagebld ->compressed_image_size;
+	.long 0x00  // Will be dumped in by imagebld ->0 .. 256kb image, 1 .. 1MB image
+	
 .globl tableGdt
 tableGdt:
 

@@ -68,6 +68,7 @@ extern void BootStartBiosLoader ( void ) {
         unsigned int loadretry;
 	unsigned int compressed_image_start;
 	unsigned int compressed_image_size;
+	unsigned int Biossize_type;
 	
 	unsigned int de_compressed_image_size;
 	
@@ -77,6 +78,7 @@ extern void BootStartBiosLoader ( void ) {
 	memcpy(&bootloadersize,(void*)(PROGRAMM_Memory_2bl+20),4);
 	memcpy(&compressed_image_start,(void*)(PROGRAMM_Memory_2bl+24),4);
 	memcpy(&compressed_image_size,(void*)(PROGRAMM_Memory_2bl+28),4);
+	memcpy(&Biossize_type,(void*)(PROGRAMM_Memory_2bl+32),4);
 	
       	SHA1Reset(&context);
 	SHA1Input(&context,(void*)(PROGRAMM_Memory_2bl+20),bootloadersize-20);
@@ -105,26 +107,39 @@ extern void BootStartBiosLoader ( void ) {
         flashbank=3;
 	for (loadretry=0;loadretry<100;loadretry++) {
                 
-                cromloadtry++;
+               
+                if (Biossize_type==0) {
+                	// Means we have a 256 kbyte image
+                	 flashbank=3;
+                	 cromloadtry=0;
+                	}                                 
                 
-                // If 20 Try's are failing, we switch to the next bank
-                if (loadretry==20) {
-                	flashbank=0;
-                	cromloadtry=1;
-                	}
+                if (Biossize_type==1) {
+                	// Means we have a 1MB image
+                	// If 20 Try's are failing, we switch to the next bank
+                	
+                	if (loadretry==0) {
+                		flashbank=1;
+                		cromloadtry=0;
+                		}
 
-                // we switch to the next bank
-                if (loadretry==40) {
-                	flashbank=1;
-                	cromloadtry=1;
-                	}
+               		if (loadretry==20) {
+               			flashbank=2;
+               			cromloadtry=0;
+               			}
       
-                // we switch to the next bank
-                if (loadretry==80) {
-                	flashbank=2;
-                	cromloadtry=1;
-                	}
+	                if (loadretry==40) {
+        	        	flashbank=0;
+                		cromloadtry=0;
+                		}
+
+	                if (loadretry==80) {
+        	        	flashbank=3;
+                		cromloadtry=0;
+                		}
+                }
                 
+                cromloadtry++;	
                 
         	// Copy From Flash To RAM
       		memcpy(&bootloaderChecksum[0],(void*)(Buildinflash_Flash[flashbank]+compressed_image_start),20);
@@ -154,9 +169,11 @@ extern void BootStartBiosLoader ( void ) {
 			// Decompression Ends here
 					
 			// This is a config bit in Cromwell, telling the Cromwell, that it is a Cromwell and not a Xromwell
+			flashbank++; // As counting starts with 0, we increase +1
 			memcpy((void*)(CROMWELL_Memory_pos+20),&cromwellidentify,4);
 			memcpy((void*)(CROMWELL_Memory_pos+24),&cromloadtry,4);
 		 	memcpy((void*)(CROMWELL_Memory_pos+28),&flashbank,4);
+		 	memcpy((void*)(CROMWELL_Memory_pos+32),&Biossize_type,4);
 		 	
 		 	break;
 

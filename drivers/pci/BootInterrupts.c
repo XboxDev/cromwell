@@ -198,7 +198,11 @@ void IntHandlerCSmc(void)
 	nCountInterruptsSmc++;
 
 //	bprintf("&nCountInterruptsSmc=0x%x\n", &nCountInterruptsSmc);
-
+	
+	#ifdef DEBUG_MODE
+        printk("SMC Interrupt Detected\n");
+        #endif
+	
 	bStatus=I2CTransmitByteGetReturn(0x10, 0x11); // Query PIC for interrupt reason
 	while(nBit<7) {
 		if(bStatus & 1) {

@@ -17,7 +17,7 @@ SUBDIRS	= boot_rom fs drivers lib boot
 
 LDFLAGS-ROM     = -s -S -T $(TOPDIR)/scripts/ldscript-crom.ld
 LDFLAGS-XBEBOOT = -s -S -T $(TOPDIR)/scripts/xbeboot.ld
-LDFLAGS-ROMBOOT = -M -s -S -T $(TOPDIR)/boot_rom/bootrom.ld
+LDFLAGS-ROMBOOT = -s -S -T $(TOPDIR)/boot_rom/bootrom.ld
 
 RESOURCES-ROMBOOT = $(TOPDIR)/obj/xcodes11.elf 
 

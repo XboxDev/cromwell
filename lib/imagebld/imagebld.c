@@ -23,6 +23,7 @@ struct Checksumstruct {
 	unsigned int Size_ramcopy;
 	unsigned int compressed_image_start;
 	unsigned int compressed_image_size;
+	unsigned int Biossize_type;
 }Checksumstruct;
 
 void shax(unsigned char *result, unsigned char *data, unsigned int len)
@@ -102,9 +103,12 @@ int romcopy (
 	unsigned char SHA1_result[SHA1HashSize];
 	struct SHA1Context context;
 	FILE *f;
-	unsigned char flash[256*1024];
+	unsigned char loaderimage[256*1024];
+	unsigned char flash256[256*1024];
 	unsigned char flash1024[1024*1024];
 	unsigned char crom[256*1024];
+	unsigned char compressedcrom[256*1024];
+	
        	unsigned int romsize=0;
        	unsigned int compressedromsize=0;
        	struct Checksumstruct bootloaderstruct ;
@@ -113,14 +117,16 @@ int romcopy (
 //       	unsigned int compressedimagestart;
        	unsigned int temp;
        	
-       	memset(flash,0x00,sizeof(flash));
+       	memset(flash256,0x00,sizeof(flash256));
+	memset(flash1024,0x00,sizeof(flash1024));
        	memset(crom,0x00,sizeof(crom));
+       	memset(compressedcrom,0x00,sizeof(compressedcrom));
        	
        	a=1;
 	f = fopen(binname256, "rb");
     	if (f!=NULL) 
     	{    
-		fread(flash, 1, 256*1024, f);
+		fread(loaderimage, 1, 256*1024, f);
  	        fclose(f);
 	} else {
 		printf("Error, NO Image found\n");
@@ -150,8 +156,11 @@ int romcopy (
 	// Ok, we have loaded both images, we can continue
 	if (a==1) {	
 
-		memcpy(&bootloderpos,&flash[0x40],4);   // This can be foun in the 2bBootStartup.S
-		memcpy(&bootloaderstruct,&flash[bootloderpos],sizeof(struct Checksumstruct));
+		memcpy(&bootloderpos,&loaderimage[0x40],4);   // This can be foun in the 2bBootStartup.S
+		memcpy(&bootloaderstruct,&loaderimage[bootloderpos],sizeof(struct Checksumstruct));
+		
+		memcpy(flash256,loaderimage,256*1024);
+		memcpy(flash1024,loaderimage,256*1024);
 		
 		// We make now sure, there are some "space" bits and we start oranized with 16
 		temp = bootloderpos + bootloaderstruct.Size_ramcopy;
@@ -159,8 +168,12 @@ int romcopy (
 		temp = temp + 0x10;
 		bootloaderstruct.compressed_image_start = temp;
 		bootloaderstruct.compressed_image_size =  compressedromsize;
-		memcpy(&flash[bootloderpos],&bootloaderstruct,sizeof(struct Checksumstruct));
-
+		
+		bootloaderstruct.Biossize_type = 0; // Means it is a 256 kbyte Image
+		memcpy(&flash256[bootloderpos],&bootloaderstruct,sizeof(struct Checksumstruct));
+		bootloaderstruct.Biossize_type = 1; // Means it is a 1MB Image
+		memcpy(&flash1024[bootloderpos],&bootloaderstruct,sizeof(struct Checksumstruct));		
+		
 		#ifdef debug		
 		printf("%08x\n",bootloderpos);
 		printf("%08x\n",bootloaderstruct.Size_ramcopy);		
@@ -171,52 +184,68 @@ int romcopy (
 		// We have calculated the size of the kompressed image and where it can start (where the 2bl ends)
 		// we make now the hash sum of the 2bl itself			
 
-		
+		// This is for 256 kbyte image
 		// We start with offset 20, as the first 20 bytes are the checksum
 		SHA1Reset(&context);
-		SHA1Input(&context,&flash[bootloderpos+20],(bootloaderstruct.Size_ramcopy-20));
+		SHA1Input(&context,&flash256[bootloderpos+20],(bootloaderstruct.Size_ramcopy-20));
 		SHA1Result(&context,SHA1_result);
-	
+	      
+	        // We dump now the SHA1 sum into the 2bl loader image
+	      	memcpy(&flash256[bootloderpos],&SHA1_result[0],20);
+
 		#ifdef debug
-		printf("\n");
+		printf("2bl Hash 256Kb image :");
+		for(a=0; a<SHA1HashSize; a++) {
+			printf("%02X",SHA1_result[a]);
+		}
+	      	printf("\n");
+	      	#endif
+
+
+		// This is for 1MB Image kbyte image
+		// We start with offset 20, as the first 20 bytes are the checksum
+		SHA1Reset(&context);
+		SHA1Input(&context,&flash1024[bootloderpos+20],(bootloaderstruct.Size_ramcopy-20));
+		SHA1Result(&context,SHA1_result);
+	      
+	        // We dump now the SHA1 sum into the 2bl loader image
+	      	memcpy(&flash1024[bootloderpos],&SHA1_result[0],20);
+              
+		#ifdef debug
+		printf("2bl Hash 1MB image   :");
 		for(a=0; a<SHA1HashSize; a++) {
 			printf("%02X",SHA1_result[a]);
 		}
 	      	printf("\n");
 	      	#endif
 	      	
-	      	// We dump now the SHA1 sum into the 2bl loader image
-	      	memcpy(&flash[bootloderpos],&SHA1_result[0],20);
+		// In 1MB flash we need the Image 2 times, as ... you know
+		memcpy(&flash1024[3*256*1024],&flash1024[0],256*1024);
 
-		// Ok, the 2BL loader is ready, we now go to the "Kernel"
-		
+                // Ok, the 2BL loader is ready, we now go to the "Kernel"
+
+
 	      	
 	        // The first 20 bytes of the compressed image are the checksum
-		memcpy(&flash[bootloaderstruct.compressed_image_start+20],&crom[0],compressedromsize);
+		memcpy(&flash256[bootloaderstruct.compressed_image_start+20],&crom[0],compressedromsize);
 		SHA1Reset(&context);
-		SHA1Input(&context,&flash[bootloaderstruct.compressed_image_start+20],compressedromsize);
+		SHA1Input(&context,&flash256[bootloaderstruct.compressed_image_start+20],compressedromsize);
 		SHA1Result(&context,SHA1_result);                                
-		
-		memcpy(&flash[bootloaderstruct.compressed_image_start],SHA1_result,20);			
+		memcpy(&flash256[bootloaderstruct.compressed_image_start],SHA1_result,20);			
     			
-
+		memcpy(&flash1024[bootloaderstruct.compressed_image_start+(1*256*1024)],SHA1_result,20);			
+		memcpy(&flash1024[bootloaderstruct.compressed_image_start+20+(1*256*1024)],&crom[0],compressedromsize);
+		memcpy(&flash1024[bootloaderstruct.compressed_image_start+(2*256*1024)],SHA1_result,20);			
+	      	memcpy(&flash1024[bootloaderstruct.compressed_image_start+20+(2*256*1024)],&crom[0],compressedromsize);
 	      	
 	      	
 	      	
 	      	
-	      	
-	      	
-	      	// Write the 256 Kbyte Image Back
+	      	// Write the 256 /1024 Kbyte Image Back
 	      	f = fopen(binname256, "wb");               
-		fwrite(flash, 1, 256*1024, f);
+		fwrite(flash256, 1, 256*1024, f);
          	fclose(f);	
 		
-		
-		memcpy(&flash1024[0*256*1024],&flash[0],256*1024);
-	      	memcpy(&flash1024[1*256*1024],&flash[0],256*1024);
-	      	memcpy(&flash1024[2*256*1024],&flash[0],256*1024);
-	      	memcpy(&flash1024[3*256*1024],&flash[0],256*1024);
-	      	
 	      	f = fopen(binname1024, "wb");               
 		fwrite(flash1024, 1, 1024*1024, f);
          	fclose(f);	
