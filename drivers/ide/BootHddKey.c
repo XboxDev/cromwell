@@ -6,26 +6,6 @@
 #include "rc4.h"
 
 
-/* This is basically originally all speedbump's work
-
-		2002-10-13 franz@caos.at     Changes to work with v1.0 and v1.1 boxes
- 	  2002-09-18 franz@caos.at     Changes to use a single SMAC_SHA1_calculation() routine
-		2002-09-13 andy@warmcat.com  Stitched in Franz's excellent key removal work: his modest statement follows
-
-		   Updated now, with no use for MS$ RC4 key now.
-		   Please do not send emails to me and ask: how does it work ? / What happended ? / Where ist the key ? (the key has gone)
-		   I only would say: It's a structural problem of the combination of the HMAC and the SHA-1.
-		   This only happened, as the programmer only take "standard" algorithm, and not thinking, what happens there.
-		   Ok, Studying Numerical Mathematical Analysis also helps a little.
-		   Maybe, i will document how this happend one day (would take me about 4 days to type this) on the http://sha1.caos.at website
-		   Beside, it's about 30% faster, as using the "standard" programm. (hehehe, it's a optimazion)
-		   Sorry, for the "brutal" programming, i know, it could have done better, yes.
-		   This was the working ,testing and probing programm, and usually if something is working, you are not touching it anyway.
-		   I hope, it is working good, as i have no XBOX to test this.
-
-		2002-06-27 andy@warmcat.com  Stitched it into crom, simplified out code that was for test, added munged key
-*/
-
 
 void HMAC_hdd_calculation(int version,unsigned char *HMAC_result, ... );
 
@@ -54,14 +34,24 @@ int copy_swap_trim(unsigned char *dst, unsigned char *src, int len)
 
 int HMAC1hddReset(int version,SHA1Context *context)
 {
-  SHA1Reset(context);
-  if (version==10) {
+  	SHA1Reset(context);
+  	
+  	if (version==9) {
+  		context->Intermediate_Hash[0] = 0x85F9E51A;
+		context->Intermediate_Hash[1] = 0xE04613D2;
+		context->Intermediate_Hash[2] = 0x6D86A50C;
+		context->Intermediate_Hash[3] = 0x77C32E3C;
+		context->Intermediate_Hash[4] = 0x4BD717A4;
+	}
+  	
+  	if (version==10) {
 		context->Intermediate_Hash[0] = 0x72127625;
 		context->Intermediate_Hash[1] = 0x336472B9;
 		context->Intermediate_Hash[2] = 0xBE609BEA;
 		context->Intermediate_Hash[3] = 0xF55E226B;
 		context->Intermediate_Hash[4] = 0x99958DAC;
 	}
+	
 	if (version==11) {
 		context->Intermediate_Hash[0] = 0x39B06E79;
 		context->Intermediate_Hash[1] = 0xC9BD25E8;
@@ -78,6 +68,15 @@ int HMAC1hddReset(int version,SHA1Context *context)
 int HMAC2hddReset(int version,SHA1Context *context)
 {
 	SHA1Reset(context);
+	
+	if (version==9) {
+		context->Intermediate_Hash[0] = 0x5D7A9C6B;
+		context->Intermediate_Hash[1] = 0xE1922BEB;
+		context->Intermediate_Hash[2] = 0xB82CCDBC;
+		context->Intermediate_Hash[3] = 0x3137AB34;
+		context->Intermediate_Hash[4] = 0x486B52B3;
+	}
+	
 	if (version==10) {
 		context->Intermediate_Hash[0] = 0x76441D41;
 		context->Intermediate_Hash[1] = 0x4DE82659;
@@ -85,6 +84,7 @@ int HMAC2hddReset(int version,SHA1Context *context)
 		context->Intermediate_Hash[3] = 0xB256FACA;
 		context->Intermediate_Hash[4] = 0xC4FE2DE8;
 	}
+
 	if (version==11) {
 		context->Intermediate_Hash[0] = 0x9B49BED3;
 		context->Intermediate_Hash[1] = 0x84B430FC;
@@ -92,9 +92,10 @@ int HMAC2hddReset(int version,SHA1Context *context)
 		context->Intermediate_Hash[3] = 0xEBFE5FE5;
 		context->Intermediate_Hash[4] = 0xD96E7393;
 	}
-	context->Length_Low  = 512;
-	return shaSuccess;
 
+	context->Length_Low  = 512;
+
+	return shaSuccess;
 }
 
 
@@ -170,7 +171,7 @@ DWORD BootHddKeyGenerateEepromKeyData(
         
         // Static Version change not included yet
         
-	for (counter=10;counter<12;counter++)
+	for (counter=9;counter<12;counter++)
 	{
     		memset(&RC4_key,0,sizeof(rc4_key));
 		memcpy(&baEepromDataLocalCopy[0], pbEeprom_data, 0x30);
