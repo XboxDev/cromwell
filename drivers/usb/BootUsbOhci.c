@@ -14,7 +14,7 @@
 
 #include "boot.h"
 #include "BootUsbOhci.h"
-#include <linux/types.h>
+#include <sys/types.h>
 
 #define __io_virt(x) ((void *)(x))
 #define readl(addr) (*(volatile unsigned int *) __io_virt(addr))
