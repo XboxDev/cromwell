@@ -24,8 +24,6 @@
 
 JPEG jpegBackdrop;
 
-CONFIGENTRY kernel_config;
-
 int nTempCursorMbrX, nTempCursorMbrY;
 
 int nActivePartitionIndex=0;
@@ -205,88 +203,6 @@ extern void BootResetAction ( void ) {
 	nTempCursorMbrX=VIDEO_CURSOR_POSX;
 	nTempCursorMbrY=VIDEO_CURSOR_POSY;
 
-	// HDD Partition Table dump
-
-	{
-		BYTE ba[512];
-		memset(ba,0x00,sizeof(ba));
-		if(BootIdeReadSector(0, &ba[0], 0, 0, 512)) {
-			printk("Unable to read HDD first sector getting partition table\n");
-		} else {
-
-			if( (ba[0x1fe]==0x55) && (ba[0x1ff]==0xaa) ) fMbrPresent=true;
-
-			if(fMbrPresent) {
-				volatile BYTE * pb;
-				int n=0, nPos=0;
-#ifdef DISPLAY_MBR_INFO
-				char sz[512];
-				memset(sz,0x00,sizeof(sz));
-
-				VIDEO_ATTR=0xffe8e8e8;
-				printk("MBR Partition Table:\n");
-#endif
-				(volatile BYTE *)pb=&ba[0x1be];
-				n=0; nPos=0;
-	
-				for (n=0; n<4; n++,pb+=16) {
-#ifdef DISPLAY_MBR_INFO
-					nPos=sprintf(sz, " hda%d: ", n+1);
-#endif
-					if(pb[0]&0x80) {
-						nActivePartitionIndex=n;
-						fSeenActive=true;
-#ifdef DISPLAY_MBR_INFO
-						nPos+=sprintf(&sz[nPos], "boot\t");
-#endif
-					} else {
-#ifdef DISPLAY_MBR_INFO
-						nPos+=sprintf(&sz[nPos], "   \t");
-#endif
-					}
-
-#ifdef DISPLAY_MBR_INFO
-	//					nPos+=sprintf(&sz[nPos],"type:%02X\tStart: %02X/%02X/%02X\tEnd: %02X/%02X/%02X  ", pb[4], pb[1],pb[2],pb[3],pb[5],pb[6],pb[7]);
-					switch(pb[4]) {
-						case 0x00:
-							nPos+=sprintf(&sz[nPos],"Empty\t");
-							break;
-						case 0x82:
-							nPos+=sprintf(&sz[nPos],"Swap\t");
-							break;
-						case 0x83:
-							nPos+=sprintf(&sz[nPos],"Ext2 \t");
-							break;
-						case 0x1e:
-							nPos+=sprintf(&sz[nPos],"FATX\t");
-							break;
-						default:
-							nPos+=sprintf(&sz[nPos],"0x%02X\t", pb[4]);
-							break;
-					}
-					if(pb[4]) {
-						VIDEO_ATTR=0xffc8c8c8;
-						if(pb[0]&0x80) VIDEO_ATTR=0xffd8d8d8;
-						nPos+=sprintf(&sz[nPos],"Start: 0x%08x \tTotal: 0x%08x\t(%dMB)\n", *((DWORD *)&pb[8]), *((DWORD *)&pb[0xc]), (*((DWORD*)&pb[0xc]))/2048 );
-					} else {
-						VIDEO_ATTR=0xffa8a8a8;
-						sz[nPos++]='\n'; sz[nPos]='\0';
-					}
-					printk(sz);
-#endif
-				}
-
-				printk("\n");
-
-				VIDEO_ATTR=0xffffffff;
-			} else { // no mbr signature
-				;
-			}
-			BootIdeReadSector(0, &ba[0], 3, 0, 512);
-			if(ba[0] == 'B' && ba[1] == 'R' && ba[2] == 'F' && ba[3] == 'R') nFATXPresent = true;
-		}
-	}
-
 	// if we made it this far, lets have a solid green LED to celebrate
 	I2cSetFrontpanelLed(
 		I2C_LED_GREEN0 | I2C_LED_GREEN1 | I2C_LED_GREEN2 | I2C_LED_GREEN3
@@ -294,12 +210,8 @@ extern void BootResetAction ( void ) {
 
 //	printk("i2C=%d SMC=%d, IDE=%d, tick=%d una=%d unb=%d\n", nCountI2cinterrupts, nCountInterruptsSmc, nCountInterruptsIde, BIOS_TICK_COUNT, nCountUnusedInterrupts, nCountUnusedInterruptsPic2);
 
-  	memset(&kernel_config,0,sizeof(CONFIGENTRY));
-
-	if(fMbrPresent && fSeenActive) {
-		BootIconMenu(&kernel_config, 0,nActivePartitionIndex, nFATXPresent);
-	} else {
-		BootIconMenu(&kernel_config, 1,0, nFATXPresent); 
-	}
-	while(1);   
+	IconMenuInit();
+	IconMenu();
+	//Should never come back here.
+	while(1);  
 }

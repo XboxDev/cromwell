@@ -6,6 +6,13 @@
  *   (at your option) any later version.                                   *
  *                                                                         *
  ***************************************************************************/
+/*
+ * Redesigned icon menu, allowing icons to be added/removed at runtime.
+ * 02/10/04 - David Pye dmp@davidmpye.dyndns.org
+ * You should not need to edit this file in normal circumstances - icons are
+ * added/removed via boot/IconMenuInit.c
+ */
+
 #include "boot.h"
 #include "video.h"
 #include "memory_layout.h"
@@ -20,30 +27,10 @@
 #include "BootIde.h"
 #include "MenuActions.h"
 #include "config.h"
-
-#define ICON_SOURCE_SLOT0 0
-#define ICON_SOURCE_SLOT1 ICON_WIDTH
-#define ICON_SOURCE_SLOT2 ICON_WIDTH*2
-#define ICON_SOURCE_SLOT3 ICON_WIDTH*3
-#define ICON_SOURCE_SLOT4 ICON_WIDTH*4
-#define ICON_SOURCE_SLOT5 ICON_WIDTH*5
-#define ICON_SOURCE_SLOT6 ICON_WIDTH*6
-#define ICON_SOURCE_SLOT7 ICON_WIDTH*7
-#define ICON_SOURCE_SLOT8 ICON_WIDTH*8
+#include "IconMenu.h"
 
 #define TRANSPARENTNESS 0x30
 #define SELECTED 0xff
-
-struct ICON;
-
-typedef struct {
-	int iconSlot;
-	char *szCaption;
-	void (*functionPtr) (void *);
-	void *functionDataPtr;
-	struct ICON *previousIcon;
-	struct ICON *nextIcon;
-} ICON;
 
 ICON *firstIcon=0l;
 ICON *selectedIcon=0l;
@@ -68,10 +55,13 @@ void AddIcon(ICON *newIcon) {
 	iconPtr->previousIcon = (struct ICON*)currentIcon; 
 }
 
-void IconMenuDraw(int nXOffset, int nYOffset) {
-	ICON *iconPtr = firstVisibleIcon;
+static void IconMenuDraw(int nXOffset, int nYOffset) {
+	ICON *iconPtr;
 	int iconcount;
+	
+	if (firstVisibleIcon==0l) firstVisibleIcon = firstIcon;
 	if (selectedIcon==0l) selectedIcon = firstIcon;
+	iconPtr = firstVisibleIcon;
 	//There are max four 'bays' for displaying icons in - we only draw the four.
 	for (iconcount=0; iconcount<4; iconcount++) {
 		BYTE opaqueness;
@@ -103,19 +93,18 @@ void IconMenuDraw(int nXOffset, int nYOffset) {
 	}
 }
 
-int BootIconMenu(CONFIGENTRY *config,int nDrive,int nActivePartition, int nFATXPresent){
-	extern int nTempCursorMbrX, nTempCursorMbrY;
-	extern void BootTextMenu(void *);
-	int change=0;
-
-	int nTempCursorResumeX, nTempCursorResumeY ;
-	int nTempCursorX, nTempCursorY;
-	int nModeDependentOffset=(vmode.width-640)/2;  // icon offsets computed for 640 modes, retain centering in other modes
+void IconMenu(void) {
         unsigned char *videosavepage;
         
         DWORD COUNT_start;
         DWORD temp=1;
 	ICON *iconPtr=0l;
+
+	extern int nTempCursorMbrX, nTempCursorMbrY; 
+	int nTempCursorResumeX, nTempCursorResumeY ;
+	int nTempCursorX, nTempCursorY;
+	int nModeDependentOffset=(vmode.width-640)/2;  
+
 	
 	nTempCursorResumeX=nTempCursorMbrX;
 	nTempCursorResumeY=nTempCursorMbrY;
@@ -133,65 +122,9 @@ int BootIconMenu(CONFIGENTRY *config,int nDrive,int nActivePartition, int nFATXP
 	VIDEO_ATTR=0xffc8c8c8;
 	printk("Select from Menu\n");
 	VIDEO_ATTR=0xffffffff;
-
-	//Add the icons we want.
-	if (nFATXPresent) {
-		//Need to check linuxboot.cfg presence, not just fatx.
-		
-		//FATX icon
-		iconPtr = (ICON *)malloc(sizeof(ICON));
-		iconPtr->iconSlot = ICON_SOURCE_SLOT4;
-		iconPtr->szCaption = "FatX (E:)";
-		iconPtr->functionPtr = BootFromFATX;
-		AddIcon(iconPtr);
-	}
-		
-	if (nActivePartition) {
-		//Again, need to check linuxboot.cfg is present in one of
-		//the 'acceptable' places.
-		
-		//Native icon
-		iconPtr = (ICON *)malloc(sizeof(ICON));
-		iconPtr->iconSlot = ICON_SOURCE_SLOT1;
-		iconPtr->szCaption = "HDD";
-		iconPtr->functionPtr = BootFromNative;
-		AddIcon(iconPtr);
-	}
 	
-	if (tsaHarddiskInfo[0].m_fAtapi || tsaHarddiskInfo[1].m_fAtapi) {	
-		//CD-ROM icon
-		iconPtr = (ICON *)malloc(sizeof(ICON));
-		iconPtr->iconSlot = ICON_SOURCE_SLOT2;
-		iconPtr->szCaption = "CDROM";
-		iconPtr->functionPtr = BootFromCD;
-		AddIcon(iconPtr);
-	}
-
-#ifdef ETHERBOOT
-	//Etherboot icon
-	iconPtr = (ICON *)malloc(sizeof(ICON));
-	iconPtr->iconSlot = ICON_SOURCE_SLOT3;
-	iconPtr->szCaption = "Etherboot";
-	iconPtr->functionPtr = BootFromEtherboot;
-	AddIcon(iconPtr);
-#endif	
-	
-	//Uncomment this one to test the new text menu system.
-	//It's NOT production ready.
-	/*
-	iconPtr = (ICON *)malloc(sizeof(ICON));
-	iconPtr->iconSlot = ICON_SOURCE_SLOT0;
-	iconPtr->szCaption = "Advanced";
-	iconPtr->functionPtr = BootTextMenu;
-	AddIcon(iconPtr);
-	*/
-
-	//For now, mark the first icon as selected.
-	selectedIcon = firstIcon;
-	firstVisibleIcon = firstIcon;
 	IconMenuDraw(nModeDependentOffset, nTempCursorY);
 	COUNT_start = IoInputDword(0x8008);
-
 	//Main menu event loop.
 	while(1)
 	{
@@ -247,7 +180,7 @@ int BootIconMenu(CONFIGENTRY *config,int nDrive,int nActivePartition, int nFATXP
 			VIDEO_CURSOR_POSY=nTempCursorResumeY;
 			//Icon selected - invoke function pointer.
 			if (selectedIcon->functionPtr!=0l) selectedIcon->functionPtr(selectedIcon->functionDataPtr);
-			//Should never come back but at least if we do, the menu can
+			//Shouldn't usually come back but at least if we do, the menu can
 			//continue to work.
 			//Setting changed means the icon menu will redraw itself.
 			changed=1;

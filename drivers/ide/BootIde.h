@@ -1,4 +1,6 @@
 /* Cromwell IDE driver code - GNU GPL */
+#include "boot.h"
+
 tsHarddiskInfo tsaHarddiskInfo[2];  // static struct stores data about attached drives
 
 //Methods
