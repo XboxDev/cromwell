@@ -9,7 +9,11 @@
  *   the Free Software Foundation; either version 2 of the License, or     *
  *   (at your option) any later version.                                   *
  *                                                                         *
- ***************************************************************************/
+ ***************************************************************************
+
+	2002-09-19 andy@warmcat.com  Added code to manage standard CMOS settings for Bochs
+	                              Defeated call to VGA init for now
+ */
 
 #include "boot.h"
 #include <stdarg.h>
@@ -82,6 +86,19 @@ void * memset(void *dest, int data,  size_t size) {
               : : "S" (dest), "eax" (data), "c" (size)
 		);
 	return dest;
+}
+
+// access to RTC CMOS memory
+
+void BiosCmosWrite(BYTE bAds, BYTE bData) {
+		IoOutputByte(0x70, bAds);
+		IoOutputByte(0x71, bData);
+}
+
+BYTE BiosCmosRead(BYTE bAds)
+{
+		IoOutputByte(0x70, bAds);
+		return IoInputByte(0x71);
 }
 
 
@@ -248,6 +265,8 @@ extern void BootResetAction ( void ) {
 				0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x44, 0x00, 0x00, 0x00
 			};
 
+			bprintf("Rewriting EEPROM, please wait...\n");
+
 			while(nAds<0x100) {
 				I2CTransmitWord( 0x54, (nAds<<8)|baMyEEProm[nAds], true);
 				for(n=0;n<1000;n++) { IoInputByte(I2C_IO_BASE+0); }
@@ -303,18 +322,34 @@ extern void BootResetAction ( void ) {
 
 	printk(
 		"Xbox Linux Clean BIOS "
-		VERSION 
+		VERSION
 		"    Licensed under the GPL     http://xbox-linux.sf.net\n(C)2002 The Xbox Linux Team - Hardware subsidy by Microsoft, everything else GPL\n\n"
 	);
+
+			// standard BIOS settings
 
 			// initialize the PCI devices
 	BootPciPeripheralInitialization();
 
 			I2CTransmitWord(0x45, 0x1901, false);  // kill reset on frontpanel button
 
+		{
+			int n;
+			for(n=0x0e;n<0x40;n++) BiosCmosWrite(n, 0);
+			BiosCmosWrite(0x0e, 0); // say that CMOS, HDD and RTC are all valid
+			BiosCmosWrite(0x0f, 0); // say that we are coming up from a normal reset
+			BiosCmosWrite(0x10, 0); // no floppies on this thing
+			BiosCmosWrite(0x11, 0); // no standard BIOS options
+			BiosCmosWrite(0x12, 0); // no HDD yet
+			BiosCmosWrite(0x14, 9); // misc equip list, VGA, display present, b0 fixed to 1
+			BiosCmosWrite(0x2d, 0); // misc BIOS settings
+			BiosCmosWrite(0x32, 20); // century
+			BiosCmosWrite(0x3d, 0); // boot method: default=0=do not attempt boot (set in BootIde.c)
+		}
+
 
 			// try to bring up VGA - does not work yet
-		BootVgaInitialization();
+//		BootVgaInitialization();
 //		bprintf("BOOT: BootVgaInitialization done\n");
 
 //			I2CTransmitWord( 0x10, 0x0c01, true);
@@ -323,26 +358,47 @@ extern void BootResetAction ( void ) {
 
 //			bprintf("tick=%x\n", *PDW_BIOS_TICK_PTR);
 
-/*
-	bprintf("\nInsert bootable CD...\n");
-
-	{
-		BYTE ba[2048];
-		ba[12]=0x3a; // no media
-
-		while((ba[12]==0x3a)||(ba[12]==0x04)) {
-			BootIdeAtapiAdditionalSenseCode(1, ba, sizeof(ba));
-//		bprintf("ASC=0x%02X\n", ba[12]);
-		}
-
-		if(BootIdeBootSectorHddOrElTorito(1, &ba[0])) {
-			bprintf("Failed to get CDROM boot sector\n");
-		} else {
-			DumpAddressAndData(0, &ba[0], 0x800);
-		}
-	}
-*/
 	I2cSetFrontpanelLed(I2C_LED_GREEN0 | I2C_LED_GREEN1 | I2C_LED_GREEN2 | I2C_LED_GREEN3);
+
+	
+	{
+		int n=0;
+		BYTE ba[0x40];
+		bprintf("CMOS contents:\n");
+		for(n=0;n<0x40;n++) ba[n]=BiosCmosRead(n);
+		DumpAddressAndData(0, &ba[0], 0x40);
+	}
+
+
+	// wait for CD insertion if we are booting from CD
+
+	switch(BiosCmosRead(0x3d)) {
+		case 2:
+			bprintf("Booting from HDD\n");
+			break;
+		case 3:
+			{
+				BYTE ba[2048];
+				bool fMessage=false;
+				ba[12]=0x3a; // no media
+
+				bprintf("Booting from CD/DVD\n");
+
+				while((ba[12]==0x3a)||(ba[12]==0x04)) {
+					BootIdeAtapiAdditionalSenseCode(1, ba, sizeof(ba));
+					if((ba[12]==0x3a)&&(ba[12]!=0x04)) {
+						if(!fMessage) {
+							bprintf("\nInsert bootable CD...\n");
+							fMessage=true;
+						}
+					}
+				}
+			}
+			break;
+		default:
+			bprintf("No Bootable device - stopped\n");
+			while(1);
+	}
 
 	/* run the PC-like BIOS */
 	StartBios();

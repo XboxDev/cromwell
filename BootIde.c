@@ -16,6 +16,7 @@
  *
  *  Original from http://www.talkware.net/GPL/UBL
  *
+ * 	 2002-09-19 andy@warmcat.com  Added code to manage standard CMOS settings for Bochs
  *   2002-09-18 andy@warmcat.com  fixed problem detecting slave not present
  *   2002-09-08 andy@warmcat.com  changed to standardized symbol format; ATAPI packet code
  *   2002-08-26 andy@warmcat.com  more edits to call speedbump's code to unlock HDD
@@ -115,6 +116,7 @@ tsHarddiskInfo tsaHarddiskInfo[2];  // static struct stores data about attached 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 //  Helper routines
 //
+
 
 int Delay() { int i=0, u=0; while(u<100) { i+=u++; } return i; }
 
@@ -391,7 +393,7 @@ static int BootIdeDriveInit(unsigned uIoBase, int nIndexDrive)
 		}
 
 	} else { // HDD
-
+		BYTE bAdsBase=0x1b;
 		unsigned long ulDriveCapacity1024=(tsaHarddiskInfo[nIndexDrive].m_wCountHeads * ((tsaHarddiskInfo[nIndexDrive].m_wCountCylinders * tsaHarddiskInfo[nIndexDrive].m_wCountSectorsPerTrack)/1024))/2;
 		printk("  %d: %s %s (%u/%u/%u)=%u.%uGB, Sec=%04X\n",
 			nIndexDrive,
@@ -403,7 +405,40 @@ static int BootIdeDriveInit(unsigned uIoBase, int nIndexDrive)
 			ulDriveCapacity1024/1000, ulDriveCapacity1024%1000,
 			drive_info[128]
 		);
-	
+
+		if(!nIndexDrive) { //HDD0
+			BiosCmosWrite(0x19, 47); // drive 0 user-defined HDD type
+			BiosCmosWrite(0x12, BiosCmosRead(0x12)|0xf0);
+		} else { // HDD1
+			BiosCmosWrite(0x12, BiosCmosRead(0x12)|0x0f);
+			BiosCmosWrite(0x1a, 47); // drive 1 user-defined HDD type
+			bAdsBase=0x24;
+		}
+
+		BiosCmosWrite(bAdsBase, (BYTE)(tsaHarddiskInfo[nIndexDrive].m_wCountCylinders));
+		BiosCmosWrite(bAdsBase+1, (BYTE)(tsaHarddiskInfo[nIndexDrive].m_wCountCylinders>>8));
+		BiosCmosWrite(bAdsBase+2, (BYTE)(tsaHarddiskInfo[nIndexDrive].m_wCountHeads));
+		BiosCmosWrite(bAdsBase+3, 0);
+		BiosCmosWrite(bAdsBase+4, 0);
+		BiosCmosWrite(bAdsBase+5, 0);
+		BiosCmosWrite(bAdsBase+6, 0);
+		BiosCmosWrite(bAdsBase+7, 0);
+		BiosCmosWrite(bAdsBase+0x8, (BYTE)(tsaHarddiskInfo[nIndexDrive].m_wCountSectorsPerTrack));
+
+	/*post_d0_type47:   <----taken from Bochs BIOS comment
+  ;; CMOS  purpose                  param table offset
+
+	:: 19
+	;; 1b    cylinders low            0
+  ;; 1c    cylinders high           1
+  ;; 1d    heads                    2
+  ;; 1e    write pre-comp low       5
+  ;; 1f    write pre-comp high      6
+  ;; 20    retries/bad map/heads>8  8
+  ;; 21    landing zone low         C
+  ;; 22    landing zone high        D
+  ;; 23    sectors/track            E
+	*/
 	}
 
 
@@ -427,7 +462,7 @@ static int BootIdeDriveInit(unsigned uIoBase, int nIndexDrive)
 
 
 
-		BootCpuCache(true);  // operate at good speed
+//		BootCpuCache(true);  // operate at good speed
 
 		dwMagicFromEEPROM=0;
 		while((dwMagicFromEEPROM==0) && (nEepromAttempts--)) {
@@ -527,9 +562,17 @@ static int BootIdeDriveInit(unsigned uIoBase, int nIndexDrive)
 		} else {
 			if( (ba[0x1fe]==0x55) && (ba[0x1ff]==0xaa) ) {
 				printk("      MBR Present\n", nIndexDrive);
+				if(nIndexDrive==0) {
+					BiosCmosWrite(0x3d, 2);  // boot from HDD
+				}
 			} else {
 				printk("      No MBR at start of drive\n", nIndexDrive);
 			}
+		}
+
+	} else {  // cd/dvd
+		if(BiosCmosRead(0x3d)==0) {  // no bootable HDD
+			BiosCmosWrite(0x3d, 3);  // boot from CD/DVD instead then
 		}
 	}
 

@@ -209,6 +209,8 @@ void StartBios();
 void BootResetAction(void);
 void BootCpuCache(bool fEnable) ;
 int printk(const char *szFormat, ...);
+void BiosCmosWrite(BYTE bAds, BYTE bData);
+BYTE BiosCmosRead(BYTE bAds);
 
 ////////// BootPciPeripheralInitialization.c
 
