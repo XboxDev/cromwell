@@ -127,6 +127,7 @@ extern void BootResetAction ( void ) {
 //	DumpAddressAndData(0, (BYTE *)&eeprom, 256);
 
 	currentvideomodedetails.m_nVideoModeIndex=VIDEO_PREFERRED_MODE;
+	currentvideomodedetails.m_pbBaseAddressVideo=(BYTE *)0xfd000000;
 #ifdef XBE
 	currentvideomodedetails.m_fForceEncoderLumaAndChromaToZeroInitially=0;
 #else

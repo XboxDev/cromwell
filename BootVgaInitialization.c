@@ -15,7 +15,24 @@
  *                                                                         *
  ***************************************************************************/
 
+#ifndef JUSTVIDEO
 #include "boot.h"
+#else
+  typedef unsigned int DWORD;
+  typedef unsigned short WORD;
+  typedef unsigned char BYTE;
+	typedef int bool;
+	#define false 0
+	#define true 1
+void IoOutputByte(WORD wAds, BYTE bValue);
+void BootPciInterruptGlobalStackStateAndDisable(DWORD * dw);
+void BootPciInterruptGlobalPopState(DWORD dw);
+void BootPciInterruptEnable(void);
+int I2CTransmitWord(BYTE bPicAddressI2cFormat, WORD wDataToWrite);
+int I2CTransmitByteGetReturn(BYTE bPicAddressI2cFormat, BYTE bDataToWrite);
+
+#include "BootVideo.h"
+#endif
 
 const BYTE baGraInit[] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x40, 0x05, 0x0f, 0xff };
 const BYTE baSequencerInit[] = { 0x03, 0x21, 0x0f, 0x00, 0x06 };
@@ -26,7 +43,7 @@ const BYTE baAttrInit[] = {
  };
 
 
-#define NVCRTC 0xfd6013D4
+#define NVCRTC 0x6013D4
 
 // definition of typedef'd struct in boot.h
 // this struct defines the different register contents per video encoding, per mode
@@ -402,10 +419,6 @@ const VIDEO_MODE_TABLES videomodetables = {
 
 // memory mapped IO
 
-void vgaout(unsigned int port, unsigned char reg, unsigned char data) {
-	*((volatile unsigned char*)(port)) = reg;
-	*((volatile unsigned char*)(port+1)) = data;
-}
 
 #define voutb(nAds, b) {	*((volatile BYTE*)((nAds))) = (b); }
 #define voutw(nAds, w) {	*((volatile WORD*)((nAds))) = (w); }
@@ -414,6 +427,10 @@ void vgaout(unsigned int port, unsigned char reg, unsigned char data) {
 #define vinb(nAds) (*((volatile BYTE*)((nAds))))
 #define vinl(nAds) (*((volatile DWORD*)((nAds))))
 
+void vgaout(volatile BYTE * pb, unsigned char reg, unsigned char data) {
+	*pb++=reg;
+	*pb=data;
+}
 
 
 void GetTickCount(DWORD * pdw1, DWORD * pdw2)
@@ -443,7 +460,7 @@ void BootVgaInitializationKernel(CURRENT_VIDEO_MODE_DETAILS * pcurrentvidemodede
 
 	BootPciInterruptGlobalStackStateAndDisable(&dwTempIntState);
 
-	voutl(0xfd600800, 0x03c00000);   // set video start address to 4M back from end of RAM
+	voutl(pcurrentvidemodedetails->m_pbBaseAddressVideo+0x600800, 0x03c00000);   // set video start address to 4M back from end of RAM
 
 	pcurrentvidemodedetails->m_bAvPack=I2CTransmitByteGetReturn(0x10, 0x04);  // the PIC knows the AV pack type
 	b=I2CTransmitByteGetReturn(0x54, 0x5A); // the eeprom defines the TV standard for the box
@@ -476,42 +493,42 @@ void BootVgaInitializationKernel(CURRENT_VIDEO_MODE_DETAILS * pcurrentvidemodede
 
 	IoOutputByte(0x80d3, 5);  // definitively kill video out using an ACPI control pin
 
-	vgaout(NVCRTC, 0x1f, 0x57);
+	vgaout(pcurrentvidemodedetails->m_pbBaseAddressVideo+NVCRTC, 0x1f, 0x57);
 
-	*((volatile BYTE *)0xfd0c03c4)=0x06;
-	*((volatile BYTE *)0xfd0c03c5)=0x57;
+	voutb(pcurrentvidemodedetails->m_pbBaseAddressVideo+0x0c03c4, 0x06);
+	voutb(pcurrentvidemodedetails->m_pbBaseAddressVideo+0x0c03c5, 0x57);
 
-	vgaout(NVCRTC, 0x21, 0xff);
-	voutl(0xfd680880, 0x21121111);
-	vgaout(0xfd0C03D4, 0x11, 0);
+	vgaout(pcurrentvidemodedetails->m_pbBaseAddressVideo+NVCRTC, 0x21, 0xff);
+	voutl(pcurrentvidemodedetails->m_pbBaseAddressVideo+0x680880, 0x21121111);
+	vgaout(pcurrentvidemodedetails->m_pbBaseAddressVideo+0x0C03D4, 0x11, 0);
 
-	voutl(0xfd68050c,	vinl(0xfd68050c)|0x10020000);
+	voutl(pcurrentvidemodedetails->m_pbBaseAddressVideo+0x68050c,	vinl(pcurrentvidemodedetails->m_pbBaseAddressVideo+0x68050c)|0x10020000);
 
-	voutb(0xfd0C03C3, 1);
-	voutb(0xfd0C03C2, 0xe3);
+	voutb(pcurrentvidemodedetails->m_pbBaseAddressVideo+0x0C03C3, 1);
+	voutb(pcurrentvidemodedetails->m_pbBaseAddressVideo+0x0C03C2, 0xe3);
 
-	voutl(0xfd680600, 0 /*0x0100030*/);  // this is actually set to a parameter to the kernel routine
+	voutl(pcurrentvidemodedetails->m_pbBaseAddressVideo+0x680600, 0 /*0x0100030*/);  // this is actually set to a parameter to the kernel routine
 
 	if(arg_8!=0) {
-		voutl(0xfd680630, 0);
-		voutl(0xfd6808c4, 0);
-		voutl(0xfd68084c, 0);
+		voutl(pcurrentvidemodedetails->m_pbBaseAddressVideo+0x680630, 0);
+		voutl(pcurrentvidemodedetails->m_pbBaseAddressVideo+0x6808c4, 0);
+		voutl(pcurrentvidemodedetails->m_pbBaseAddressVideo+0x68084c, 0);
 	}
 
-	vgaout(0xfd6013D4, 0x19, 0xe0);
-	vgaout(0xfd6013D4, 0x28, 0x80);
-	vgaout(0xfd6013D4, 0x28, 0x00);
+	vgaout(pcurrentvidemodedetails->m_pbBaseAddressVideo+0x6013D4, 0x19, 0xe0);
+	vgaout(pcurrentvidemodedetails->m_pbBaseAddressVideo+0x6013D4, 0x28, 0x80);
+	vgaout(pcurrentvidemodedetails->m_pbBaseAddressVideo+0x6013D4, 0x28, 0x00);
 
-	voutb(0xfd6013c0, 0x20);
+	voutb(pcurrentvidemodedetails->m_pbBaseAddressVideo+0x6013c0, 0x20);
 
-	voutl(0xfd6806a0, (dwStash & 1)^1);
-	vgaout(NVCRTC, 0x28, 0x80 | arg_C);
+	voutl(pcurrentvidemodedetails->m_pbBaseAddressVideo+0x6806a0, (dwStash & 1)^1);
+	vgaout(pcurrentvidemodedetails->m_pbBaseAddressVideo+NVCRTC, 0x28, 0x80 | arg_C);
 
 
 		// frankenvideo-derived Video Mode setting
 
 	{
-		volatile DWORD *pdw=(volatile DWORD *)0xfd000000;
+		volatile DWORD *pdw=(volatile DWORD *)pcurrentvidemodedetails->m_pbBaseAddressVideo;
 		int n=0, n1=0;
 		BYTE b;
 
@@ -527,9 +544,9 @@ void BootVgaInitializationKernel(CURRENT_VIDEO_MODE_DETAILS * pcurrentvidemodede
 
 		for(n=0;n1<(sizeof(videomodetables.m_baVideoModeCrtc[0][0]));n++) {
 			if((n!=0x11) && (n!=0x1f)) {
-				*((volatile BYTE *)0xfd6013d4)=(BYTE)n;
-				*((volatile BYTE *)0xfd6013d5)=
-					videomodetables.m_baVideoModeCrtc[pcurrentvidemodedetails->m_bTvStandard][pcurrentvidemodedetails->m_nVideoModeIndex][n1++];
+				vgaout(pcurrentvidemodedetails->m_pbBaseAddressVideo+NVCRTC, n,
+					videomodetables.m_baVideoModeCrtc[pcurrentvidemodedetails->m_bTvStandard][pcurrentvidemodedetails->m_nVideoModeIndex][n1++]
+				);
 			}
 		}
 
@@ -571,16 +588,16 @@ void BootVgaInitializationKernel(CURRENT_VIDEO_MODE_DETAILS * pcurrentvidemodede
 		}
 	}
 
-	voutl(0xfd001804, vinl(0xfd001804)|4);  // from kernel sub_0_80045C2A
-	voutl(0xFD600140, 0);
-	voutl(0xFD609140, 0);
-	voutl(0xFD680600, 0);  // without this, blue horrors
+	voutl(pcurrentvidemodedetails->m_pbBaseAddressVideo+0x001804, vinl(pcurrentvidemodedetails->m_pbBaseAddressVideo+0x001804)|4);  // from kernel sub_0_80045C2A
+	voutl(pcurrentvidemodedetails->m_pbBaseAddressVideo+0x600140, 0);
+	voutl(pcurrentvidemodedetails->m_pbBaseAddressVideo+0x609140, 0);
+	voutl(pcurrentvidemodedetails->m_pbBaseAddressVideo+0x680600, 0);  // without this, blue horrors
 
 
 	{
 		int n=0;
 		while(n<sizeof(baSequencerInit)) {
-			vgaout(0xfd0C03C4, n, baSequencerInit[n]);
+			vgaout(pcurrentvidemodedetails->m_pbBaseAddressVideo+0x0C03C4, n, baSequencerInit[n]);
 			n++;
 		}
 	}
@@ -588,7 +605,7 @@ void BootVgaInitializationKernel(CURRENT_VIDEO_MODE_DETAILS * pcurrentvidemodede
 	{
 		int n=0;
 		while(n<sizeof(baGraInit)) {
-			vgaout(0xfd0C03CE, n, baGraInit[n]);
+			vgaout(pcurrentvidemodedetails->m_pbBaseAddressVideo+0x0C03CE, n, baGraInit[n]);
 			n++;
 		}
 	}
@@ -596,9 +613,9 @@ void BootVgaInitializationKernel(CURRENT_VIDEO_MODE_DETAILS * pcurrentvidemodede
 	{
 		int n=0;
 		while(n<sizeof(baAttrInit)) {
-//				voutw(0xfd6013c0, n|(baAttrInit[n]<<8));
-			voutb(0xfd6013c0, n);
-			voutb(0xfd6013c0, baAttrInit[n]);
+//				voutw(0x6013c0, n|(baAttrInit[n]<<8));
+			voutb(pcurrentvidemodedetails->m_pbBaseAddressVideo+0x6013c0, n);
+			voutb(pcurrentvidemodedetails->m_pbBaseAddressVideo+0x6013c0, baAttrInit[n]);
 			n++;
 		}
 	}
@@ -612,23 +629,23 @@ void BootVgaInitializationKernel(CURRENT_VIDEO_MODE_DETAILS * pcurrentvidemodede
 		case 0:
 			{
 					// this might set up RGB out?
-				voutl(0xFD680880, 0x21121111);
-				voutl(0xFD609140, 0);
-				voutl(0xFD682600, 0x100030);
-				voutl(0xFD682630, 0);
-				voutl(0xFD682634, 0);
-				voutl(0xFD682638, 0);
-				voutl(0xFD68263c, 0);
+				voutl(pcurrentvidemodedetails->m_pbBaseAddressVideo+0x680880, 0x21121111);
+				voutl(pcurrentvidemodedetails->m_pbBaseAddressVideo+0x609140, 0);
+				voutl(pcurrentvidemodedetails->m_pbBaseAddressVideo+0x682600, 0x100030);
+				voutl(pcurrentvidemodedetails->m_pbBaseAddressVideo+0x682630, 0);
+				voutl(pcurrentvidemodedetails->m_pbBaseAddressVideo+0x682634, 0);
+				voutl(pcurrentvidemodedetails->m_pbBaseAddressVideo+0x682638, 0);
+				voutl(pcurrentvidemodedetails->m_pbBaseAddressVideo+0x68263c, 0);
 			}
 			break;
 		default:
 			{
-				voutl(0xFD680880, 0x21101100);
-				voutl(0xFD682600,0 /* 0x100030 */);
+				voutl(pcurrentvidemodedetails->m_pbBaseAddressVideo+0x680880, 0x21101100);
+				voutl(pcurrentvidemodedetails->m_pbBaseAddressVideo+0x682600,0 /* 0x100030 */);
 			}
 			break;
 	};
-
+	
 		// resolution-specific init
 
 	switch(pcurrentvidemodedetails->m_nVideoModeIndex) {
@@ -644,23 +661,23 @@ void BootVgaInitializationKernel(CURRENT_VIDEO_MODE_DETAILS * pcurrentvidemodede
 					break;
 
 				case TV_ENCODING_NTSC:
-					voutl(0xFD682630, 2);
-					voutl(0xFD682634, 0);
-					voutl(0xFD682638, 0);
-					voutl(0xFD68263c, 0);
+					voutl(pcurrentvidemodedetails->m_pbBaseAddressVideo+0x682630, 2);
+					voutl(pcurrentvidemodedetails->m_pbBaseAddressVideo+0x682634, 0);
+					voutl(pcurrentvidemodedetails->m_pbBaseAddressVideo+0x682638, 0);
+					voutl(pcurrentvidemodedetails->m_pbBaseAddressVideo+0x68263c, 0);
 
-					voutl(0xFD680324, 0x8b323bd7);
-					voutl(0xFD680328, 0x66913ddf);
-					voutl(0xFD68032c, 0x82afff2e);
-					voutl(0xFD680330, 0xff4f218f);
-					voutl(0xFD680504, 0x7702);
-					voutl(0xFD680508, 0x3c20d);
-					voutl(0xFD680518, 0x10101);
-					voutl(0xFD680520, 0x3c20d);
-					voutl(0xFD680544, 0x7702);
-					voutl(0xFD680548, 0x3c20d);
-					voutl(0xFD680558, 0x20202);
-					voutl(0xFD680560, 0x3c20d);
+					voutl(pcurrentvidemodedetails->m_pbBaseAddressVideo+0x680324, 0x8b323bd7);
+					voutl(pcurrentvidemodedetails->m_pbBaseAddressVideo+0x680328, 0x66913ddf);
+					voutl(pcurrentvidemodedetails->m_pbBaseAddressVideo+0x68032c, 0x82afff2e);
+					voutl(pcurrentvidemodedetails->m_pbBaseAddressVideo+0x680330, 0xff4f218f);
+					voutl(pcurrentvidemodedetails->m_pbBaseAddressVideo+0x680504, 0x7702);
+					voutl(pcurrentvidemodedetails->m_pbBaseAddressVideo+0x680508, 0x3c20d);
+					voutl(pcurrentvidemodedetails->m_pbBaseAddressVideo+0x680518, 0x10101);
+					voutl(pcurrentvidemodedetails->m_pbBaseAddressVideo+0x680520, 0x3c20d);
+					voutl(pcurrentvidemodedetails->m_pbBaseAddressVideo+0x680544, 0x7702);
+					voutl(pcurrentvidemodedetails->m_pbBaseAddressVideo+0x680548, 0x3c20d);
+					voutl(pcurrentvidemodedetails->m_pbBaseAddressVideo+0x680558, 0x20202);
+					voutl(pcurrentvidemodedetails->m_pbBaseAddressVideo+0x680560, 0x3c20d);
 					break;
 
 			}
@@ -699,16 +716,17 @@ void BootVgaInitializationKernel(CURRENT_VIDEO_MODE_DETAILS * pcurrentvidemodede
 			// enable VSYNC interrupt action
 
 #ifndef XBE
-	*((volatile DWORD *)0xfd600140)=0x1;  // enable VSYNC interrupts
-	*((volatile DWORD *)0xfd600100)=0x1;  // clear VSYNC int
-	*((volatile DWORD *)0xfd608000)=0x3c00000;  //
-	*((volatile DWORD *)0xfd600140)=1;  // enable VSYNC int
-	*((volatile DWORD *)0xfd000140)=0x1;  // enable VSYNC interrupts
-	*((volatile DWORD *)0xfd000100)=0x1;  // clear VSYNC int
-	*((volatile DWORD *)0xfd008000)=0x3c00000;  //
-	*((volatile DWORD *)0xfd000140)=1;  // enable VSYNC int
-
+	voutl(pcurrentvidemodedetails->m_pbBaseAddressVideo+0x600140, 0x1);  // enable VSYNC interrupts
+	voutl(pcurrentvidemodedetails->m_pbBaseAddressVideo+0x600100, 0x1);  // clear VSYNC int
+	voutl(pcurrentvidemodedetails->m_pbBaseAddressVideo+0x608000, 0x3c00000);  //
+	voutl(pcurrentvidemodedetails->m_pbBaseAddressVideo+0x600140, 1);  // enable VSYNC int
+	voutl(pcurrentvidemodedetails->m_pbBaseAddressVideo+0x000140, 0x1);  // enable VSYNC interrupts
+	voutl(pcurrentvidemodedetails->m_pbBaseAddressVideo+0x000100, 0x1);  // clear VSYNC int
+	voutl(pcurrentvidemodedetails->m_pbBaseAddressVideo+0x008000, 0x3c00000);  //
+	voutl(pcurrentvidemodedetails->m_pbBaseAddressVideo+0x000140, 1);  // enable VSYNC int
 #endif
+
+	voutl(pcurrentvidemodedetails->m_pbBaseAddressVideo+0x600800, 0x03c00000);   // set video start address to 4M back from end of RAM
 
 		// timing reset for Conexant
 
@@ -720,11 +738,12 @@ void BootVgaInitializationKernel(CURRENT_VIDEO_MODE_DETAILS * pcurrentvidemodede
 	IoOutputByte(0x80d8, 4);  // ACPI IO thing seen in kernel, set to 4
 	IoOutputByte(0x80d3, 4);  // ACPI IO video enable REQUIRED <-- particularly crucial to get composite out
 
-	vgaout(0xfd0C03C4, 1, 1); // screen on REQUIRED
-	voutb(0xfd6013c0, 0x01);
 
-	voutb(0xfd0C03C2, 0xe3);
-	vgaout(NVCRTC, 0x11, 0x20);
+	vgaout(pcurrentvidemodedetails->m_pbBaseAddressVideo+0x0C03C4, 1, 1); // screen on REQUIRED
+	voutb(pcurrentvidemodedetails->m_pbBaseAddressVideo+0x6013c0, 0x01);
+
+	voutb(pcurrentvidemodedetails->m_pbBaseAddressVideo+0x0C03C2, 0xe3);
+	vgaout(pcurrentvidemodedetails->m_pbBaseAddressVideo+NVCRTC, 0x11, 0x20);
 
 	BootPciInterruptGlobalPopState(dwTempIntState);
 
