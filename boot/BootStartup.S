@@ -13,7 +13,6 @@
  ***************************************************************************/
 #include "consts.h"
 
-
 	.code32
 
 .section .text, "ax"
@@ -110,17 +109,14 @@ start_linux:
 	xor	%edx, %edx
 	xor	%ecx, %ecx
 	
-	
 	// kill the cache
        	mov %cr0, %eax
 	orl	$0x60000000, %eax
 	mov	%eax, %cr0
 	wbinvd
 
-  
-  	// Sennles Task ?
-//	mov	%cr3, %eax
-//	mov	%eax, %cr3
+	mov	%cr3, %eax
+	mov	%eax, %cr3
 
 	// Clear Mmeory Type register
 	movl	$0x2ff, %ecx
@@ -218,21 +214,17 @@ start_linux:
 	// Define Memory in IA32_MTRR_DEF_TYPE
 	movl	$0x2ff, %ecx
 	xor	%edx, %edx
-	movl	$0xc06, %eax 		//Enable MTRRs
+	movl	$0x800, %eax //Enable MTRRs
 	wrmsr
-      /*
-	
-        // Cache turnon ... but we do not do this, this might be dangerous now.
+
+	/* turn on normal cache */
+
 	movl	%cr0, %eax
 	mov 	%eax, %ebx
 	andl	$0x9FFFFFFF,%eax
 	movl	%eax, %cr0
-	
-	*/
 
-     /*
-        // No idea what this is, so i leave it out
-        
+
 	// set up selectors for everything
 
 	mov	$0x18, %eax
@@ -249,8 +241,7 @@ start_linux:
 	movw    %ax, %gs
         
         cld
-       */
-       
+    
 /*
   We are setting the Page directory's Now
 
@@ -339,11 +330,6 @@ patspin2:
 	mov	%eax, (%ebx)
 
 
-	mov	$0x277, %ecx
-	mov	$0x70106, %eax // was 70106
-	mov	%eax, %edx
-	wrmsr
-	
 	mov	%cr0, %eax
 	mov	%eax, %ebx
 	and 	$0xdfffffff, %eax
@@ -351,24 +337,24 @@ patspin2:
 	mov	%eax, %cr0
 	wbinvd
 
+	mov	$0x277, %ecx
+	mov	$0x70106, %eax // was 70106
+	mov	%eax, %edx
+	wrmsr
 //	invd
 
-	mov	%ebx, %cr0   // Sensless ?
+	mov	%ebx, %cr0
 
 	mov	%cr4, %eax
 	or	$0x610, %eax
 	mov	%eax, %cr4
-        wbinvd
-        
+
 	mov	$0xf000, %eax
 	mov	%eax, %cr3
-        wbinvd
-        
+
 	mov	%cr0, %eax
 	or	$0x80010020, %eax
 	mov	%eax, %cr0
-	
-	wbinvd
 
 	jmp selfPipeKill
 
@@ -432,6 +418,10 @@ selfPipeKill:
 	movl 	$0x40000000, %eax 
 	outl	%eax, %dx
 	
+	// Not necessary ?  
+	//movl 	$0x0, 0x0f680600
+       
+
 	jmp BootResetAction
 
        
