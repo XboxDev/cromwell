@@ -84,7 +84,8 @@ static int xpad_probe(struct usb_interface *intf, const struct usb_device_id *id
 	usb_set_intfdata(intf,xpi);
 	usbprintk("XPAD #%i connected\n",xpad_num);
 	{
-		char data1[6]={0,6,0,255,0,255};
+		// Brum Brum
+		char data1[6]={0,6,0,120,0,120};
 		char data2[6]={0,6,0,0,0,0};
 		int dummy;			
 
