@@ -11,6 +11,7 @@
 
 
 #include "../usb_wrapper.h"
+#include "config.h"
 
 /* Stores time and XPAD state */
 struct xpad_data XPAD_current[4];
@@ -83,6 +84,7 @@ static int xpad_probe(struct usb_interface *intf, const struct usb_device_id *id
 
 	usb_set_intfdata(intf,xpi);
 	usbprintk("XPAD #%i connected\n",xpad_num);
+	#ifdef XPAD_VIBRA_STARTUP
 	{
 		// Brum Brum
 		char data1[6]={0,6,0,120,0,120};
@@ -95,6 +97,7 @@ static int xpad_probe(struct usb_interface *intf, const struct usb_device_id *id
 		usb_bulk_msg(udev, usb_sndbulkpipe(udev,2),
 			data2, 6, &dummy, 500);		
 	}
+	#endif
 	xpad_num++;
 	return 0;
 }
