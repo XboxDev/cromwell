@@ -187,6 +187,9 @@ int BootIso9660GetFile(int driveId, char *szcPath, unsigned char *pbaFile, unsig
 	offset = read_dir(driveId, rootd, szcPath, "", dir);
 	
 	if(offset > 0) {
+		//This logic is deeply perverse. 
+		//"If the file is bigger than max length, I'll return error"
+		//It should sensibly read up to the max length specified.
 		if(*((unsigned long *)(dir->size)) > dwFileLengthMax) {
 			free(pvd);
 			free(dir);
