@@ -943,7 +943,8 @@ int BootIdeAtapiModeSense(int nDriveIndex, BYTE bCodePage, BYTE * pba, int nLeng
 	//memset(&ba[0], 0, 12);
 	ba[0]=0x5a;
 	ba[2]=bCodePage;
-	ba[7]=(BYTE)(sizeof(ba)>>8); ba[8]=(BYTE)sizeof(ba);
+	ba[7]=(BYTE)(sizeof(ba)>>8); 
+	ba[8]=(BYTE)sizeof(ba);
 
 	if(BootIdeIssueAtapiPacketCommandAndPacket(nDriveIndex, &ba[0])) 
 	{
@@ -1173,14 +1174,38 @@ int BootIdeReadSector(int nDriveIndex, void * pbBuffer, unsigned int block, int 
 		printk("ide error %02X...\n", IoInputByte(IDE_REG_ERROR(uIoBase)));
 		return 1;
 	}
-	if ((n_bytes != IDE_SECTOR_SIZE) || (byte_offset)) 
+	if (n_bytes != IDE_SECTOR_SIZE)
 	{
 		status = BootIdeReadData(uIoBase, baBufferSector, IDE_SECTOR_SIZE);
-//		if (status == 0) {
+		if (status == 0) {
 			memcpy(pbBuffer, baBufferSector+byte_offset, n_bytes);
-//		}
+		
+		} else {
+			// UPS, it failed, but we are brutal, we try again ....
+			while(1) {
+				wait_ms(10);
+				status = BootIdeReadData(uIoBase, baBufferSector, IDE_SECTOR_SIZE);
+				if (status == 0) {
+					memcpy(pbBuffer, baBufferSector+byte_offset, n_bytes);
+					break;
+				}
+			}
+			
+		}
+	
 	} else {
+	
 		status = BootIdeReadData(uIoBase, pbBuffer, IDE_SECTOR_SIZE);
+		if (status!=0) {
+			// UPS, it failed, but we are brutal, we try again ....
+			while(1) {
+				wait_ms(10);
+				status = BootIdeReadData(uIoBase, pbBuffer, IDE_SECTOR_SIZE);		
+				if (status == 0) {
+					break;
+				}
+			}
+		}
 	}
 	return status;
 }
