@@ -6,6 +6,10 @@
  * and work by Johan Rydberg and Daniel Kahlin.
  *
  * $Log$
+ * Revision 1.3  2002/12/15 21:40:52  warmcat
+ *
+ * First major release.  Working video; Native Reiserfs boot into Mdk9; boot instability?
+ *
  * Revision 1.2  2002/09/19 10:39:19  warmcat
  * Merged Michael's Bochs stuff with current cromwell
  * note requires the cpp0-2.95 preprocessor
@@ -86,7 +90,7 @@ SECTIONS {
 		_end_xcodes11 = . ;
 	}
 
-		.text ( 0xfffc0100 ) : AT ( 0x100 )  { /* was 0xfffc0c80  0xc80 */
+		.text ( 0xfffc0c80 ) : AT ( 0xc80 )  { /* was 0xfffc0c80  0xc80 */
 		_start_text = . ;
 		*(.text);
 		_end_text = . ;
@@ -99,7 +103,7 @@ SECTIONS {
 	}
 
 
-	.rodata (0xfffc0100 + SIZEOF(.text)) : AT ( 0x100 + SIZEOF(.text)) {
+	.rodata (0xfffc0c80 + SIZEOF(.text)) : AT ( 0xc80 + SIZEOF(.text)) {
 			*(.rodata);
 			*(.rodata.str1.1);
 			*(.rodata.str1.32);

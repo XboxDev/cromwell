@@ -1,4 +1,4 @@
-CROMWELL 1.6   2002-12-15
+CROMWELL 1.6a   2002-12-18
 Xbox Linux Team
 
 Contact: andy@warmcat.com, mist@c64.org. xboxlinux@meriac.de
@@ -11,6 +11,10 @@ blows a fuse and craps over your eeprom, don't blame us.
 
 Improvements!
 
+ - *NEW* ISO9660 native support in BIOS - If no MBR on HDD, boots from
+   Mandrake 9 install CD to install Linux itself
+ - *NEW* honours linuxboot.cfg if found in HDD /boot or CD
+ - *NEW* extra compile-time options at BootResetAction.c line 24+
  - now capable of booting a Mandrake 9 Linux install by itself
  - VIDEO IS FULLY UP (Composite cable only, PAL) at boottime and
    inside Linux; works with Oliver's accellerated X driver (reserves
@@ -68,7 +72,10 @@ within Linux or the bootrom itself.
 
 1) Install the Mandrake 9 distro from http://xbox-linux.sf.net (it
 will not currently work with Ed's Debian distro from
-http://xbox-debian.linux.pt/ as we currently assume reiserfs)
+http://xbox-debian.linux.pt/ as we currently assume reiserfs).
+Note that you can use Cromwell to install this simply by inserting
+the installation CD in the drive when asked (if your machine has
+no MBR on the hdd already).
 
 2) Copy vmlinuz and initrd from the boot CD to /boot on the HDD.
 
@@ -81,8 +88,27 @@ make to generate image.bin)
 5) reboot and enjoy the disc whirring while Linux starts
 
 
+Compile-time options defaults
+
+See BootResetAction.c line 24 onwards
+
+// selects between the supported video modes, both PAL at the moment
+#define VIDEO_PREFERRED_LINES 576
+//#define VIDEO_PREFERRED_LINES 480
+
+// uncomment to force CD boot mode even if MBR present
+// default is to boot from HDD if MBR present, else CD
+//#define FORCE_CD_BOOT
+
+// display a line like Composite 480 detected if uncommented
+//#define REPORT_VIDEO_MODE
+
+// show the MBR table if the MBR is valid
+#define DISPLAY_MBR_INFO
+
 Todo
 
-1) El Torito CD boot so Linux can be installed from BIOS
-2) Get USB stack up in BIOS
-3) Once we have a UI, allow BIOS flashing
+1) Get USB stack up in BIOS (<-- not looking forward to this)
+2) Once we have a UI, allow BIOS flashing
+3) Update to Mankdrake 9 installation CD set needed, so it copies
+   vmlinuz and initrd to /boot by default

@@ -5,6 +5,10 @@
 # free bios project.
 #
 # $Log$
+# Revision 1.4  2002/12/15 21:40:52  warmcat
+#
+# First major release.  Working video; Native Reiserfs boot into Mdk9; boot instability?
+#
 # Revision 1.3  2002/09/19 10:39:19  warmcat
 # Merged Michael's Bochs stuff with current cromwell
 # note requires the cpp0-2.95 preprocessor
@@ -42,7 +46,7 @@ BCC = /usr/lib/bcc/bcc-cc1
 ### objects
 OBJECTS	= BootStartup.o BootResetAction.o BootPerformPicChallengeResponseAction.o  \
 BootPciPeripheralInitialization.o BootVgaInitialization.o BootIde.o \
-BootHddKey.o rc4.o sha1.o BootVideoHelpers.o vsprintf.o filtror.o BootStartBios.o setup.o \
+BootHddKey.o rc4.o sha1.o BootVideoHelpers.o vsprintf.o filtror.o BootStartBios.o setup.o BootFilesystemIso9660.o \
 grub/fsys_reiserfs.o grub/char_io.o grub/disk_io.o \
 jpeg-6b/jdapimin.o jpeg-6b/jdapistd.o jpeg-6b/jdtrans.o jpeg-6b/jdatasrc.o jpeg-6b/jdmaster.o \
 jpeg-6b/jdinput.o jpeg-6b/jdmarker.o jpeg-6b/jdhuff.o jpeg-6b/jdphuff.o jpeg-6b/jdmainct.o jpeg-6b/jdcoefct.o \
@@ -80,7 +84,7 @@ backdrop.elf : backdrop.jpg
 
 
 ### rules:
-%.o	: %.c boot.h consts.h
+%.o	: %.c boot.h consts.h BootFilesystemIso9660.h
 	${CC} ${CFLAGS} -o $@ -c $<
 
 %.o	: %.S consts.h

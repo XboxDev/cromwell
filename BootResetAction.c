@@ -11,16 +11,34 @@
  *                                                                         *
  ***************************************************************************
 
-	2002-09-19 andy@warmcat.com  Added code to manage standard CMOS settings for Bochs
-	                              Defeated call to VGA init for now
+	2002-12-18 andy@warmcat.com  Added ISO9660 boot if no HDD MBR
 	2002-11-25 andy@warmcat.com  Added memory size code in CMOS, LILO won't boot without it
 	                              tidied
+	2002-09-19 andy@warmcat.com  Added code to manage standard CMOS settings for Bochs
+	                              Defeated call to VGA init for now
  */
 
 #include "boot.h"
-
-
 #include "tuxicon44.c"
+
+//////////////////////// compile-time options ////////////////////////////////
+
+// selects between the supported video modes, both PAL at the moment
+#define VIDEO_PREFERRED_LINES 576
+//#define VIDEO_PREFERRED_LINES 480
+
+// uncomment to force CD boot mode even if MBR present
+// default is to boot from HDD if MBR present, else CD
+//#define FORCE_CD_BOOT
+
+// display a line like Composite 480 detected if uncommented
+//#define REPORT_VIDEO_MODE
+
+// show the MBR table if the MBR is valid
+#define DISPLAY_MBR_INFO
+
+
+
 
 #ifdef memcpy
 #undef memcpy
@@ -31,8 +49,6 @@
 
 BYTE baBackdrop[60*72*4];
 
-#define VIDEO_PREFERRED_LINES 576
-//#define VIDEO_PREFERRED_LINES 480
 
 /*
 Hints:
@@ -128,9 +144,7 @@ extern void IntHandlerTimer0(void);
 extern void BootResetAction ( void ) {
 	BYTE bAvPackType;
 	__int64 i64Timestamp;
-	BYTE * pb;
-	int n=0, nPos=0;
-	char sz[512];
+	bool fMbrPresent=false;
 
 #if INCLUDE_FILTROR
 	// clear down channel quality stats
@@ -152,7 +166,7 @@ extern void BootResetAction ( void ) {
 	BootPerformPicChallengeResponseAction();
 	WATCHDOG;
 
-	I2CTransmitWord( 0x10, 0x0c00, false );
+	I2CTransmitWord( 0x10, 0x0c00, false );  // push out tray
 
 	// bring up Video (2BL portion)
 	BootVgaInitialization();
@@ -164,7 +178,7 @@ extern void BootResetAction ( void ) {
 	WATCHDOG;
 
 
-	{
+	{ // instability tracking, looking for duration changes
 		int a2, a3;
 		 __asm__ __volatile__ (" rdtsc" :"=a" (a3), "=d" (a2));
 		i64Timestamp=((__int64)a3)|(((__int64)a2)<<32);
@@ -177,47 +191,8 @@ extern void BootResetAction ( void ) {
 	VIDEO_LUMASCALING=0;
 	VIDEO_RSCALING=0;
 	VIDEO_BSCALING=0;
-	VIDEO_CURSOR_POSX=VIDEO_MARGINX;
-	VIDEO_CURSOR_POSY=VIDEO_MARGINY;
 
-		// do the black -> blue vignette background
-
-	BootVideoVignette((DWORD *)(FRAMEBUFFER_START), 640*4, VIDEO_HEIGHT, 0xff000000, 0xff000050);
-	WATCHDOG;
-
-	MALLOC_BASE=0x100000;
-
-		// do jpeg superimpose
-
-	{
-		extern int _start_backdrop, _end_backdrop;
-		int nWidth, nHeight, nBytesPerPixel;
-
-		BYTE *pbaResult=BootVideoJpegUnpackAsRgb(
-			(BYTE *)&_start_backdrop,
-			((DWORD)(&_end_backdrop)-(DWORD)(&_start_backdrop)),
-			&nWidth, &nHeight, &nBytesPerPixel
-		);
-
-		if(pbaResult!=NULL) {
-
-			DWORD *pdw=(DWORD *)FRAMEBUFFER_START+(640*VIDEO_MARGINY);
-			int nLine=0, n1=0;
-			while((nLine++)<nHeight) {
-				int n=0;
-				for(n=0;n<nWidth;n++) {
-					BYTE b=pbaResult[n1]/8;
-					pdw[n]=0xff000000|(((pdw[n]&0xff)+b)/1)|(((((pdw[n]>>8)&0xff)+b)/1)<<8)|(((((pdw[n]>>16)&0xff)+b)/1)<<16);
-					n1+=nBytesPerPixel;
-				}
-				pdw+=640; // 640 DWORDs
-			}
-		} else{
-			printk("null jpg");
-		}
-	}
-
-	MALLOC_BASE=0x100000;
+	BootVideoClearScreen();
 
 		// get icon background into storage array
 	BootVideoBlit((DWORD *)&baBackdrop[0], 60*4, (DWORD *)(FRAMEBUFFER_START+640*4*VIDEO_MARGINY+VIDEO_MARGINX*4), 640*4, 72);
@@ -293,6 +268,8 @@ extern void BootResetAction ( void ) {
 
 	printk("\n");
 
+#ifdef REPORT_VIDEO_MODE
+
 	switch(bAvPackType) {
 		case 0:
 			printk("Scart");
@@ -321,11 +298,12 @@ extern void BootResetAction ( void ) {
 	}
 
 	printk(" video detected");
-
 //	printk("  - Time=0x%08X/0x%08X", (DWORD)(i64Timestamp>>32), (DWORD)i64Timestamp);
 
 	printk("\n");
-	printk("\n");
+
+#endif
+
 
 //					__asm __volatile (	" wbinvd "	);
 	WATCHDOG;
@@ -359,7 +337,7 @@ extern void BootResetAction ( void ) {
 
 				I2cSetFrontpanelLed(I2C_LED_RED0 | I2C_LED_RED1 | I2C_LED_RED2 | I2C_LED_RED3 );
 
-
+/*
 	{ WORD *pw=(WORD *)0xffa6e;
 		if((*pw==0)||(*pw>0x200)) {
 			printk("\n");
@@ -373,7 +351,7 @@ extern void BootResetAction ( void ) {
 			*pw=0; __asm__ __volatile__ ("wbinvd" );
 		}
 	}
-
+*/
 
 		VIDEO_ATTR=0xffffffff;
 
@@ -449,7 +427,7 @@ extern void BootResetAction ( void ) {
 
 		BootIdeInit();
 		printk("\n");
-		
+
 		I2CTransmitWord(0x45, 0x0b01, false); // unknown, done immediately after reading out eeprom data
 
 		I2CTransmitWord(0x45, 0x0b00, false); // unknown, done after video update
@@ -457,58 +435,71 @@ extern void BootResetAction ( void ) {
 		I2CTransmitWord(0x45, 0x0d04, false); //fake up int ack?
 		I2CTransmitWord(0x45, 0x1a01, false); // unknown, done immediately after reading out eeprom data
 
-
 		{
 			BYTE ba[512];
-			bool fSeenActive=false;
 			if(BootIdeReadSector(0, &ba[0], 0, 0, 512)) {
 				printk("Unable to read HDD first sector\n");
 			} else {
-				VIDEO_ATTR=0xffe8e8e8;
-				printk("MBR Partition Table:\n");
-				(BYTE *)pb=&ba[0x1be];
-				n=0; nPos=0;
-				while(n<4) {
-					nPos=sprintf(sz, " hda%d: ", n+1);
-					if(pb[0]&0x80) { fSeenActive=true; nPos+=sprintf(&sz[nPos], "boot\t"); } else { nPos+=sprintf(&sz[nPos], "   \t"); }
-//					nPos+=sprintf(&sz[nPos],"type:%02X\tStart: %02X/%02X/%02X\tEnd: %02X/%02X/%02X  ", pb[4], pb[1],pb[2],pb[3],pb[5],pb[6],pb[7]);
-					switch(pb[4]) {
-						case 0x00:
-							nPos+=sprintf(&sz[nPos],"Empty\t");
-							break;
-						case 0x82:
-							nPos+=sprintf(&sz[nPos],"Swap\t");
-							break;
-						case 0x83:
-							nPos+=sprintf(&sz[nPos],"Ext2 \t");
-							break;
-						case 0x1e:
-							nPos+=sprintf(&sz[nPos],"FATX\t");
-							break;
-						default:
-							nPos+=sprintf(&sz[nPos],"0x%02X\t", pb[4]);
-							break;
+
+				if( (ba[0x1fe]==0x55) && (ba[0x1ff]==0xaa) ) fMbrPresent=true;
+
+#ifdef DISPLAY_MBR_INFO
+				if(fMbrPresent) {
+					BYTE * pb;
+					int n=0, nPos=0;
+					char sz[512];
+					bool fSeenActive=false;
+
+					VIDEO_ATTR=0xffe8e8e8;
+					printk("MBR Partition Table:\n");
+					(BYTE *)pb=&ba[0x1be];
+					n=0; nPos=0;
+					while(n<4) {
+						nPos=sprintf(sz, " hda%d: ", n+1);
+						if(pb[0]&0x80) { fSeenActive=true; nPos+=sprintf(&sz[nPos], "boot\t"); } else { nPos+=sprintf(&sz[nPos], "   \t"); }
+	//					nPos+=sprintf(&sz[nPos],"type:%02X\tStart: %02X/%02X/%02X\tEnd: %02X/%02X/%02X  ", pb[4], pb[1],pb[2],pb[3],pb[5],pb[6],pb[7]);
+						switch(pb[4]) {
+							case 0x00:
+								nPos+=sprintf(&sz[nPos],"Empty\t");
+								break;
+							case 0x82:
+								nPos+=sprintf(&sz[nPos],"Swap\t");
+								break;
+							case 0x83:
+								nPos+=sprintf(&sz[nPos],"Ext2 \t");
+								break;
+							case 0x1e:
+								nPos+=sprintf(&sz[nPos],"FATX\t");
+								break;
+							default:
+								nPos+=sprintf(&sz[nPos],"0x%02X\t", pb[4]);
+								break;
+						}
+						if(pb[4]) {
+							VIDEO_ATTR=0xffc8c8c8;
+							if(pb[0]&0x80) VIDEO_ATTR=0xffd8d8d8;
+							nPos+=sprintf(&sz[nPos],"Start: 0x%08x\tTotal: 0x%08x\t(%dMB)\n", *((DWORD *)&pb[8]), *((DWORD *)&pb[0xc]), (*((DWORD *)&pb[0xc]))/2048 );
+						} else {
+							VIDEO_ATTR=0xffa8a8a8;
+							sz[nPos++]='\n'; sz[nPos]='\0';
+						}
+						printk(sz);
+						n++; pb+=16;
 					}
-					if(pb[4]) {
-						VIDEO_ATTR=0xffc8c8c8;
-						if(pb[0]&0x80) VIDEO_ATTR=0xffd8d8d8;
-						nPos+=sprintf(&sz[nPos],"Start: 0x%08x\tTotal: 0x%08x\t(%dMB)\n", *((DWORD *)&pb[8]), *((DWORD *)&pb[0xc]), (*((DWORD *)&pb[0xc]))/2048 );
-					} else {
-						VIDEO_ATTR=0xffa8a8a8;
-						sz[nPos++]='\n'; sz[nPos]='\0';
+
+					printk("\n");
+
+					if(!fSeenActive) {
+						printk("No active partition.  Cannot boot, halting\n");
+						while(1) ;
 					}
-					printk(sz);
-					n++; pb+=16;
+
+					VIDEO_ATTR=0xffffffff;
+				} else { // no mbr signature
+					;
 				}
+#endif
 
-				printk("\n");
-
-				if(!fSeenActive) {
-					printk("No active partition.  Cannot boot, halting\n");
-					while(1) ;
-				}
-
-				VIDEO_ATTR=0xffffffff;
 			}
 		}
 
@@ -521,22 +512,20 @@ extern void BootResetAction ( void ) {
 			// if we made it this far, lets have a solid green LED
 		I2cSetFrontpanelLed(I2C_LED_GREEN0 | I2C_LED_GREEN1 | I2C_LED_GREEN2 | I2C_LED_GREEN3);
 
-/*
-//	intel_interrupts_on();  // let the processor respond to interrupts
 
-		{ BYTE ba[512];
-			if(!BootIdeReadSector(0, &ba[0], 0xb476b1, 0, 512)) {
-//					VideoDumpAddressAndData(0, &ba[0], 512);
-#if INCLUDE_FILTROR
-					DumpAddressAndData(0, &ba[0], 512);
-#endif
-			}
+
+
+	// Used to start Bochs; now a misnomer as it runs vmlinux
+	// argument 0 for hdd and 1 for from CDROM
+#ifdef FORCE_CD_BOOT
+	StartBios(1);
+#else
+		if(fMbrPresent) { // if there's an MBR, try to boot from HDD
+			StartBios(0);
+		} else { // otherwise prompt for CDROM
+			StartBios(1);
 		}
-*/
-
-	/* run the PC-like BIOS */
-		StartBios();
-
+#endif
 	}
 
 

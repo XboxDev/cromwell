@@ -36,6 +36,10 @@ mcpx_magic:  // needs to be DWORD aligned
 		.byte 0x13, 0x02, 0x29, 0x44, 0x98, 0x49, 0x00, 0x90
 		.long 0x0, 0xffffffff, 0xffffffff
 
+		.org 0x60
+
+		jmp	start_linux
+
 		.org 0x6c
 		.byte 0x03, 0x01
 		.org 0x70
@@ -90,7 +94,10 @@ tableIdtDescriptor:
 start_linux:
 
 	cli
-
+		xorl	%edx, %edx
+		movl	$0x2ff, %ecx
+		movl	$0x000, %eax // edx still 0, default to NON-cacheable, Enable MTRRs
+		wrmsr
 		// xcode actions first of all
 
 	mov $0x80000810, %eax ;	movw $0xcf8, %dx ; outl	%eax, %dx ;	movw $0xcfc, %dx ;	mov	$0x8001, %eax ;	outl	%eax, %dx

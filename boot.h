@@ -46,6 +46,9 @@
 #define NULL ((void *)0)
 #endif
 
+#include "BootFilesystemIso9660.h"
+
+
 #define WATCHDOG __asm__ __volatile__ ( "push %eax; push %edx; movw $0x80cf, %dx ; mov $5, %al ; out %al, %dx ; mov $10000, %eax ; 0: dec %eax ; cmp $0, %eax ; jnz 0b ; mov $4, %al ; out %al, %dx ; pop %edx ; pop %eax " );
 
 #define FRAMEBUFFER_START ( 0xf0000000 + /*(0x04000000-(640*480*4) -(640*4*4)-(256*4))*/ (*((DWORD *)0xfd600800)) )
@@ -262,7 +265,7 @@ int BootPerformXCodeActions();
 
 ////////// BootStartBios.c
 
-void StartBios();
+void StartBios(int nDrive);
 
 ////////// BootResetActions.c
 
@@ -347,6 +350,7 @@ int BootVideoOverlayString(DWORD * pdwaTopLeftDestination, DWORD m_dwCountBytesP
 void BootVideoChunkedPrint(char * szBuffer, WORD wLength);
 int VideoDumpAddressAndData(DWORD dwAds, const BYTE * baData, DWORD dwCountBytesUsable);
 unsigned int BootVideoGetStringTotalWidth(const char * szc);
+void BootVideoClearScreen();
 
 BYTE * BootVideoJpegUnpackAsRgb(
 	BYTE *pbaJpegFileImage,

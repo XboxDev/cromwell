@@ -1,6 +1,7 @@
 /**************************************************************************/
 /* BIOS start                                                             */
 /*  Michael Steil                                                         */
+/*  2002-12-18 andy@warmcat.com added stuff for ISO9660                   */
 /*  2002-11-25 andy@warmcat.com changed to using existing GDT/IDT         */
 /*                              fixed AND bug in 16-bit code, tidied      */
 /*  2002-12-11 andy@warmcat.com rewrote entirely to use xbeloader method  */
@@ -20,6 +21,8 @@
 #include <filesys.h>
 #include "xbox.h"
 
+#undef strcpy
+
 unsigned long saved_drive;
 unsigned long saved_partition;
 grub_error_t errnum;
@@ -31,78 +34,294 @@ extern unsigned long current_drive;
 void setup(void* KernelPos, void* PhysInitrdPos, void* InitrdSize, char* kernel_cmdline);
 
 	int nRet;
-	DWORD dwKernelSize;
+	DWORD dwKernelSize, dwInitrdSize;
 	int nSizeHeader;
-const BYTE baGdt[] = {
-	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // 0x00 dummy
-	0xff, 0xff, 0x00, 0x00, 0x00, 0x9a, 0xcf, 0x00, // 0x08 code32
-	0xff, 0xff, 0x00, 0x00, 0x00, 0x9a, 0xcf, 0x00, // 0x10 code32
-	0xff, 0xff, 0x00, 0x00, 0x00, 0x92, 0xcf, 0x00, // 0x18 data32
-	0xff, 0xff, 0x00, 0x00, 0x00, 0x9a, 0x8f, 0x00, // 0x20 code16 (8f indicates 4K granularity, ie, huge limit)
-	0xff, 0xff, 0x00, 0x00, 0x00, 0x92, 0x8f, 0x00, // 0x28 data16
+	const BYTE baGdt[] = {
+		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // 0x00 dummy
+		0xff, 0xff, 0x00, 0x00, 0x00, 0x9a, 0xcf, 0x00, // 0x08 code32
+		0xff, 0xff, 0x00, 0x00, 0x00, 0x9a, 0xcf, 0x00, // 0x10 code32
+		0xff, 0xff, 0x00, 0x00, 0x00, 0x92, 0xcf, 0x00, // 0x18 data32
+		0xff, 0xff, 0x00, 0x00, 0x00, 0x9a, 0x8f, 0x00, // 0x20 code16 (8f indicates 4K granularity, ie, huge limit)
+		0xff, 0xff, 0x00, 0x00, 0x00, 0x92, 0x8f, 0x00, // 0x28 data16
 
-	0x30, 0x00, 0x00, 0x00, 0x0a, 0x00, 0x00, 0x00,
-	0x00, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
-};
+		0x30, 0x00, 0x00, 0x00, 0x0a, 0x00, 0x00, 0x00,
+		0x00, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+	};
 
+int strlen(const char *sz) {
+	int n=0; while(*sz++) n++;
+	return n;
+}
 
-void StartBios() {
+char * strcpy(char *sz, const char *szc)
+{
+	char *szStart=sz;
+	while(*szc) *sz++=*szc++;
+	*sz='\0';
+	return szStart;
+}
+
+int _strncmp(const char *sz1, const char *sz2, int nMax) {
+
+	while((*sz1) && (*sz2) && nMax--) {
+		if(*sz1 != *sz2) return (*sz1 - *sz2);
+		sz1++; sz2++;
+	}
+	if(nMax==0) return 0;
+	if((*sz1) || (*sz2)) return 0;
+	return 0; // used up nMax
+}
+
+void StartBios(	int nDrive ) {
+	char szKernelFile[128], szInitrdFile[128], szCommandline[1024];
+	DWORD dwConfigSize=0;
+	bool fHaveConfig=false;
 
 	errnum=0; boot_drive=0; saved_drive=0; saved_partition=0x0001ffff; buf_drive=-1;
 	current_partition=0x0001ffff; current_drive=0xff; buf_drive=-1; fsys_type = NUM_FSYS;
 	disk_read_hook=NULL;
 	disk_read_func=NULL;
 
+	strcpy(szCommandline, "root=/dev/hda2 devfs=mount kbd-reset"); // default
 
-//	__asm __volatile ( "cli");
+
+
+	if(nDrive==1) {  // CDROM
+			BYTE ba[2048], baBackground[320*32*4];
+			BYTE b;
+			BYTE bCount=0, bCount1;
+			int n;
+
+			DWORD dwY=VIDEO_CURSOR_POSY;
+			DWORD dwX=VIDEO_CURSOR_POSX;
+
+			BootVideoBlit((DWORD *)&baBackground[0], 320*4, (DWORD *)(FRAMEBUFFER_START+(VIDEO_CURSOR_POSY*640*4)+VIDEO_CURSOR_POSX), 640*4, 32);
+
+			while((b=BootIdeGetTrayState())>=8) {
+				VIDEO_CURSOR_POSX=dwX;
+				VIDEO_CURSOR_POSY=dwY;
+				bCount++;
+				bCount1=bCount; if(bCount1&0x80) { bCount1=(-bCount1)-1; }
+				if(b>=16) {
+					VIDEO_ATTR=0xff000000|(((bCount1>>1)+64)<<16)|(((bCount1>>1)+64)<<8)|0 ;
+				} else {
+					VIDEO_ATTR=0xff000000|(((bCount1>>2)+192)<<16)|(((bCount1>>2)+192)<<8)|(((bCount1>>2)+192)) ;
+				}
+				printk("\2Please insert CD\2");
+				for(n=0;n<1000000;n++) { ; }
+			}
+			
+			VIDEO_ATTR=0xffffffff;
+
+			VIDEO_CURSOR_POSX=dwX;
+			VIDEO_CURSOR_POSY=dwY;
+			BootVideoBlit(
+				(DWORD *)(FRAMEBUFFER_START+(VIDEO_CURSOR_POSY*640*4)+VIDEO_CURSOR_POSX),
+				640*4, (DWORD *)&baBackground[0], 320*4, 32
+			);
+
+				// wait until the media is readable
+
+			{
+				bool fMore=true, fOkay=true;
+				while(fMore) {
+					if(BootIdeReadSector(1, &ba[0], 0x10, 0, 2048)) { // starts at 16
+
+						if(BootIdeAtapiAdditionalSenseCode(1, &ba[0], 2048)<12) {
+							fMore=false; fOkay=false;
+						} else {
+							VIDEO_CURSOR_POSX=dwX;
+							VIDEO_CURSOR_POSY=dwY;
+							bCount++;
+							bCount1=bCount; if(bCount1&0x80) { bCount1=(-bCount1)-1; }
+
+							VIDEO_ATTR=0xff000000|(((bCount1>>1)+192)<<16)|(((bCount1>>1)+192)<<8)|(((bCount1>>1)+192)) ;
+
+							printk("\2Waiting for drive\2");
+							for(n=0;n<1000000;n++) { ; }
+						}
+
+						if(!fOkay) {
+							printk("cdrom unhappy\n");
+							while(1);
+						}
+					} else {
+						fMore=false;
+					}
+				}
+			}
+
+			VIDEO_CURSOR_POSX=dwX;
+			VIDEO_CURSOR_POSY=dwY;
+			BootVideoBlit(
+				(DWORD *)(FRAMEBUFFER_START+(VIDEO_CURSOR_POSY*640*4)+VIDEO_CURSOR_POSX),
+				640*4, (DWORD *)&baBackground[0], 320*4, 32
+			);
+
+//			BootVideoClearScreen();
+//			VideoDumpAddressAndData(0, &ba[0x1d0], 0x200);
+
+			{
+				ISO_PRIMARY_VOLUME_DESCRIPTOR * pipvd = (ISO_PRIMARY_VOLUME_DESCRIPTOR *)&ba[0];
+				char sz[64];
+				BootIso9660DescriptorToString(pipvd->m_szSystemIdentifier, sizeof(pipvd->m_szSystemIdentifier), sz);
+				VIDEO_ATTR=0xffeeeeee;
+				printk("Cdrom: ");
+				VIDEO_ATTR=0xffeeeeff;
+				printk("%s", sz);
+				VIDEO_ATTR=0xffeeeeee;
+				printk(" - ");
+				VIDEO_ATTR=0xffeeeeff;
+				BootIso9660DescriptorToString(pipvd->m_szVolumeIdentifier, sizeof(pipvd->m_szVolumeIdentifier), sz);
+				printk("%s\n", sz);
+			}
+
+//			while(1);
+		}
+
+
+
 	VIDEO_ATTR=0xffd8d8d8;
-	printk("  Loading /boot/vmlinuz ");
-	VIDEO_ATTR=0xffa8a8a8;
-	nRet=grub_open("\377\377\1\0/boot/vmlinuz");
 
-	if(nRet==1) {
+	if(nDrive==0) { // grub/reiserfs on HDD
+		printk("  Looking for optional /boot/linuxboot.cfg ");
+		VIDEO_ATTR=0xffa8a8a8;
+		nRet=grub_open("\377\377\1\0/boot/linuxboot.cfg");
+		dwConfigSize=filemax;
+		nRet=2;
+		if(nRet!=1) {
+			printk("Not found, using defaults\n");
+			strcpy(szKernelFile, "/boot/vmlinuz");
+			strcpy(szInitrdFile, "/boot/initrd");
+		} else {
+			printk("okay\n");
+			grub_read((void *)0x90000, 0x400);
+			fHaveConfig=true;
+		}
+		grub_close();
+	} else {  // ISO9660 traversal on CDROM
 
+		printk("  Loading linuxboot.cfg from CDROM ");
+		dwConfigSize=BootIso9660GetFile("/LINUXBOO.CFG", (BYTE *)0x90000, 0x400, 0x0);
+		if((int)dwConfigSize<0) { // has to be there on CDROM
+			printk("Unable to find it, halting\n");
+			while(1) ;
+		}
+		printk("okay\n");
+		fHaveConfig=true;
+	}
+
+	if(fHaveConfig) {
+		char * szaTokens[] = { "kernel ", "initrd ", "append " };
+		char * szaDestinations[] = { szKernelFile, szInitrdFile, szCommandline };
+		int n1=0;
+		while(n1<(sizeof(szaTokens)/sizeof(char *))) {
+			char * sz=(char *)0x90000;
+			int nSpan=dwConfigSize;
+			while(nSpan--) {
+				if(_strncmp(sz, szaTokens[n1], strlen(szaTokens[n1]))==0) { // hit
+					int n=0;
+					sz+=strlen(szaTokens[n1]);
+					while(*sz!='\n') szaDestinations[n1][n++]=*sz++;
+					szaDestinations[n1][n]='\0';
+					n1++; nSpan=0;
+				}
+				sz++;
+			}
+		}
+	}
+
+
+	if(nDrive==0) { // grub/reiserfs on HDD
+		char szGrub[256+4];
+		szGrub[0]=0xff; szGrub[1]=0xff; szGrub[2]=0x01; szGrub[3]=0x00;
+
+		printk("  Loading %s ", szKernelFile);
+		VIDEO_ATTR=0xffa8a8a8;
+		strcpy(&szGrub[4], szKernelFile);
+		nRet=grub_open(szGrub);
+
+		if(nRet!=1) {
+			printk("Unable to load vmlinuz, Grub error %d\n", errnum);
+			while(1) ;
+		}
 		dwKernelSize=grub_read((void *)0x90000, 0x400);
 		nSizeHeader=((*((BYTE *)0x901f1))+1)*512;
 //		printk("Header size = 0x%x (0x%x)\n", nSizeHeader, *((BYTE *)0x901f1) );
 		dwKernelSize+=grub_read((void *)0x90400, nSizeHeader-0x400);
 		dwKernelSize+=grub_read((void *)0x00100000, filemax-nSizeHeader);
 		grub_close();
-
 		printk(" -  %d bytes done...\n", dwKernelSize);
-		VIDEO_ATTR=0xff8888a8;
-		printk("     Kernel Version:  %s\n", (char *)(0x00090200+(*((WORD *)0x9020e)) ));
 
 		VIDEO_ATTR=0xffd8d8d8;
-		printk("  Loading initrd ");
+		printk("  Loading %s ", szInitrdFile);
 		VIDEO_ATTR=0xffa8a8a8;
 
-		nRet=grub_open("\377\377\1\0/boot/initrd");
+		strcpy(&szGrub[4], szInitrdFile);
+		nRet=grub_open(szGrub);
 		if(filemax==0) {
 			printf("Empty file\n"); while(1);
 		}
-		if( (nRet==1 ) && (errnum==0)) {
-			nRet=grub_read((void *)0x03000000, filemax);
-			printk(" - %d bytes done\n", nRet);
-			grub_close();
+		if( (nRet!=1 ) || (errnum)) {
+			printk("Unable to load initrd, Grub error %d\n", errnum);
+			while(1) ;
+		}
+		dwInitrdSize=grub_read((void *)0x03000000, filemax);
+		printk(" - %d bytes done\n", dwInitrdSize);
+		grub_close();
 
-			printf("\n");
-			{
-				char *sz="\2Starting Linux\2";
-				VIDEO_CURSOR_POSX=((640-BootVideoGetStringTotalWidth(sz))/2)*4;
-				VIDEO_CURSOR_POSY=VIDEO_HEIGHT-64;
 
-				VIDEO_ATTR=0xff9f9fbf;
-				printk(sz);
-			}
+	} else {  // ISO9660 traversal on CDROM
+		char szIso[256];
 
-			memcpy((void *)0xa0000, (void *)&baGdt[0], 0x50);
+		BootIso9660ConvertAsciiStringToDchar8point3String(szIso, szKernelFile);
 
-			setup( (void *)0x90000, (void *)0x03000000, (void *)nRet, "root=/dev/hda2 devfs=mount kbd-reset");
+		printk("  Loading %s from CDROM ", szIso);
+		VIDEO_ATTR=0xffa8a8a8;
 
-			// force the HDD into a good mode 0x40 ==UDMA | 2 == UDMA2
-			BootIdeSetTransferMode(0, 0x42); // best transfer mode without 80-pin cable
+		dwKernelSize=BootIso9660GetFile(szIso, (BYTE *)0x90000, 0x400, 0x0);
+		nSizeHeader=((*((BYTE *)0x901f1))+1)*512;
+		dwKernelSize+=BootIso9660GetFile(szIso, (void *)0x90400, nSizeHeader-0x400, 0x400);
+		dwKernelSize+=BootIso9660GetFile(szIso, (void *)0x00100000, 4096*1024, nSizeHeader);
 
+		printk(" -  %d bytes done...\n", dwKernelSize);
+
+		BootIso9660ConvertAsciiStringToDchar8point3String(szIso, szInitrdFile);
+
+		VIDEO_ATTR=0xffd8d8d8;
+		printk("  Loading %s from CDROM ", szIso);
+		VIDEO_ATTR=0xffa8a8a8;
+
+		dwInitrdSize=BootIso9660GetFile(szIso, (void *)0x03000000, 4096*1024, 0);
+		printk(" - %d bytes done\n", dwInitrdSize);
+
+	}
+
+	VIDEO_ATTR=0xff8888a8;
+	printk("     Kernel Version:  %s\n", (char *)(0x00090200+(*((WORD *)0x9020e)) ));
+
+	printf("\n");
+	{
+		char *sz="\2Starting Linux\2";
+		VIDEO_CURSOR_POSX=((640-BootVideoGetStringTotalWidth(sz))/2)*4;
+		VIDEO_CURSOR_POSY=VIDEO_HEIGHT-64;
+
+		VIDEO_ATTR=0xff9f9fbf;
+		printk(sz);
+	}
+
+		// we have to copy the GDT to a safe place, because one of the first
+		// things Linux is going to do is switch to paging, making the BIOS
+		// inaccessible and so crashing if we leave the GDT in BIOS
+
+	memcpy((void *)0xa0000, (void *)&baGdt[0], 0x50);
+	
+		// prep the Linux startup struct
+
+	setup( (void *)0x90000, (void *)0x03000000, (void *)dwInitrdSize, szCommandline);
+
+	// force the HDD into a good mode 0x40 ==UDMA | 2 == UDMA2
+	BootIdeSetTransferMode(0, 0x42); // best transfer mode without 80-pin cable
 
     __asm __volatile__ (
 
@@ -211,14 +430,7 @@ void StartBios() {
    "ljmp $0x10, $0x100000 \n" );
 
 
-		} else {
-			printk("Unable to load, Grub error %d\n", errnum);
-		}
-
 //		DumpAddressAndData(0x100000, (void *)0x100000, 1024);
-	} else {
-			printk("Unable to load, Grub error %d\n", errnum);
-	}
 
 	while(1);
 

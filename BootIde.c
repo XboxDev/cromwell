@@ -231,6 +231,8 @@ int BootIdeWriteData(unsigned uIoBase, void * buf, size_t size)
 	return 0;
 }
 
+// returns 16 == tray out, 8=tray in transit, 1 = tray in
+
 BYTE BootIdeGetTrayState()
 {
 		return I2CTransmitByteGetReturn(0x10, 0x03); // this is the tray state
@@ -247,12 +249,12 @@ int BootIdeIssueAtapiPacketCommandAndPacket(int nDriveIndex, BYTE *pAtapiCommand
 		tsicp.m_wCylinder=2048;
 		BootIdeWaitNotBusy(uIoBase);
 		if(BootIdeIssueAtaCommand(uIoBase, IDE_CMD_ATAPI_PACKET, &tsicp)) {
-			printk("  Drive %d: BootIdeIssueAtapiPacketCommandAndPacket 1 FAILED, error=%02X\n", nDriveIndex, IoInputByte(IDE_REG_ERROR(uIoBase)));
+//			printk("  Drive %d: BootIdeIssueAtapiPacketCommandAndPacket 1 FAILED, error=%02X\n", nDriveIndex, IoInputByte(IDE_REG_ERROR(uIoBase)));
 			return 1;
 		}
 
 		if(BootIdeWaitNotBusy(uIoBase)) {
-			printk("  Drive %d: BootIdeIssueAtapiPacketCommandAndPacket 2 FAILED, error=%02X\n", nDriveIndex, IoInputByte(IDE_REG_ERROR(uIoBase)));
+//			printk("  Drive %d: BootIdeIssueAtapiPacketCommandAndPacket 2 FAILED, error=%02X\n", nDriveIndex, IoInputByte(IDE_REG_ERROR(uIoBase)));
 			return 1;
 		}
 
@@ -260,13 +262,13 @@ int BootIdeIssueAtapiPacketCommandAndPacket(int nDriveIndex, BYTE *pAtapiCommand
 //				nDriveIndex, IoInputByte(IDE_REG_ALTSTATUS(uIoBase)), IoInputByte(IDE_REG_ERROR(uIoBase)));
 
 		if(BootIdeWriteAtapiData(uIoBase, pAtapiCommandPacket12Bytes, 12)) {
-			printk("  Drive %d:BootIdeIssueAtapiPacketCommandAndPacket 3 FAILED, error=%02X\n", nDriveIndex, IoInputByte(IDE_REG_ERROR(uIoBase)));
+//			printk("  Drive %d:BootIdeIssueAtapiPacketCommandAndPacket 3 FAILED, error=%02X\n", nDriveIndex, IoInputByte(IDE_REG_ERROR(uIoBase)));
 			return 1;
 		}
 
 		if(BootIdeWaitDataReady(uIoBase)) {
-			printk("  Drive %d:  BootIdeIssueAtapiPacketCommandAndPacket Atapi Wait for data ready FAILED, status=0x%02X, error=0x%02X\n",
-				nDriveIndex, IoInputByte(IDE_REG_ALTSTATUS(uIoBase)), IoInputByte(IDE_REG_ERROR(uIoBase)));
+//			printk("  Drive %d:  BootIdeIssueAtapiPacketCommandAndPacket Atapi Wait for data ready FAILED, status=0x%02X, error=0x%02X\n",
+//				nDriveIndex, IoInputByte(IDE_REG_ALTSTATUS(uIoBase)), IoInputByte(IDE_REG_ERROR(uIoBase)));
 			return 1;
 		}
 
@@ -655,8 +657,8 @@ int BootIdeAtapiModeSense(int nDriveIndex, BYTE bCodePage, BYTE * pba, int nLeng
 	 	ba[7]=(BYTE)(sizeof(ba)>>8); ba[8]=(BYTE)sizeof(ba);
 
 		if(BootIdeIssueAtapiPacketCommandAndPacket(nDriveIndex, &ba[0])) {
-			BYTE bStatus=IoInputByte(IDE_REG_ALTSTATUS(uIoBase)), bError=IoInputByte(IDE_REG_ERROR(uIoBase));
-			printk("  Drive %d: BootIdeAtapiAdditionalSenseCode 3 Atapi Wait for data ready FAILED, status=%02X, error=0x%02X, ASC unavailable\n", nDriveIndex, bStatus, bError);
+//			BYTE bStatus=IoInputByte(IDE_REG_ALTSTATUS(uIoBase)), bError=IoInputByte(IDE_REG_ERROR(uIoBase));
+//			printk("  Drive %d: BootIdeAtapiAdditionalSenseCode 3 Atapi Wait for data ready FAILED, status=%02X, error=0x%02X, ASC unavailable\n", nDriveIndex, bStatus, bError);
 			return 1;
 		}
 
@@ -687,8 +689,8 @@ int BootIdeAtapiAdditionalSenseCode(int nDriveIndex, BYTE * pba, int nLengthMaxR
 	 	ba[4]=0xff;
 
 		if(BootIdeIssueAtapiPacketCommandAndPacket(nDriveIndex, &ba[0])) {
-			BYTE bStatus=IoInputByte(IDE_REG_ALTSTATUS(uIoBase)), bError=IoInputByte(IDE_REG_ERROR(uIoBase));
-			printk("  Drive %d: BootIdeAtapiAdditionalSenseCode 3 Atapi Wait for data ready FAILED, status=%02X, error=0x%02X, ASC unavailable\n", nDriveIndex, bStatus, bError);
+//			BYTE bStatus=IoInputByte(IDE_REG_ALTSTATUS(uIoBase)), bError=IoInputByte(IDE_REG_ERROR(uIoBase));
+//			printk("  Drive %d: BootIdeAtapiAdditionalSenseCode 3 Atapi Wait for data ready FAILED, status=%02X, error=0x%02X, ASC unavailable\n", nDriveIndex, bStatus, bError);
 			return 1;
 		}
 
@@ -735,6 +737,8 @@ int BootIdeReadSector(int nDriveIndex, void * pbBuffer, unsigned int block, int 
 
 		BYTE ba[12];
 		int nReturn;
+
+		BootIdeWaitNotBusy(uIoBase);
 
 		if(n_bytes<2048) {
 			printk("Must have 2048 byte sector for ATAPI!!!!!\n");

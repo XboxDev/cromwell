@@ -365,3 +365,48 @@ BYTE * BootVideoJpegUnpackAsRgb(
 	return NULL;
 }
 
+void BootVideoClearScreen()
+{
+	VIDEO_CURSOR_POSX=VIDEO_MARGINX;
+	VIDEO_CURSOR_POSY=VIDEO_MARGINY;
+
+		// do the black -> blue vignette background
+
+	BootVideoVignette((DWORD *)(FRAMEBUFFER_START), 640*4, VIDEO_HEIGHT, 0xff000000, 0xff000050);
+	WATCHDOG;
+
+	MALLOC_BASE=0x100000;
+
+		// do jpeg superimpose
+
+	{
+		extern int _start_backdrop, _end_backdrop;
+		int nWidth, nHeight, nBytesPerPixel;
+
+		BYTE *pbaResult=BootVideoJpegUnpackAsRgb(
+			(BYTE *)&_start_backdrop,
+			((DWORD)(&_end_backdrop)-(DWORD)(&_start_backdrop)),
+			&nWidth, &nHeight, &nBytesPerPixel
+		);
+
+		if(pbaResult!=NULL) {
+
+			DWORD *pdw=(DWORD *)FRAMEBUFFER_START+(640*VIDEO_MARGINY);
+			int nLine=0, n1=0;
+			while((nLine++)<nHeight) {
+				int n=0;
+				for(n=0;n<nWidth;n++) {
+					BYTE b=pbaResult[n1]/8;
+					pdw[n]=0xff000000|(((pdw[n]&0xff)+b)/1)|(((((pdw[n]>>8)&0xff)+b)/1)<<8)|(((((pdw[n]>>16)&0xff)+b)/1)<<16);
+					n1+=nBytesPerPixel;
+				}
+				pdw+=640; // 640 DWORDs
+			}
+		} else{
+			printk("null jpg");
+		}
+	}
+
+	MALLOC_BASE=0x100000;
+}
+
