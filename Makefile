@@ -4,11 +4,11 @@ GCC_3.3 := $(shell expr `$(CC) -dumpversion` \>= 3.3)
 
 ETHERBOOT := yes
 INCLUDE = -I$(TOPDIR)/grub -I$(TOPDIR)/include -I$(TOPDIR)/ -I./ -I$(TOPDIR)/fs/cdrom \
-	-I$(TOPDIR)/fs/fatx -I$(TOPDIR)/lib/eeprom -I$(TOPDIR)/lib/crypt \
+	-I$(TOPDIR)/fs/fatx -I$(TOPDIR)/fs/grub -I$(TOPDIR)/lib/eeprom -I$(TOPDIR)/lib/crypt \
 	-I$(TOPDIR)/drivers/video -I$(TOPDIR)/drivers/ide -I$(TOPDIR)/drivers/flash -I$(TOPDIR)/lib/misc \
 	-I$(TOPDIR)/boot_xbe/ -I$(TOPDIR)/fs/grub -I$(TOPDIR)/lib/font \
 	-I$(TOPDIR)/startuploader -I$(TOPDIR)/drivers/cpu \
-	-I$(TOPDIR)/lib/jpeg/
+	-I$(TOPDIR)/lib/jpeg/ -I$(TOPDIR)/menu/actions -I$(TOPDIR)/menu/textmenu -I$(TOPDIR)/menu/iconmenu
 
 CFLAGS	= -O2 -mcpu=pentium -Werror $(INCLUDE) -Wstrict-prototypes -fomit-frame-pointer -pipe
 
