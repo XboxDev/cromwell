@@ -1,7 +1,5 @@
 /**************************************************************
 	Written by Lehner Franz (franz@caos.at)
-	(NO GPL code)
-	Free Use for Xbox-Linux Project Only, else contact me
 		
 **************************************************************/
 #include <stdio.h>

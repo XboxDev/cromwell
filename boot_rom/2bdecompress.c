@@ -1,8 +1,5 @@
 /**************************************************************
 	Written by Lehner Franz (franz@caos.at)
-	Decompressor Only
-	(NO GPL code)
-	Free Use for Xbox-Linux Project Only, else contact me
 	
 **************************************************************/
 #include "2bload.h"
