@@ -115,38 +115,34 @@ int xberepair (	unsigned char * xbeimage,
 
        	printf("XBE Mode\n");
 
-	if (stat(cromimage, &fileinfo)) {
-		fprintf(stderr,"Unable to open cromwell image file %s : %s \nAborting\n",cromimage,strerror(errno)); 
-		return 1;
-	}
-	romsize = fileinfo.st_size;
-	if (romsize>0x100000) {
-    		printf("Romsize too big, increase the static variables everywhere");
-    		return 1;
-    	}
-
 	f = fopen(cromimage, "r");
     	if (f==NULL) {
 		fprintf(stderr,"Unable to open cromwell image file %s : %s \nAborting\n",xbeimage,strerror(errno)); 
 		return 1;
 	}
-  	
+  
+	fstat(fileno(f), &fileinfo);
+	romsize = fileinfo.st_size;
+	if (romsize>0x100000) {
+    		printf("Romsize too big, increase the static variables everywhere");
+    		return 1;
+    	}
+	
+	
 	fseek(f, 0, SEEK_SET);
 	fread(crom, 1, romsize, f);
 	fclose(f);
 
-	if (stat(xbeimage, &fileinfo)) {
-		fprintf(stderr,"Unable to open xbe destination file %s : %s \nAborting\n",xbeimage,strerror(errno)); 
-		return 1;
-	}
-	xbesize = fileinfo.st_size;
-	
 	f = fopen(xbeimage, "r");
     	if (f==NULL) {
 		fprintf(stderr,"Unable to open xbe destination file %s : %s \nAborting\n",xbeimage,strerror(errno)); 
 		return 1;
 	}
-  		
+ 
+	fstat(fileno(f), &fileinfo);
+	xbesize = fileinfo.st_size;
+
+
         fseek(f, 0, SEEK_SET);
 
     	memset(xbe,0x00,sizeof(xbe));
@@ -227,40 +223,33 @@ int vmlbuild (	unsigned char * vmlimage,
          
        	printf("VML Mode\n");
 	
-	if (stat(cromimage,&fileinfo)) {
-		fprintf(stderr,"Unable to open cromwell image file %s : %s \nAborting\n",cromimage,strerror(errno)); 
-		return 1;
-	}
-	
-	romsize = fileinfo.st_size;
-    	if (romsize>0x100000) {
-    		printf("Romsize too big, increase the static variables everywhere");
-    		return 1;
-    	}
-	
 	f = fopen(cromimage, "r");
     	if (f==NULL) {
 		fprintf(stderr,"Unable to open cromwell image file %s : %s \nAborting\n",cromimage,strerror(errno)); 
 		return 1;
 	}
 	
+	fstat(fileno(f),&fileinfo);
+	romsize = fileinfo.st_size;
+    	
+	if (romsize>0x100000) {
+    		printf("Romsize too big, increase the static variables everywhere");
+    		return 1;
+    	}
+
         fseek(f, 0, SEEK_SET);
     	fread(crom, 1, romsize, f);
     	fclose(f);
     
-	if (stat(vmlimage,&fileinfo)) {
-		fprintf(stderr,"Unable to open vml image file %s : %s \nAborting\n",vmlimage,strerror(errno)); 
-		return 1;
-	}
-
-	vmlsize = fileinfo.st_size;
-
 	f = fopen(vmlimage, "r");
     	if (f==NULL) {
 		fprintf(stderr,"Unable to open vml image file %s : %s \nAborting\n",vmlimage,strerror(errno)); 
 		return 1;
 	}
-  		
+	
+	fstat(fileno(f),&fileinfo);
+	vmlsize = fileinfo.st_size;
+	
         fseek(f, 0, SEEK_SET);
     	fread(vml, 1, vmlsize, f);
     	fclose(f); 
@@ -328,19 +317,17 @@ int romcopy (
 
 	fread(loaderimage, 1, 256*1024, f);
         fclose(f);
-	
-	if (stat(cromimage, &fileinfo)) {
-		fprintf(stderr,"Unable to open cromwell image file %s : %s \nAborting\n",cromimage,strerror(errno)); 
-		return 1;
-	}
-	romsize = fileinfo.st_size;
-    	
+
+
 	f = fopen(cromimage, "r");
 	if (f==NULL) {
 		fprintf(stderr,"Unable to open cromwell image file %s : %s \nAborting\n",cromimage,strerror(errno)); 
 		return 1;
 	}
-        
+       
+	fstat(fileno(f), &fileinfo);
+	romsize = fileinfo.st_size;
+	
 	fseek(f, 0, SEEK_SET);
     	fread(crom, 1, romsize, f);
     	fclose(f);
