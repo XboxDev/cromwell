@@ -39,6 +39,7 @@ void BootVgaInitializationKernelNG(CURRENT_VIDEO_MODE_DETAILS * pcurrentvideomod
 	int encoder_ok = 0;
 	int i=0;
 	GPU_PARAMETER gpu;
+	xbox_video_mode encoder_mode;
 	
 	tv_encoding = DetectVideoStd();
 	DetectVideoEncoder();
@@ -211,7 +212,6 @@ void BootVgaInitializationKernelNG(CURRENT_VIDEO_MODE_DETAILS * pcurrentvideomod
 				pcurrentvideomodedetails->m_dwMarginYInLinesRecommended=20; // lines
 				break;
 		}	
-		xbox_video_mode encoder_mode;
 		encoder_mode.xres = pcurrentvideomodedetails->m_dwWidthInPixels; 
 		encoder_mode.yres = pcurrentvideomodedetails->m_dwHeightInLines;
 		encoder_mode.tv_encoding = tv_encoding;
