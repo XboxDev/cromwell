@@ -200,9 +200,9 @@ int I2cSetFrontpanelLed(BYTE b);
 
 int BootPerformXCodeActions();
 
-////////// BootLinux.c
+////////// BootStartBios.c
 
-void BootLinux();
+void StartBios();
 
 ////////// BootResetActions.c
 

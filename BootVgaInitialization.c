@@ -1066,7 +1066,7 @@ void BootVgaInitialization() {
 */
 
 	voutl(0xfd600800, 0);
-
+/*
 	{
 		int n;
 		BYTE ba[256];
@@ -1076,6 +1076,7 @@ void BootVgaInitialization() {
 		}
 		DumpAddressAndData(0, &ba[0], 256);
 	}
+*/
 
 /*
 

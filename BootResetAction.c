@@ -302,7 +302,7 @@ extern void BootResetAction ( void ) {
 			// now do the main BIOS action
 
 	printk(
-		"Xbox Linux Clean BIOS " 
+		"Xbox Linux Clean BIOS "
 		VERSION 
 		"    Licensed under the GPL     http://xbox-linux.sf.net\n(C)2002 The Xbox Linux Team - Hardware subsidy by Microsoft, everything else GPL\n\n"
 	);
@@ -323,9 +323,7 @@ extern void BootResetAction ( void ) {
 
 //			bprintf("tick=%x\n", *PDW_BIOS_TICK_PTR);
 
-
-
-
+/*
 	bprintf("\nInsert bootable CD...\n");
 
 	{
@@ -343,12 +341,12 @@ extern void BootResetAction ( void ) {
 			DumpAddressAndData(0, &ba[0], 0x800);
 		}
 	}
-
+*/
 	I2cSetFrontpanelLed(I2C_LED_GREEN0 | I2C_LED_GREEN1 | I2C_LED_GREEN2 | I2C_LED_GREEN3);
 
-			// spin
+	/* run the PC-like BIOS */
+	StartBios();
 
-		while(1) ;
 	}
 
 
