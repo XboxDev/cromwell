@@ -300,12 +300,11 @@ CONFIGENTRY *LoadConfigCD(int cdromId) {
 	long dwConfigSize=0;
 	int n;
 	int configLoaded=0;
-	u32 dwY=VIDEO_CURSOR_POSY;
-	u32 dwX=VIDEO_CURSOR_POSX;
 	CONFIGENTRY *config, *currentConfigItem;
 
 	memset((u8 *)KERNEL_SETUP,0,4096);
 
+	printk("\2Please wait\n\n");
 	//See if we already have a CDROM in the drive
 	//Try for 8 seconds - takes a while to 'spin up'.
 	I2CTransmitWord(0x10, 0x0c01); // close DVD tray
@@ -325,9 +324,7 @@ CONFIGENTRY *LoadConfigCD(int cdromId) {
 		wait_ms(2000); // Wait for DVD to become responsive to inject command
 			
 		VIDEO_ATTR=0xffeeeeff;
-		VIDEO_CURSOR_POSX=dwX;
-		VIDEO_CURSOR_POSY=dwY;
-		printk("Please insert CD and press Button A\n");
+		printk("\2Please insert CD and press Button A\n\n");
 
 		while(1) {
 			if (risefall_xpad_BUTTON(TRIGGER_XPAD_KEY_A) == 1) {
