@@ -63,7 +63,7 @@ void BootVgaInitializationKernelNG(CURRENT_VIDEO_MODE_DETAILS * pcurrentvideomod
 	MODE_PARAMETER parameter;
 	BYTE b;
 	RIVA_HW_INST riva;
-	int maxcounter;
+//	int maxcounter;
    
 	videoStd = xbvDetectVideoStd();
 
@@ -88,13 +88,14 @@ void BootVgaInitializationKernelNG(CURRENT_VIDEO_MODE_DETAILS * pcurrentvideomod
 	pcurrentvideomodedetails->m_dwFrameBufferStart = FRAMEBUFFER_START;
        	
        	// This is sure the hard way telling the register what we want
+/*
         maxcounter=2000;
         while (*((DWORD * )0xfd600800)^ FRAMEBUFFER_START ) {
         	(*((DWORD * )0xfd600800)) = FRAMEBUFFER_START;       
         	maxcounter--;
         	if (maxcounter==0) break;
         }
-        
+*/      
 
 	pcurrentvideomodedetails->m_bAvPack=I2CTransmitByteGetReturn(0x10, 0x04);
 	pcurrentvideomodedetails->m_pbBaseAddressVideo=(BYTE *)0xfd000000;

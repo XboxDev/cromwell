@@ -27,7 +27,7 @@
 #include "BootFATX.h"
 #include "xbox.h"
 #include "BootFlash.h"
-#include "cpu.h"
+//#include "cpu.h"
  
 #include "config.h"
 

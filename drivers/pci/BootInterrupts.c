@@ -15,7 +15,7 @@
 #include "boot.h"
 #include "config.h"
 #include "BootUsbOhci.h"
-#include "cpu.h"
+//#include "cpu.h"
 
 volatile int nCountI2cinterrupts, nCountUnusedInterrupts, nCountUnusedInterruptsPic2, nCountInterruptsSmc, nCountInterruptsIde;
 volatile bool fSeenPowerdown;
@@ -182,8 +182,8 @@ void BootInterruptsWriteIdt() {
 
 	// enable interrupts
 
-	//__asm__ __volatile__("wbinvd; mov $0x1b, %%cx ; rdmsr ; andl $0xfffff7ff, %%eax ; wrmsr; sti" : : : "%ecx", "%eax", "%edx");
-	intel_interrupts_on();
+	__asm__ __volatile__("wbinvd; mov $0x1b, %%cx ; rdmsr ; andl $0xfffff7ff, %%eax ; wrmsr; sti" : : : "%ecx", "%eax", "%edx");
+//	intel_interrupts_on();
 		
 }
 
@@ -375,9 +375,8 @@ void IntHandler2C(void)
 void IntHandler3VsyncC(void)  // video VSYNC
 {
 	DWORD dwTempInt;
-	int i;
 	
-	if(!nInteruptable) goto endvsyncirq;
+	if(!nInteruptable) return;
 	
 	BootPciInterruptGlobalStackStateAndDisable(&dwTempInt);
 	VIDEO_VSYNC_COUNT++;
@@ -494,14 +493,7 @@ void IntHandler3VsyncC(void)  // video VSYNC
 #endif
 	}
 
-endvsyncirq:
-
-        i=1000;
 	*((volatile DWORD *)0xfd600100)=0x1;  // clear VSYNC int
-	while ( ((*((volatile DWORD *)0xfd600100)) & 0x1)) {
-		i--;
-		if (i==0) break;
-		}  // We wait, until the Vsync IRQ has been deleted / or the Timeout kills us
 	
 	BootPciInterruptGlobalPopState(dwTempInt);
 }

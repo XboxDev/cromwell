@@ -28,7 +28,7 @@
 #include "BootFlash.h"
 #include "BootFATX.h"
 #include "xbox.h"
-#include "cpu.h"
+//#include "cpu.h"
 #include "config.h"
 #include "BootUsbOhci.h"
 
@@ -124,11 +124,11 @@ extern void BootResetAction ( void ) {
 
 
         // We disable The Cache
-        cache_disable();
+//        cache_disable();
 	// We Update the Microcode of the CPU
-	display_cpuid_update_microcode();
+//	display_cpuid_update_microcode();
         // We Enable The Cache
-        cache_enable();
+//        cache_enable();
 
 
         memcpy(&cromwell_config,(void*)(0x03A00000+20),4);

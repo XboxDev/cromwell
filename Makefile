@@ -3,7 +3,7 @@ INCLUDE = -I$(TOPDIR)/grub -I$(TOPDIR)/include -I$(TOPDIR)/ -I./ -I$(TOPDIR)/fs/
 	-I$(TOPDIR)/fs/fatx -I$(TOPDIR)/lib/eeprom -I$(TOPDIR)/lib/crypt -I$(TOPDIR)/drivers/usb \
 	-I$(TOPDIR)/drivers/video -I$(TOPDIR)/drivers/flash -I$(TOPDIR)/lib/misc \
 	-I$(TOPDIR)/boot_xbe/ -I$(TOPDIR)/fs/grub -I$(TOPDIR)/lib/font -I$(TOPDIR)/lib/jpeg-6b \
-	-I$(TOPDIR)/startuploader -I$(TOPDIR)/drivers/cpu
+	-I$(TOPDIR)/startuploader # -I$(TOPDIR)/drivers/cpu
 
 
 CFLAGS	= -O2 -mcpu=pentium -Wall -Werror $(INCLUDE) -Wstrict-prototypes -fomit-frame-pointer -pipe -mpreferred-stack-boundary=2
@@ -48,9 +48,9 @@ OBJECTS-CROM += $(TOPDIR)/obj/BootStartBios.o
 OBJECTS-CROM += $(TOPDIR)/obj/setup.o
 OBJECTS-CROM += $(TOPDIR)/obj/BootFilesystemIso9660.o
 OBJECTS-CROM += $(TOPDIR)/obj/BootLibrary.o
-OBJECTS-CROM += $(TOPDIR)/obj/cputools.o
-OBJECTS-CROM += $(TOPDIR)/obj/microcode.o
-OBJECTS-CROM += $(TOPDIR)/obj/ioapic.o
+#OBJECTS-CROM += $(TOPDIR)/obj/cputools.o
+#OBJECTS-CROM += $(TOPDIR)/obj/microcode.o
+#OBJECTS-CROM += $(TOPDIR)/obj/ioapic.o
 OBJECTS-CROM += $(TOPDIR)/obj/BootInterrupts.o
 OBJECTS-CROM += $(TOPDIR)/obj/fsys_reiserfs.o
 OBJECTS-CROM += $(TOPDIR)/obj/char_io.o

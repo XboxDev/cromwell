@@ -402,7 +402,6 @@ selfPipeKill:
 	outl	%eax, %dx 
       	
       	
-      	/*
 	// CPU Whoami   ? sesless ?
 	mov 	$0x80000080, %eax 
 	movw 	$0xcf8, %dx 
@@ -410,7 +409,7 @@ selfPipeKill:
 	movw 	$0xcfc, %dx 
 	movl 	$0x100, %eax 
 	outl	%eax, %dx 
-        */
+	
 	mov 	$0x8000088C, %eax 
 	movw 	$0xcf8, %dx 
 	outl	%eax, %dx 
@@ -419,8 +418,7 @@ selfPipeKill:
 	outl	%eax, %dx
 	
 	// Not necessary ?  
-	//movl 	$0x0, 0x0f680600
-       
+	movl 	$0x0, 0x0f680600
 
 	jmp BootResetAction
 
