@@ -9,9 +9,10 @@
  * High loaded stuff by Hans Lermen & Werner Almesberger, Feb. 1996
  */
 
-#define STANDALONE
 
 #include "linux_wrapper.h"
+
+#define STANDALONE
 
 /*
  * gzip declarations
@@ -92,8 +93,8 @@ static long bytes_out = 0;
 static uch *output_data;
 static unsigned long output_ptr = 0;
 
-static void *malloc(int size);
-static void free(void *where);
+static void *gzip_malloc(int size);
+static void gzip_free(void *where);
 
 static long free_mem_ptr;
 static long free_mem_end_ptr;
@@ -105,7 +106,7 @@ static long free_mem_end_ptr;
 
 #include "inflate.c"
 
-static void *malloc(int size)
+static void *gzip_malloc(int size)
 {
 	void *p;
 
@@ -123,7 +124,7 @@ static void *malloc(int size)
 	return p;
 }
 
-static void free(void *where)
+static void gzip_free(void *where)
 {	/* Don't care */
 }
 

@@ -416,7 +416,7 @@ DEBG1("3 ");
         z = 1 << j;             /* table entries for j-bit table */
 
         /* allocate and link in new table */
-        if ((q = (struct huft *)malloc((z + 1)*sizeof(struct huft))) ==
+        if ((q = (struct huft *)gzip_malloc((z + 1)*sizeof(struct huft))) ==
             (struct huft *)NULL)
         {
           if (h)
@@ -504,7 +504,7 @@ struct huft *t;         /* table to free */
   while (p != (struct huft *)NULL)
   {
     q = (--p)->v.t;
-    free((char*)p);
+    gzip_free((char*)p);
     p = q;
   } 
   return 0;

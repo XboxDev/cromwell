@@ -341,9 +341,9 @@ void USBGetEvents(void);
 extern struct xpad_data XPAD_current[4];
 extern struct xpad_data XPAD_last[4];
 
-void wait_ms(DWORD ticks);
-void wait_us(DWORD ticks);
-void wait_smalldelay(void);
+extern void wait_ms(DWORD ticks);
+extern void wait_us(DWORD ticks);
+extern void wait_smalldelay(void);
 
 
 void * memcpy(void *dest, const void *src,  size_t size);

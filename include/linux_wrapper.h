@@ -186,8 +186,6 @@ struct usb_device_id {
 /* imported functions from top-level */
 /*------------------------------------------------------------------------*/ 
 
-void* zxmalloc(size_t);
-void zxfree(void*);
 void zxprintf(char* fmt, ...);
 void zxsprintf(char *buffer, char* fmt, ...);
 int zxsnprintf(char *buffer, size_t s, char* fmt, ...);
@@ -327,8 +325,8 @@ struct usbdevfs_hub_portinfo
 /*------------------------------------------------------------------------*/ 
 /* function wrapper macros */
 /*------------------------------------------------------------------------*/ 
-#define kmalloc(x,y) zxmalloc(x)
-#define kfree(x) zxfree(x)
+#define kmalloc(x,y) malloc(x)
+#define kfree(x) free(x)
 
 #define sprintf(a,b,format, arg...) zxsprintf((a),(b),format, ## arg)
 #define snprintf(a,b,format, arg...) zxsnprintf((a),(b),format, ##arg)
@@ -574,14 +572,13 @@ extern struct list_head interrupt_list;
 /*------------------------------------------------------------------------*/ 
 void usb_hcd_pci_remove (struct pci_dev *dev);
 
-#define wait_ms(x) my_wait_ms(x)
-void my_wait_ms(unsigned int ms);
+#define my_wait_ms(x) wait_ms(x)
 
+#define my_udelay(x) wait_ms(x)
 #define udelay(x) my_udelay(x)
-void my_udelay(unsigned int a);
 
+#define my_mdelay(x) wait_ms(1+x/1000);
 #define mdelay(x) my_mdelay(x);
-void my_mdelay(unsigned int a);
 
 #define pci_find_slot(a,b) my_pci_find_slot(a,b)
 struct pci_dev *my_pci_find_slot(int a,int b);

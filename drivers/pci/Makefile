@@ -1,4 +1,4 @@
 
-O_TARGET := BootInterrupts.o BootPciPeripheralInitialization.o BootResetAction.o BootPerformPicChallengeResponseAction.o
+O_TARGET := BootInterrupts.o pci.o i2cio.o
 
 include $(TOPDIR)/Rules.make

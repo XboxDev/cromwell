@@ -62,8 +62,8 @@ OBJECTS-ROMBOOT += $(TOPDIR)/obj/misc.o
                                              
 OBJECTS-CROM = $(TOPDIR)/obj/BootStartup.o
 OBJECTS-CROM += $(TOPDIR)/obj/BootResetAction.o
-OBJECTS-CROM += $(TOPDIR)/obj/BootPerformPicChallengeResponseAction.o
-OBJECTS-CROM += $(TOPDIR)/obj/BootPciPeripheralInitialization.o
+OBJECTS-CROM += $(TOPDIR)/obj/i2cio.o
+OBJECTS-CROM += $(TOPDIR)/obj/pci.o
 OBJECTS-CROM += $(TOPDIR)/obj/BootVgaInitialization.o
 OBJECTS-CROM += $(TOPDIR)/obj/VideoInitialization.o
 OBJECTS-CROM += $(TOPDIR)/obj/focus.o

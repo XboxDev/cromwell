@@ -107,38 +107,6 @@ void do_all_timers(void)
 	}
 }
 /*------------------------------------------------------------------------*/ 
-/* And now for something completely different:
- *
- * Let's do a little Linux emulation!
- *
- * These calls are used from the low level code
- * and work remotely like their original kernel equivalents...
- */
-/*------------------------------------------------------------------------*/ 
-#ifdef STANDALONE
-
-#include <unistd.h>
-
-void wait_ms(unsigned int x)
-{
-	usleep(x*1000);
-}
-
-void udelay(unsigned int x)
-{
-	usleep(x);
-}
-
-void mdelay(unsigned int x)
-{
-	usleep(x*1000);
-}
-//#else
-
-#endif
-
-
-/*------------------------------------------------------------------------*/ 
 // Purpose: Remember thread procedure and data in global var
 int my_kernel_thread(int (*handler)(void*), void* parm, int flags)
 {

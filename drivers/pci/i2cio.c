@@ -197,66 +197,6 @@ void I2CModifyBits(BYTE bAds, BYTE bReg, BYTE bData, BYTE bMask)
 }
 
 // ----------------------------  PIC challenge/response -----------------------------------------------------------
-//
-// given four bytes, returns a WORD
-// LSB of return is the 'first' byte, MSB is the 'second' response byte
-
-WORD BootPicManipulation(
-	BYTE bC,
-	BYTE  bD,
-	BYTE  bE,
-	BYTE  bF
-) {
-	int n=4;
-	BYTE
-		b1 = 0x33,
-		b2 = 0xed,
-		b3 = ((bC<<2) ^ (bD +0x39) ^ (bE >>2) ^ (bF +0x63)),
-		b4 = ((bC+0x0b) ^ (bD>>2) ^ (bE +0x1b))
-	;
-
-	while(n--) {
-		b1 += b2 ^ b3;
-		b2 += b1 ^ b4;
-	}
-
-	return (WORD) ((((WORD)b2)<<8) | b1);
-}
-
-
-
-// actual business of getting I2C data from PIC and reissuing munged version
-// returns zero if all okay, else error code
-
-int BootPerformPicChallengeResponseAction()
-{
-	BYTE bC, bD, bE, bF;
-	int n;
-
-	n=I2CTransmitByteGetReturn( 0x10, 0x1c );
-	if(n<0) return n;
-	bC=n;
-	n=I2CTransmitByteGetReturn( 0x10, 0x1d );
-	if(n<0) return n;
-	bD=n;
-	n=I2CTransmitByteGetReturn( 0x10, 0x1e );
-	if(n<0) return n;
-	bE=n;
-	n=I2CTransmitByteGetReturn( 0x10, 0x1f );
-	if(n<0) return n;
-	bF=n;
-
-	{
-		WORD w=BootPicManipulation(bC, bD, bE, bF);
-
-		I2CTransmitWord( 0x10, 0x2000 | (w&0xff));
-		I2CTransmitWord( 0x10, 0x2100 | (w>>8) );
-	}
-
-	// continues as part of video setup....
-
-	return ERR_SUCCESS;
-}
 
 extern int I2cSetFrontpanelLed(BYTE b)
 {
