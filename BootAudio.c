@@ -156,13 +156,13 @@ void BootAudioFillNextBuffer(volatile AC97_DEVICE * pac97device)
 				case AET_NOISE:
 					{
 						AUDIO_ELEMENT_NOISE * paen=(AUDIO_ELEMENT_NOISE *)pae;
-						DWORD dw=((paen->m_dwShifter>>8)|(paen->m_dwShifter<<24)) ^((paen->m_dwShifter>>2)^0x31d2932a);
-						short s=(short)(((int)(paen->m_saSamples[0])* paen->m_sVolumeZeroIsNone7FFFIsFull)/0x7fff);
+						DWORD dw=((paen->shifter.m_dwShifter>>8)|(paen->shifter.m_dwShifter<<24)) ^((paen->shifter.m_dwShifter>>2)^0x31d2932a);
+						short s=(short)(((int)(paen->shifter.m_saSamples[0])* paen->m_sVolumeZeroIsNone7FFFIsFull)/0x7fff);
 						s=(s * (paen->m_paudioelement.m_dwVolumeElementMaster7fff0000Max>>16))/0x7fff;  // apply element envelope
 						nSummedSample[0]+=(s*(0x7fff-paen->m_paudioelement.m_sPanZeroIsAllLeft7FFFIsAllRight))/0x7fff;
 						nSummedSample[1]+=(s*paen->m_paudioelement.m_sPanZeroIsAllLeft7FFFIsAllRight)/0x7fff;
-						paen->m_saSamples[0]= (((short)paen->m_saSamples[0])/2)+ (((short)dw)/2);
-						paen->m_saSamples[1]=(short)(dw>>16);
+						paen->shifter.m_saSamples[0]= (((short)paen->shifter.m_saSamples[0])/2)+ (((short)dw)/2);
+						paen->shifter.m_saSamples[1]=(short)(dw>>16);
 					}
 					break;
 			} // switch type
@@ -377,7 +377,7 @@ void ConstructAUDIO_ELEMENT_NOISE(volatile AUDIO_ELEMENT_NOISE * paen)
 	paen->m_paudioelement.m_aetType=AET_NOISE;
 	paen->m_sVolumeZeroIsNone7FFFIsFull=0;
 
-	paen->m_dwShifter=0x5234cd92;
+	paen->shifter.m_dwShifter=0x5234cd92;
 }
 
 void DestructAUDIO_ELEMENT_NOISE(volatile AC97_DEVICE * pac97device, AUDIO_ELEMENT_NOISE * paen)

@@ -420,7 +420,7 @@ typedef struct _AUDIO_ELEMENT_NOISE {  // derived object composed from base obje
 	union {
 		DWORD m_dwShifter;
 		short m_saSamples[2];
-	};
+	} shifter;
 	short m_sLastSample;
 } AUDIO_ELEMENT_NOISE;
 
