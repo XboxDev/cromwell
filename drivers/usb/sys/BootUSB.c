@@ -92,13 +92,8 @@ void BootStopUSB(void)
 		wait_ms(1);
 	}	
 
+	module_exit_usb_exit();
 	usb_hcd_pci_remove(&xx_ohci_dev);
 	
-	for(n=0;n<100;n++)
-	{
-		USBGetEvents();
-		wait_ms(1);
-	}
-	module_exit_usb_exit();
 }	
 /*------------------------------------------------------------------------*/ 	
