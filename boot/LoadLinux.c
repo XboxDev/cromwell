@@ -285,44 +285,55 @@ int BootLoadConfigCD(int cdromId, CONFIGENTRY *config) {
 
 	DWORD dwConfigSize=0, dw;
 	int n;
+	int cdPresent=0;
 	DWORD dwY=VIDEO_CURSOR_POSY;
 	DWORD dwX=VIDEO_CURSOR_POSX;
 	BYTE* tempBuf;
 
 	memset((BYTE *)KERNEL_SETUP,0,4096);
 
-	//Needs to be changed for non-xbox drives, which don't have an eject line
-	//Need to send ATA eject command.
-	I2CTransmitWord(0x10, 0x0c00); // eject DVD tray
-	wait_ms(2000); // Wait for DVD to become responsive to inject command
-		
-	VIDEO_ATTR=0xffeeeeff;
-	VIDEO_CURSOR_POSX=dwX;
-	VIDEO_CURSOR_POSY=dwY;
-	printk("Please insert CD and press Button A\n");
+	//See if we already have a CDROM in the drive
 
-	while(1) {
-		if (risefall_xpad_BUTTON(TRIGGER_XPAD_KEY_A) == 1) {
-			I2CTransmitWord(0x10, 0x0c01); // close DVD tray
-			wait_ms(500);
-			break;
-		}
-                USBGetEvents();
-		wait_ms(10);
-	}						
-
-	VIDEO_ATTR=0xffffffff;
-
-	// wait until the media is readable
-
-	while(1) {
-		wait_ms(200);
+	for (n=0;n<5;++n) {
 		if((BootIso9660GetFile(cdromId,"/linuxboo.cfg", (BYTE *)KERNEL_SETUP, 0x800)) >=0 ) {
+			cdPresent=1;
 			break;
 		}
-
+		wait_ms(500);
 	}
 
+	if (!cdPresent) {
+		//Needs to be changed for non-xbox drives, which don't have an eject line
+		//Need to send ATA eject command.
+		I2CTransmitWord(0x10, 0x0c00); // eject DVD tray
+		wait_ms(2000); // Wait for DVD to become responsive to inject command
+			
+		VIDEO_ATTR=0xffeeeeff;
+		VIDEO_CURSOR_POSX=dwX;
+		VIDEO_CURSOR_POSY=dwY;
+		printk("Please insert CD and press Button A\n");
+
+		while(1) {
+			if (risefall_xpad_BUTTON(TRIGGER_XPAD_KEY_A) == 1) {
+				I2CTransmitWord(0x10, 0x0c01); // close DVD tray
+				wait_ms(500);
+				break;
+			}
+        	        USBGetEvents();
+			wait_ms(10);
+		}						
+
+		VIDEO_ATTR=0xffffffff;
+
+		// wait until the media is readable
+
+		while(1) {
+			wait_ms(200);
+			if((BootIso9660GetFile(cdromId,"/linuxboo.cfg", (BYTE *)KERNEL_SETUP, 0x800)) >=0 ) {
+				break;
+			}
+		}
+	}
 	printk("Cdrom: ");
 	printk("Loading linuxboot.cfg from CDROM... \n");
 	dwConfigSize=BootIso9660GetFile(cdromId,"/linuxboo.cfg", (BYTE *)KERNEL_SETUP, 0x800);
