@@ -13,6 +13,6 @@ typedef struct _CONFIGENTRY {
         char szAppend[MAX_LINE];
 } CONFIGENTRY, *LPCONFIGENTRY;
 
-int ParseConfig(char *szBuffer, CONFIGENTRY *entry, EEPROMDATA *eeprom, char *szPath);
+int ParseConfig(char *szBuffer, CONFIGENTRY *entry, char *szPath);
 
 #endif // _BootParser_H_

@@ -1,7 +1,7 @@
 #include "boot.h"
 //#include <string.h>
 
-int ParseConfig(char *szBuffer, CONFIGENTRY *entry, EEPROMDATA *eeprom, char *szPath) {
+int ParseConfig(char *szBuffer, CONFIGENTRY *entry, char *szPath) {
 	static char szLine[MAX_LINE];
 	static char szTmp[MAX_LINE];
 	char *ptr;

@@ -361,7 +361,7 @@ void t_free (void *ptr)
 			ptr = NULL;
 			for (counter=temp;counter<0x400;counter++)
 			{
-				if ((memsmall[counter]==0xCC)&(memsmall[counter+1]==0xBB))
+				if ((memsmall[counter]==0xCC)&&(memsmall[counter+1]==0xBB))
 				{
 					// End detected
 					memsmall[counter]=0;
@@ -411,7 +411,7 @@ void free(void *ptr) {
       	if (ptr == NULL) return;
       	  
 	tempmalloc1 = ptr;
-	tempmalloc1--;
+	tempmalloc1-=2;
 	tempmalloc1--;
 	ptr = (unsigned int*)tempmalloc1[0];
         if (tempmalloc1[1]!= 0x1234567) {
