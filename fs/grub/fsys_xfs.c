@@ -1,406 +1,624 @@
-<!doctype html public "-//W3C//DTD HTML 4.0 Transitional//EN"
-"http://www.w3.org/TR/REC-html40/loose.dtd">
-<html><head>
-<!-- ViewCVS -- http://viewcvs.sourceforge.net/
-by Greg Stein -- mailto:gstein@lyra.org
--->
-<title>CVS log for grub/grub/stage2/fsys_xfs.c</title>
-</head>
-<body text="#000000" bgcolor="#ffffff">
-<table width="100%" border=0 cellspacing=0 cellpadding=0>
-<tr>
-<td rowspan=2><h1>CVS log for grub/grub/stage2/fsys_xfs.c</h1></td>
-<td align=right><a href="/"><img src="/images/transparent.theme/floating.png" alt="Savannah" border="0" width="150" height="130"></a></td>
-</tr>
-<tr>
-<td align=right><h3><b><a target="_blank"
-href="/cgi-bin/viewcvs/*docroot*/help_log.html">Help</a></b></h3></td>
-</tr>
-</table>
-<a href="/cgi-bin/viewcvs/grub/grub/stage2/#fsys_xfs.c"><img src="/viewcvs/icons/back.png" alt="(back)" border=0
-width=16 height=16></a>
-<b>Up to <a href="/cgi-bin/viewcvs/#dirlist">[Sources]</a> / <a href="/cgi-bin/viewcvs/grub/#dirlist">grub</a> / <a href="/cgi-bin/viewcvs/grub/grub/#dirlist">grub</a> / <a href="/cgi-bin/viewcvs/grub/grub/stage2/#dirlist">stage2</a></b><p>
-<a href="#diff">Request diff between arbitrary revisions</a>
-
-<hr noshade>
-
-Default branch: MAIN
-<br>
-Bookmark a link to:
-
-<a href="fsys_xfs.c?rev=HEAD&content-type=text/vnd.viewcvs-markup"><b>HEAD</b></a>
-/
-(<a href="/cgi-bin/viewcvs/*checkout*/grub/grub/stage2/fsys_xfs.c?rev=HEAD&content-type=text/plain" target="cvs_checkout"
-onClick="window.open('about:blank', 'cvs_checkout',
-'resizeable=1,scrollbars=1')"
-><b>download</b></a>)
-
-
-<br>
-
-
-<hr size=1 noshade>
-
-<a name="rev1.4"></a>
-<a name="HEAD"></a>
-
-<a name="MAIN"></a>
-
-Revision
-
-<a href="/cgi-bin/viewcvs/*checkout*/grub/grub/stage2/fsys_xfs.c?rev=1.4" target="cvs_checkout"
-onClick="window.open('about:blank', 'cvs_checkout',
-'resizeable=1,scrollbars=1')"
-><b>1.4</b></a>
-
-
-
-
-/
-<a href="fsys_xfs.c?rev=1.4&content-type=text/vnd.viewcvs-markup"><b>(view)</b></a>
-
-
-- <a href="fsys_xfs.c?annotate=1.4">annotate</a>
-
-
-- <a href="fsys_xfs.c?r1=1.4">[select for diffs]</a>
-
-
-
-, <i>Sun Jan 18 19:47:18 2004 UTC</i> (4 weeks, 6 days ago) by <i>okuji</i>
-
-<br>Branch:
-
-<a href="fsys_xfs.c?only_with_tag=MAIN"><b>MAIN</b></a>
-
-
-
-<br>CVS Tags:
-
-<a href="fsys_xfs.c?only_with_tag=HEAD"><b>HEAD</b></a>
-
-
-
-
-
-<br>Changes since <b>1.3: +15 -15 lines</b>
-
-
-
-
-<br>Diff to <a href="fsys_xfs.c.diff?r1=1.3&r2=1.4">previous 1.3</a>
-
-
-
-
-
-
-
-<pre>2004-01-18  Yoshinori K. Okuji  &lt;<a href="mailto:okuji@enbug.org">okuji@enbug.org</a>&gt;
-
-	From Thomas Schwinge &lt;<a href="mailto:kischde@gmx.net">kischde@gmx.net</a>&gt;:
-	* grub/Makefile.am (AM_CPPFLAGS): New variable.
-	(AM_CFLAGS): Removed all cpp flags.
-
-	* stage2/xfs.h (__int8_t): Renamed to ...
-	(xfs_int8_t): ... this.
-	(__uint8_t): Renamed to ...
-	(xfs_uint8_t): ... this.
-	(__int16_t): Renamed to ...
-	(xfs_int16_t): ... this.
-	(__uint16_t): Renamed to ...
-	(xfs_uint16_t): ... this.
-	(__int32_t): Renamed to ...
-	(xfs_int32_t): ... this.
-	(__uint32_t): Renamed to ...
-	(xfs_uint32_t): ... this.
-	(__int64_t): Renamed to ...
-	(xfs_int64_t): ... this.
-	(__uint64_t): Renamed to ...
-	(xfs_uint64_t): ... this.
-	All callers are changed.x
-
-	From Egmont Koblinger &lt;<a href="mailto:egmont@uhulinux.hu">egmont@uhulinux.hu</a>&gt;:
-	* util/grub-install.in: Support an install devices in GRUB's
-	notation without parentheses.
-
-	* docs/grub.texi (Installing GRUB using grub-install): Added an
-	example of using grub-install without parentheses.
-</pre>
-
-<hr size=1 noshade>
-
-<a name="rev1.3"></a>
-<a name="release_0_93"></a>
-
-
-Revision
-
-<a href="/cgi-bin/viewcvs/*checkout*/grub/grub/stage2/fsys_xfs.c?rev=1.3" target="cvs_checkout"
-onClick="window.open('about:blank', 'cvs_checkout',
-'resizeable=1,scrollbars=1')"
-><b>1.3</b></a>
-
-
-
-
-/
-<a href="fsys_xfs.c?rev=1.3&content-type=text/vnd.viewcvs-markup"><b>(view)</b></a>
-
-
-- <a href="fsys_xfs.c?annotate=1.3">annotate</a>
-
-
-- <a href="fsys_xfs.c?r1=1.3">[select for diffs]</a>
-
-
-
-, <i>Sat Jun 15 00:47:08 2002 UTC</i> (20 months, 1 week ago) by <i>okuji</i>
-
-<br>Branch:
-
-<a href="fsys_xfs.c?only_with_tag=MAIN"><b>MAIN</b></a>
-
-
-
-<br>CVS Tags:
-
-<a href="fsys_xfs.c?only_with_tag=release_0_93"><b>release_0_93</b></a>
-
-
-
-
-
-<br>Changes since <b>1.2: +9 -0 lines</b>
-
-
-
-
-<br>Diff to <a href="fsys_xfs.c.diff?r1=1.2&r2=1.3">previous 1.2</a>
-
-
-
-
-
-
-
-<pre>2002-06-15  Yoshinori K. Okuji  &lt;<a href="mailto:okuji@enbug.org">okuji@enbug.org</a>&gt;
-
-	* stage2/fsys_xfs.c (le32): Don't use bswap, but use xchgb and
-	roll, because 386 doesn't have bswap. Reported by Frode Vatvedt
-	Fjeld &lt;<a href="mailto:frodef@acm.org">frodef@acm.org</a>&gt;.
-</pre>
-
-<hr size=1 noshade>
-
-<a name="rev1.2"></a>
-<a name="release_0_92"></a>
-
-
-Revision
-
-<a href="/cgi-bin/viewcvs/*checkout*/grub/grub/stage2/fsys_xfs.c?rev=1.2" target="cvs_checkout"
-onClick="window.open('about:blank', 'cvs_checkout',
-'resizeable=1,scrollbars=1')"
-><b>1.2</b></a>
-
-
-
-
-/
-<a href="fsys_xfs.c?rev=1.2&content-type=text/vnd.viewcvs-markup"><b>(view)</b></a>
-
-
-- <a href="fsys_xfs.c?annotate=1.2">annotate</a>
-
-
-- <a href="fsys_xfs.c?r1=1.2">[select for diffs]</a>
-
-
-
-, <i>Thu Feb  7 23:28:47 2002 UTC</i> (2 years ago) by <i>okuji</i>
-
-<br>Branch:
-
-<a href="fsys_xfs.c?only_with_tag=MAIN"><b>MAIN</b></a>
-
-
-
-<br>CVS Tags:
-
-<a href="fsys_xfs.c?only_with_tag=release_0_92"><b>release_0_92</b></a>
-
-
-
-
-
-<br>Changes since <b>1.1: +3 -5 lines</b>
-
-
-
-
-<br>Diff to <a href="fsys_xfs.c.diff?r1=1.1&r2=1.2">previous 1.1</a>
-
-
-
-
-
-
-
-<pre>2002-02-08  Yoshinori K. Okuji  &lt;<a href="mailto:okuji@enbug.org">okuji@enbug.org</a>&gt;
-
-	* stage2/fsys_jfs.c (jfs_read) [STAGE1_5]: Set and reset
-	DISK_READ_FUNC even in Stage 1.5.
-	* stage2/fsys_xfs.c (xfs_read) [STAGE1_5]: Likewise.
-
-	* stage2/stage1_5.c (saved_sector): Initialized with -1.
-	(cmain): Check if SAVED_SECTOR was set appropriately after
-	reading the second sector of Stage 2. If SAVED_SECTOR is not
-	set (i.e. it is equal to -1), print an error and stop.
-</pre>
-
-<hr size=1 noshade>
-
-<a name="rev1.1"></a>
-<a name="release_0_91"></a>
-<a name="prepare_0_91"></a>
-
-
-Revision
-
-<a href="/cgi-bin/viewcvs/*checkout*/grub/grub/stage2/fsys_xfs.c?rev=1.1" target="cvs_checkout"
-onClick="window.open('about:blank', 'cvs_checkout',
-'resizeable=1,scrollbars=1')"
-><b>1.1</b></a>
-
-
-
-
-/
-<a href="fsys_xfs.c?rev=1.1&content-type=text/vnd.viewcvs-markup"><b>(view)</b></a>
-
-
-- <a href="fsys_xfs.c?annotate=1.1">annotate</a>
-
-
-- <a href="fsys_xfs.c?r1=1.1">[select for diffs]</a>
-
-
-
-, <i>Sat Oct 27 16:04:25 2001 UTC</i> (2 years, 3 months ago) by <i>okuji</i>
-
-<br>Branch:
-
-<a href="fsys_xfs.c?only_with_tag=MAIN"><b>MAIN</b></a>
-
-
-
-<br>CVS Tags:
-
-<a href="fsys_xfs.c?only_with_tag=release_0_91"><b>release_0_91</b></a>,
-
-<a href="fsys_xfs.c?only_with_tag=prepare_0_91"><b>prepare_0_91</b></a>
-
-
-
-
-
-
-
-
-
-
-<pre>JFS and XFS support is added.
-</pre>
-
-<a name=diff></a>
-<hr noshade>
-This form allows you to request diffs between any two revisions of
-a file. You may select a symbolic revision name using the selection
-box or you may type in a numeric name using the type-in text box.
-<p>
-<form method="GET" action="fsys_xfs.c.diff" name="diff_select">
-Diffs between
-<select name="r1">
-<option value="text" selected>Use Text Field</option>
-
-<option value="1.3:release_0_93">release_0_93</option>
-
-<option value="1.2:release_0_92">release_0_92</option>
-
-<option value="1.1:release_0_91">release_0_91</option>
-
-<option value="1.1.0.2:prepare_0_91">prepare_0_91</option>
-
-<option value="0.1:MAIN">MAIN</option>
-
-<option value="1.4:HEAD">HEAD</option>
-
-</select>
-<input type="TEXT" size="12" name="tr1" value="1.1"
-onChange="document.diff_select.r1.selectedIndex=0">
-and
-<select name="r2">
-<option value="text" selected>Use Text Field</option>
-
-<option value="1.3:release_0_93">release_0_93</option>
-
-<option value="1.2:release_0_92">release_0_92</option>
-
-<option value="1.1:release_0_91">release_0_91</option>
-
-<option value="1.1.0.2:prepare_0_91">prepare_0_91</option>
-
-<option value="0.1:MAIN">MAIN</option>
-
-<option value="1.4:HEAD">HEAD</option>
-
-</select>
-<input type="TEXT" size="12" name="tr2" value="1.4"
-onChange="document.diff_select.r1.selectedIndex=0">
-<br>Type of Diff should be a
-<select name="diff_format" onchange="submit()">
-<option value="h" selected>Colored Diff</option>
-<option value="l" >Long Colored Diff</option>
-<option value="u" >Unidiff</option>
-<option value="c" >Context Diff</option>
-<option value="s" >Side by Side</option>
-</select>
-<input type=submit value=" Get Diffs "></form>
-<hr noshade>
-
-<a name=branch></a>
-<form method="GET" action="fsys_xfs.c">
-
-View only Branch:
-<select name="only_with_tag" onchange="submit()">
-<option value="" selected>Show all branches</option>
-
-<option value="prepare_0_91" >prepare_0_91</option>
-
-<option value="MAIN" >MAIN</option>
-
-</select>
-<input type=submit value=" View Branch ">
-</form>
-
-<a name=logsort></a>
-<form method="GET" action="fsys_xfs.c">
-
-Sort log by:
-<select name="logsort" onchange="submit()">
-<option value="cvs" >Not sorted</option>
-<option value="date" selected>Commit date</option>
-<option value="rev" >Revision</option>
-</select>
-<input type=submit value=" Sort ">
-</form>
-
-<hr noshade>
-<table width="100%" border=0 cellpadding=0 cellspacing=0><tr>
-<td align=left><address>Send suggestions and report problems to the Savannah Hackers <a href="mailto:savannah-hackers@gnu.org">&lt;savannah-hackers@gnu.org&gt;</a>;</address></td>
-<td align=right>
-Powered by<br><a href="http://viewcvs.sourceforge.net/">ViewCVS 0.9.2</a>
-</td></tr></table>
-</body></html>
-
+/* fsys_xfs.c - an implementation for the SGI XFS file system */
+/*  
+ *  GRUB  --  GRand Unified Bootloader
+ *  Copyright (C) 2001,2002,2004  Free Software Foundation, Inc.
+ *
+ *  This program is free software; you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation; either version 2 of the License, or
+ *  (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program; if not, write to the Free Software
+ *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ */
+
+#ifdef FSYS_XFS
+
+#include "shared.h"
+#include "filesys.h"
+#include "xfs.h"
+
+#define MAX_LINK_COUNT	8
+
+typedef struct xad {
+	xfs_fileoff_t offset;
+	xfs_fsblock_t start;
+	xfs_filblks_t len;
+} xad_t;
+
+struct xfs_info {
+	int bsize;
+	int dirbsize;
+	int isize;
+	unsigned int agblocks;
+	int bdlog;
+	int blklog;
+	int inopblog;
+	int agblklog;
+	int agnolog;
+	unsigned int nextents;
+	xfs_daddr_t next;
+	xfs_daddr_t daddr;
+	xfs_dablk_t forw;
+	xfs_dablk_t dablk;
+	xfs_bmbt_rec_32_t *xt;
+	xfs_bmbt_ptr_t ptr0;
+	int btnode_ptr0_off;
+	int i8param;
+	int dirpos;
+	int dirmax;
+	int blkoff;
+	int fpos;
+	xfs_ino_t rootino;
+};
+
+static struct xfs_info xfs;
+
+#define dirbuf		((char *)FSYS_BUF)
+#define filebuf		((char *)FSYS_BUF + 4096)
+#define inode		((xfs_dinode_t *)((char *)FSYS_BUF + 8192))
+#define icore		(inode->di_core)
+
+#define	mask32lo(n)	(((xfs_uint32_t)1 << (n)) - 1)
+
+#define	XFS_INO_MASK(k)		((xfs_uint32_t)((1ULL << (k)) - 1))
+#define	XFS_INO_OFFSET_BITS	xfs.inopblog
+#define	XFS_INO_AGBNO_BITS	xfs.agblklog
+#define	XFS_INO_AGINO_BITS	(xfs.agblklog + xfs.inopblog)
+#define	XFS_INO_AGNO_BITS	xfs.agnolog
+
+static inline xfs_agblock_t
+agino2agbno (xfs_agino_t agino)
+{
+	return agino >> XFS_INO_OFFSET_BITS;
+}
+
+static inline xfs_agnumber_t
+ino2agno (xfs_ino_t ino)
+{
+	return ino >> XFS_INO_AGINO_BITS;
+}
+
+static inline xfs_agino_t
+ino2agino (xfs_ino_t ino)
+{
+	return ino & XFS_INO_MASK(XFS_INO_AGINO_BITS);
+}
+
+static inline int
+ino2offset (xfs_ino_t ino)
+{
+	return ino & XFS_INO_MASK(XFS_INO_OFFSET_BITS);
+}
+
+static inline __const__ xfs_uint16_t
+le16 (xfs_uint16_t x)
+{
+	__asm__("xchgb %b0,%h0"	\
+		: "=q" (x) \
+		:  "0" (x)); \
+		return x;
+}
+
+static inline __const__ xfs_uint32_t
+le32 (xfs_uint32_t x)
+{
+#if 0
+        /* 386 doesn't have bswap.  */
+	__asm__("bswap %0" : "=r" (x) : "0" (x));
+#else
+	/* This is slower but this works on all x86 architectures.  */
+	__asm__("xchgb %b0, %h0" \
+		"\n\troll $16, %0" \
+		"\n\txchgb %b0, %h0" \
+		: "=q" (x) : "0" (x));
+#endif
+	return x;
+}
+
+static inline __const__ xfs_uint64_t
+le64 (xfs_uint64_t x)
+{
+	xfs_uint32_t h = x >> 32;
+        xfs_uint32_t l = x & ((1ULL<<32)-1);
+        return (((xfs_uint64_t)le32(l)) << 32) | ((xfs_uint64_t)(le32(h)));
+}
+
+
+static xfs_fsblock_t
+xt_start (xfs_bmbt_rec_32_t *r)
+{
+	return (((xfs_fsblock_t)(le32 (r->l1) & mask32lo(9))) << 43) | 
+	       (((xfs_fsblock_t)le32 (r->l2)) << 11) |
+	       (((xfs_fsblock_t)le32 (r->l3)) >> 21);
+}
+
+static xfs_fileoff_t
+xt_offset (xfs_bmbt_rec_32_t *r)
+{
+	return (((xfs_fileoff_t)le32 (r->l0) &
+		mask32lo(31)) << 23) |
+		(((xfs_fileoff_t)le32 (r->l1)) >> 9);
+}
+
+static xfs_filblks_t
+xt_len (xfs_bmbt_rec_32_t *r)
+{
+	return le32(r->l3) & mask32lo(21);
+}
+
+static inline int
+xfs_highbit32(xfs_uint32_t v)
+{
+	int i;
+
+	if (--v) {
+		for (i = 0; i < 31; i++, v >>= 1) {
+			if (v == 0)
+				return i;
+		}
+	}
+	return 0;
+}
+
+static int
+isinxt (xfs_fileoff_t key, xfs_fileoff_t offset, xfs_filblks_t len)
+{
+	return (key >= offset) ? (key < offset + len ? 1 : 0) : 0;
+}
+
+static xfs_daddr_t
+agb2daddr (xfs_agnumber_t agno, xfs_agblock_t agbno)
+{
+	return ((xfs_fsblock_t)agno*xfs.agblocks + agbno) << xfs.bdlog;
+}
+
+static xfs_daddr_t
+fsb2daddr (xfs_fsblock_t fsbno)
+{
+	return agb2daddr ((xfs_agnumber_t)(fsbno >> xfs.agblklog),
+			 (xfs_agblock_t)(fsbno & mask32lo(xfs.agblklog)));
+}
+
+#undef offsetof
+#define offsetof(t,m)	((int)&(((t *)0)->m))
+
+static inline int
+btroot_maxrecs (void)
+{
+	int tmp = icore.di_forkoff ? (icore.di_forkoff << 3) : xfs.isize;
+
+	return (tmp - sizeof(xfs_bmdr_block_t) - offsetof(xfs_dinode_t, di_u)) /
+		(sizeof (xfs_bmbt_key_t) + sizeof (xfs_bmbt_ptr_t));
+}
+
+static int
+di_read (xfs_ino_t ino)
+{
+	xfs_agino_t agino;
+	xfs_agnumber_t agno;
+	xfs_agblock_t agbno;
+	xfs_daddr_t daddr;
+	int offset;
+
+	agno = ino2agno (ino);
+	agino = ino2agino (ino);
+	agbno = agino2agbno (agino);
+	offset = ino2offset (ino);
+	daddr = agb2daddr (agno, agbno);
+
+	devread (daddr, offset*xfs.isize, xfs.isize, (char *)inode);
+
+	xfs.ptr0 = *(xfs_bmbt_ptr_t *)
+		    (inode->di_u.di_c + sizeof(xfs_bmdr_block_t)
+		    + btroot_maxrecs ()*sizeof(xfs_bmbt_key_t));
+
+	return 1;
+}
+
+static void
+init_extents (void)
+{
+	xfs_bmbt_ptr_t ptr0;
+	xfs_btree_lblock_t h;
+
+	switch (icore.di_format) {
+	case XFS_DINODE_FMT_EXTENTS:
+		xfs.xt = inode->di_u.di_bmx;
+		xfs.nextents = le32 (icore.di_nextents);
+		break;
+	case XFS_DINODE_FMT_BTREE:
+		ptr0 = xfs.ptr0;
+		for (;;) {
+			xfs.daddr = fsb2daddr (le64(ptr0));
+			devread (xfs.daddr, 0,
+				 sizeof(xfs_btree_lblock_t), (char *)&h);
+			if (!h.bb_level) {
+				xfs.nextents = le16(h.bb_numrecs);
+				xfs.next = fsb2daddr (le64(h.bb_rightsib));
+				xfs.fpos = sizeof(xfs_btree_block_t);
+				return;
+			}
+			devread (xfs.daddr, xfs.btnode_ptr0_off,
+				 sizeof(xfs_bmbt_ptr_t), (char *)&ptr0);
+		}
+	}
+}
+
+static xad_t *
+next_extent (void)
+{
+	static xad_t xad;
+
+	switch (icore.di_format) {
+	case XFS_DINODE_FMT_EXTENTS:
+		if (xfs.nextents == 0)
+			return NULL;
+		break;
+	case XFS_DINODE_FMT_BTREE:
+		if (xfs.nextents == 0) {
+			xfs_btree_lblock_t h;
+			if (xfs.next == 0)
+				return NULL;
+			xfs.daddr = xfs.next;
+			devread (xfs.daddr, 0, sizeof(xfs_btree_lblock_t), (char *)&h);
+			xfs.nextents = le16(h.bb_numrecs);
+			xfs.next = fsb2daddr (le64(h.bb_rightsib));
+			xfs.fpos = sizeof(xfs_btree_block_t);
+		}
+		/* Yeah, I know that's slow, but I really don't care */
+		devread (xfs.daddr, xfs.fpos, sizeof(xfs_bmbt_rec_t), filebuf);
+		xfs.xt = (xfs_bmbt_rec_32_t *)filebuf;
+		xfs.fpos += sizeof(xfs_bmbt_rec_32_t);
+	}
+	xad.offset = xt_offset (xfs.xt);
+	xad.start = xt_start (xfs.xt);
+	xad.len = xt_len (xfs.xt);
+	++xfs.xt;
+	--xfs.nextents;
+
+	return &xad;
+}
+
+/*
+ * Name lies - the function reads only first 100 bytes
+ */
+static void
+xfs_dabread (void)
+{
+	xad_t *xad;
+	xfs_fileoff_t offset;;
+
+	init_extents ();
+	while ((xad = next_extent ())) {
+		offset = xad->offset;
+		if (isinxt (xfs.dablk, offset, xad->len)) {
+			devread (fsb2daddr (xad->start + xfs.dablk - offset),
+				 0, 100, dirbuf);
+			break;
+		}
+	}
+}
+
+static inline xfs_ino_t
+sf_ino (char *sfe, int namelen)
+{
+	void *p = sfe + namelen + 3;
+
+	return (xfs.i8param == 0)
+		? le64(*(xfs_ino_t *)p) : le32(*(xfs_uint32_t *)p);
+}
+
+static inline xfs_ino_t
+sf_parent_ino (void)
+{
+	return (xfs.i8param == 0)
+		? le64(*(xfs_ino_t *)(&inode->di_u.di_dir2sf.hdr.parent))
+		: le32(*(xfs_uint32_t *)(&inode->di_u.di_dir2sf.hdr.parent));
+}
+
+static inline int
+roundup8 (int n)
+{
+	return ((n+7)&~7);
+}
+
+static char *
+next_dentry (xfs_ino_t *ino)
+{
+	int namelen = 1;
+	int toread;
+	static char *usual[2] = {".", ".."};
+	static xfs_dir2_sf_entry_t *sfe;
+	char *name = usual[0];
+
+	if (xfs.dirpos >= xfs.dirmax) {
+		if (xfs.forw == 0)
+			return NULL;
+		xfs.dablk = xfs.forw;
+		xfs_dabread ();
+#define h	((xfs_dir2_leaf_hdr_t *)dirbuf)
+		xfs.dirmax = le16 (h->count) - le16 (h->stale);
+		xfs.forw = le32 (h->info.forw);
+#undef h
+		xfs.dirpos = 0;
+	}
+
+	switch (icore.di_format) {
+	case XFS_DINODE_FMT_LOCAL:
+		switch (xfs.dirpos) {
+		case -2:
+			*ino = 0;
+			break;
+		case -1:
+			*ino = sf_parent_ino ();
+			++name;
+			++namelen;
+			sfe = (xfs_dir2_sf_entry_t *)
+				(inode->di_u.di_c 
+				 + sizeof(xfs_dir2_sf_hdr_t)
+				 - xfs.i8param);
+			break;
+		default:
+			namelen = sfe->namelen;
+			*ino = sf_ino ((char *)sfe, namelen);
+			name = sfe->name;
+			sfe = (xfs_dir2_sf_entry_t *)
+				  ((char *)sfe + namelen + 11 - xfs.i8param);
+		}
+		break;
+	case XFS_DINODE_FMT_BTREE:
+	case XFS_DINODE_FMT_EXTENTS:
+#define dau	((xfs_dir2_data_union_t *)dirbuf)
+		for (;;) {
+			if (xfs.blkoff >= xfs.dirbsize) {
+				xfs.blkoff = sizeof(xfs_dir2_data_hdr_t);
+				filepos &= ~(xfs.dirbsize - 1);
+				filepos |= xfs.blkoff;
+			}
+			xfs_read (dirbuf, 4);
+			xfs.blkoff += 4;
+			if (dau->unused.freetag == XFS_DIR2_DATA_FREE_TAG) {
+				toread = roundup8 (le16(dau->unused.length)) - 4;
+				xfs.blkoff += toread;
+				filepos += toread;
+				continue;
+			}
+			break;
+		}
+		xfs_read ((char *)dirbuf + 4, 5);
+		*ino = le64 (dau->entry.inumber);
+		namelen = dau->entry.namelen;
+#undef dau
+		toread = roundup8 (namelen + 11) - 9;
+		xfs_read (dirbuf, toread);
+		name = (char *)dirbuf;
+		xfs.blkoff += toread + 5;
+	}
+	++xfs.dirpos;
+	name[namelen] = 0;
+
+	return name;
+}
+
+static char *
+first_dentry (xfs_ino_t *ino)
+{
+	xfs.forw = 0;
+	switch (icore.di_format) {
+	case XFS_DINODE_FMT_LOCAL:
+		xfs.dirmax = inode->di_u.di_dir2sf.hdr.count;
+		xfs.i8param = inode->di_u.di_dir2sf.hdr.i8count ? 0 : 4;
+		xfs.dirpos = -2;
+		break;
+	case XFS_DINODE_FMT_EXTENTS:
+	case XFS_DINODE_FMT_BTREE:
+		filepos = 0;
+		xfs_read (dirbuf, sizeof(xfs_dir2_data_hdr_t));
+		if (((xfs_dir2_data_hdr_t *)dirbuf)->magic == le32(XFS_DIR2_BLOCK_MAGIC)) {
+#define tail		((xfs_dir2_block_tail_t *)dirbuf)
+			filepos = xfs.dirbsize - sizeof(*tail);
+			xfs_read (dirbuf, sizeof(*tail));
+			xfs.dirmax = le32 (tail->count) - le32 (tail->stale);
+#undef tail
+		} else {
+			xfs.dablk = (1ULL << 35) >> xfs.blklog;
+#define h		((xfs_dir2_leaf_hdr_t *)dirbuf)
+#define n		((xfs_da_intnode_t *)dirbuf)
+			for (;;) {
+				xfs_dabread ();
+				if ((n->hdr.info.magic == le16(XFS_DIR2_LEAFN_MAGIC))
+				    || (n->hdr.info.magic == le16(XFS_DIR2_LEAF1_MAGIC))) {
+					xfs.dirmax = le16 (h->count) - le16 (h->stale);
+					xfs.forw = le32 (h->info.forw);
+					break;
+				}
+				xfs.dablk = le32 (n->btree[0].before);
+			}
+#undef n
+#undef h
+		}
+		xfs.blkoff = sizeof(xfs_dir2_data_hdr_t);
+		filepos = xfs.blkoff;
+		xfs.dirpos = 0;
+	}
+	return next_dentry (ino);
+}
+
+int
+xfs_mount (void)
+{
+	xfs_sb_t super;
+
+	if (!devread (0, 0, sizeof(super), (char *)&super)
+	    || (le32(super.sb_magicnum) != XFS_SB_MAGIC)
+	    || ((le16(super.sb_versionnum) 
+		& XFS_SB_VERSION_NUMBITS) != XFS_SB_VERSION_4) ) {
+		return 0;
+	}
+
+	xfs.bsize = le32 (super.sb_blocksize);
+	xfs.blklog = super.sb_blocklog;
+	xfs.bdlog = xfs.blklog - SECTOR_BITS;
+	xfs.rootino = le64 (super.sb_rootino);
+	xfs.isize = le16 (super.sb_inodesize);
+	xfs.agblocks = le32 (super.sb_agblocks);
+	xfs.dirbsize = xfs.bsize << super.sb_dirblklog;
+
+	xfs.inopblog = super.sb_inopblog;
+	xfs.agblklog = super.sb_agblklog;
+	xfs.agnolog = xfs_highbit32 (le32(super.sb_agcount));
+
+	xfs.btnode_ptr0_off =
+		((xfs.bsize - sizeof(xfs_btree_block_t)) /
+		(sizeof (xfs_bmbt_key_t) + sizeof (xfs_bmbt_ptr_t)))
+		 * sizeof(xfs_bmbt_key_t) + sizeof(xfs_btree_block_t);
+
+	return 1;
+}
+
+int
+xfs_read (char *buf, int len)
+{
+	xad_t *xad;
+	xfs_fileoff_t endofprev, endofcur, offset;
+	xfs_filblks_t xadlen;
+	int toread, startpos, endpos;
+
+	if (icore.di_format == XFS_DINODE_FMT_LOCAL) {
+		grub_memmove (buf, inode->di_u.di_c + filepos, len);
+		filepos += len;
+		return len;
+	}
+
+	startpos = filepos;
+	endpos = filepos + len;
+	endofprev = (xfs_fileoff_t)-1;
+	init_extents ();
+	while (len > 0 && (xad = next_extent ())) {
+		offset = xad->offset;
+		xadlen = xad->len;
+		if (isinxt (filepos >> xfs.blklog, offset, xadlen)) {
+			endofcur = (offset + xadlen) << xfs.blklog; 
+			toread = (endofcur >= endpos)
+				  ? len : (endofcur - filepos);
+
+			disk_read_func = disk_read_hook;
+			devread (fsb2daddr (xad->start),
+				 filepos - (offset << xfs.blklog), toread, buf);
+			disk_read_func = NULL;
+
+			buf += toread;
+			len -= toread;
+			filepos += toread;
+		} else if (offset > endofprev) {
+			toread = ((offset << xfs.blklog) >= endpos)
+				  ? len : ((offset - endofprev) << xfs.blklog);
+			len -= toread;
+			filepos += toread;
+			for (; toread; toread--) {
+				*buf++ = 0;
+			}
+			continue;
+		}
+		endofprev = offset + xadlen; 
+	}
+
+	return filepos - startpos;
+}
+
+int
+xfs_dir (char *dirname)
+{
+	xfs_ino_t ino, parent_ino, new_ino;
+	xfs_fsize_t di_size;
+	int di_mode;
+	int cmp, n, link_count;
+	char linkbuf[xfs.bsize];
+	char *rest, *name, ch;
+
+	parent_ino = ino = xfs.rootino;
+	link_count = 0;
+	for (;;) {
+		di_read (ino);
+		di_size = le64 (icore.di_size);
+		di_mode = le16 (icore.di_mode);
+
+		if ((di_mode & IFMT) == IFLNK) {
+			if (++link_count > MAX_LINK_COUNT) {
+				errnum = ERR_SYMLINK_LOOP;
+				return 0;
+			}
+			if (di_size < xfs.bsize - 1) {
+				filepos = 0;
+				filemax = di_size;
+				n = xfs_read (linkbuf, filemax);
+			} else {
+				errnum = ERR_FILELENGTH;
+				return 0;
+			}
+
+			ino = (linkbuf[0] == '/') ? xfs.rootino : parent_ino;
+			while (n < (xfs.bsize - 1) && (linkbuf[n++] = *dirname++));
+			linkbuf[n] = 0;
+			dirname = linkbuf;
+			continue;
+		}
+
+		if (!*dirname || isspace (*dirname)) {
+			if ((di_mode & IFMT) != IFREG) {
+				errnum = ERR_BAD_FILETYPE;
+				return 0;
+			}
+			filepos = 0;
+			filemax = di_size;
+			return 1;
+		}
+
+		if ((di_mode & IFMT) != IFDIR) {
+			errnum = ERR_BAD_FILETYPE;
+			return 0;
+		}
+
+		for (; *dirname == '/'; dirname++);
+
+		for (rest = dirname; (ch = *rest) && !isspace (ch) && ch != '/'; rest++);
+		*rest = 0;
+
+		name = first_dentry (&new_ino);
+		for (;;) {
+			cmp = (!*dirname) ? -1 : substring (dirname, name);
+#ifndef STAGE1_5
+			if (print_possibilities && ch != '/' && cmp <= 0) {
+				if (print_possibilities > 0)
+					print_possibilities = -print_possibilities;
+				print_a_completion (name);
+			} else
+#endif
+			if (cmp == 0) {
+				parent_ino = ino;
+				if (new_ino)
+					ino = new_ino;
+		        	*(dirname = rest) = ch;
+				break;
+			}
+			name = next_dentry (&new_ino);
+			if (name == NULL) {
+				if (print_possibilities < 0)
+					return 1;
+
+				errnum = ERR_FILE_NOT_FOUND;
+				*rest = ch;
+				return 0;
+			}
+		}
+	}
+}
+
+#endif /* FSYS_XFS */
