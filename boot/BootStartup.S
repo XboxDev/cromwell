@@ -106,7 +106,16 @@ start_linux:
 	xor	%eax, %eax
 	xor	%edx, %edx
 	wrmsr
-	
+
+       // FPU SETUP
+	movl %cr0,%eax          
+	andl $0x80000011,%eax   
+	orl $0x50022,%eax       
+	movl %eax,%cr0
+	clts
+	fninit
+	.byte 0xDB,0xE4         /* fsetpm for 287, ignored by 387 */	
+
 	// Interrupts now Dead
 	
 	lidt tableIdtDescriptor

@@ -6,6 +6,10 @@
  * and work by Johan Rydberg and Daniel Kahlin.
  *
  * $Log$
+ * Revision 1.3  2003/04/19 17:49:28  huceke
+ * Cramwell now working on my v1.0 Xbox. ( Just a complete
+ * of Micheals work ).
+ *
  * Revision 1.2  2003/04/17 09:04:45  mist
  * Cramwell :-) The ROM version now copies all code into RAM.
  * Unfortunately booting Linux does not work any more at the moment (memory
@@ -108,7 +112,7 @@ SECTIONS {
 	_start_backdrop = .;
 			*(.backdrop);
 	_end_backdrop = .;
-		_end_rodata = . ;
+	_end_rodata = . ;
  }
 
 
