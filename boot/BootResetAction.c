@@ -88,8 +88,6 @@ extern void BootResetAction ( void ) {
 	memcpy(&cromwell_loadbank,(void*)(0x03A00000+0x28),4);
         memcpy(&cromwell_Biostype,(void*)(0x03A00000+0x2C),4);
  	
- 	cromwell_haverombios = 1;
-
 	VIDEO_CURSOR_POSX=40;
 	VIDEO_CURSOR_POSY=140; 	
         
@@ -98,12 +96,9 @@ extern void BootResetAction ( void ) {
 
 		
 	// prep our BIOS console print state
-
 	VIDEO_ATTR=0xffffffff;
 
 	// init malloc() and free() structures
-      
-        
 	MemoryManagementInitialization((void *)MEMORYMANAGERSTART, MEMORYMANAGERSIZE);
 	
 

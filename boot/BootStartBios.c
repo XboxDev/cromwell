@@ -865,7 +865,6 @@ void StartBios(CONFIGENTRY *config, int nActivePartition , int nFATXPresent,int 
 	disk_read_func=NULL;
 
 
-	
 	// silence the audio
         	
         //BootAudioSilence(&ac97device);
