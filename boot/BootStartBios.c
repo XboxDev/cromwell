@@ -102,7 +102,7 @@ void BootPrintConfig(CONFIGENTRY *config) {
 
 // if fJustTestingForPossible is true, returns 0 if this kind of boot not possible, 1 if it is worth trying
 
-int BootLodaConfigNative(int nActivePartition, CONFIGENTRY *config, bool fJustTestingForPossible) {
+int BootLoadConfigNative(int nActivePartition, CONFIGENTRY *config, bool fJustTestingForPossible) {
 	DWORD dwConfigSize=0;
 	char szGrub[256+4];
         
@@ -248,7 +248,7 @@ int BootTryLoadConfigFATX(CONFIGENTRY *config) {
 
 /* ----------------------------------------------------------------------------------------- */
 
-int BootLodaConfigFATX(CONFIGENTRY *config) {
+int BootLoadConfigFATX(CONFIGENTRY *config) {
 
 	static FATXPartition *partition = NULL;
 	static FATXFILEINFO fileinfo;
@@ -335,7 +335,7 @@ int BootLodaConfigFATX(CONFIGENTRY *config) {
 
 /* -------------------------------------------------------------------------------- */
 
-int BootLodaConfigCD(CONFIGENTRY *config) {
+int BootLoadConfigCD(CONFIGENTRY *config) {
 
 	DWORD dwConfigSize=0, dw;
 	BYTE ba[2048],baBackground[640*64*4]; 
@@ -857,7 +857,7 @@ int BootMenu(CONFIGENTRY *config,int nDrive,int nActivePartition, int nFATXPrese
 			case ICON_NATIVE:
 				if(nDrive != 1) {
 					strcpy(config->szKernel, "/boot/vmlinuz");  // Ext2 default kernel, looked for to detect fs
-					if(BootLodaConfigNative(nActivePartition, config, true)) {
+					if(BootLoadConfigNative(nActivePartition, config, true)) {
 						icon[menu].nEnabled = 1;
 						if(nSelected == -1) nSelected = menu;
 					}
@@ -1028,16 +1028,16 @@ void StartBios(CONFIGENTRY *config, int nActivePartition , int nFATXPresent,int 
         
 	switch(bootfrom) {
 		case ICON_FATX:
-			BootLodaConfigFATX(config);
+			BootLoadConfigFATX(config);
 			ExittoLinux(config);
 			break;
 		case ICON_NATIVE:
-			BootLodaConfigNative(nActivePartition, config, false);
+			BootLoadConfigNative(nActivePartition, config, false);
 			ExittoLinux(config);
 			break;
 		case ICON_CD:
 			//hddclone();
-			BootLodaConfigCD(config);
+			BootLoadConfigCD(config);
 			ExittoLinux(config);
 			break;
 		case ICON_FLASH:
