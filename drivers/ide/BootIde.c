@@ -468,7 +468,7 @@ int BootIdeDriveInit(unsigned uIoBase, int nIndexDrive)
 			// Cromwell Mode
 			if((drive_info[128]&0x0004)==0x0004) 
 			{ 
-				char password[20];
+				unsigned char password[20];
 
 				if (CalculateDrivePassword(nIndexDrive,password)) {
 					printk("Unable to calculate drive password - eeprom corrupt?");
@@ -479,16 +479,6 @@ int BootIdeDriveInit(unsigned uIoBase, int nIndexDrive)
 					printk("Unlock failed!");
 				}
 				else printk("Unlock successful");	
-			
-
-				//Uncomment this if you want cromwell to automatically disable the password
-				//on locked harddisks
-				/*	
-				if (DriveSecurityChange(uIoBase, nIndexDrive, IDE_CMD_SECURITY_DISABLE, &baMagic[2])) {
-					printk("Disable failed");
-				}
-				else printk("Disable successful!");
-				*/
 			}
 		}  
 	}
@@ -547,7 +537,7 @@ int BootIdeDriveInit(unsigned uIoBase, int nIndexDrive)
 
 
 /* -------------------------------------------------------------------------------- */
-int DriveSecurityChange(unsigned uIoBase, int driveId, ide_command_t ide_cmd, char *password) {
+int DriveSecurityChange(unsigned uIoBase, int driveId, ide_command_t ide_cmd, unsigned char *password) {
 	//Todo: Check drive is in correct state for command desired.
 	char ide_cmd_data[2+512];	
 	char baBuffer[512];
@@ -555,17 +545,52 @@ int DriveSecurityChange(unsigned uIoBase, int driveId, ide_command_t ide_cmd, ch
 	tsIdeCommandParams tsicp = IDE_DEFAULT_COMMAND;
 	tsIdeCommandParams tsicp1 = IDE_DEFAULT_COMMAND;
 
-	memset(ide_cmd_data,0x00,512);
 	
-	//Password is only 20 bytes long - the rest is 0-padded.
-	memcpy(&ide_cmd_data[2],password,20);
-
 	if(BootIdeWaitNotBusy(uIoBase)) 
 	{
 		printk("  %d:  Not Ready\n", driveId);
 		return 1;
 	}
 	tsicp1.m_bDrivehead = IDE_DH_DEFAULT | IDE_DH_HEAD(0) | IDE_DH_CHS | IDE_DH_DRIVE(driveId);
+
+	if (ide_cmd == IDE_CMD_SECURITY_SET_PASSWORD) {
+		
+		//Master password is XBOXLINUX (in ascii, NULL padded)
+		char *master_password="XBOXLINUX";
+		
+		printk("Locking HDD with master password of XBOXLINUX (ascii)\n");
+		printk("Remember this - it could save your drive!\n");
+		
+		//We first lock the drive with the master password
+		//Just in case we ever need to unlock it in an emergency
+		memset(ide_cmd_data,0x00,512);
+		//Set master password flag
+		ide_cmd_data[0]|=0x01;
+	
+		memcpy(&ide_cmd_data[2],master_password,9);
+		
+		if(BootIdeIssueAtaCommand(uIoBase, ide_cmd, &tsicp1)) return 1;
+		BootIdeWaitDataReady(uIoBase);
+		BootIdeWriteData(uIoBase, ide_cmd_data, IDE_SECTOR_SIZE);
+
+		BootIdeWaitNotBusy(uIoBase);
+	}
+
+	memset(ide_cmd_data,0x00,512);
+	
+	//Password is only 20 bytes long - the rest is 0-padded.
+	memcpy(&ide_cmd_data[2],password,20);
+
+	if (ide_cmd == IDE_CMD_SECURITY_SET_PASSWORD) {
+		unsigned int i=0;
+		//If we are locking, print the user password..
+		printk("Locking HDD with user password of:\n\t");
+		for (i=0; i<20; ++i) {
+			printk("%02x ",password[i]);
+			if (i==9) printk("\n\t");
+		}
+		printk("\nPlease make a note of this password\n");
+	}
 
 	if(BootIdeIssueAtaCommand(uIoBase, ide_cmd, &tsicp1)) return 1;
 		
@@ -588,16 +613,7 @@ int DriveSecurityChange(unsigned uIoBase, int driveId, ide_command_t ide_cmd, ch
 		return 1;
 	}
 
-	/*
-	if(drive_info[128]&0x0004) 
-		{
-		//Drive is still locked
-		return 1;
-	} else {
-		//Unlock was successful
-		return 0;
-	}*/
-	//Todo: Check dest. state is the desired one based on command.
+	//Success, hopefully.
 	return 0;
 }
 

@@ -8,6 +8,7 @@
  ***************************************************************************/
 #include "boot.h"
 #include "BootIde.h"
+#include "video.h"
 
 
 void LockHdd(void *driveId);

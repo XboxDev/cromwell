@@ -19,6 +19,8 @@ void LockHdd(void *driveId) {
 	if (DriveSecurityChange(uIoBase, nIndexDrive, IDE_CMD_SECURITY_SET_PASSWORD, &password[0])) {
 		printk("Failed!");
 	}
+	wait_ms(5000);
+	BootVideoClearScreen(&jpegBackdrop, 0, 0xffff);
 }
 
 void UnlockHdd(void *driveId) {
@@ -32,6 +34,6 @@ void UnlockHdd(void *driveId) {
 	if (DriveSecurityChange(uIoBase, nIndexDrive, IDE_CMD_SECURITY_DISABLE, &password[0])) {
 		printk("Failed!");
 	}
+	BootVideoClearScreen(&jpegBackdrop, 0, 0xffff);
 }
-
 
