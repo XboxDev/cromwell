@@ -121,12 +121,14 @@ OBJECTS-CROM += $(TOPDIR)/obj/risefall.o
 #ETHERBOOT
 OBJECTS-CROM += $(TOPDIR)/obj/nfs.o
 OBJECTS-CROM += $(TOPDIR)/obj/nic.o
-#OBJECTS-CROM += $(TOPDIR)/obj/osloader.o
+OBJECTS-CROM += $(TOPDIR)/obj/osloader.o
 OBJECTS-CROM += $(TOPDIR)/obj/xbox.o
 OBJECTS-CROM += $(TOPDIR)/obj/forcedeth.o
 OBJECTS-CROM += $(TOPDIR)/obj/xbox_misc.o
 OBJECTS-CROM += $(TOPDIR)/obj/xbox_pci.o
 OBJECTS-CROM += $(TOPDIR)/obj/etherboot_config.o
+OBJECTS-CROM += $(TOPDIR)/obj/xbox_main.o
+OBJECTS-CROM += $(TOPDIR)/obj/elf.o
 
 RESOURCES = $(TOPDIR)/obj/backdrop.elf
 RESOURCES += $(TOPDIR)/obj/pcrombios.elf
