@@ -180,7 +180,7 @@ void BootInterruptsWriteIdt(void) {
 
 void IntHandlerCSmc(void)
 {
-	BYTE bStatus, nBit=0, bAvPackType;
+	BYTE bStatus, nBit=0;
 	nCountInterruptsSmc++;
 	bStatus=I2CTransmitByteGetReturn(0x10, 0x11); // Query PIC for interrupt reason
 	while(nBit<7) {

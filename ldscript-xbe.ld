@@ -6,6 +6,9 @@
  * and work by Johan Rydberg and Daniel Kahlin.
  *
  * $Log$
+ * Revision 1.2  2003/01/13 13:33:35  huceke
+ * Forgot it to commit
+ *
  * Revision 1.1  2002/12/24 03:53:33  huceke
  * Added loading the cromwell as an xbe
  *
@@ -105,7 +108,7 @@ SECTIONS {
 	}
 
         RamCopy (0x90000) : AT( 0xc80 + SIZEOF(.text)+ SIZEOF(.rodata) +SIZEOF(.data)) {
-		_start_ramcopy = .;
+		_start_ramcopy = . - 0x90000 + 0xc80 + SIZEOF(.text)+ SIZEOF(.rodata) +SIZEOF(.data);
 		*(RamCopy);
 		_end_ramcopy = .;
 	}

@@ -100,7 +100,7 @@ extern void BootResetAction ( void ) {
 		// init malloc() and free() structures
 
 #ifdef XBE
-	MemoryManagementInitialization((void *)0x0800000, 0x1000000);
+	MemoryManagementInitialization((void *)0x1000000, 0x0E00000);
 #else
 	MemoryManagementInitialization((void *)0x1000000, 0x2000000);
 #endif
@@ -157,9 +157,7 @@ extern void BootResetAction ( void ) {
 	TRACE;
 
 		// finally bring up video
-#ifndef XBE
 	BootVideoEnableOutput(bAvPackType);
-#endif
 		// initialize the PCI devices
 
 	BootPciPeripheralInitialization();
@@ -336,6 +334,7 @@ extern void BootResetAction ( void ) {
 
 		BootEepromPrintInfo();
 
+#ifndef XBE
 		{
 			OBJECT_FLASH of;
 			of.m_pbMemoryMappedStartAddress=(BYTE *)0xff000000;
@@ -346,6 +345,7 @@ extern void BootResetAction ( void ) {
 			VIDEO_ATTR=0xffc8c800;
 			printk("%s\n", of.m_szFlashDescription);
 		}
+#endif
 
 			// init the HDD and DVD
 		VIDEO_ATTR=0xffc8c8c8;
