@@ -23,6 +23,12 @@
 #include <filesys.h>
 #include "xbox.h"
 
+#ifdef XBE
+#include "config-xbe.h"
+#else
+#include "config-rom.h"
+#endif
+
 #undef strcpy
 
 unsigned long saved_drive;
@@ -99,7 +105,9 @@ void StartBios(	int nDrive, int nActivePartition ) {
 
 	if(nDrive==1) {  // CDROM
 			BYTE ba[2048], baBackground[320*32*4];
+#ifndef IS_XBE_BOOTLOADER
 			BYTE b;
+#endif
 			BYTE bCount=0, bCount1;
 			int n;
 
@@ -108,6 +116,7 @@ void StartBios(	int nDrive, int nActivePartition ) {
 
 			BootVideoBlit((DWORD *)&baBackground[0], 320*4, (DWORD *)(FRAMEBUFFER_START+(VIDEO_CURSOR_POSY*640*4)+VIDEO_CURSOR_POSX), 640*4, 32);
 
+#ifndef IS_XBE_BOOTLOADER
 			while((b=BootIdeGetTrayState())>=8) {
 				VIDEO_CURSOR_POSX=dwX;
 				VIDEO_CURSOR_POSY=dwY;
@@ -121,6 +130,7 @@ void StartBios(	int nDrive, int nActivePartition ) {
 				printk("\2Please insert CD\2");
 				for(n=0;n<1000000;n++) { ; }
 			}
+#endif
 
 			VIDEO_ATTR=0xffffffff;
 
