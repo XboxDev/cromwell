@@ -295,9 +295,11 @@ void BootVgaInitializationKernelNG(CURRENT_VIDEO_MODE_DETAILS * pcurrentvideomod
 				pcurrentvideomodedetails->m_dwHeightInLines=576;
 				pcurrentvideomodedetails->m_dwMarginXInPixelsRecommended=20;
 				pcurrentvideomodedetails->m_dwMarginYInLinesRecommended=20; // lines
-				I2CTransmitWord(0x45, (0x60<<8)|0xc7);
-				I2CTransmitWord(0x45, (0x62<<8)|0x0);
-				I2CTransmitWord(0x45, (0x64<<8)|0x0);
+				if (VideoEncoder == VIDEO_CONEXANT) {
+					I2CTransmitWord(0x45, (0x60<<8)|0xc7);
+					I2CTransmitWord(0x45, (0x62<<8)|0x0);
+					I2CTransmitWord(0x45, (0x64<<8)|0x0);
+				}
 				break;
 		}
 		// Use TV settings
@@ -381,21 +383,24 @@ void BootVgaInitializationKernelNG(CURRENT_VIDEO_MODE_DETAILS * pcurrentvideomod
 	pcurrentvideomodedetails->m_bFinalConexantAA = 0x49;
 	pcurrentvideomodedetails->m_bFinalConexantAC = 0x8c;
 	// We dimm the Video OFF
-	I2CTransmitWord(0x45, (0xa8<<8)|0);
-	I2CTransmitWord(0x45, (0xaa<<8)|0);
-	I2CTransmitWord(0x45, (0xac<<8)|0);
-
+	if (VideoEncoder == VIDEO_CONEXANT) {
+		I2CTransmitWord(0x45, (0xa8<<8)|0);
+		I2CTransmitWord(0x45, (0xaa<<8)|0);
+		I2CTransmitWord(0x45, (0xac<<8)|0);
+	}
 	NVWriteSeq(&riva, 0x01, 0x01);  /* reenable display */
 
         // We reenable the Video
-        I2CTransmitWord(0x45, 0xa800 | pcurrentvideomodedetails->m_bFinalConexantA8);
-        I2CTransmitWord(0x45, 0xaa00 | pcurrentvideomodedetails->m_bFinalConexantAA);
-        I2CTransmitWord(0x45, 0xac00 | pcurrentvideomodedetails->m_bFinalConexantAC);
-
-	I2CWriteWordtoRegister(0x6a, 0xa8, 0x100);
-  	I2CWriteWordtoRegister(0x6a, 0xaa, 0x100);
-        I2CWriteWordtoRegister(0x6a, 0xac, 0x100);
-        	
+	if (VideoEncoder == VIDEO_CONEXANT) {
+        	I2CTransmitWord(0x45, 0xa800 | pcurrentvideomodedetails->m_bFinalConexantA8);
+        	I2CTransmitWord(0x45, 0xaa00 | pcurrentvideomodedetails->m_bFinalConexantAA);
+        	I2CTransmitWord(0x45, 0xac00 | pcurrentvideomodedetails->m_bFinalConexantAC);
+	}
+	else { //FOCUS
+		I2CWriteWordtoRegister(0x6a, 0xa8, 0x100);
+  		I2CWriteWordtoRegister(0x6a, 0xaa, 0x100);
+        	I2CWriteWordtoRegister(0x6a, 0xac, 0x100);
+	}	
 
 }
 
