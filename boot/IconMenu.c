@@ -85,6 +85,7 @@ void IconMenuDraw(int nXOffset, int nYOffset) {
 			opaqueness = SELECTED;
 			VIDEO_CURSOR_POSX=nXOffset+112*(iconcount+1)*4;
 			VIDEO_CURSOR_POSY=nYOffset+20;
+			VIDEO_ATTR=0xffffff;
 			printk("%s\n",iconPtr->szCaption);
 		}
 		else opaqueness = TRANSPARENTNESS;
@@ -104,7 +105,7 @@ void IconMenuDraw(int nXOffset, int nYOffset) {
 
 int BootIconMenu(CONFIGENTRY *config,int nDrive,int nActivePartition, int nFATXPresent){
 	extern int nTempCursorMbrX, nTempCursorMbrY;
-	extern void BootTextMenu(void);
+	extern void BootTextMenu(void *);
 	int change=0;
 
 	int nTempCursorResumeX, nTempCursorResumeY ;

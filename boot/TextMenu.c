@@ -115,7 +115,7 @@ void TextMenuDraw(void) {
 	}
 }
 
-int BootTextMenu(void) {
+int BootTextMenu(void *nothing) {
 	TEXTMENUITEM *itemPtr;
 	TEXTMENU *menuPtr;
 	
