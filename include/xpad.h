@@ -15,6 +15,8 @@ struct xpad_data
 	
 };
 
+int risefall_xpad_BUTTON(unsigned char selected_Button);
+
 #define XPAD_PAD_UP 1
 #define XPAD_PAD_DOWN 2
 #define XPAD_PAD_LEFT 4
@@ -24,4 +26,19 @@ struct xpad_data
 #define XPAD_STATE_BACK 2
 #define XPAD_STATE_LEFT 4
 #define XPAD_STATE_RIGHT 8
+     
+#define TRIGGER_XPAD_KEY_A   		0
+#define TRIGGER_XPAD_KEY_B		1
+#define TRIGGER_XPAD_KEY_C		2
+#define TRIGGER_XPAD_KEY_D        	3
+#define TRIGGER_XPAD_KEY_START    	4
+#define TRIGGER_XPAD_KEY_BACK     	5
+
+#define TRIGGER_XPAD_PAD_UP 		6
+#define TRIGGER_XPAD_PAD_DOWN 		7
+#define TRIGGER_XPAD_PAD_LEFT 		8 	
+#define TRIGGER_XPAD_PAD_RIGHT 		9
+
+
+
 

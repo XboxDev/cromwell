@@ -13,6 +13,9 @@
 #include "../usb_wrapper.h"
 #include "config.h"
 
+// history for the Rising - falling events
+unsigned char xpad_button_history[7];
+
 /* Stores time and XPAD state */
 struct xpad_data XPAD_current[4];
 struct xpad_data XPAD_last[4];
@@ -135,6 +138,7 @@ static struct usb_driver xpad_driver = {
 	.disconnect =	xpad_disconnect,
 	.id_table =	xpad_ids,
 };
+
 /*------------------------------------------------------------------------*/ 
 void XPADInit(void)
 {
@@ -144,6 +148,8 @@ void XPADInit(void)
 		memset(XPAD_current,0, sizeof(struct xpad_data));
 		memset(XPAD_last,0, sizeof(struct xpad_data));
 	}
+	memset(&xpad_button_history,0x0,sizeof(xpad_button_history));
+	
 	usbprintk("XPAD probe %p ",xpad_probe);
 	if (usb_register(&xpad_driver) < 0) {
 		err("Unable to register XPAD driver");
@@ -153,4 +159,75 @@ void XPADInit(void)
 /*------------------------------------------------------------------------*/ 
 void XPADRemove(void) {
 	usb_deregister(&xpad_driver);
+}
+
+/*------------------------------------------------------------------------*/ 
+
+int risefall_xpad_BUTTON(unsigned char selected_Button) {
+
+        if (selected_Button < 6) {
+        
+        	int Button_actual=0;
+        	unsigned char Button;
+        
+        	Button = XPAD_current[0].keys[selected_Button];
+        
+	        if (Button==0x0)
+	        {
+	              	Button_actual = 0;	
+	        }
+	        
+		if (Button>0x30)
+		{
+			Button_actual = 1;
+		}
+	
+		if ((Button_actual==1)&(xpad_button_history[selected_Button]==0)) {
+			// Button Rising Edge
+			xpad_button_history[selected_Button] = Button_actual;		
+			return 1;
+		}	
+		
+		if ((Button_actual==0)&(xpad_button_history[selected_Button]==1)) {
+			// Button Falling Edge
+			xpad_button_history[selected_Button] = Button_actual;		
+			return -1;
+		}	
+		return 0; 
+	}
+ 	
+ 	if ((selected_Button > 5)) {
+		
+		unsigned char Buttonmask;
+              
+		switch (selected_Button) {
+			case TRIGGER_XPAD_PAD_UP :
+						   Buttonmask = XPAD_PAD_UP; 
+						   break;
+			case TRIGGER_XPAD_PAD_DOWN :
+						   Buttonmask = XPAD_PAD_DOWN;
+						   break;
+			case TRIGGER_XPAD_PAD_LEFT :
+						   Buttonmask = XPAD_PAD_LEFT;
+						   break;
+			case TRIGGER_XPAD_PAD_RIGHT :
+						   Buttonmask = XPAD_PAD_RIGHT;
+						   break;
+		}		
+               
+		// Rising Edge
+		if (((XPAD_current[0].pad&Buttonmask) != 0) & ((xpad_button_history[6]&Buttonmask) == 0)) {
+			xpad_button_history[6] ^= Buttonmask;  // Flip the Bit
+			return 1;
+		}				
+		// Falling Edge
+		if (((XPAD_current[0].pad&Buttonmask) == 0) & ((xpad_button_history[6]&Buttonmask) != 0)) {
+			xpad_button_history[6] ^= Buttonmask;  // Flip the Bit
+			return -1;
+		}
+		
+		return 0;
+ 	}
+	
+	return 0;
 }

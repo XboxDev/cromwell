@@ -88,36 +88,6 @@ void BootPrintConfig(CONFIGENTRY *config) {
 }
 
 
-int button_history_A=0;
-
-int risefall_xpad_BUTTONA(unsigned char Button) {
-
-        int Button_actual=0;
-        
-        if (Button==0x0)
-        {
-              	Button_actual = 0;	
-        }
-        
-	if (Button>0x80)
-	{
-		Button_actual = 1;
-	}
-
-	if ((Button_actual==1)&(button_history_A==0)) {
-		// Button Rising Edge
-		button_history_A = Button_actual;		
-		return 1;
-	}	
-	
-	if ((Button_actual==0)&(button_history_A==1)) {
-		// Button Falling Edge
-		button_history_A = Button_actual;		
-		return -1;
-	}	
-	return 0;
-}
-
 
 // if fJustTestingForPossible is true, returns 0 if this kind of boot not possible, 1 if it is worth trying
 
@@ -260,7 +230,8 @@ int BootLodaConfigFATX(CONFIGENTRY *config) {
 	memset(&fileinfo,0x00,sizeof(fileinfo));
 	memset(&infokernel,0x00,sizeof(infokernel));
 	memset(&infoinitrd,0x00,sizeof(infoinitrd));
-	wait_ms(50);
+
+	I2CTransmitWord(0x10, 0x0c01); // Close DVD tray
 	
 	printk("Loading linuxboot.cfg form FATX\n");
 	partition = OpenFATXPartition(0,
@@ -329,7 +300,10 @@ int BootLodaConfigCD(CONFIGENTRY *config) {
 	DWORD dwX=VIDEO_CURSOR_POSX;
 
 	memset((BYTE *)0x90000,0,4096);
-	
+
+	I2CTransmitWord(0x10, 0x0c00); // eject DVD tray
+	wait_ms(500);
+		
 selectinsert:
 	BootVideoBlit(
 		(DWORD *)&baBackground[0], 640*4,
@@ -361,7 +335,7 @@ selectinsert:
 			break;
 		}
 		
-		if (risefall_xpad_BUTTONA(XPAD_current[0].keys[0])==1) {
+		if (risefall_xpad_BUTTON(TRIGGER_XPAD_KEY_A) == 1) {
 			I2CTransmitWord(0x10, 0x0c01); // close DVD tray
 			wait_ms(500);
 			break;
@@ -546,7 +520,9 @@ int BootLoadFlashCD(CONFIGENTRY *config) {
 	struct SHA1Context context;
       	unsigned char SHA1_result[20];
 
-
+	I2CTransmitWord(0x10, 0x0c00); // eject DVD tray
+	wait_ms(500);
+                        	
 selectinsert:
 	BootVideoBlit(
 		(DWORD *)&baBackground[0], 640*4,
@@ -700,13 +676,6 @@ selectinsert:
 	return true;
 }
 
-void BootFlashConfirm(void)
-{
-	I2CTransmitWord(0x10, 0x0c00); // eject DVD tray
-
-	printk("Close the DVD tray to confirm flash\n");
-	while(1) ;
-}
 #endif
 
 void BootIcons(int nXOffset, int nYOffset, int nTextOffsetX, int nTextOffsetY) {
@@ -764,12 +733,7 @@ void BootStartBiosDoIcon(ICON *icon, BYTE bOpaqueness)
 	);
 }
 
-void RecoverMbrArea(void)
-{
-		BootVideoClearScreen(&jpegBackdrop, nTempCursorMbrY, VIDEO_CURSOR_POSY);  // blank out volatile data area
-		VIDEO_CURSOR_POSX=nTempCursorMbrX;
-		VIDEO_CURSOR_POSY=nTempCursorMbrY;
-}
+
 
 
 
@@ -779,14 +743,12 @@ int BootMenue(CONFIGENTRY *config,int nDrive,int nActivePartition, int nFATXPres
 	int nSelected = -1;
 	unsigned int menu=0;
 	int change=0;
-	int curx,cury;
-       	int XPAD_PAD_LEFT_history =0;
-       	int XPAD_PAD_RIGHT_history =0;
 
-	int nTempCursorResumeX, nTempCursorResumeY, nTempStartMessageCursorX, nTempStartMessageCursorY;
-	int nTempCursorX, nTempCursorY, nTempEntryX, nTempEntryY;
+	int nTempCursorResumeX, nTempCursorResumeY ;
+	int nTempCursorX, nTempCursorY;
 	int nModeDependentOffset=(currentvideomodedetails.m_dwWidthInPixels-640)/2;  // icon offsets computed for 640 modes, retain centering in other modes
 	int nShowSelect = false;
+        unsigned char *videosavepage;
         
         DWORD COUNT_start;
         DWORD HH;
@@ -799,32 +761,28 @@ int BootMenue(CONFIGENTRY *config,int nDrive,int nActivePartition, int nFATXPres
 
 	nTempCursorResumeX=nTempCursorMbrX;
 	nTempCursorResumeY=nTempCursorMbrY;
-	
-	nTempEntryX=VIDEO_CURSOR_POSX;
-	nTempEntryY=VIDEO_CURSOR_POSY;
+
 	
 	nTempCursorX=VIDEO_CURSOR_POSX;
 	nTempCursorY=currentvideomodedetails.m_dwHeightInLines-80;
 	
+	// We save the complete Video Page to a memory (we restore at exit)
+	videosavepage = malloc(FRAMEBUFFER_SIZE);
+	memcpy(videosavepage,(void*)FRAMEBUFFER_START,FRAMEBUFFER_SIZE);
 	
 	VIDEO_CURSOR_POSX=((215+nModeDependentOffset)<<2);
 	VIDEO_CURSOR_POSY=nTempCursorY-100;
 	
-	
-	nTempStartMessageCursorX=VIDEO_CURSOR_POSX;
-	nTempStartMessageCursorY=VIDEO_CURSOR_POSY;
 	VIDEO_ATTR=0xffc8c8c8;
 	printk("Select from Menue\n");
 	VIDEO_ATTR=0xffffffff;
 	
 	BootIcons(nModeDependentOffset, nTempCursorY, nModeDependentOffset, nTempCursorY);
 	
-	
 	// Display The Icons
 	for(menu = 0; menu < ICONCOUNT;menu ++) {
 		BootStartBiosDoIcon(&icon[menu], TRANPARENTNESS);
 	}
-	
 	
 	// Look which Icons are enabled or disabled	
         for(menu = 0; menu < ICONCOUNT;menu ++) {
@@ -880,10 +838,9 @@ int BootMenue(CONFIGENTRY *config,int nDrive,int nActivePartition, int nFATXPres
 		int n;
 		USBGetEvents();
 		
-        	// Rising Edge
-		if (((XPAD_current[0].pad&XPAD_PAD_LEFT) != 0) & (XPAD_PAD_LEFT_history == 0))
+
+		if (risefall_xpad_BUTTON(TRIGGER_XPAD_PAD_LEFT) == 1)
 		{
-			XPAD_PAD_LEFT_history = 1;
 			change=1;
 			menu = menu+3;
 			menu = menu%4;
@@ -893,17 +850,13 @@ int BootMenue(CONFIGENTRY *config,int nDrive,int nActivePartition, int nFATXPres
 				menu = menu%4;
 			}
 			COUNT_start = IoInputDword(0x8008);
-			
 		}
-		// Falling Edge
-		if (((XPAD_current[0].pad&XPAD_PAD_LEFT) == 0) & (XPAD_PAD_LEFT_history == 1)) XPAD_PAD_LEFT_history = 0;
 		
-		// Rising Edge
-		if (((XPAD_current[0].pad&XPAD_PAD_RIGHT) != 0) & (XPAD_PAD_RIGHT_history == 0))
+
+		if (risefall_xpad_BUTTON(TRIGGER_XPAD_PAD_RIGHT) == 1)
 		{
-                        XPAD_PAD_RIGHT_history = 1;
 			change=1;
-			menu = menu+5;
+			menu = menu+1;
 			menu = menu%4;
 			
 			while(icon[menu].nEnabled==0) {
@@ -912,29 +865,20 @@ int BootMenue(CONFIGENTRY *config,int nDrive,int nActivePartition, int nFATXPres
 			}
 			COUNT_start = IoInputDword(0x8008);
 		}
-                // Falling Edge
-                if (((XPAD_current[0].pad&XPAD_PAD_RIGHT) == 0) & (XPAD_PAD_RIGHT_history == 1)) XPAD_PAD_RIGHT_history = 0;
                 
 		HH = IoInputDword(0x8008);
 		temp = HH-COUNT_start;
-		
-		if ((risefall_xpad_BUTTONA(XPAD_current[0].keys[0]) == 1) || (temp>(0x369E99*30))) {
+
+		// timeout 30 sec ....
+		if ((risefall_xpad_BUTTON(TRIGGER_XPAD_KEY_A) == 1) || (temp>(0x369E99*30))) {
 		
 			change=1; 
+			memcpy((void*)FRAMEBUFFER_START,videosavepage,FRAMEBUFFER_SIZE);
+			free(videosavepage);
 			
-			RecoverMbrArea();
-			
-			BootVideoClearScreen(&jpegBackdrop, nTempCursorY, VIDEO_CURSOR_POSY+1);
-			BootVideoClearScreen(&jpegBackdrop, nTempCursorResumeY, nTempCursorResumeY+100);
-			BootVideoClearScreen(&jpegBackdrop, nTempStartMessageCursorY, nTempCursorY+16);
-		
 			VIDEO_CURSOR_POSX=nTempCursorResumeX;
 			VIDEO_CURSOR_POSY=nTempCursorResumeY;
-                        
-                        if ((menu == ICON_CD) || (menu == ICON_FLASH)) {
-				I2CTransmitWord(0x10, 0x0c00); // eject DVD tray
-                        	wait_ms(500);
-                       	}
+			
         		// We return the selected Menue 
 			return menu;			
 			
@@ -971,7 +915,7 @@ void StartBios(CONFIGENTRY *config, int nActivePartition , int nFATXPresent,int 
 	char szGrub[256+4];
 	int menu=0,selected=0;
 	int change=0;
-	int curx,cury;
+
 	memset(szGrub,0x00,sizeof(szGrub));
 
 	szGrub[0]=0xff; 
@@ -1037,7 +981,7 @@ void StartBios(CONFIGENTRY *config, int nActivePartition , int nFATXPresent,int 
 		case ICON_FLASH:
 #ifdef FLASH
 			BootLoadFlashCD(config);
-			BootFlashConfirm();
+
 #endif
 			break;
 		default:
