@@ -27,10 +27,13 @@
  *      implementation only works with messages with a length that is
  *      a multiple of the size of an 8-bit character.
  *
+ *
+ *  2002-09-13  franz@chaos.at   Mods to Reset functions to use fixed states for avoiding keys
+ *  2002-09-18  franz@chaos.at   Some minor cleanup and creating a single SMAC_SHA1_calculation() routine
  */
 
 
-#include "sha1.h"  
+#include "sha1.h"
 
 
 /*
@@ -56,32 +59,30 @@
  *
  */ 
 int HMAC1Reset(SHA1Context *context)
-{
-    context->Length_Low             = 0;
-    context->Length_High            = 0;
-    context->Message_Block_Index    = 0;
-
-    context->Intermediate_Hash[0]   = 0x72127625;
-    context->Intermediate_Hash[1]   = 0x336472B9;
-    context->Intermediate_Hash[2]   = 0xBE609BEA;
-    context->Intermediate_Hash[3]   = 0xF55E226B;
-    context->Intermediate_Hash[4]   = 0x99958DAC;
-	return 0;
+{ 
+    SHA1Reset(context);
+    context->Intermediate_Hash[0] = 0x72127625;
+    context->Intermediate_Hash[1] = 0x336472B9;
+    context->Intermediate_Hash[2] = 0xBE609BEA;
+    context->Intermediate_Hash[3] = 0xF55E226B;
+    context->Intermediate_Hash[4] = 0x99958DAC;
+    context->Length_Low           = 512;
+    
+    return shaSuccess;
 }
 
 int HMAC2Reset(SHA1Context *context)
-{
-    context->Length_Low             = 0;
-    context->Length_High            = 0;
-    context->Message_Block_Index    = 0;
-
-    context->Intermediate_Hash[0]   = 0x76441D41;
-    context->Intermediate_Hash[1]   = 0x4DE82659;
-    context->Intermediate_Hash[2]   = 0x2E8EF85E;
-    context->Intermediate_Hash[3]   = 0xB256FACA;
-    context->Intermediate_Hash[4]   = 0xC4FE2DE8;
-	return 0;
-}
+{    
+    SHA1Reset(context);
+    context->Intermediate_Hash[0] = 0x76441D41;
+    context->Intermediate_Hash[1] = 0x4DE82659;
+    context->Intermediate_Hash[2] = 0x2E8EF85E;
+    context->Intermediate_Hash[3] = 0xB256FACA;
+    context->Intermediate_Hash[4] = 0xC4FE2DE8; 
+    context->Length_Low           = 512;
+    return shaSuccess;
+    
+} 
 
 int SHA1Reset(SHA1Context *context)
 {

@@ -98,8 +98,10 @@ void BootCpuCache(bool fEnable) {
         "or      %%ebx, %%eax ;"
         "and      %%ecx, %%eax ;"
         "mov     %%eax, %%cr0 ;"
-        "wbinvd ;"
-			"pop %%eax ;"
+				"cmpl		$0, %%ebx ;"
+				"jz skip ;"
+        "wbinvd ;"  // invalidating the cache gratuitously seemed to cause crashes
+			"skip: pop %%eax ;"
 			"popf"
 		: : "ebx" (dwOr), "ecx" (dwAnd)
 	);
@@ -308,8 +310,11 @@ extern void BootResetAction ( void ) {
 			// initialize the PCI devices
 	BootPciPeripheralInitialization();
 
+			I2CTransmitWord(0x45, 0x1901, false);  // kill reset on frontpanel button
+
+
 			// try to bring up VGA - does not work yet
-//		BootVgaInitialization();
+		BootVgaInitialization();
 //		bprintf("BOOT: BootVgaInitialization done\n");
 
 //			I2CTransmitWord( 0x10, 0x0c01, true);
@@ -317,6 +322,9 @@ extern void BootResetAction ( void ) {
 	BootIdeInit();
 
 //			bprintf("tick=%x\n", *PDW_BIOS_TICK_PTR);
+
+
+
 
 	bprintf("\nInsert bootable CD...\n");
 

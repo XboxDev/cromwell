@@ -16,9 +16,10 @@
  *
  *  Original from http://www.talkware.net/GPL/UBL
  *
- *   2002-08-25 andy@warmcat.com  threshed around to work with xbox
- *   2002-08-26 andy@warmcat.com  more edits to call speedbump's code to unlock HDD
+ *   2002-09-18 andy@warmcat.com  fixed problem detecting slave not present
  *   2002-09-08 andy@warmcat.com  changed to standardized symbol format; ATAPI packet code
+ *   2002-08-26 andy@warmcat.com  more edits to call speedbump's code to unlock HDD
+ *   2002-08-25 andy@warmcat.com  threshed around to work with xbox
  */
 
 #include  "boot.h"
@@ -128,14 +129,14 @@ int BootIdeWaitNotBusy(unsigned uIoBase)
 
 int BootIdeWaitDataReady(unsigned uIoBase)
 {
-	WORD i = 0;
+	WORD i = 0x8000;
 	Delay();
 	do {
 		if ( ((IoInputByte(IDE_REG_ALTSTATUS(uIoBase)) & 0x88) == 0x08)	)	{
 	    if(IoInputByte(IDE_REG_ALTSTATUS(uIoBase)) & 0x01) return 2;
 			return 0;
 		}
-		i++;
+		i--;
 	} while (i != 0);
 
 	if(IoInputByte(IDE_REG_ALTSTATUS(uIoBase)) & 0x01) return 2;
@@ -215,6 +216,10 @@ int BootIdeWriteData(unsigned uIoBase, void * buf, size_t size)
 	return 0;
 }
 
+BYTE BootIdeGetTrayState()
+{
+		return I2CTransmitByteGetReturn(0x10, 0x03); // this is the tray state
+}
 
 int BootIdeIssueAtapiPacketCommandAndPacket(int nDriveIndex, BYTE *pAtapiCommandPacket12Bytes)
 {
@@ -259,7 +264,7 @@ int BootIdeReadData(unsigned uIoBase, void * buf, size_t size)
 	WORD * ptr = (WORD *) buf;
 
 	if (BootIdeWaitDataReady(uIoBase)) {
-		printk_debug("data not ready...\n");
+//		printk_debug("data not ready...\n");
 		return 1;
 	}
 
@@ -325,14 +330,17 @@ static int BootIdeDriveInit(unsigned uIoBase, int nIndexDrive)
 	} else { // slave... death if you send it IDE_CMD_GET_INFO, it needs an ATAPI request
 
 			if(BootIdeIssueAtaCommand(uIoBase, 0xa1, &tsicp)) {
-				printk("  Drive %d: detect FAILED, error=%02X\n", nIndexDrive, IoInputByte(IDE_REG_ERROR(uIoBase)));
+				printk("  %d: detect FAILED, error=%02X\n", nIndexDrive, IoInputByte(IDE_REG_ERROR(uIoBase)));
 				return 1;
 			}
 
 	}
 
 	BootIdeWaitDataReady(uIoBase);
-	BootIdeReadData(uIoBase, baBuffer, IDE_SECTOR_SIZE);
+	if(BootIdeReadData(uIoBase, baBuffer, IDE_SECTOR_SIZE)) {
+		printk("  %d: Drive not detected\n", nIndexDrive);
+		return 1;
+	}
 
 	drive_info = (unsigned short*)baBuffer;
 	tsaHarddiskInfo[nIndexDrive].m_wCountHeads = drive_info[3];
@@ -399,7 +407,7 @@ static int BootIdeDriveInit(unsigned uIoBase, int nIndexDrive)
 	}
 
 
-	if(drive_info[128]) { // 'security' is in force, unlock the drive
+	if((drive_info[128]&0x0104)==0x0104) { // 'security' is in force, unlock the drive
 		BYTE baMagic[0x200], baKeyFromEEPROM[0x10], baEeprom[0x30];
 		int n;
 		int nEepHash;
@@ -416,6 +424,8 @@ static int BootIdeDriveInit(unsigned uIoBase, int nIndexDrive)
 			BYTE *HDKey
 		);
 		int nEepromAttempts=3;  // three goes at getting uncorrupted EEPROM only
+
+
 
 		BootCpuCache(true);  // operate at good speed
 
@@ -435,7 +445,9 @@ static int BootIdeDriveInit(unsigned uIoBase, int nIndexDrive)
 			}
 //			DumpAddressAndData(0, &baEeprom[0], 0x30);
 			dwMagicFromEEPROM = BootHddKeyGenerateEepromKeyData( &baEeprom[0], &baKeyFromEEPROM[0]);  // 0 = something screwed with EEPROM read
+
 		}
+
 
 		if(nEepromAttempts<1) {
 			printk("Corrupted EEPROM!\n");
@@ -467,12 +479,12 @@ static int BootIdeDriveInit(unsigned uIoBase, int nIndexDrive)
 			if (BootIdeWaitNotBusy(uIoBase))	{ printk_debug("error on BootIdeIssueAtaCommand wait 1\n"); return 1; }
 				// check that we are unlocked
 
-				tsicp.m_bDrivehead = IDE_DH_DEFAULT | IDE_DH_HEAD(0) | IDE_DH_CHS | IDE_DH_DRIVE(nIndexDrive);
+			tsicp.m_bDrivehead = IDE_DH_DEFAULT | IDE_DH_HEAD(0) | IDE_DH_CHS | IDE_DH_DRIVE(nIndexDrive);
 			if(BootIdeIssueAtaCommand(uIoBase, IDE_CMD_GET_INFO, &tsicp)) {
 				printk_debug("  %d:  on issuing get status after unlock detect FAILED, error=%02X\n", nIndexDrive, IoInputByte(IDE_REG_ERROR(uIoBase)));
 				return 1;
 			}
-					BootIdeWaitDataReady(uIoBase);
+			BootIdeWaitDataReady(uIoBase);
 			if(BootIdeReadData(uIoBase, baBuffer, IDE_SECTOR_SIZE)) {
 				printk_debug("  %d:  BootIdeReadData FAILED, error=%02X\n", nIndexDrive, IoInputByte(IDE_REG_ERROR(uIoBase)));
 				return 1;
@@ -552,6 +564,9 @@ int BootIdeAtapiAdditionalSenseCode(int nDriveIndex, BYTE * pba, int nLengthMaxR
 
 		BYTE ba[2048];
 		int nReturn;
+		
+		if(!tsaHarddiskInfo[nDriveIndex].m_fDriveExists) return 4;
+
 		memset(&ba[0], 0, 12);
 		ba[0]=0x03;
 	 	ba[4]=0xff;
@@ -583,6 +598,8 @@ int BootIdeReadSector(int nDriveIndex, void * pbBuffer, unsigned int block, int 
 	unsigned char baBufferSector[IDE_SECTOR_SIZE];
 	unsigned int track;
 	int status;
+
+	if(!tsaHarddiskInfo[nDriveIndex].m_fDriveExists) return 4;
 
 	uIoBase = tsaHarddiskInfo[nDriveIndex].m_fwPortBase;
 
@@ -688,6 +705,8 @@ int BootIdeBootSectorHddOrElTorito(int nDriveIndex, BYTE * pbaResult)
 	};
 	int n;
 	DWORD * pdw;
+
+	if(!tsaHarddiskInfo[nDriveIndex].m_fDriveExists) return 4;
 
 	if(tsaHarddiskInfo[nDriveIndex].m_fAtapi) {
 

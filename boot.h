@@ -220,6 +220,11 @@ extern void	WritePCIDword(unsigned int bus, unsigned int dev, unsigned int func,
 extern void	ReadPCIBlock(unsigned int bus, unsigned int dev, unsigned int func,		unsigned int reg_off, unsigned char *buf,	unsigned int nbytes);
 extern void	WritePCIBlock(unsigned int bus, unsigned int dev, unsigned int func, 	unsigned int reg_off, unsigned char *buf, unsigned int nbytes);
 
+///////// BootPerformPicChallengeResponseAction.c
+
+int I2CTransmitWord(BYTE bPicAddressI2cFormat, WORD wDataToWrite, bool fMode);
+int I2CTransmitByteGetReturn(BYTE bPicAddressI2cFormat, BYTE bDataToWrite);
+
 ///////// BootVgaInitialization.c
 
 void BootVgaInitialization() ;
@@ -230,3 +235,4 @@ int BootIdeInit(void);
 int BootIdeReadSector(int nDriveIndex, void * pbBuffer, unsigned int block, int byte_offset, int n_bytes);
 int BootIdeBootSectorHddOrElTorito(int nDriveIndex, BYTE * pbaResult);
 int BootIdeAtapiAdditionalSenseCode(int nDrive, BYTE * pba, int nLengthMaxReturn);
+BYTE BootIdeGetTrayState();

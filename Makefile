@@ -20,7 +20,7 @@
 
 ### compilers and options
 CC	= gcc
-CFLAGS	= -g -O2 -Wall -Werror -pedantic
+CFLAGS	= -g -O2 -Wall -Werror
 LD	= ld
 LDFLAGS	= -s -S -T ldscript.ld
 OBJCOPY	= objcopy

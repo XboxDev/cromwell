@@ -1,4 +1,4 @@
-CROMWELL 1.3   2002-09-14
+CROMWELL 1.3   2002-09-19
 Xbox Linux Team
 
 -----------
@@ -13,6 +13,8 @@ enabled and so will not even do anything in a non-filtror
 environment without the filtror stuff being disabled in boot.h.
 
 
+Please note that video is not working yet, although we have managed
+to get the video chip to issue syncs to the video encoder.
 
 This development release is based on crom 1.0 and has the following
 additions:

@@ -25,7 +25,7 @@ int I2CTransmitByteGetReturn(BYTE bPicAddressI2cFormat, BYTE bDataToWrite)
 	DWORD dwRetriesToLive=4;
 
 	while(dwRetriesToLive--) {
-		DWORD dwSpinsToLive=0x80000;
+		DWORD dwSpinsToLive=0x800000;
 
 		IoOutputByte(I2C_IO_BASE+4, (bPicAddressI2cFormat<<1)|1);
 		IoOutputByte(I2C_IO_BASE+8, bDataToWrite);
@@ -34,9 +34,15 @@ int I2CTransmitByteGetReturn(BYTE bPicAddressI2cFormat, BYTE bDataToWrite)
 
 		{
 			BYTE b=0;
-			while( (b !=0x10) && ((b&0x26)==0) && (dwSpinsToLive--) ) { b=IoInputByte(I2C_IO_BASE+0); }
+			while( (b !=0x10) && ((b&0x26)==0) && (dwSpinsToLive--) ) { 
+				b=IoInputByte(I2C_IO_BASE+0); 	
+//				if(dwSpinsToLive<0x7ffffd) bprintf("%02X\n", b);
+			}
 			if(dwSpinsToLive==0) return ERR_I2C_ERROR_TIMEOUT;
-			if(b&0x2) continue; // retry
+			if(b&0x2) {
+
+				continue; // retry
+			}
 			if(b&0x24) return ERR_I2C_ERROR_BUS;
 			if(!(b&0x10)) return ERR_I2C_ERROR_BUS;
 
@@ -120,9 +126,13 @@ int BootPerformPicChallengeResponseAction()
 	BYTE bC, bD, bE, bF;
 	int n;
 
-	if(BootPicManipulation(0x35, 0x62, 0xcd, 0x4a) != 0x9e71) {
-		return ERR_BOOT_PIC_ALG_BROKEN;
-	}
+		I2CTransmitWord( 0x10, 0x0100, false );
+		I2CTransmitWord( 0x10, 0x130f, false );
+		I2CTransmitWord( 0x10, 0x12f0, false );
+
+//	if(BootPicManipulation(0x35, 0x62, 0xcd, 0x4a) != 0x9e71) {
+//		return ERR_BOOT_PIC_ALG_BROKEN;
+//	}
 
 	n=I2CTransmitByteGetReturn( 0x10, 0x1c);
 	if(n<0) return n;
