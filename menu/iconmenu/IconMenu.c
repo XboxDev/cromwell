@@ -175,7 +175,6 @@ void IconMenu(void) {
 				//A bit ugly, but need to find the last visible icon, and see if 
 				//we are moving further right from it.
 				lastVisibleIcon=firstVisibleIcon;
-				i=0;
 				for (i=0; i<2; i++) {
 					if (lastVisibleIcon->nextIcon==NULL) {
 						break;
