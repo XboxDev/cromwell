@@ -5,10 +5,9 @@ INCLUDE = -I$(TOPDIR)/grub -I$(TOPDIR)/include -I$(TOPDIR)/ -I./ -I$(TOPDIR)/fs/
 	-I$(TOPDIR)/boot_xbe/ -I$(TOPDIR)/fs/grub -I$(TOPDIR)/lib/font -I$(TOPDIR)/lib/jpeg-6b \
 	-I$(TOPDIR)/startuploader -I$(TOPDIR)/drivers/cpu  -I$(TOPDIR)/lib/lzo 
 
-#	 -I$(TOPDIR)/drivers/usb 
 
 
-CFLAGS	= -O2 -mcpu=pentium -Wall -Werror $(INCLUDE) -Wstrict-prototypes -fomit-frame-pointer -pipe -mpreferred-stack-boundary=2
+CFLAGS	= -O2 -mcpu=pentium -Werror $(INCLUDE) -Wstrict-prototypes -fomit-frame-pointer -pipe -mpreferred-stack-boundary=2
 LD      = ld
 OBJCOPY = objcopy
 
@@ -93,8 +92,21 @@ OBJECTS-CROM += $(TOPDIR)/obj/BootFlashUi.o
 OBJECTS-CROM += $(TOPDIR)/obj/BootEEPROM.o
 OBJECTS-CROM += $(TOPDIR)/obj/BootParser.o
 OBJECTS-CROM += $(TOPDIR)/obj/BootFATX.o
-#OBJECTS-CROM += $(TOPDIR)/obj/BootUsbOhci.o
-
+#USB
+OBJECTS-CROM += $(TOPDIR)/obj/config.o 
+OBJECTS-CROM += $(TOPDIR)/obj/hcd-pci.o
+OBJECTS-CROM += $(TOPDIR)/obj/hcd.o
+OBJECTS-CROM += $(TOPDIR)/obj/hub.o
+OBJECTS-CROM += $(TOPDIR)/obj/message.o
+OBJECTS-CROM += $(TOPDIR)/obj/ohci-hcd.o
+OBJECTS-CROM += $(TOPDIR)/obj/buffer_simple.o
+OBJECTS-CROM += $(TOPDIR)/obj/urb.o
+OBJECTS-CROM += $(TOPDIR)/obj/usb-debug.o
+OBJECTS-CROM += $(TOPDIR)/obj/usb.o
+OBJECTS-CROM += $(TOPDIR)/obj/BootUSB.o
+OBJECTS-CROM += $(TOPDIR)/obj/usbwrapper.o
+OBJECTS-CROM += $(TOPDIR)/obj/linuxwrapper.o
+OBJECTS-CROM += $(TOPDIR)/obj/xpad.o
 
 RESOURCES = $(TOPDIR)/obj/backdrop.elf
 
@@ -133,20 +145,22 @@ clean:
 	rm -f $(TOPDIR)/xbe/*.elf
 	rm -f $(TOPDIR)/image/*.bin
 	rm -f $(TOPDIR)/bin/imagebld*
+	mkdir $(TOPDIR)/xbe -p
+	mkdir $(TOPDIR)/image -p
 	mkdir $(TOPDIR)/obj -p
 	mkdir $(TOPDIR)/bin -p
-	
+
 
 backdrop.elf:
 	${LD} -r --oformat elf32-i386 -o $(TOPDIR)/obj/$@ -T $(TOPDIR)/scripts/backdrop.ld -b binary $(TOPDIR)/pics/backdrop.jpg
 
 default.elf: ${OBJECTS-XBE}
 	${LD} -o $(TOPDIR)/obj/$@ ${OBJECTS-XBE} ${LDFLAGS-XBEBOOT}
-	
+
 default.xbe: default.elf
 	${OBJCOPY} --output-target=binary --strip-all $(TOPDIR)/obj/default.elf $(TOPDIR)/xbe/$@
 	$(TOPDIR)/bin/imagebld -xbe $(TOPDIR)/xbe/default.xbe $(TOPDIR)/obj/image-crom.bin
-				
+
 image-crom.elf:
 	${LD} -o $(TOPDIR)/obj/$@ ${OBJECTS-CROM} ${RESOURCES} ${LDFLAGS-ROM}
 

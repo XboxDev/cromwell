@@ -37,7 +37,10 @@ bool BootFlashGetDescriptor( OBJECT_FLASH *pof, KNOWN_FLASH_TYPE * pkft )
 
 	while(nTries++ <2) { // first we try 29xxx method, then 28xxx if that failed
 
-	
+			// no ISRs should touch flash while we do the stuff
+		__asm__ __volatile__ ( "pushf ; cli ");
+
+
 		if(nTries!=1) { // 29xxx protocol
 
 			// make sure the flash state machine is reset
@@ -81,6 +84,7 @@ bool BootFlashGetDescriptor( OBJECT_FLASH *pof, KNOWN_FLASH_TYPE * pkft )
 
 		}
 
+		__asm__ __volatile__ ( "popf ");
 
 
 		if(
@@ -191,6 +195,10 @@ bool BootFlashEraseMinimalRegion( OBJECT_FLASH *pof )
 			}
 
 
+				// no ISRs should touch flash while we do the stuff
+
+			__asm__ __volatile__ ( "pushf ; cli ");
+
 
 			if(pof->m_fDetectedUsing28xxxConventions) {
 				int nCountMinSpin=0x100;
@@ -256,6 +264,7 @@ bool BootFlashEraseMinimalRegion( OBJECT_FLASH *pof )
 			}
 
 
+			__asm__ __volatile__ ( "popf ");
 
 			continue; // retry reading this address without moving on
 		}
@@ -314,6 +323,8 @@ bool BootFlashProgram( OBJECT_FLASH *pof, BYTE *pba )
 				dwLastProgramAddress=dw;
 			}
 
+				// no ISRs should touch flash while we do the stuff
+			__asm__ __volatile__ ( "pushf ; cli ");
 
 			if(pof->m_fDetectedUsing28xxxConventions) {
 				BYTE b=0x0;
@@ -351,6 +362,8 @@ bool BootFlashProgram( OBJECT_FLASH *pof, BYTE *pba )
 				b=pof->m_pbMemoryMappedStartAddress[dw];  // waits until b6 is no longer toggling on each read
 				while((pof->m_pbMemoryMappedStartAddress[dw]&0x40)!=(b&0x40)) b^=0x40;
 			}
+
+			__asm__ __volatile__ ( "popf ");
 
 			continue;  // does NOT advance yet
 		}

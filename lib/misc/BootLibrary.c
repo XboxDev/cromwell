@@ -204,12 +204,12 @@ void * malloc(size_t size) {
 	unsigned int *tempmalloc1;
 	unsigned int *tempmalloc2;
 
-	temp = (size+0x100) & 0xffFFff00;
+	temp = (size+0x80) & 0xffFFffc0;
 
 	tempmalloc = t_malloc(temp);
 	tempmalloc2 = (unsigned int*)tempmalloc;
 
-	tempmalloc = (unsigned char*)((unsigned int)(tempmalloc+0x100) & 0xffFFff00);
+	tempmalloc = (unsigned char*)((unsigned int)(tempmalloc+0x40) & 0xffFFffc0);
 	tempmalloc1 = (unsigned int*)tempmalloc;
 	tempmalloc1--;
 	tempmalloc1--;

@@ -168,6 +168,7 @@ reload_cs:
         movl	$0x200, %ecx
 	movl	$0x00000000, %edx
 	movl	$0x00000006, %eax 	// == WB_CACHE == 6
+	//movl	$0x00000004, %eax 	// Temporary, as USB development
 	wrmsr
 
 	// MASK0 set to 0xf8000[000] == 128M

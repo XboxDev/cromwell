@@ -41,7 +41,5 @@
 // uncomment to do Ethernet init
 //#define DO_ETHERNET 1
 
-//#undef DO_USB 
-#define DO_USB
 
 #undef DEBUG_MODE

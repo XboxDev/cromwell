@@ -41,10 +41,10 @@ SECTIONS {
 		_end_backdrop = .;
 		_end_rodata = . ;
 	}
-        _size_ramcopy =  SIZEOF(.text) + SIZEOF(.rodata);
         
 	/* ram allocations */        
-	.data (RAM_BASE) : AT( SIZEOF(.text) + SIZEOF(.rodata) ) {
+	
+	.data (LOW_ROM + SIZEOF(.text) + SIZEOF(.rodata)) : AT( SIZEOF(.text) + SIZEOF(.rodata) ) {
 		_start_data = .;
 		*(.data);
 		*(.sdata);

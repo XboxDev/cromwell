@@ -424,6 +424,17 @@ int BootIdeWaitNotBusy(unsigned uIoBase);
 bool BootIdeAtapiReportFriendlyError(int nDriveIndex, char * szErrorReturn, int nMaxLengthError);
 void BootIdeAtapiPrintkFriendlyError(int nDriveIndex);
 
+///////// BootUSB.c
+
+void BootStopUSB(void);
+void BootStartUSB(void);
+void USBGetEvents(void);
+
+#include "xpad.h"
+
+extern struct xpad_data XPAD_current[4];
+extern struct xpad_data XPAD_last[4];
+
 ///////// BootEthernet.c
 
 int BootStartUpEthernet(void);
@@ -496,6 +507,7 @@ typedef struct {
 } AC97_DEVICE  __attribute__ ((aligned (8))) ;
 
 void wait_tick(DWORD ticks);
+void wait_ms_trigger(void);
 void wait_ms(DWORD ticks);
 void wait_smalldelay(void);
 void BootAudioInit(volatile AC97_DEVICE * pac97device);

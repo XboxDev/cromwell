@@ -11,16 +11,6 @@
  *                                                                         *
  ***************************************************************************
 
-	2003-02-25 andy@warmcat.com  1024x576, and RGB AV cable support
-	2003-01-13 andy@warmcat.com  Moved out interrupt stuff into BootInterrupts.c
-	                             Dropped hardcoded GIMP tux, moved to icons stored
-	                             after line 480 of the backdrop JPG
-															 Moved out helper functions to BootLibrary.c
-	2002-12-18 andy@warmcat.com  Added ISO9660 boot if no HDD MBR
-	2002-11-25 andy@warmcat.com  Added memory size code in CMOS, LILO won't boot without it
-	                              tidied
-	2002-09-19 andy@warmcat.com  Added code to manage standard CMOS settings for Bochs
-	                              Defeated call to VGA init for now
  */
 
 #include "boot.h"
@@ -34,7 +24,8 @@
 
 
 
-extern DWORD dwaTitleArea[1024*64];
+DWORD *dwaTitleArea;
+
 JPEG jpegBackdrop;
 
 CONFIGENTRY kernel_config;
@@ -90,15 +81,6 @@ const SONG_NOTE songnoteaIntro[] = {
 	{ 6000, 0, 0 }
 };
 
-/*
-Hints:
-
-1) We are in a funny environment, executing out of ROM.  That means it is not possible to
- define filescope non-const variables with an initializer.  If you do so, the linker will oblige and you will end up with
- a 4MByte image instead of a 1MByte one, the linker has added the RAM init at 400000.
-*/
-
-
 
 //////////////////////////////////////////////////////////////////////
 //
@@ -112,19 +94,18 @@ extern void BootResetAction ( void ) {
 	int nFATXPresent=false;
 	int nTempCursorX, nTempCursorY;
         int temp;
-      
-       	
+
         memcpy(&cromwell_config,(void*)(0x03A00000+20),4);
         memcpy(&cromwell_retryload,(void*)(0x03A00000+24),4);
 	memcpy(&cromwell_loadbank,(void*)(0x03A00000+28),4);
         memcpy(&cromwell_Biostype,(void*)(0x03A00000+32),4);
   
 	      
-        // We disable The Cache
+        // We disable The CPU Cache
         cache_disable();
 	// We Update the Microcode of the CPU
 	display_cpuid_update_microcode();
-        // We Enable The Cache
+        // We Enable The CPU Cache
         cache_enable();
         setup_ioapic();
         
@@ -153,6 +134,8 @@ extern void BootResetAction ( void ) {
         
 	MemoryManagementInitialization((void *)MEMORYMANAGERSTART, MEMORYMANAGERSIZE);
 	
+	dwaTitleArea = malloc(1024*64);
+
 	BootInterruptsWriteIdt();	// Save Mode, not all fully Setup
 	bprintf("BOOT: done interrupts\n\r");
 
@@ -161,8 +144,8 @@ extern void BootResetAction ( void ) {
 	bprintf("BOOT: starting PCI init\n\r");
 	BootPciPeripheralInitialization();
 	bprintf("BOOT: done with PCI initialization\n\r");
-  	
 
+	
 	BootEepromReadEntireEEPROM();
 	bprintf("BOOT: Read EEPROM\n\r");
 //	DumpAddressAndData(0, (BYTE *)&eeprom, 256);
@@ -221,17 +204,10 @@ extern void BootResetAction ( void ) {
 	nInteruptable = 1;	
 	
 
-
-
 	I2CTransmitWord(0x10, 0x1901); // no reset on eject
+        I2CTransmitWord(0x10, 0x0c01); // close DVD tray
+        //I2CTransmitWord(0x10, 0x0c00); // eject DVD tray
 
-#ifdef IS_XBE_CDLOADER
-	I2CTransmitWord(0x10, 0x0c01); // close DVD tray
-#else
-	I2CTransmitWord(0x10, 0x0c00); // eject DVD tray
-#endif
-
-     
          
 	VIDEO_CURSOR_POSY=currentvideomodedetails.m_dwMarginYInLinesRecommended;
 	VIDEO_CURSOR_POSX=(currentvideomodedetails.m_dwMarginXInPixelsRecommended/*+64*/)*4;
@@ -314,7 +290,6 @@ extern void BootResetAction ( void ) {
 			break;
 	}
 
-//	printk("  - Time=0x%08X/0x%08X", (DWORD)(i64Timestamp>>32), (DWORD)i64Timestamp);
 	printk("\n");
 #endif
 
@@ -323,58 +298,6 @@ extern void BootResetAction ( void ) {
 		I2cSetFrontpanelLed(I2C_LED_RED0 | I2C_LED_RED1 | I2C_LED_RED2 | I2C_LED_RED3 );
 
 		VIDEO_ATTR=0xffffffff;
-
-				// restore EEPROM to my original contents
-#if 0
-		{
-			int nAds=0, n;
-			static const BYTE baMyEEProm[] = {
-				0x6D, 0xAB, 0x59, 0xA2, 0xB8, 0x82, 0x09, 0xAB, 0x21, 0x84, 0xB2, 0x50, 0x8A, 0x7F, 0x4F, 0x43,
-				0x54, 0x01, 0x1E, 0x52, 0xD3, 0xB6, 0x3A, 0x5C, 0x32, 0xA6, 0x11, 0x28, 0x72, 0x07, 0xAE, 0x3C,
-				0x36, 0xD4, 0x83, 0xFB, 0xE0, 0x29, 0xEE, 0xA8, 0x1C, 0x9D, 0x14, 0xEF, 0x44, 0x39, 0x65, 0x37,
-				0xC3, 0xA3, 0x94, 0xF3, 0x32, 0x31, 0x36, 0x34, 0x30, 0x35, 0x33, 0x32, 0x31, 0x31, 0x30, 0x33,
-				0x00, 0x50, 0xF2, 0x62, 0xDD, 0x3B, 0x00, 0x00, 0x41, 0x99, 0x81, 0xB5, 0xBF, 0xCC, 0x91, 0x7C,
-				0xE9, 0xE5, 0x19, 0xF5, 0xDF, 0xE9, 0x31, 0xE8, 0x00, 0x03, 0x80, 0x00, 0x00, 0x00, 0x00, 0x00,
-				0xFF, 0xFF, 0xFF, 0xFF, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-				0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-				0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-				0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-				0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-				0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-				0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-				0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-				0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-				0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x44, 0x00, 0x00, 0x00
-			};
-/* my v1.1 EEPROM in case of crisis
-00000000: 1D BF 03 AF 54 48 56 FF : 1E 1D 53 81 41 22 32 00    ....THV...S.A"2.
-00000010: 83 AA AC F0 B6 63 5A 7F : 76 D9 93 08 34 98 80 53    .....cZ.v...4..S
-00000020: D1 E5 BE 3D A8 3E 85 63 : 87 3A C6 B2 ED E3 52 00    ...=.>.c.:....R.
-00000030: 1B B2 A0 B5 33 30 30 36 : 36 39 34 32 33 32 30 35    ....300669423205
-00000040: 00 50 F2 82 7F 01 00 00 : B2 53 65 EB A0 37 E3 6C    .P.......Se..7.l
-00000050: 79 01 F0 5B FB D0 1F 75 : 00 03 80 00 00 00 00 00    y..[...u........
-00000060: A1 55 47 FC 00 00 00 00 : 47 4D 54 00 42 53 54 00    .UG.....GMT.BST.
-00000070: 00 00 00 00 00 00 00 00 : 0A 05 00 02 03 05 00 01    ................
-00000080: 00 00 00 00 00 00 00 00 : 00 00 00 00 C4 FF FF FF    ................
-00000090: 01 00 00 00 00 00 10 00 : 02 00 00 00 00 00 00 00    ................
-000000A0: 00 00 00 00 00 00 00 00 : 00 00 00 00 00 00 00 00    ................
-000000B0: 00 00 00 00 00 00 00 00 : 00 00 00 00 00 00 00 00    ................
-000000C0: 00 00 00 00 00 00 00 00 : 00 00 00 00 00 00 00 00    ................
-000000D0: 00 00 00 00 00 00 00 00 : 00 00 00 00 00 00 00 00    ................
-000000E0: 00 00 00 00 00 00 00 00 : 00 00 00 00 00 00 00 00    ................
-000000F0: 00 00 00 00 00 00 00 00 : 00 00 00 00 40 00 00 00    ............@...
-
-*/
-			bprintf("Rewriting EEPROM, please wait...\n");
-
-			while(nAds<0x100) {
-				I2CTransmitWord( 0x54, (nAds<<8)|baMyEEProm[nAds], true);
-				for(n=0;n<1000;n++) { IoInputByte(I2C_IO_BASE+0); }
-				nAds++;
-			}
-	}
-#endif
-
 
 		// gggb while waiting for Ethernet & Hdd
 
@@ -415,14 +338,14 @@ extern void BootResetAction ( void ) {
 		}
 #endif
 
-	// init USB
-#ifdef DO_USB
+
 	
-
-#endif
-
-
-
+		printk("BOOT: start USB init\n");
+		BootStartUSB();
+	
+ 
+ 
+ 
 			// init the HDD and DVD
 		VIDEO_ATTR=0xffc8c8c8;
 		printk("Initializing IDE Controller\n");
