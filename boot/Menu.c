@@ -44,59 +44,30 @@ typedef struct {
 	struct ICON *nextIcon;
 } ICON;
 
-ICON *firstIcon;
-ICON *selectedIcon;
-ICON *firstVisibleIcon;
+ICON *firstIcon=0l;
+ICON *selectedIcon=0l;
+ICON *firstVisibleIcon=0l;
 
-void BootIcons(void) {
-	//Root node
-	firstIcon = (ICON*)malloc(sizeof(ICON));
-
-	ICON* iconPtr = firstIcon;
-	iconPtr->previousIcon=0l;
-
-	//FATX icon
-	iconPtr->iconSlot = ICON_SOURCE_SLOT4;
-	iconPtr->szCaption = "FatX (E:)";
-	iconPtr->functionPtr = BootFromFATX;
-	
-	//Native icon
-	iconPtr->nextIcon = malloc(sizeof(ICON));
-	iconPtr=(ICON *)iconPtr->nextIcon;
-	iconPtr->iconSlot = ICON_SOURCE_SLOT1;
-	iconPtr->szCaption = "HDD";
-	iconPtr->functionPtr = BootFromNative;
-	
-	//CD icon
-	iconPtr->nextIcon = malloc(sizeof(ICON));
-	iconPtr=(ICON *)iconPtr->nextIcon;
-	iconPtr->iconSlot = ICON_SOURCE_SLOT2;
-	iconPtr->szCaption = "CD-ROM";
-	iconPtr->functionPtr = BootFromCD;
-	iconPtr->nextIcon=0l;
-	
-#ifdef ETHERBOOT
-	//Etherboot icon
-	iconPtr->nextIcon = malloc(sizeof(ICON));
-	iconPtr=(ICON *)iconPtr->nextIcon;
-	iconPtr->iconSlot = ICON_SOURCE_SLOT3;
-	iconPtr->szCaption = "Etherboot";
-	iconPtr->functionPtr = BootFromEtherboot;
-	iconPtr->nextIcon=0l;
-#endif	
-	//Work through the list to set up the 'previous icon' pointers.
-	{
-		ICON *previousIcon, *nextIcon;
-		previousIcon = firstIcon;
-		
-		while (nextIcon = (ICON *)previousIcon->nextIcon) {
-			nextIcon->previousIcon = (struct ICON*)previousIcon;
-			previousIcon = nextIcon;
-		}
+void AddIcon(ICON *newIcon) {
+	ICON *iconPtr = firstIcon;
+	ICON *currentIcon = 0l;
+	while (iconPtr != 0l) {
+		currentIcon = iconPtr;
+		iconPtr = (ICON*)iconPtr->nextIcon;
 	}
+	
+	if (currentIcon==0l) { 
+		//This is the first icon in the chain
+		firstIcon = newIcon;
+	}
+	//Append to the end of the chain
+	else currentIcon->nextIcon = (struct ICON*)newIcon;
+	iconPtr = newIcon;
+	iconPtr->nextIcon = 0l;
+	iconPtr->previousIcon = (struct ICON*)currentIcon; 
 }
 
-void IconMenuDraw(int nXOffset, int nYOffset, int nTextOffsetX, int nTextOffsetY) {
+void IconMenuDraw(int nXOffset, int nYOffset) {
 	ICON *iconPtr = firstVisibleIcon;
 	int iconcount;
 	//There are max four 'bays' for displaying icons in - we only draw the four.
@@ -121,8 +92,7 @@ void IconMenuDraw(int nXOffset, int nYOffset, int nTextOffsetX, int nTextOffsetY
 			vmode.width, // dest bytes per line
 			&jpegBackdrop, // source jpeg object
 			(BYTE *)(jpegBackdrop.pData+(iconPtr->iconSlot * jpegBackdrop.bpp)),
-			//0xff00ff|(((DWORD)opaqueness)<<24),
-			0xff33ff|(((DWORD)opaqueness)<<24),
+			0xff00ff|(((DWORD)opaqueness)<<24),
 			(BYTE *)(jpegBackdrop.pBackdrop + ((jpegBackdrop.width * (nYOffset-74)) + nXOffset+(112*(iconcount+1))) * jpegBackdrop.bpp),
 			ICON_WIDTH, ICON_HEIGHT
 		);
@@ -130,7 +100,7 @@ void IconMenuDraw(int nXOffset, int nYOffset, int nTextOffsetX, int nTextOffsetY
 	}
 }
 
-int BootMenu(CONFIGENTRY *config,int nDrive,int nActivePartition, int nFATXPresent){
+int BootIconMenu(CONFIGENTRY *config,int nDrive,int nActivePartition, int nFATXPresent){
 	extern int nTempCursorMbrX, nTempCursorMbrY;
 	int change=0;
 
@@ -159,11 +129,50 @@ int BootMenu(CONFIGENTRY *config,int nDrive,int nActivePartition, int nFATXPrese
 	printk("Select from Menu\n");
 	VIDEO_ATTR=0xffffffff;
 	
-	BootIcons();
+	//Add the icons we want.
+		
+	if (nDrive) {
+		//FATX icon
+		ICON *icon1 = (ICON *)malloc(sizeof(ICON));
+		icon1->iconSlot = ICON_SOURCE_SLOT4;
+		icon1->szCaption = "FatX (E:)";
+		icon1->functionPtr = BootFromFATX;
+		AddIcon(icon1);
+	}
+		
+	if (nActivePartition) {
+		//Native icon
+		ICON *icon2 = (ICON *)malloc(sizeof(ICON));
+		icon2->iconSlot = ICON_SOURCE_SLOT1;
+		icon2->szCaption = "HDD";
+		icon2->functionPtr = BootFromNative;
+		AddIcon(icon2);
+	}
+	
+	if (tsaHarddiskInfo[0].m_fAtapi || tsaHarddiskInfo[1].m_fAtapi) {	
+		//CD-ROM icon
+		ICON *icon3 = (ICON *)malloc(sizeof(ICON));
+		icon3->iconSlot = ICON_SOURCE_SLOT2;
+		icon3->szCaption = "CDROM";
+		icon3->functionPtr = BootFromCD;
+		AddIcon(icon3);
+	}
+
+#ifdef ETHERBOOT
+	//Etherboot icon
+	ICON *icon4 = (ICON *)malloc(sizeof(ICON));
+	icon4->iconSlot = ICON_SOURCE_SLOT3;
+	icon4->szCaption = "Etherboot";
+	icon4->functionPtr = BootFromEtherboot;
+	AddIcon(icon4);
+#endif	
+
+	
+	
 	//For now, mark the first icon as selected.
 	selectedIcon = firstIcon;
 	firstVisibleIcon = firstIcon;
-	IconMenuDraw(nModeDependentOffset, nTempCursorY, nModeDependentOffset, nTempCursorY);
+	IconMenuDraw(nModeDependentOffset, nTempCursorY);
 	COUNT_start = IoInputDword(0x8008);
 
 	//Main menu event loop.
@@ -231,7 +240,7 @@ int BootMenu(CONFIGENTRY *config,int nDrive,int nActivePartition, int nFATXPrese
 		}
 		if (changed) {
 			BootVideoClearScreen(&jpegBackdrop, nTempCursorY, VIDEO_CURSOR_POSY+1);
-			IconMenuDraw(nModeDependentOffset, nTempCursorY, nModeDependentOffset, nTempCursorY);
+			IconMenuDraw(nModeDependentOffset, nTempCursorY);
 			changed=0;
 		}
 	}

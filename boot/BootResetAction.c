@@ -301,9 +301,9 @@ extern void BootResetAction ( void ) {
   	memset(&kernel_config,0,sizeof(CONFIGENTRY));
 
 	if(fMbrPresent && fSeenActive) {
-		temp = BootMenu(&kernel_config, 0,nActivePartitionIndex, nFATXPresent);
+		temp = BootIconMenu(&kernel_config, 0,nActivePartitionIndex, nFATXPresent);
 	} else {
-		temp = BootMenu(&kernel_config, 1,0, nFATXPresent); 
+		temp = BootIconMenu(&kernel_config, 1,0, nFATXPresent); 
 	}
 	while(1);   
 }
