@@ -224,7 +224,7 @@ int BootLodaConfigFATX(CONFIGENTRY *config) {
 
 int BootLodaConfigCD(CONFIGENTRY *config) {
 
-	DWORD dwConfigSize=0;
+	DWORD dwConfigSize=0, dw;
 	BYTE ba[2048], baBackground[640*64*4];
 #ifndef IS_XBE_CDLOADER
 	BYTE b;
@@ -334,27 +334,37 @@ int BootLodaConfigCD(CONFIGENTRY *config) {
 	printk("  Loading linuxboot.cfg from CDROM... \n");
 	dwConfigSize=BootIso9660GetFile("/linuxboot.cfg", (BYTE *)0x90000, 0x800, 0x0);
 
-	if((int)dwConfigSize<0) { // not found, try mangled 8.3 version
+	if(((int)dwConfigSize)<0) { // not found, try mangled 8.3 version
 		dwConfigSize=BootIso9660GetFile("/LINUXBOO.CFG", (BYTE *)0x90000, 0x800, 0x0);
-		if((int)dwConfigSize<0) { // has to be there on CDROM
+		if(((int)dwConfigSize)<0) { // has to be there on CDROM
 			printk("Unable to find it, halting\n");
 			while(1) ;
 		}
 	}
-	
+
 	ParseConfig((char *)0x90000,config,&eeprom);
 	BootPrintConfig(config);
-	
+
 	dwKernelSize=BootIso9660GetFile(config->szKernel, (BYTE *)0x90000, 0x400, 0x0);
-	if((int)dwKernelSize<0) { // not found, try 8.3
+
+	if(((int)dwKernelSize)<0) { // not found, try 8.3
 		strcpy(config->szKernel, "/VMLINUZ.");
 		dwKernelSize=BootIso9660GetFile(config->szKernel, (BYTE *)0x90000, 0x400, 0x0);
+		if(((int)dwKernelSize)<0) { 
+			strcpy(config->szKernel, "/VMLINUZ_.");
+			dwKernelSize=BootIso9660GetFile(config->szKernel, (BYTE *)0x90000, 0x400, 0x0);
+			if(((int)dwKernelSize)<0) { printk("Not Found, error %d\nHalting\n", dwKernelSize); while(1) ; }
+		}
 	}
 	nSizeHeader=((*((BYTE *)0x901f1))+1)*512;
-	dwKernelSize+=BootIso9660GetFile(config->szKernel, (void *)0x90400, nSizeHeader-0x400, 0x400);
-	dwKernelSize+=BootIso9660GetFile(config->szKernel, (void *)0x00100000, 4096*1024, nSizeHeader);
+	dw=BootIso9660GetFile(config->szKernel, (void *)0x90400, nSizeHeader-0x400, 0x400);
+	if(((int)dwKernelSize)<0) { printk("Load prob 2, error %d\nHalting\n", dw); while(1) ; }
+	dwKernelSize+=dw;
+	dw=BootIso9660GetFile(config->szKernel, (void *)0x00100000, 4096*1024, nSizeHeader);
+	if(((int)dwKernelSize)<0) { printk("Load prob 3, error %d\nHalting\n", dw); while(1) ; }
+	dwKernelSize+=dw;
 	printk(" -  %d bytes...\n", dwKernelSize);
-	
+
 	if( (_strncmp(config->szInitrd, "/no", strlen("/no")) != 0) && config->szInitrd) {
 		VIDEO_ATTR=0xffd8d8d8;
 		printk("  Loading %s from CDROM", config->szInitrd);
@@ -364,6 +374,11 @@ int BootLodaConfigCD(CONFIGENTRY *config) {
 		if((int)dwInitrdSize<0) { // not found, try 8.3
 			strcpy(config->szInitrd, "/INITRD.");
 			dwInitrdSize=BootIso9660GetFile(config->szInitrd, (void *)0x03000000, 4096*1024, 0);
+			if((int)dwInitrdSize<0) { // not found, try 8.3
+				strcpy(config->szInitrd, "/INITRD_I.");
+				dwInitrdSize=BootIso9660GetFile(config->szInitrd, (void *)0x03000000, 4096*1024, 0);
+				if((int)dwInitrdSize<0) { printk("Not Found, error %d\nHalting\n", dwInitrdSize); while(1) ; }
+			}
 		}
 		printk(" - %d bytes\n", dwInitrdSize);
 	} else {
@@ -373,7 +388,7 @@ int BootLodaConfigCD(CONFIGENTRY *config) {
 		dwInitrdSize=0;
 		printk("");
 	}
-	
+
 	return true;
 }
 
