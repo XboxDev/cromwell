@@ -646,28 +646,37 @@ selectinsert:
 	}
     
 	dwConfigSize=0;
+/*
 	dwConfigSize=BootIso9660GetFile("/IMAGE.SUM", (BYTE *)0x100000, 0x100000, 0x0);   
 	memcpy(&checksum,(BYTE *)0x100000,20);
-
-        dwConfigSize=BootIso9660GetFile("/IMAGE.BIN", (BYTE *)0x100000, 0x100000, 0x0);   
+  */
+        dwConfigSize=BootIso9660GetFile("/IMAGE.BIN", (BYTE *)0x100000, 256*1024, 0x0);   
 	printk("Image size: %i\n", dwConfigSize);   
-
+        if (dwConfigSize!=256*1024) {
+		printk("Image != 256kbyte image\n");           	
+		return 0;
+	}
+        dwConfigSize = 256*1024;
+        
       	SHA1Reset(&context);
 	SHA1Input(&context,(BYTE *)0x100000,dwConfigSize);
 	SHA1Result(&context,SHA1_result);
-	
+/*	
 	if (_memcmp(&checksum[0],&SHA1_result[0],20)!=0) {
 		printk("Checksum on Disk Not Matching-Bad image or Missread\n");
 		while(1);		
 	}
-
-	printk("Bios Disk Checksum Matching\n");
-    //printk("Error code: $i\n", BootReflashAndReset((BYTE*) 0x100000, (DWORD) 0, (DWORD) dwConfigSize));   
+  */    
+  	memcpy(checksum,SHA1_result,20);
+  
+	//printk("Bios Disk Checksum Matching\n");
+	
+    	printk("Error code: $i\n", BootReflashAndReset((BYTE*) 0x100000, (DWORD) 0, (DWORD) dwConfigSize));   
 
 	//memcpy((void *) 0x100004,(void *)LPCFlashadress,0x100000);
       	
       	SHA1Reset(&context);
-	SHA1Input(&context,(void *)LPCFlashadress,0x40000*4);
+	SHA1Input(&context,(void *)LPCFlashadress,dwConfigSize);
 	SHA1Result(&context,SHA1_result);
         
     //    memcpy(&n,(void *)(0x100004+0x40000*4-8),4);
@@ -676,9 +685,10 @@ selectinsert:
     //    printk("%08x\n",n);
 		
 	if (_memcmp(&checksum[0],&SHA1_result[0],20)==0) {
-		printk("Checksum in Flash Matching\n");
+		printk("Checksum in Flash Matching - Success\n");
 	} else {
-		printk("Checksum in Flash not matching\n");
+		printk("Checksum in Flash not matching - MISTAKE -Reflashing!\n"); 
+		printk("Error code: $i\n", BootReflashAndReset((BYTE*) 0x100000, (DWORD) 0, (DWORD) dwConfigSize));   
 	//	while(1);		
 	}		
 

@@ -48,7 +48,6 @@ int BootReflashAndReset(BYTE *pbNewData, DWORD dwStartOffset, DWORD dwLength)
 
 		// committed to reflash now
 
-	__asm__ __volatile__ ( "cli ");  // ISRs are in flash, no interrupts possible now until reset
 
 	while(fMore) {
 		if(BootFlashEraseMinimalRegion(&of)) {
@@ -63,7 +62,7 @@ int BootReflashAndReset(BYTE *pbNewData, DWORD dwStartOffset, DWORD dwLength)
 	}
 
 		// okay, try to restart by cycling power
-
+      /*
 	__asm__ __volatile__ (
 		"mov $0xc004, %dx \n"
 		"mov $0x40, %al \n"
@@ -84,6 +83,7 @@ int BootReflashAndReset(BYTE *pbNewData, DWORD dwStartOffset, DWORD dwLength)
 		"ledspin: in %dx, %al ; cmp $0x10, %al ; jnz ledspin \n"
 		"jmp ledspin \n"  // loop forever
 	);
-
+        */
+        
 	return 0; // keep compiler happy
 }
