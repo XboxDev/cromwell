@@ -51,6 +51,8 @@
 #define FRAMEBUFFER 0xF0040240
 #define TEXTBUFFER (FRAMEBUFFER + 80 * 640 * 4) 
 
+//#define DebugOut
+
 /* located within bootsect space (copied from arch/i386/setup.c) */
 /* originally defined mostly in arch/i386/kernel/setup.c and head.S */
 
@@ -129,22 +131,33 @@ entry:				// this should be 0x11100
 _start:
 
 // debug output
+    #ifdef DebugOut
     mov ebx, 0		// x position
     mov ecx, 0		// y position
-
-    lea esi, text1
+    #endif
+      
+    #ifdef DebugOut
+    lea esi, text1 
+    #endif
     mov eax, MmAllocateContiguousMemoryEx
+    #ifdef DebugOut
     call strhexout
     lea esi, text2
+    #endif
     mov eax, MmGetPhysicalAddress
+    #ifdef DebugOut
     call strhexout
     lea esi, text3
+    #endif
     mov eax, NtAllocateVirtualMemory
-    call strhexout
-
+    #ifdef DebugOut
+    call strhexout 
     lea esi, text_kernel
+    #endif
     mov eax, offset kernel
-    call strhexout
+    #ifdef DebugOut
+    call strhexout 
+    #endif
 
 // 1. use MmAllocateContiguousMemoryEx to allocate physical memory
 //    somewhere between 1 and 32 MB for the kernel
@@ -163,8 +176,10 @@ _start:
     pop ebx
 
     push eax
+    #ifdef DebugOut
     lea esi, text_kernelram
     call strhexout
+    #endif
     pop eax		// kernelram
 
 // 3. MmGetPhysicalAddress that memory
@@ -178,8 +193,10 @@ _start:
     pop ecx
     pop ebx
 
+    #ifdef DebugOut
     lea esi, text_phys_kernelram
-    call strhexout
+    call strhexout 
+    #endif
 
 // 2. put kernel there
     push ecx
@@ -206,8 +223,10 @@ _start:
     pop ecx
     pop ebx
 
+    #ifdef DebugOut
     lea esi, text_bootloaderram
-    call strhexout
+    call strhexout 
+    #endif
 
 
 // 5. use MmGetPhysicalAddress on that
@@ -221,8 +240,10 @@ _start:
     pop ecx
     pop ebx
 
+    #ifdef DebugOut
     lea esi, text_phys_bootloaderram
-    call strhexout
+    call strhexout 
+    #endif
 
 // 6. use NtAllocateVirtualMemory to allocate virtual memory at that virtual address
 //	NtAllocateVirtualMemory(
@@ -246,8 +267,10 @@ _start:
     pop ecx
     pop ebx
 
+    #ifdef DebugOut
     lea esi, text_allocvirt
-    call strhexout
+    call strhexout 
+    #endif
 
 
 // 7. put a copy of the boot loader at both #4 and #6's memory
@@ -257,7 +280,8 @@ _start:
 	mov	esi, offset blentry
 	mov	edi, [bootloaderram]
 	mov	ecx, PAGE_SIZE / 4
-	.byte	0xF3, 0xA5  // rep movsd
+	rep 	movsb
+	
 
 // Copy to #6
 // The phys_bootloaderram looks strange, but it's correct.  It was made into
@@ -266,7 +290,8 @@ _start:
 	mov	esi, offset blentry
 	mov	edi, [phys_bootloaderram]
 	mov	ecx, PAGE_SIZE / 4
-	.byte	0xF3, 0xA5  // rep movsd
+	rep 	movsb
+	
 
 //	mov	ebp, dword ptr [phys_pm_kernelram]	// kernel
         mov	esi, dword ptr [phys_kernelram]		// kernel information structure
@@ -334,7 +359,14 @@ ptr_newloc:
 	.word	0x0008
 
 newloc:
+ 	// copy the Cromwell to it's new position
+	mov	edi, KERNEL_RAM_ADDRESS 
+	mov	ecx, KERNEL_SIZE 
+	rep 	movsb
+
+	
   // Kill Interrupt Handler  
+   
    	cli
 	mov	al,0x11		// initialization sequence
 	out	0x20,al		// send it to 8259A-1
@@ -361,15 +393,10 @@ newloc:
 	mov	al,0xFF		// mask off all interrupts for now
 	out	0x21,al
 	.word	0x00eb,0x00eb
-	out	0xA1,al
+	out	0xA1,al      
+	
 // Interrupt Handler Now Dead      
         
-	// copy the Cromwell to it's new position
-	mov	edi, KERNEL_RAM_ADDRESS 
-	mov	ecx, KERNEL_SIZE 
-	rep 	movsb
-	//.byte	0xF3, 0xA5  // rep movsw
-
 	//jmp newflash
 	// Jump into Cromwell & start Kernel
 	.byte	0xea //  = ljmp
