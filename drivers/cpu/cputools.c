@@ -67,3 +67,4 @@ extern void cache_enable(void)
 
 	printk("Enable Cache\n");
 }
+
