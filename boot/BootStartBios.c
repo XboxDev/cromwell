@@ -26,6 +26,7 @@
 #include "BootParser.h"
 #include "BootFATX.h"
 #include "xbox.h"
+#include "BootFlash.h"
 
 #ifdef XBE
 #include "config-xbe.h"
@@ -368,7 +369,12 @@ int BootLodaConfigCD(CONFIGENTRY *config) {
 		BootIso9660DescriptorToString(pipvd->m_szVolumeIdentifier, sizeof(pipvd->m_szVolumeIdentifier), sz);
 		printk("%s\n", sz);
 	}
-
+// Uncomment the following to test flashing
+#if 0
+	dwConfigSize=BootIso9660GetFile("/IMAGE.BIN", (BYTE *)0x100000, 0x100000, 0x0);
+	printk("Image size: %i\n", dwConfigSize);
+	printk("Error code: $i\n", BootReflashAndReset((BYTE*) 0x100000, (DWORD) 0, (DWORD) dwConfigSize));
+#endif
 	printk("  Loading linuxboot.cfg from CDROM... \n");
 	dwConfigSize=BootIso9660GetFile("/linuxboot.cfg", (BYTE *)0x90000, 0x800, 0x0);
 

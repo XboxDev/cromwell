@@ -60,6 +60,7 @@ OBJECTS += $(TOPDIR)/obj/jcomapi.o
 OBJECTS += $(TOPDIR)/obj/jutils.o
 OBJECTS += $(TOPDIR)/obj/jerror.o
 OBJECTS += $(TOPDIR)/obj/BootFlash.o
+OBJECTS += $(TOPDIR)/obj/BootFlashUi.o
 OBJECTS += $(TOPDIR)/obj/BootEEPROM.o
 OBJECTS += $(TOPDIR)/obj/BootAudio.o
 OBJECTS += $(TOPDIR)/obj/BootUsbOhci.o
