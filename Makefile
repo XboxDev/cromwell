@@ -19,6 +19,7 @@ LDFLAGS-ROM     = -s -S -T $(TOPDIR)/scripts/ldscript-crom.ld
 LDFLAGS-XBEBOOT = -s -S -T $(TOPDIR)/scripts/xbeboot.ld
 LDFLAGS-ROMBOOT = -s -S -T $(TOPDIR)/boot_rom/bootrom.ld
 LDFLAGS-VMLBOOT = -s -S -T $(TOPDIR)/boot_vml/vml_start.ld
+LDFLAGS-ETHBOOT = -s -S -T $(TOPDIR)/boot_eth/eth_start.ld
 
 #### Etherboot specific stuff
 ETH_INCLUDE = 	-I$(TOPDIR)/etherboot/include -I$(TOPDIR)/etherboot/arch/i386/include	
@@ -32,6 +33,7 @@ OBJECTS-IMAGEBLD += $(TOPDIR)/obj/lzari.o
 OBJECTS-XBE = $(TOPDIR)/boot_xbe/xbeboot.o
 
 OBJECTS-VML = $(TOPDIR)/boot_vml/vml_Startup.o
+OBJECTS-ETH = $(TOPDIR)/boot_eth/eth_Startup.o
                                              
 OBJECTS-ROMBOOT = $(TOPDIR)/obj/2bBootStartup.o
 OBJECTS-ROMBOOT += $(TOPDIR)/obj/2bPicResponseAction.o
@@ -136,7 +138,7 @@ RESOURCES += $(TOPDIR)/obj/pcrombios.elf
 export INCLUDE
 export TOPDIR
 
-all: clean resources ethsubdirs cromsubdirs image-crom.bin default.xbe vmlboot image.bin imagecompress
+all: clean resources ethsubdirs cromsubdirs default.xbe vmlboot boot_eth/ethboot image.bin imagecompress 
 
 ethsubdirs: $(patsubst %, _dir_%, $(ETH_SUBDIRS))
 $(patsubst %, _dir_%, $(ETH_SUBDIRS)) : dummy
@@ -168,6 +170,7 @@ clean:
 	rm -f $(TOPDIR)/image/*.bin
 	rm -f $(TOPDIR)/bin/imagebld*
 	rm -f $(TOPDIR)/boot_vml/disk/vmlboot
+	rm -f boot_eth/ethboot
 	mkdir -p $(TOPDIR)/xbe 
 	mkdir -p $(TOPDIR)/image
 	mkdir -p $(TOPDIR)/obj 
@@ -184,14 +187,19 @@ clean:
 #	${LD} -r --oformat elf32-i386 -o $@ -T rombios.ld -b binary rombios.bin
 
  
-image-crom.bin:
-	${LD} -o $(TOPDIR)/obj/image-crom.elf ${OBJECTS-CROM} ${RESOURCES} ${LDFLAGS-ROM}
-	${OBJCOPY} --output-target=binary --strip-all $(TOPDIR)/obj/image-crom.elf $(TOPDIR)/obj/$@
+obj/image-crom.bin:
+	${LD} -o obj/image-crom.elf ${OBJECTS-CROM} ${RESOURCES} ${LDFLAGS-ROM}
+	${OBJCOPY} --output-target=binary --strip-all obj/image-crom.elf $@
 
 vmlboot: ${OBJECTS-VML}
 	${LD} -o $(TOPDIR)/obj/vmlboot.elf ${OBJECTS-VML} ${LDFLAGS-VMLBOOT}
 	${OBJCOPY} --output-target=binary --strip-all $(TOPDIR)/obj/vmlboot.elf $(TOPDIR)/boot_vml/disk/$@
-		
+
+boot_eth/ethboot: ${OBJECTS-ETH} obj/image-crom.bin
+	${LD} -o obj/ethboot.elf ${OBJECTS-ETH} -b binary obj/image-crom.bin ${LDFLAGS-ETHBOOT}
+	${OBJCOPY} --output-target=binary --strip-all obj/ethboot.elf obj/ethboot.bin
+	perl -I boot_eth boot_eth/mknbi.pl --output=$@ obj/ethboot.bin
+
 default.xbe: ${OBJECTS-XBE}
 	${LD} -o $(TOPDIR)/obj/default.elf ${OBJECTS-XBE} ${LDFLAGS-XBEBOOT}
 	${OBJCOPY} --output-target=binary --strip-all $(TOPDIR)/obj/default.elf $(TOPDIR)/xbe/$@
@@ -200,7 +208,7 @@ image.bin:
 	${LD} -o $(TOPDIR)/obj/2lbimage.elf ${OBJECTS-ROMBOOT} ${LDFLAGS-ROMBOOT}
 	${OBJCOPY} --output-target=binary --strip-all $(TOPDIR)/obj/2lbimage.elf $(TOPDIR)/obj/2blimage.bin
 	
-imagecompress:
+imagecompress: obj/image-crom.bin 
 	gcc $(OBJECTS-IMAGEBLD) -o $(TOPDIR)/bin/imagebld $(INCLUDE)
 	$(TOPDIR)/bin/imagebld -rom $(TOPDIR)/obj/2blimage.bin $(TOPDIR)/obj/image-crom.bin $(TOPDIR)/image/image.bin $(TOPDIR)/image/image_1024.bin
 	$(TOPDIR)/bin/imagebld -xbe $(TOPDIR)/xbe/default.xbe $(TOPDIR)/obj/image-crom.bin
