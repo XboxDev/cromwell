@@ -367,8 +367,6 @@ int BootIdeDriveInit(unsigned uIoBase, int nIndexDrive,int drivetype)
 	unsigned short* drive_info;
 	BYTE baBuffer[512];
      
-	memset(&tsaHarddiskInfo[nIndexDrive],0x00,sizeof(struct tsHarddiskInfo));
-	
 	tsaHarddiskInfo[nIndexDrive].m_fwPortBase = uIoBase;
 	tsaHarddiskInfo[nIndexDrive].m_wCountHeads = 0u;
 	tsaHarddiskInfo[nIndexDrive].m_wCountCylinders = 0u;
@@ -840,8 +838,12 @@ int BootIdeDriveInit(unsigned uIoBase, int nIndexDrive,int drivetype)
 int BootIdeInit(void)
 {
 	int error;
+
+	memset(&tsaHarddiskInfo[0],0x00,sizeof(struct tsHarddiskInfo));
+	memset(&tsaHarddiskInfo[1],0x00,sizeof(struct tsHarddiskInfo));
 	
 	tsaHarddiskInfo[0].m_bCableConductors=40;
+	tsaHarddiskInfo[1].m_bCableConductors=40;
 
 	IoOutputByte(0xff60+0, 0x00); // stop bus mastering
 	IoOutputByte(0xff60+2, 0x62); // DMA possible for both drives

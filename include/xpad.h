@@ -39,6 +39,5 @@ int risefall_xpad_BUTTON(unsigned char selected_Button);
 #define TRIGGER_XPAD_PAD_LEFT 		8 	
 #define TRIGGER_XPAD_PAD_RIGHT 		9
 
-
-
+#define TRIGGER_XPAD_PAD_KEYSTROKE	10
 

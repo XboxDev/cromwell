@@ -165,8 +165,80 @@ void XPADRemove(void) {
 
 /*------------------------------------------------------------------------*/ 
 
-int risefall_xpad_BUTTON(unsigned char selected_Button) {
+unsigned char accepted_xremote [] = { 0x0b, 0xa6, 0xa7, 0xa9, 0xa8 ,0xd5,
+				     0xc6,0xc7,0xc8,0xc9,0xca,0xcb,0xcc,0xcd,0xce,0xcf};
+extern unsigned int current_remote_key;
+extern unsigned int current_remote_keydir;
 
+
+int risefall_xpad_BUTTON(unsigned char selected_Button) {
+	
+	
+   
+       int temp;
+       temp = current_remote_keydir;
+        
+       if ((temp&0x100)==0x100) {
+       		int counter;
+		
+		for (counter = 0; counter < (sizeof(accepted_xremote)) ; counter++) {
+                        	
+			if (accepted_xremote[counter] == current_remote_key) {
+					goto ProcessKeyFound;
+				}
+		}
+                // oh, key not even handled ? .. we clear the keystroke event
+		
+		current_remote_keydir &=0xff;
+		goto ProcessXPAD;               
+                
+                ProcessKeyFound:
+                
+                temp &= 0xff;
+
+		if  ( 1==1 ){	// falling Edge
+                        int returnvalue;
+	                
+                        current_remote_key &=0xff;
+                        
+			returnvalue = 0;
+			
+			switch (selected_Button) {
+				case TRIGGER_XPAD_KEY_A :
+			   				   if (current_remote_key ==  0xb) returnvalue = 1; 
+							   break;
+				case TRIGGER_XPAD_PAD_UP :
+							   if (current_remote_key == 0xa6) returnvalue = 1; 
+							   break;
+				case TRIGGER_XPAD_PAD_DOWN :
+							   if (current_remote_key == 0xa7) returnvalue = 1; 
+							   break;
+				case TRIGGER_XPAD_PAD_LEFT :
+							   if (current_remote_key == 0xa9) returnvalue = 1; 
+							   break;
+				case TRIGGER_XPAD_PAD_RIGHT :
+							   if (current_remote_key == 0xa8) returnvalue = 1; 
+							   break;
+				case TRIGGER_XPAD_PAD_KEYSTROKE :
+							   if (current_remote_key == 0xd5) returnvalue = 0xd5; 
+							   if ((current_remote_key>0xc5)&(current_remote_key<0xd0)) returnvalue = current_remote_key;
+							   break;
+			}
+                   	
+                        if (returnvalue!=0) {
+                        	current_remote_keydir &=0xff;
+                        	return returnvalue;	
+                        } else {
+                        	return 0;	
+                        }
+
+		}
+		
+	}
+        
+ProcessXPAD:
+        
+        // We continue with normal XPAD operations
         if (selected_Button < 6) {
         
         	int Button_actual=0;
@@ -198,7 +270,7 @@ int risefall_xpad_BUTTON(unsigned char selected_Button) {
 		return 0; 
 	}
  	
- 	if ((selected_Button > 5)) {
+ 	if ((selected_Button > 5) & (selected_Button < 10) ) {
 		
 		unsigned char Buttonmask;
               
@@ -233,3 +305,4 @@ int risefall_xpad_BUTTON(unsigned char selected_Button) {
 	
 	return 0;
 }
+
