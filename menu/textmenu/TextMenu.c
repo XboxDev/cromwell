@@ -42,7 +42,7 @@ void TextMenuBack(void) {
 	currentMenu = (TEXTMENU*)currentMenu->parentMenu;
 	selectedMenuItem = currentMenu->firstMenuItem;
 	firstVisibleMenuItem = currentMenu->firstMenuItem;
-	memcpy((void*)FB_START,textmenusavepage,FB_SIZE);
+	BootVideoClearScreen(&jpegBackdrop, 0, 0xffff);
 	TextMenuDraw();
 }
 
@@ -87,7 +87,6 @@ void TextMenu(void) {
 	textmenusavepage = malloc(FB_SIZE);
 	memcpy(textmenusavepage,(void*)FB_START,FB_SIZE);
 
-	//Clear the screen fully.
 	BootVideoClearScreen(&jpegBackdrop, 0, 0xffff);
 	
 	TextMenuDraw();
@@ -103,9 +102,8 @@ void TextMenu(void) {
 			if (selectedMenuItem->previousMenuItem!=0l) {
 				if (selectedMenuItem == firstVisibleMenuItem) {
 					firstVisibleMenuItem = (TEXTMENUITEM *)selectedMenuItem->previousMenuItem;
-					memcpy((void*)FB_START,textmenusavepage,FB_SIZE);
+					BootVideoClearScreen(&jpegBackdrop, 0, 0xffff);
 				}
-				
 				selectedMenuItem=(TEXTMENUITEM*)selectedMenuItem->previousMenuItem;
 				changed=1;
 			}
@@ -121,7 +119,7 @@ void TextMenu(void) {
 				}
 				if (selectedMenuItem == lastVisibleMenuItem) {
 					firstVisibleMenuItem = (TEXTMENUITEM *)firstVisibleMenuItem->nextMenuItem;
-					memcpy((void*)FB_START,textmenusavepage,FB_SIZE);
+					BootVideoClearScreen(&jpegBackdrop, 0, 0xffff);
 				}
 				selectedMenuItem=(TEXTMENUITEM*)selectedMenuItem->nextMenuItem;
 				changed=1;
@@ -129,14 +127,9 @@ void TextMenu(void) {
 		}
 			
 		else if (risefall_xpad_BUTTON(TRIGGER_XPAD_KEY_A) == 1 || risefall_xpad_BUTTON(TRIGGER_XPAD_KEY_START) == 1) {
-			//Redraw the page as it was before the menu was displayed.
-			memcpy((void*)FB_START,textmenusavepage,FB_SIZE);
-			free(textmenusavepage);
+			BootVideoClearScreen(&jpegBackdrop, 0, 0xffff);
 			//Menu item selected - invoke function pointer.
 			if (selectedMenuItem->functionPtr!=0l) selectedMenuItem->functionPtr(selectedMenuItem->functionDataPtr);
-			//Re-malloc these if the function pointer did return us to the menu.	
-			textmenusavepage = malloc(FB_SIZE);
-			memcpy(textmenusavepage,(void*)FB_START,FB_SIZE);
 			//Display the childmenu, if this menu item has one.	
 			if (selectedMenuItem->childMenu!=0l) {
 				currentMenu = (TEXTMENU*)selectedMenuItem->childMenu;
@@ -148,7 +141,7 @@ void TextMenu(void) {
 		else if (risefall_xpad_BUTTON(TRIGGER_XPAD_KEY_B) == 1 || risefall_xpad_BUTTON(TRIGGER_XPAD_KEY_BACK) == 1) {
 			//B or Back button takes us back up a menu
 			if (currentMenu->parentMenu==0l) {
-				//If this is the top level menu, save and quit the text menu.
+				//If this is the top level menu, replace the original framebuffer contents and quit the text menu.
 				memcpy((void*)FB_START,textmenusavepage,FB_SIZE);
 				free(textmenusavepage);
 				return;
