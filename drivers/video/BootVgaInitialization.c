@@ -313,10 +313,10 @@ void BootVgaInitializationKernelNG(CURRENT_VIDEO_MODE_DETAILS * pcurrentvidemode
 			SetAutoParameter(&parameter, pcurrentvidemodedetails->m_pbBaseAddressVideo);
 	}
 
-#ifndef XBE
+//#ifndef XBE
 	NVVertIntrEnabled (&riva,0);
 	NVSetFBStart (&riva, 0, pcurrentvidemodedetails->m_dwFrameBufferStart);
-#endif
+//#endif
 
 	IoOutputByte(0x80d3, 4);  // ACPI IO video enable REQUIRED <-- particularly crucial to get composite out
 
