@@ -62,6 +62,12 @@ CONFIGENTRY *ParseConfig(char *szBuffer, unsigned int fileLen, char *szPath) {
 			//Handle 'xbox-os' naming conventions
 			chrreplace(paramdata, '\\', '/');
 
+			if (!strncmp(paramdata,"no",2)) {
+				//Ugly, but backwards compatible
+				//This means no initrd
+				continue;
+			}
+
 			if (szPath!=NULL) { 
 				sprintf(currentEntry->szInitrd,"%s/%s",szPath, paramdata);
 			}
