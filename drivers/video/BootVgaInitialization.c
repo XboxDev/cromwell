@@ -34,6 +34,53 @@ void DetectVideoEncoder(void) {
 	else video_encoder = ENCODER_XCALIBUR;
 }
 
+char *EncoderName(void) {
+	char *focus_name="Focus";
+	char *conexant_name="Conexant";
+	char *xcalibur_name="XCalibur";
+	char *unknown_name="Unknown";
+
+	switch (video_encoder) {
+		case ENCODER_CONEXANT:
+			return conexant_name;
+		case ENCODER_FOCUS:
+			return focus_name;
+		case ENCODER_XCALIBUR:
+			return xcalibur_name;
+		default:
+			return unknown_name;
+	}
+}
+
+char *AvCableName(void) {
+	char *composite_name="Composite";
+	char *svideo_name="SVideo";
+	char *rgb_name="RGB SCART";
+	char *hdtv_name="HDTV";
+	char *vga_name="VGA";
+	char *vgasog_name="VGA SoG";
+	char *unknown_name="Unknown";
+	
+	xbox_av_type av_type = DetectAvType();
+	switch (av_type) {
+		case AV_SCART_RGB:
+			return rgb_name;
+		case AV_SVIDEO:
+			return svideo_name;
+		case AV_VGA_SOG:
+			return vgasog_name;
+		case AV_HDTV:
+			return hdtv_name;
+		case AV_COMPOSITE:
+			return composite_name;
+		case AV_VGA:
+			return vga_name;
+		default:
+			return unknown_name;
+
+	}
+}
+
 void BootVgaInitializationKernelNG(CURRENT_VIDEO_MODE_DETAILS * pvmode) {
 	xbox_tv_encoding tv_encoding; 
 	xbox_av_type av_type;
