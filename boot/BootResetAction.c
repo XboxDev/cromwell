@@ -40,7 +40,8 @@ extern void BootResetAction ( void ) {
 	bool fSeenActive=false;
 	int nFATXPresent=false;
 	int nTempCursorX, nTempCursorY;
- 		
+	int n, nx;
+	
         memcpy(&cromwell_config,(void*)(0x03A00000+0x20),4);
         memcpy(&cromwell_retryload,(void*)(0x03A00000+0x24),4);
 	memcpy(&cromwell_loadbank,(void*)(0x03A00000+0x28),4);
@@ -131,9 +132,7 @@ extern void BootResetAction ( void ) {
 	VIDEO_ATTR=0xffc8c800;
 	printk("%s  ", AvCableName());
         
-	{
-		int n, nx;
-		I2CGetTemperature(&n, &nx);
+	if (I2CGetTemperature(&n, &nx)) {
 		VIDEO_ATTR=0xffc8c8c8;
 		printk("CPU Temp: ");
 		VIDEO_ATTR=0xffc8c800;
@@ -141,9 +140,10 @@ extern void BootResetAction ( void ) {
 		VIDEO_ATTR=0xffc8c8c8;
 		printk("M/b Temp: ");
 		VIDEO_ATTR=0xffc8c800;
-		printk("%doC  \n", nx);
+		printk("%doC  ", nx);
 	}
-
+	
+	printk("\n");
 	nTempCursorX=VIDEO_CURSOR_POSX;
 	nTempCursorY=VIDEO_CURSOR_POSY;
 		
