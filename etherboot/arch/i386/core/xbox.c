@@ -1,6 +1,9 @@
 #include "etherboot.h"
 #include "pci.h"
 #include "nic.h"
+#include "xbox.h"
+
+#include <stdarg.h>
 
 typedef unsigned char BYTE;
 #include "BootParser.h"
@@ -158,9 +161,9 @@ static int find_cmdline(char ** cmd_line, char* length)
 				p[6] == RFC1533_VENDOR_MAJOR
 				)
 				vendorext_isvalid++;
-			else if (ENCAP_OPT c == RFC1533_VENDOR_ADDPARM && TAG_LEN(p) > 3 && vendorext_isvalid)
+			else if (ENCAP_OPT c == RFC1533_VENDOR_ADDPARM && TAG_LEN(p) > 0 && vendorext_isvalid)
 			{
-				*length = *(p+1);
+				*length = TAG_LEN(p);
 				*cmd_line = p+2;
 				found = 1;
 				break;
@@ -171,6 +174,60 @@ static int find_cmdline(char ** cmd_line, char* length)
 	return found;
 }
 
+static void parse_elf_boot_notes(void *notes, union infoblock **rheader)
+{
+	unsigned char *note, *end;
+	Elf_Nhdr *hdr;
+	Elf_Bhdr *bhdr;
+
+	bhdr = notes;
+	if (bhdr->b_signature != ELF_BHDR_MAGIC) {
+		printf("Error: Wrong signature in ELF header\n");
+		return;
+	}
+
+	note = ((char *)bhdr) + sizeof(*bhdr);
+	end  = ((char *)bhdr) + bhdr->b_size;
+	while (note < end) {
+		unsigned char *n_name, *n_desc, *next;
+		hdr = (Elf_Nhdr *)note;
+		n_name = note + sizeof(*hdr);
+		n_desc = n_name + ((hdr->n_namesz + 3) & ~3);
+		next = n_desc + ((hdr->n_descsz + 3) & ~3);
+		if (next > end)
+			break;
+#if 0
+		printf("n_type: %x n_name(%d): n_desc(%d): \n",
+				hdr->n_type, hdr->n_namesz, hdr->n_descsz);
+#endif
+
+		if ((hdr->n_namesz == 10) &&
+			(memcmp(n_name, "Etherboot", 10) == 0)) {
+			switch(hdr->n_type) {
+			case EB_HEADER:
+				*rheader = *((void **)n_desc);
+				break;
+			default:
+				break;
+			}
+		}
+		note = next;
+	}
+}
+
+static Elf32_Phdr *seg[S_END] = { 0 };
+
+static void locate_elf_segs(union infoblock *header)
+{
+	int             i;
+	Elf32_Phdr      *s;
+
+	s = (Elf32_Phdr *)((char *)header + header->ehdr.e_phoff);
+	for (i = 0; i < S_END && i < header->ehdr.e_phnum; i++, s++) {
+		seg[i] = s;
+	}
+}
+
 void xstart16 (unsigned long a, unsigned long b, char * c)
 {
 	printf("xstart16() is not supported for Xbox\n");
@@ -179,12 +236,14 @@ void xstart16 (unsigned long a, unsigned long b, char * c)
 
 extern int ExittoLinux(CONFIGENTRY *config);
 extern unsigned int dwInitrdSize;
+#define INITRD_POS 0x02000000
 
 int xstart32(unsigned long entry_point, ...)
 {
 	CONFIGENTRY config;
 	char* cmdline;
 	char length;
+	int ret = 1;
 	if (find_cmdline(&cmdline, &length))
 	{
 		memcpy(config.szAppend, cmdline, length);
@@ -195,6 +254,29 @@ int xstart32(unsigned long entry_point, ...)
 	{
 		config.szAppend[0] = '\0';
 	}
-	dwInitrdSize = 0;
+	va_list list;
+	void* eb;
+	va_start(list, entry_point);
+	eb = va_arg(list, void*);
+	va_end(list);
+	union infoblock *header;
+	parse_elf_boot_notes(eb, &header);
+	switch(header->img.magic)
+	{
+	case ELF_MAGIC:
+		locate_elf_segs(header);
+		break;
+	default:
+		printf("Error: Unrecognized header format\n");
+		dwInitrdSize = 0;
+		ret = 0;
+		break;
+	}
+	if (ret && seg[S_RAMDISK] != 0)
+	{
+		dwInitrdSize = seg[S_RAMDISK]->p_filesz;
+		printf("Using ramdisk at 0x%X, size 0x%X\n", seg[S_RAMDISK]->p_paddr, dwInitrdSize);
+		memcpy((void*)INITRD_POS, (void*)seg[S_RAMDISK]->p_paddr, dwInitrdSize);
+	}
 	ExittoLinux(&config);
 }
