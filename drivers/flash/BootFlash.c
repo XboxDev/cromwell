@@ -60,7 +60,7 @@ bool BootFlashGetDescriptor( OBJECT_FLASH *pof, KNOWN_FLASH_TYPE * pkft )
 			pof->m_pbMemoryMappedStartAddress[0x2aaa]=0x55;
 			pof->m_pbMemoryMappedStartAddress[0x5555]=0xf0;
 
-				// read flash ID
+			// read flash ID
 
 			pof->m_pbMemoryMappedStartAddress[0x5555]=0xaa;
 			pof->m_pbMemoryMappedStartAddress[0x2aaa]=0x55;
@@ -123,7 +123,7 @@ bool BootFlashGetDescriptor( OBJECT_FLASH *pof, KNOWN_FLASH_TYPE * pkft )
 
 				if(pof->m_fDetectedUsing28xxxConventions) {
 					int n=0;
-						// detect master lock situation
+					// detect master lock situation
 
 					pof->m_pbMemoryMappedStartAddress[0x5555]=0x90;
 					if(pof->m_pbMemoryMappedStartAddress[3]!=0) { // master lock bit is set, no erases or writes are going to happen

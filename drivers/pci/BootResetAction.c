@@ -58,7 +58,7 @@ const KNOWN_FLASH_TYPE aknownflashtypesDefault[] = {
 	{ 0xad, 0xd5, "Hynix HY29F080", 0x100000 },  // default flash types
 	{ 0x20, 0xf1, "ST M29F080A", 0x100000 },  // default flash types
 	{ 0x89, 0xA6, "Sharp LHF08CH1", 0x100000 }, // default flash types
-	{ 0, 0, "", 0 }
+	{ 0, 0, "\0", 0 }
 };
 
 
@@ -458,6 +458,7 @@ extern void BootResetAction ( void ) {
 #ifndef XBE
 		{
 			OBJECT_FLASH of;
+			memset(of,0x00,sizeof(of));
 			of.m_pbMemoryMappedStartAddress=(BYTE *)0xff000000;
 			BootFlashCopyCodeToRam();
 			BootFlashGetDescriptor(&of, (KNOWN_FLASH_TYPE *)&aknownflashtypesDefault[0]);

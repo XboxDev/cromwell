@@ -109,7 +109,9 @@ void BootPrintConfig(CONFIGENTRY *config) {
 int BootLodaConfigNative(int nActivePartition, CONFIGENTRY *config, bool fJustTestingForPossible) {
 	DWORD dwConfigSize=0;
 	char szGrub[256+4];
-
+        
+        memset(&szGrub,0x00,256+4);
+        
 	memset((BYTE *)0x90000,0,4096);
 
 	szGrub[0]=0xff; szGrub[1]=0xff; szGrub[2]=nActivePartition; szGrub[3]=0x00;
@@ -139,8 +141,9 @@ int BootLodaConfigNative(int nActivePartition, CONFIGENTRY *config, bool fJustTe
 	}
 	grub_close();
 
-	strcpy(&szGrub[4], config->szKernel);
-
+	//strcpy(&szGrub[4], config->szKernel);
+        _strncpy(&szGrub[4], config->szKernel,sizeof(config->szKernel));
+        
 		// Force a particular kernel to be loaded here
 		// leave commented out normally
 //	strcpy(&szGrub[4], "/boot/vmlinuz-2.4.20-xbox");
@@ -167,7 +170,8 @@ int BootLodaConfigNative(int nActivePartition, CONFIGENTRY *config, bool fJustTe
 		VIDEO_ATTR=0xffd8d8d8;
 		printk("  Loading %s ", config->szInitrd);
 		VIDEO_ATTR=0xffa8a8a8;
-		strcpy(&szGrub[4], config->szInitrd);
+		//strcpy(&szGrub[4], config->szInitrd);
+		_strncpy(&szGrub[4], config->szInitrd,sizeof(config->szInitrd));
 		nRet=grub_open(szGrub);
 		if(filemax==0) {
 			printf("Empty file\n"); while(1);
@@ -376,10 +380,12 @@ int BootLodaConfigCD(CONFIGENTRY *config) {
 	dwKernelSize=BootIso9660GetFile(config->szKernel, (BYTE *)0x90000, 0x400, 0x0);
 
 	if(((int)dwKernelSize)<0) { // not found, try 8.3
-		strcpy(config->szKernel, "/VMLINUZ.");
+		//strcpy(config->szKernel, "/VMLINUZ.");
+		_strncpy(config->szKernel, "/VMLINUZ.",sizeof(config->szKernel));
 		dwKernelSize=BootIso9660GetFile(config->szKernel, (BYTE *)0x90000, 0x400, 0x0);
 		if(((int)dwKernelSize)<0) { 
-			strcpy(config->szKernel, "/VMLINUZ_.");
+			//strcpy(config->szKernel, "/VMLINUZ_.");
+			_strncpy(config->szKernel, "/VMLINUZ_.",sizeof(config->szKernel));
 			dwKernelSize=BootIso9660GetFile(config->szKernel, (BYTE *)0x90000, 0x400, 0x0);
 			if(((int)dwKernelSize)<0) { printk("Not Found, error %d\nHalting\n", dwKernelSize); while(1) ; }
 		}
@@ -400,10 +406,12 @@ int BootLodaConfigCD(CONFIGENTRY *config) {
 
 		dwInitrdSize=BootIso9660GetFile(config->szInitrd, (void *)0x03000000, 4096*1024, 0);
 		if((int)dwInitrdSize<0) { // not found, try 8.3
-			strcpy(config->szInitrd, "/INITRD.");
+			//strcpy(config->szInitrd, "/INITRD.");
+			_strncpy(config->szInitrd, "/INITRD.",sizeof(config->szInitrd));
 			dwInitrdSize=BootIso9660GetFile(config->szInitrd, (void *)0x03000000, 4096*1024, 0);
 			if((int)dwInitrdSize<0) { // not found, try 8.3
-				strcpy(config->szInitrd, "/INITRD_I.");
+				//strcpy(config->szInitrd, "/INITRD_I.");
+				_strncpy(config->szInitrd, "/INITRD_I.",sizeof(config->szInitrd));
 				dwInitrdSize=BootIso9660GetFile(config->szInitrd, (void *)0x03000000, 4096*1024, 0);
 				if((int)dwInitrdSize<0) { printk("Not Found, error %d\nHalting\n", dwInitrdSize); while(1) ; }
 			}
@@ -499,8 +507,10 @@ void StartBios(	int nDrive, int nActivePartition , int nFATXPresent) {
 
 
 	BootPciInterruptEnable();
-
+        
+        memset(&szGrub,0,256+4);
 	memset(&config,0,sizeof(CONFIGENTRY));
+	
 
 	szGrub[0]=0xff; szGrub[1]=0xff; szGrub[2]=nActivePartition; szGrub[3]=0x00;
 

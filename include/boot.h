@@ -107,7 +107,7 @@ typedef enum {
 	EDT_XBOXFS
 } enumDriveType;
 
-typedef struct {  // this is the retained knowledge about an IDE device after init
+typedef struct tsHarddiskInfo {  // this is the retained knowledge about an IDE device after init
     unsigned short m_fwPortBase;
     unsigned short m_wCountHeads;
     unsigned short m_wCountCylinders;
@@ -116,7 +116,7 @@ typedef struct {  // this is the retained knowledge about an IDE device after in
     unsigned char m_bLbaMode;	/* am i lba (0x40) or chs (0x00) */
     unsigned char m_szIdentityModelNumber[41];
     unsigned char m_szSerial[21];
-		char m_szFirmware[9];
+    char m_szFirmware[9];
     unsigned char m_fDriveExists;
     unsigned char m_fAtapi;  // true if a CDROM, etc
     enumDriveType m_enumDriveType;
@@ -124,7 +124,7 @@ typedef struct {  // this is the retained knowledge about an IDE device after in
     unsigned short m_wAtaRevisionSupported;
     unsigned char s_length;
     unsigned char m_length;
-		unsigned char m_fHasMbr;
+    unsigned char m_fHasMbr;
 } tsHarddiskInfo;
 
 

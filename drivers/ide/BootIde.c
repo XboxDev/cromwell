@@ -358,7 +358,11 @@ static int BootIdeDriveInit(unsigned uIoBase, int nIndexDrive)
 	tsIdeCommandParams tsicp = IDE_DEFAULT_COMMAND;
 	unsigned short* drive_info;
 	BYTE baBuffer[512];
-
+        unsigned char outbuffer[200];
+        
+        memset(outbuffer,0x00,sizeof(outbuffer));
+	memset(&tsaHarddiskInfo[nIndexDrive],0x00,sizeof(struct tsHarddiskInfo));
+	
 	tsaHarddiskInfo[nIndexDrive].m_fwPortBase = uIoBase;
 	tsaHarddiskInfo[nIndexDrive].m_wCountHeads = 0u;
 	tsaHarddiskInfo[nIndexDrive].m_wCountCylinders = 0u;
@@ -483,11 +487,21 @@ static int BootIdeDriveInit(unsigned uIoBase, int nIndexDrive)
 		printk("hd%c: ", nIndexDrive+'a');
 		VIDEO_ATTR=0xffc8c800;
 
-		printk("%s %s %s\n",
+		_strncpy(outbuffer,tsaHarddiskInfo[nIndexDrive].m_szIdentityModelNumber,sizeof(tsaHarddiskInfo[nIndexDrive].m_szIdentityModelNumber));
+		printk("%s",outbuffer);
+
+		_strncpy(outbuffer,tsaHarddiskInfo[nIndexDrive].m_szSerial,sizeof(tsaHarddiskInfo[nIndexDrive].m_szSerial));
+		printk("%s",outbuffer);
+
+		_strncpy(outbuffer,tsaHarddiskInfo[nIndexDrive].m_szFirmware,sizeof(tsaHarddiskInfo[nIndexDrive].m_szFirmware));
+		printk("%s",outbuffer);
+		/*		
+		printk("%s %s %s\n",tsaHarddiskInfo[nIndexDrive].m_szIdentityModelNumber,
 			tsaHarddiskInfo[nIndexDrive].m_szIdentityModelNumber,
 			tsaHarddiskInfo[nIndexDrive].m_szSerial,
 			tsaHarddiskInfo[nIndexDrive].m_szFirmware
 		);
+		*/
 
 #ifndef XBE
 		{  // this is the only way to clear the ATAPI ''I have been reset'' error indication
@@ -963,7 +977,8 @@ int BootIdeAtapiModeSense(int nDriveIndex, BYTE bCodePage, BYTE * pba, int nLeng
 
 		if(!tsaHarddiskInfo[nDriveIndex].m_fDriveExists) return 4;
 
-		memset(&ba[0], 0, 12);
+		memset(ba, 0, sizeof(ba));
+		//memset(&ba[0], 0, 12);
 		ba[0]=0x5a;
 	 	ba[2]=bCodePage;
 	 	ba[7]=(BYTE)(sizeof(ba)>>8); ba[8]=(BYTE)sizeof(ba);
@@ -996,7 +1011,8 @@ int BootIdeAtapiAdditionalSenseCode(int nDriveIndex, BYTE * pba, int nLengthMaxR
 
 		if(!tsaHarddiskInfo[nDriveIndex].m_fDriveExists) return 4;
 
-		memset(&ba[0], 0, 12);
+		//memset(&ba[0], 0, 12);
+		memset(ba, 0, sizeof(ba));
 		ba[0]=0x03;
 	 	ba[4]=0xfe;
 
@@ -1021,6 +1037,7 @@ bool BootIdeAtapiReportFriendlyError(int nDriveIndex, char * szErrorReturn, int 
 	int nReturn;
 	bool f=true;
 
+	memset(ba, 0, sizeof(ba));
 	nReturn=BootIdeAtapiAdditionalSenseCode(nDriveIndex, &ba[0], sizeof(ba));
 	if(nReturn<12) {
 		sprintf(szError, "Unable to get Sense Code\n");
@@ -1037,6 +1054,7 @@ bool BootIdeAtapiReportFriendlyError(int nDriveIndex, char * szErrorReturn, int 
 void BootIdeAtapiPrintkFriendlyError(int nDriveIndex)
 {
 	char sz[512];
+	memset(&sz,0x00,sizeof(sz));
 	BootIdeAtapiReportFriendlyError(nDriveIndex, sz, sizeof(sz));
 	printk(sz);
 }
@@ -1094,7 +1112,8 @@ int BootIdeReadSector(int nDriveIndex, void * pbBuffer, unsigned int block, int 
 		}
 
 		tsicp.m_wCylinder=2048;
-		memset(&ba[0], 0, 12);
+		memset(ba, 0, sizeof(ba));
+		//memset(&ba[0], 0, 12);
 		ba[0]=0x28; ba[2]=block>>24; ba[3]=block>>16; ba[4]=block>>8; ba[5]=block; ba[7]=0; ba[8]=1;
 
 		if(BootIdeIssueAtapiPacketCommandAndPacket(nDriveIndex, &ba[0])) {
