@@ -41,9 +41,10 @@ void BootPrintConfig(CONFIGENTRY *config) {
 	char c;
 	printk("  Bootconfig : Kernel  %s \n", config->szKernel);
 	VIDEO_ATTR=0xffa8a8a8;
-	printk("  Bootconfig : Initrd  %s \n", config->szInitrd);
-	VIDEO_ATTR=0xffa8a8a8;
-	printk("  Bootconfig : Appended arguments :\n");
+	if (strlen(config->szInitrd)!=0) {
+		printk("  Bootconfig : Initrd  %s \n", config->szInitrd);
+	}
+	printk("  Bootconfig : Kernel commandline :\n");
 	Length=strlen(config->szAppend);
 	while (CharsProcessed<Length) {
 		c = config->szAppend[CharsProcessed];
@@ -182,7 +183,7 @@ int LoadKernelNative(CONFIGENTRY *config) {
 	grub_close();
 	printk(" -  %d bytes...\n", dwKernelSize);
 
-	if(config->szInitrd[0]) {
+	if(strlen(config->szInitrd)!=0) {
 		VIDEO_ATTR=0xffd8d8d8;
 		printk("  Loading %s ", config->szInitrd);
 		VIDEO_ATTR=0xffa8a8a8;
@@ -274,7 +275,7 @@ int LoadKernelFatX(CONFIGENTRY *config) {
 		printk(" -  %d bytes...\n", infokernel.fileRead);
 	}
 
-	if(config->szInitrd[0]) {
+	if(strlen(config->szInitrd)!=0) {
 		VIDEO_ATTR=0xffd8d8d8;
 		printk("  Loading %s from FATX", config->szInitrd);
 		wait_ms(50);
@@ -386,7 +387,7 @@ int LoadKernelCdrom(CONFIGENTRY *config) {
 		printk(" -  %d bytes...\n", dwKernelSize);
 	}
 
-	if(config->szInitrd[0]) {
+	if(strlen(config->szInitrd)!=0) {
 		VIDEO_ATTR=0xffd8d8d8;
 		printk("  Loading %s from CDROM", config->szInitrd);
 		VIDEO_ATTR=0xffa8a8a8;

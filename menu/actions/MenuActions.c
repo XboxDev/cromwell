@@ -20,8 +20,11 @@
 #include "cpu.h"
 #include "VideoInitialization.h"
 #include "TextMenu.h"
+CONFIGENTRY *LoadConfigCD(int);
+TEXTMENU *TextMenuInit(void);
+
 void MoveToTextMenu(void *nothing) {
-	TEXTMENU *parentMenu = (TEXTMENU*)TextMenuInit();
+	TEXTMENU *parentMenu = TextMenuInit();
 	TextMenu(parentMenu, NULL);
 }
 
@@ -29,7 +32,7 @@ void BootFromCD(void *data) {
 	//We have to go an extra step when the CD icon is selected, as unlike
 	//the other boot modes, we have not parsed the linuxboot.cfg file yet.
 	int nTempCursorY = VIDEO_CURSOR_POSY; 
-	CONFIGENTRY *config = (CONFIGENTRY*)LoadConfigCD(*(int*)data);
+	CONFIGENTRY *config = LoadConfigCD(*(int*)data);
 	if (config==NULL) {
 		printk("Boot from CD failed.\nCheck that linuxboot.cfg exists.\n");
 		wait_ms(2000);
@@ -48,7 +51,7 @@ void DrawBootMenu(void *rootEntry) {
 	extern int timedOut;
 
 	defaultMenuItem=NULL;
-	configEntry = (CONFIGENTRY*)rootEntry;
+	configEntry = rootEntry;
 
 	if (configEntry->nextConfigEntry==NULL) {
 		//If there is only one option, just boot it.
@@ -60,7 +63,7 @@ void DrawBootMenu(void *rootEntry) {
 		//We should be non-interactive, then.
 		//If there is a default entry, boot that.
 		for (currentConfigEntry = configEntry; currentConfigEntry != NULL; 
-			currentConfigEntry = (CONFIGENTRY*)currentConfigEntry->nextConfigEntry) {
+			currentConfigEntry = currentConfigEntry->nextConfigEntry) {
 			if (currentConfigEntry->isDefault) {
 				BootMenuEntry(currentConfigEntry);
 				return;
@@ -73,17 +76,17 @@ void DrawBootMenu(void *rootEntry) {
 	
 	menu = malloc(sizeof(TEXTMENU));
 	memset(menu,0x00,sizeof(TEXTMENU));
-	menu->szCaption="Boot menu\n";
+	strcpy(menu->szCaption, "Boot menu");
   
 	for (currentConfigEntry = configEntry; currentConfigEntry != NULL; 
-		currentConfigEntry = (CONFIGENTRY*)currentConfigEntry->nextConfigEntry) {
+		currentConfigEntry = currentConfigEntry->nextConfigEntry) {
 	
 		menuPtr = (TEXTMENUITEM *)malloc(sizeof(TEXTMENUITEM*));
 		memset(menuPtr, 0x00, sizeof(menuPtr));
 		if (currentConfigEntry->title == NULL) {
-			menuPtr->szCaption="Untitled";
+			strcpy(menuPtr->szCaption,"Untitled");
 		}
-		else menuPtr->szCaption=currentConfigEntry->title;
+		else strncpy(menuPtr->szCaption,currentConfigEntry->title,50);
 		menuPtr->functionPtr = BootMenuEntry;
 		menuPtr->functionDataPtr = (void *)currentConfigEntry;
 		//If this config entry is default, mark the menu item as default.

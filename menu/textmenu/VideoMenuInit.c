@@ -18,12 +18,11 @@ TEXTMENU *VideoMenuInit(void) {
 
 	menuPtr = (TEXTMENU*)malloc(sizeof(TEXTMENU));
 	memset(menuPtr,0x00,sizeof(TEXTMENU));
-	menuPtr->szCaption="Video Settings Menu";
+	strcpy(menuPtr->szCaption, "Video Settings Menu");
 
 
 	itemPtr = (TEXTMENUITEM*)malloc(sizeof(TEXTMENUITEM));
 	memset(itemPtr,0x00,sizeof(TEXTMENUITEM));
-	itemPtr->szCaption = malloc(20);
 	if(((u8 *)&eeprom)[0x96]&0x01) {
 		strcpy(itemPtr->szCaption, "Display Size: Widescreen");
 	}
@@ -31,13 +30,12 @@ TEXTMENU *VideoMenuInit(void) {
 		strcpy(itemPtr->szCaption, "Display Size: Normal");
 	}
 	itemPtr->functionPtr=SetWidescreen;
-	itemPtr->functionDataPtr = &itemPtr->szCaption;
+	itemPtr->functionDataPtr = itemPtr->szCaption;
 	TextMenuAddItem(menuPtr, itemPtr);
 	
 	
 	itemPtr = (TEXTMENUITEM*)malloc(sizeof(TEXTMENUITEM));
 	memset(itemPtr,0x00,sizeof(TEXTMENUITEM));
-	itemPtr->szCaption = malloc(20);
 	
 	switch(*((VIDEO_STANDARD *)&eeprom.VideoStandard)) {
 		case NTSC_M:
@@ -54,7 +52,7 @@ TEXTMENU *VideoMenuInit(void) {
 		break;
 	}
 	itemPtr->functionPtr=SetVideoStandard;
-	itemPtr->functionDataPtr = &itemPtr->szCaption;
+	itemPtr->functionDataPtr = itemPtr->szCaption;
 	TextMenuAddItem(menuPtr, itemPtr);
 
 	return menuPtr;

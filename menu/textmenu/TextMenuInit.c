@@ -19,41 +19,40 @@ TEXTMENU *TextMenuInit(void) {
 	
 	//Create the root menu - MANDATORY
 	menuPtr = malloc(sizeof(TEXTMENU));
-	menuPtr->szCaption="Main Menu\n";
+	strcpy(menuPtr->szCaption, "Main Menu");
 	menuPtr->firstMenuItem=NULL;
 	
 	//VIDEO SETTINGS MENU
 	itemPtr = (TEXTMENUITEM*)malloc(sizeof(TEXTMENUITEM));
 	memset(itemPtr,0x00,sizeof(TEXTMENUITEM));
-	itemPtr->szCaption="Video Settings";	
-	TextMenuAddItem(menuPtr, itemPtr);
-	menuPtr->firstMenuItem = itemPtr;
+	strcpy(itemPtr->szCaption, "Video Settings");
 	itemPtr->functionPtr=DrawChildTextMenu;
 	itemPtr->functionDataPtr = (void *)VideoMenuInit();
+	TextMenuAddItem(menuPtr, itemPtr);
 
 	//HDD MENU
 	itemPtr = (TEXTMENUITEM*)malloc(sizeof(TEXTMENUITEM));
 	memset(itemPtr,0x00,sizeof(TEXTMENUITEM));
-	itemPtr->szCaption="Hdd Menu";	
-	TextMenuAddItem(menuPtr, itemPtr);
+	strcpy(itemPtr->szCaption, "Hdd Menu");
 	itemPtr->functionPtr=DrawChildTextMenu;
 	itemPtr->functionDataPtr = (void *)HddMenuInit();
+	TextMenuAddItem(menuPtr, itemPtr);
 	
 #ifdef FLASH
 	//FLASH MENU
 	itemPtr = (TEXTMENUITEM*)malloc(sizeof(TEXTMENUITEM));
 	memset(itemPtr,0x00,sizeof(TEXTMENUITEM));
-	itemPtr->szCaption="Flash Menu";	
-	TextMenuAddItem(menuPtr, itemPtr);
+	strcpy(itemPtr->szCaption, "Flash Menu");
 	itemPtr->functionPtr=DrawChildTextMenu;
 	itemPtr->functionDataPtr = (void *)FlashMenuInit();
+	TextMenuAddItem(menuPtr, itemPtr);
 #endif
 	itemPtr = (TEXTMENUITEM*)malloc(sizeof(TEXTMENUITEM));
 	memset(itemPtr,0x00,sizeof(TEXTMENUITEM));
-	itemPtr->szCaption="Reset Menu";	
-	TextMenuAddItem(menuPtr, itemPtr);
+	strcpy(itemPtr->szCaption, "Reset Menu");
 	itemPtr->functionPtr=DrawChildTextMenu;
 	itemPtr->functionDataPtr = (void *)ResetMenuInit();
+	TextMenuAddItem(menuPtr, itemPtr);
 	
 	return menuPtr;
 }

@@ -25,7 +25,7 @@ struct TEXTMENU;
 
 typedef struct TEXTMENUITEM {
 	//Menu item text
-	char *szCaption;
+	char szCaption[51];
 	//Pointer to function to run when menu item selected.
 	//If NULL, menuitem will not do anything when selected
 	void (*functionPtr) (void *);
@@ -38,7 +38,7 @@ typedef struct TEXTMENUITEM {
 
 typedef struct TEXTMENU {
 	//Menu title e.g. "Main Menu"
-	char *szCaption;
+	char szCaption[51];
 	//A pointer to the first item of the linked list of menuitems that
 	//make up this menu.
 	TEXTMENUITEM* firstMenuItem;

@@ -14,7 +14,7 @@ enum BootTypes {
 	BOOT_NATIVE,
 };
 
-typedef struct {
+typedef struct CONFIGENTRY {
         int  drive;
 	int  partition;
 	int  isDefault;

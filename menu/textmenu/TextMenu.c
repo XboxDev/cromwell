@@ -39,7 +39,7 @@ void TextMenuDraw(TEXTMENU* menu, TEXTMENUITEM *firstVisibleMenuItem, TEXTMENUIT
 	
 	//Draw the menu title.
 	VIDEO_ATTR=0x000000;
-	printk("\2          %s",menu->szCaption);
+	printk("\2          %s\n",menu->szCaption);
 	VIDEO_CURSOR_POSY+=30;
 	
 	//Draw the menu items

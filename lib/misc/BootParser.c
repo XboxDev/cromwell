@@ -38,7 +38,7 @@ CONFIGENTRY *ParseConfig(char *szBuffer, unsigned int fileLen, char *szPath) {
 				strncpy(currentEntry->title, paramdata, strlen(paramdata));
 			}
 			else {	
-				currentEntry->nextConfigEntry = (struct CONFIGENTRY*)malloc(sizeof(CONFIGENTRY));
+				currentEntry->nextConfigEntry = malloc(sizeof(CONFIGENTRY));
 				memset(currentEntry->nextConfigEntry, 0x00, sizeof(CONFIGENTRY));
 				currentEntry = (CONFIGENTRY*)currentEntry->nextConfigEntry;
 				strncpy(currentEntry->title, paramdata, strlen(paramdata));
@@ -87,12 +87,11 @@ CONFIGENTRY *ParseConfig(char *szBuffer, unsigned int fileLen, char *szPath) {
 	
 	if (defaultTitle!=NULL) {
 		//A default entry was specified. Find it and mark it default.
-		for (currentEntry = rootEntry; currentEntry!=NULL; currentEntry = (CONFIGENTRY*)currentEntry->nextConfigEntry) {
+		for (currentEntry = rootEntry; currentEntry!=NULL; currentEntry = currentEntry->nextConfigEntry) {
 			if (!strncmp(currentEntry->title, defaultTitle, strlen(defaultTitle))) {
 				currentEntry->isDefault = 1;
 				break;
 			}
-
 		}
 	}
 	
