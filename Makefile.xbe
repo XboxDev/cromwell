@@ -1,0 +1,59 @@
+CC	= gcc
+INCLUDE = -I$(TOPDIR)/grub -I$(TOPDIR)/include -I$(TOPDIR)/ -I./ -I$(TOPDIR)/fs/cdrom \
+	-I$(TOPDIR)/fs/fatx -I$(TOPDIR)/lib/eeprom -I$(TOPDIR)/lib/crypt -I$(TOPDIR)/drivers/usb \
+	-I$(TOPDIR)/drivers/video -I$(TOPDIR)/drivers/flash -I$(TOPDIR)/lib/misc \
+	-I$(TOPDIR)/boot_xbe/ -I$(TOPDIR)/fs/grub -I$(TOPDIR)/lib/font
+CFLAGS	= -g -O2 -Wall -Werror $(INCLUDE) -DXBE
+LD      = ld
+OBJCOPY = objcopy
+
+TOPDIR  := $(shell /bin/pwd)
+SUBDIRS	=	fs drivers lib boot
+
+LDFLAGS-XBE     = -s -S -T $(TOPDIR)/scripts/ldscript-xbe.ld
+LDFLAGS-BOOT    = -s -S -T $(TOPDIR)/scripts/xbeboot.ld
+
+OBJECTS-XBE = $(TOPDIR)/boot_xbe/xbeboot.o
+OBJECTS = $(TOPDIR)/obj/*.o
+
+
+RESOURCES = $(TOPDIR)/obj/xcodes11.elf $(TOPDIR)/obj/backdrop.elf
+
+export INCLUDE
+export TOPDIR
+
+all: cromwellsubdirs backdrop.elf xcodes11.elf image-xbe.elf image-xbe.bin default.xbe
+
+cromwellsubdirs: $(patsubst %, _dir_%, $(SUBDIRS))
+$(patsubst %, _dir_%, $(SUBDIRS)) : dummy
+	$(MAKE) CFLAGS="$(CFLAGS)" -C $(patsubst _dir_%, %, $@)
+
+dummy:
+
+clean:
+	find . \( -name '*.[oas]' -o -name core -o -name '.*.flags' \) -type f -print \
+		| grep -v lxdialog/ | xargs rm -f
+	rm -f $(TOPDIR)/obj/*
+	rm -f $(TOPDIR)/xbe/*
+	rm -f $(TOPDIR)/image/*
+
+backdrop.elf:
+	${LD} -r --oformat elf32-i386 -o $(TOPDIR)/obj/$@ -T $(TOPDIR)/scripts/backdrop.ld -b binary $(TOPDIR)/pics/backdrop.jpg
+
+xcodes11.elf:
+	${LD} -r --oformat elf32-i386 -o $(TOPDIR)/obj/$@ -T $(TOPDIR)/scripts/xcodes11.ld -b binary $(TOPDIR)/bin/xcodes11.bin
+
+default.elf: ${OBJECTS-XBE}
+	${LD} -o $(TOPDIR)/obj/$@ ${OBJECTS-XBE} ${LDFLAGS-BOOT}
+	
+default.xbe: default.elf
+	${OBJCOPY} --output-target=binary --strip-all $(TOPDIR)/obj/default.elf $(TOPDIR)/xbe/$@
+	cat $(TOPDIR)/obj/image-xbe.bin $(TOPDIR)/obj/image-xbe.bin $(TOPDIR)/obj/image-xbe.bin $(TOPDIR)/obj/image-xbe.bin >> $(TOPDIR)/xbe/default.xbe
+	dd if=/dev/zero bs=1024 count=200 >> $(TOPDIR)/xbe/default.xbe
+	@ls -l $(TOPDIR)/xbe/$@
+				
+image-xbe.elf:
+	${LD} -o $(TOPDIR)/obj/$@ ${OBJECTS} ${RESOURCES} ${LDFLAGS-XBE}
+
+image-xbe.bin:
+	${OBJCOPY} --output-target=binary --strip-all $(TOPDIR)/obj/image-xbe.elf $(TOPDIR)/obj/$@

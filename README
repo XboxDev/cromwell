@@ -1,0 +1,800 @@
+CROMWELL 1.20dev   2003-03-13
+Xbox Linux Team
+
+Contact: andy@warmcat.com, mist@c64.org. xboxlinux@meriac.de
+
+
+What is Cromwell?
+
+Cromwell is a clean BIOS for the Xbox.  Clean means that it is not
+using any MS code.  Cromwell cannot launch native games, it can only
+boot into Linux (or more correctly, a file vmlinuz which can
+contain anything, but is usually the Linux kernel).
+
+ - Improved stupid sounds :-)
+ - S/PDIF up (but this is not inheritable by Linux)
+ - new preliminary 800x600 support in NTSC thanks to Oliver Schwartz
+ - new Audio up in Cromwell - functional but sort of stupid sounds
+    due to not having any room for samples in the ROM
+ - new Fixed having to reset time and date when going back to MS BIOS
+ - new Linux now aware that HDD and DVD are DMA compatible and uses
+    them in DMA mode automatically
+ - new CDROM boot now working from Xromwell mode
+ - new Most interrupts in Xromwell now, Tux does his little journey
+    removed several #ifndef XBEs which were unnecessary making it
+	  smoother
+
+ - new automatic RGB AV cable support (1024x576 only so far)
+ - new 1024x576 automatic widescreen support (when widesceen was
+   selected in MS native BIOS settings)
+ - the ROM image is now 256KByte, works with all flashable modchips
+ - single ROM compatible with v1.0 and v1.1 Xboxes
+ - NEW 800x600 overscan-corrected video for PAL
+ - ** No Microsoft code **  - a legal[1] alternative BIOS
+ - auto-unlocks the HDD according to your EEPROM information
+ - boots using MBR -> active partition -> reiserfs native loader,
+   so it does not use LILO or GRUB, or keep any private HDD space.
+ - Boot menu to change between /boot/linuxboot.cfg, /boot/vmlinuz, CD
+   and a TBD Settings screen
+
+LEGAL NOTE 1:
+
+[1]Consult a lawyer if you want legal advice.  But we believe this BIOS
+is immune to legal attack by MS as it contains none of their code and
+won't even run native games
+
+LEGAL NOTE 2:
+
+This replacement BIOS will be used by most people in a flashable
+modchip.  Up to now, MS might have argued that modchips are used
+solely to hold hacked native BIOSes and are therefore somehow
+illegal (still beats me why that would be, as each Xbox owner is
+legitimately licensed to have a BIOS, if they choose to modify it,
+just using the original or the modified version at any one time,
+surely invalidating their warrenty should be the limit of MS's
+comeback).  We would encourage manufacturers of flashable modchips
+to ship their mods with this Linux Cromwell BIOS on them,
+although probably they'll want to wait another version or two
+for the next set of features.
+
+
+OTHER NOTES
+
+ - defaults to 800x600 for NTSC and PAL
+ - if you have selected Widescreen in the native MS BIOS settings,
+   then 1024x576 is selected with WSS if you are in PAL
+ - in PAL, 640x480, 640x576, 720x576 and 800x600 also available
+
+
+
+How to set up for booting Linux from BIOS on your Xbox
+------------------------------------------------------
+
+NOTE 1 - if you go back to a hacked or original BIOS, you will still
+be able to boot Linux via CD as before, and play native games.
+
+NOTE 2- do NOT blow this into a flash that you have no way of externally
+reprogramming.  Reprogramming the BIOS is supported from within Linux
+(via the raincoat app), but not from within the bootrom itself yet.  If
+you don't successfully get Linux installed you will need to externally
+reprogram your modchip to recover.
+
+Installing Cromwell
+
+1) Flash your modchip with image.bin
+
+Installing Linux
+
+1) Start up the xbox in Cromwell, insert the Mandrake 9 distro (from
+http://xbox-linux.sf.net), or Ed's Debian distro
+(from http://xbox-debian.linux.pt/ ) install CD.  Wait until the CD
+is lit on the screen and close the tray
+
+2) Linux will install, follow the instructions for your distro
+
+
+Booting into Linux the first time
+
+1) Follow the same procedure as above, this time with the boot CD
+if your distro has one.  This provides just the Linux kernel and
+initrd and the rest of the boot takes place from the HDD.
+
+2) Once you are booted, copy vmlinuz and initrd from the boot CD
+to /boot on the HDD.  For Mandrake it looks like this:
+
+cp /mnt/cdrom/vmlinuz /boot
+cp /mnt/cdrom/initrd /boot
+
+3) shutdown your linux install
+
+
+Booting into Linux subsequently
+
+1) Just push the DVD tray shut as soon as the boot starts, this
+will boot you quickly from your HDD
+
+
+Compile-time options defaults
+
+See config-rom.h
+
+// selects between the supported video modes, see boot.h for enum listing those available
+#define VIDEO_PREFERRED_LINES VIDEO_MODE_800x600
+
+// uncomment to force CD boot mode even if MBR present
+// default is to boot from HDD if MBR present, else CD
+//#define FORCE_CD_BOOT
+
+// display a line like Composite 480 detected if uncommented
+#define REPORT_VIDEO_MODE
+
+// show the MBR table if the MBR is valid
+#define DISPLAY_MBR_INFO
+
+// show simple menu selection
+#define MENU
+
+Todo
+
+ - Get USB stack up in BIOS (<-- not looking forward to this)
+ - BIOS flashing (code is present already)
+ - Update to Mankdrake 9 installation CD set needed, so it copies
+   vmlinuz and initrd to /boot by default
+ - Ethernet code and stack
+
+
+Improvements!
+
+ - RGB AV cable support (1024x576 only right now)
+ - 1024x576 widescreen mode for PAL
+ - 800x600 PAL mode!  Quite pleasant for browsing, etc.
+ - works with v1.1 or v1.0
+ - If the keyword no is used for an initrd in the linuxconf.cfg
+   then no initrd will load from media
+ - *NEW* ISO9660 native support in BIOS - If no MBR on HDD, boots from
+   Mandrake 9 install CD to install Linux itself
+ - *NEW* honours linuxboot.cfg if found in HDD /boot or CD
+ - *NEW* extra compile-time options in config-rom.h
+ - now capable of booting a Mandrake 9 Linux install by itself
+ - VIDEO IS FULLY UP (Composite cable only) at boottime and
+   inside Linux; works with Oliver's accellerated X driver (reserves
+	 4MByte of RAM for video)
+
+
+NOTE ABOUT RGB CABLE SUPPORT ON ED'S DEBIAN TESTING 0.1.0
+
+Anders' excellent extsmi driver has a small mistake in it which kills
+RGB output when it starts up.  It forces the video encoder to issue
+composite instead.
+
+In order to work around this, you will need to get xbv from CVS, and
+run
+
+xbv -m 4
+
+at some point after the extsmi driver has started.  Then you will be
+immediately returned to the fully glory of RGB (which is massively
+superior for text than composite).  On a modern widescreen TV with
+RGB AV cable, the 1024x576 mode is just like a monitor.
+
+
+
+NOTE ON BUILDING CROMWELL AS XROMWELL
+
+XROMWELL is an alternative build of Cromwell which comes out as an
+unsigned XBE default.xbe.  Ed Hucek did the work to create this
+from Cromwell.
+
+There is a small script ./burnx which will make clean, then make the
+Xromwell build and use cdrecord to burn it to a cdr or cdrw.
+
+For cdrw, you can use make erase (does not need -f) to erase the cdrw
+in your writer drive.
+
+If you plan to develop with Xromwell, what works best is having two
+CDRWs on the go, as soon as you write one, erase the other one
+while you test it.
+
+
+
+Here are four /etc/X11/XF86Config-4 which work with Oliver's video driver.
+Unfortunately you must match the right file to the right resolution:
+
+---------------------------------------------------------------------------------
+For 640 x 576 boot, use the following XF86Config-4:
+
+
+Section "Files"
+    RgbPath "/usr/X11R6/lib/X11/rgb"
+    FontPath "unix/:7100"			# local font server
+
+    # if the local font server has problems, we can fall back on these
+    FontPath "/usr/lib/X11/fonts/misc"
+    FontPath "/usr/lib/X11/fonts/cyrillic"
+    FontPath "/usr/lib/X11/fonts/100dpi/:unscaled"
+    FontPath "/usr/lib/X11/fonts/75dpi/:unscaled"
+    FontPath "/usr/lib/X11/fonts/Type1"
+    FontPath "/usr/lib/X11/fonts/Speedo"
+    FontPath "/usr/lib/X11/fonts/100dpi"
+    FontPath "/usr/lib/X11/fonts/75dpi"
+EndSection
+
+Section "Module"
+    # Load	"GLcore"
+    Load "bitmap"
+
+    # Load	"dbe"
+    # Load	"ddc"
+    # Load	"dri"
+    # Load	"extmod"
+    Load "freetype"
+
+    # Load	"glx"
+    # Load	"int10"
+    # Load	"fb"
+    # Load	"pex5"
+    # Load	"record"
+    # Load	"speedo"
+    Load "type1"
+
+    # Load	"vbe"
+    # Load	"xie"
+
+    Subsection "extmod"
+        Option "omit XFree86-DGA"
+    EndSubsection
+EndSection
+
+Section "InputDevice"
+    Identifier "Generic Keyboard"
+    Driver "keyboard"
+    Option "XkbModel" "pc104"
+    Option "XkbLayout" "us"
+    Option "CoreKeyboard"
+    Option "XkbRules" "xfree86"
+EndSection
+
+Section "InputDevice"
+    Identifier "Configured Mouse"
+    Driver "mouse"
+    Option "Protocol" "PS/2"
+    Option "Device" "/dev/input/mouse0"
+    Option "Emulate3Buttons" "true"
+    Option "CorePointer"
+    Option "ZAxisMapping" "4 5"
+EndSection
+
+Section "Device"
+    Identifier "Framebuffer"
+    Driver "fbdev"
+    Option "UseFBDev"
+    Option "fbdev" "/dev/fb/0"
+EndSection
+
+Section "Device"
+    Identifier "Nv"
+    Driver "nv"
+    Option "NoAccel" "1"
+    Option "UseFBDev" "1"
+    Option "HWCursor" "0"
+EndSection
+
+Section "Modes"
+    Identifier "default"
+    Modeline "640x480" 30.72  640 672 752 832  576 580 584 600 -hsync -vsync
+EndSection
+
+Section "Monitor"
+    Identifier "Generic Monitor"
+    HorizSync 30-86
+    VertRefresh 50-130
+    UseModes "default"
+    Option "DPMS"
+EndSection
+
+Section "Screen"
+    Identifier "Default Screen"
+    Device "Nv"
+    Monitor "Generic Monitor"
+    DefaultColorDepth 16
+
+    Subsection "Display"
+        Depth 8
+        Modes "640x480"
+    EndSubsection
+
+    Subsection "Display"
+        Depth 15
+        Modes "640x480"
+    EndSubsection
+
+    Subsection "Display"
+        Depth 16
+        Modes "640x480"
+    EndSubsection
+
+    Subsection "Display"
+        Depth 24
+        Modes "640x480"
+    EndSubsection
+
+    DefaultDepth 24
+EndSection
+
+Section "ServerLayout"
+    Identifier "Default Layout"
+    InputDevice "Generic Keyboard"
+    InputDevice "Configured Mouse"
+    Screen "Default Screen"
+EndSection
+
+Section "DRI"
+    Mode 0666
+EndSection
+### END DEBCONF SECTION
+
+Section "ServerFlags"
+    Option "PciForceConfig2" "false"
+    Option "AllowMouseOpenFail" "true"
+    Option "PciOsConfig" "true"
+    Option "PciForceConfig1" "false"
+    Option "PciProbe1" "false"
+    Option "PciProbe2" "false"
+EndSection
+
+
+
+---------------------------------------------------------------------------------
+For 640 x 480 boot, use the following XF86Config-4:
+
+Section "Files"
+    RgbPath "/usr/X11R6/lib/X11/rgb"
+    FontPath "unix/:7100"			# local font server
+
+    # if the local font server has problems, we can fall back on these
+    FontPath "/usr/lib/X11/fonts/misc"
+    FontPath "/usr/lib/X11/fonts/cyrillic"
+    FontPath "/usr/lib/X11/fonts/100dpi/:unscaled"
+    FontPath "/usr/lib/X11/fonts/75dpi/:unscaled"
+    FontPath "/usr/lib/X11/fonts/Type1"
+    FontPath "/usr/lib/X11/fonts/Speedo"
+    FontPath "/usr/lib/X11/fonts/100dpi"
+    FontPath "/usr/lib/X11/fonts/75dpi"
+EndSection
+
+Section "Module"
+    # Load	"GLcore"
+    Load "bitmap"
+
+    # Load	"dbe"
+    # Load	"ddc"
+    # Load	"dri"
+    # Load	"extmod"
+    Load "freetype"
+
+    # Load	"glx"
+    # Load	"int10"
+    # Load	"fb"
+    # Load	"pex5"
+    # Load	"record"
+    # Load	"speedo"
+    Load "type1"
+
+    # Load	"vbe"
+    # Load	"xie"
+
+    Subsection "extmod"
+        Option "omit XFree86-DGA"
+    EndSubsection
+EndSection
+
+Section "InputDevice"
+    Identifier "Generic Keyboard"
+    Driver "keyboard"
+    Option "XkbModel" "pc104"
+    Option "XkbLayout" "us"
+    Option "CoreKeyboard"
+    Option "XkbRules" "xfree86"
+EndSection
+
+Section "InputDevice"
+    Identifier "Configured Mouse"
+    Driver "mouse"
+    Option "Protocol" "PS/2"
+    Option "Device" "/dev/input/mouse0"
+    Option "Emulate3Buttons" "true"
+    Option "CorePointer"
+    Option "ZAxisMapping" "4 5"
+EndSection
+
+Section "Device"
+    Identifier "Framebuffer"
+    Driver "fbdev"
+    Option "UseFBDev"
+    Option "fbdev" "/dev/fb/0"
+EndSection
+
+Section "Device"
+    Identifier "Nv"
+    Driver "nv"
+    Option "NoAccel" "1"
+    Option "UseFBDev" "1"
+    Option "HWCursor" "0"
+EndSection
+
+Section "Modes"
+    Identifier "default"
+    Modeline "640x480" 30.72  640 672 752 832  480 580 584 600 -hsync -vsync
+EndSection
+
+Section "Monitor"
+    Identifier "Generic Monitor"
+    HorizSync 30-86
+    VertRefresh 50-130
+    UseModes "default"
+    Option "DPMS"
+EndSection
+
+Section "Screen"
+    Identifier "Default Screen"
+    Device "Nv"
+    Monitor "Generic Monitor"
+    DefaultColorDepth 16
+
+    Subsection "Display"
+        Depth 8
+        Modes "640x480"
+    EndSubsection
+
+    Subsection "Display"
+        Depth 15
+        Modes "640x480"
+    EndSubsection
+
+    Subsection "Display"
+        Depth 16
+        Modes "640x480"
+    EndSubsection
+
+    Subsection "Display"
+        Depth 24
+        Modes "640x480"
+    EndSubsection
+
+    DefaultDepth 24
+EndSection
+
+Section "ServerLayout"
+    Identifier "Default Layout"
+    InputDevice "Generic Keyboard"
+    InputDevice "Configured Mouse"
+    Screen "Default Screen"
+EndSection
+
+Section "DRI"
+    Mode 0666
+EndSection
+### END DEBCONF SECTION
+
+Section "ServerFlags"
+    Option "PciForceConfig2" "false"
+    Option "AllowMouseOpenFail" "true"
+    Option "PciOsConfig" "true"
+    Option "PciForceConfig1" "false"
+    Option "PciProbe1" "false"
+    Option "PciProbe2" "false"
+EndSection
+
+
+
+
+---------------------------------------------------------------------------------
+For 800 x 600 boot, use the following XF86Config-4:
+
+Section "Files"
+    RgbPath "/usr/X11R6/lib/X11/rgb"
+    FontPath "unix/:7100"			# local font server
+
+    # if the local font server has problems, we can fall back on these
+    FontPath "/usr/lib/X11/fonts/misc"
+    FontPath "/usr/lib/X11/fonts/cyrillic"
+    FontPath "/usr/lib/X11/fonts/100dpi/:unscaled"
+    FontPath "/usr/lib/X11/fonts/75dpi/:unscaled"
+    FontPath "/usr/lib/X11/fonts/Type1"
+    FontPath "/usr/lib/X11/fonts/Speedo"
+    FontPath "/usr/lib/X11/fonts/100dpi"
+    FontPath "/usr/lib/X11/fonts/75dpi"
+EndSection
+
+Section "Module"
+    # Load	"GLcore"
+    Load "bitmap"
+
+    # Load	"dbe"
+    # Load	"ddc"
+    # Load	"dri"
+    # Load	"extmod"
+    Load "freetype"
+
+    # Load	"glx"
+    # Load	"int10"
+    # Load	"fb"
+    # Load	"pex5"
+    # Load	"record"
+    # Load	"speedo"
+    Load "type1"
+
+    # Load	"vbe"
+    # Load	"xie"
+
+    Subsection "extmod"
+        Option "omit XFree86-DGA"
+    EndSubsection
+EndSection
+
+Section "InputDevice"
+    Identifier "Generic Keyboard"
+    Driver "keyboard"
+    Option "XkbModel" "pc104"
+    Option "XkbLayout" "us"
+    Option "CoreKeyboard"
+    Option "XkbRules" "xfree86"
+EndSection
+
+Section "InputDevice"
+    Identifier "Configured Mouse"
+    Driver "mouse"
+    Option "Protocol" "PS/2"
+    Option "Device" "/dev/input/mouse0"
+    Option "Emulate3Buttons" "true"
+    Option "CorePointer"
+    Option "ZAxisMapping" "4 5"
+EndSection
+
+Section "Device"
+    Identifier "Framebuffer"
+    Driver "fbdev"
+    Option "UseFBDev"
+    Option "fbdev" "/dev/fb/0"
+EndSection
+
+Section "Device"
+    Identifier "Nv"
+    Driver "nv"
+    Option "NoAccel" "1"
+    Option "UseFBDev" "1"
+    Option "HWCursor" "0"
+EndSection
+
+Section "Modes"
+    Identifier "default"
+    Modeline "640x480" 30.72  640 672 752 832  480 580 584 600 -hsync -vsync
+EndSection
+
+Section "Monitor"
+    Identifier "Generic Monitor"
+    HorizSync 30-86
+    VertRefresh 50-130
+    UseModes "default"
+    Option "DPMS"
+EndSection
+
+
+Section "Screen"
+    Identifier "Default Screen"
+    Device "Nv"
+    Monitor "Generic Monitor"
+    DefaultColorDepth 16
+
+    Subsection "Display"
+        Depth 8
+        Modes "800x600"
+    EndSubsection
+
+    Subsection "Display"
+        Depth 15
+        Modes "800x600"
+    EndSubsection
+
+    Subsection "Display"
+        Depth 16
+        Modes "800x600"
+    EndSubsection
+
+    Subsection "Display"
+        Depth 24
+        Modes "800x600"
+    EndSubsection
+
+    DefaultDepth 24
+EndSection
+
+Section "ServerLayout"
+    Identifier "Default Layout"
+    InputDevice "Generic Keyboard"
+    InputDevice "Configured Mouse"
+    Screen "Default Screen"
+EndSection
+
+Section "DRI"
+    Mode 0666
+EndSection
+### END DEBCONF SECTION
+
+Section "ServerFlags"
+    Option "PciForceConfig2" "false"
+    Option "AllowMouseOpenFail" "true"
+    Option "PciOsConfig" "true"
+    Option "PciForceConfig1" "false"
+    Option "PciProbe1" "false"
+    Option "PciProbe2" "false"
+EndSection
+
+
+
+---------------------------------------------------------------------------------
+For 1024 x 576 boot, use the following XF86Config-4:
+
+
+### BEGIN DEBCONF SECTION
+# XF86Config-4 (XFree86 server configuration file) generated by dexconf, the
+# Debian X Configuration tool, using values from the debconf database.
+#
+# Edit this file with caution, and see the XF86Config-4 manual page.
+# (Type "man XF86Config-4" at the shell prompt.)
+#
+# If you want your changes to this file preserved by dexconf, only make changes
+# before the "### BEGIN DEBCONF SECTION" line above, and/or after the
+# "### END DEBCONF SECTION" line below.
+#
+# To change things within the debconf section, run the command:
+#   dpkg-reconfigure xserver-xfree86
+# as root.  Also see "How do I add custom sections to a dexconf-generated
+# XF86Config or XF86Config-4 file?" in /usr/share/doc/xfree86-common/FAQ.gz.
+
+Section "Files"
+	RgbPath     "/usr/X11R6/lib/X11/rgb"
+	FontPath	"unix/:7100"			# local font server
+	# if the local font server has problems, we can fall back on these
+	FontPath	"/usr/lib/X11/fonts/misc"
+	FontPath	"/usr/lib/X11/fonts/cyrillic"
+	FontPath	"/usr/lib/X11/fonts/100dpi/:unscaled"
+	FontPath	"/usr/lib/X11/fonts/75dpi/:unscaled"
+	FontPath	"/usr/lib/X11/fonts/Type1"
+	FontPath	"/usr/lib/X11/fonts/Speedo"
+	FontPath	"/usr/lib/X11/fonts/100dpi"
+	FontPath	"/usr/lib/X11/fonts/75dpi"
+EndSection
+
+Section "Module"
+#	Load	"GLcore"
+	Load	"bitmap"
+#	Load	"dbe"
+#	Load	"ddc"
+#	Load	"dri"
+#	Load	"extmod"
+	Load	"freetype"
+#	Load	"glx"
+#	Load	"int10"
+#	Load	"fb"
+#	Load	"pex5"
+#	Load	"record"
+#	Load	"speedo"
+	Load	"type1"
+#	Load	"vbe"
+#	Load	"xie"
+	SubSection "extmod"
+	   Option  "omit XFree86-DGA"
+	EndSubSection
+EndSection
+
+Section "InputDevice"
+	Identifier	"Generic Keyboard"
+	Driver		"keyboard"
+	Option		"CoreKeyboard"
+	Option		"XkbRules"	"xfree86"
+	Option		"XkbModel"	"pc104"
+	Option		"XkbLayout"	"us"
+EndSection
+
+Section "InputDevice"
+	Identifier	"Configured mouse"
+	Driver		"mouse"
+	Option          "CorePointer"
+	Option		"Device"		"/dev/input/mice"
+	Option		"Protocol"		"ImPS/2"
+	Option		"Emulate3Buttons"	"true"
+	Option		"ZAxisMapping"		"4 5"
+EndSection
+
+Section "Device"
+	Identifier	"Framebuffer"
+	Driver		"fbdev"
+	Option 		"fbdev" "/dev/fb/0" 
+	Option 		"UseFBDev"
+EndSection
+
+Section "Device"
+	Identifier	"Nv"
+	Driver		"nv"
+	Option		"UseFBDev" "1"
+	Option          "NoAccel"  "0"
+	Option          "HWCursor" "0"
+	BusID		"PCI:1:0:0"
+EndSection
+
+
+Section "Modes"
+	Identifier    	"default"
+    Modeline "1024x576" 32.234 1024 1048 1096 1176  576 601 617 659 -hsync -vsync
+EndSection
+
+Section "Monitor"
+	Identifier	"Generic Monitor"
+	HorizSync	20-170
+	VertRefresh	30-130
+	Option		"DPMS"
+	UseModes        "default"
+EndSection
+
+Section "Screen"
+	Identifier	"Default Screen"
+	Device		"Nv"
+	Monitor		"Generic Monitor"
+	DefaultDepth	24
+	SubSection "Display"
+		Depth		1
+		Modes		"1024x576"
+	EndSubSection
+	SubSection "Display"
+		Depth		4
+		Modes		"1024x576"
+	EndSubSection
+	SubSection "Display"
+		Depth		8
+		Modes		"1024x576"
+	EndSubSection
+	SubSection "Display"
+		Depth		15
+		Modes		"1024x576"
+	EndSubSection
+	SubSection "Display"
+		Depth		16
+		Modes		"1024x576"
+	EndSubSection
+	SubSection "Display"
+		Depth		24
+		Modes		"1024x576"
+	EndSubSection
+	SubSection "Display"
+		Depth		32
+		Modes		"1024x576"
+	EndSubSection
+EndSection
+
+Section "ServerLayout"
+	Identifier	"Default Layout"
+	Screen		"Default Screen"
+	InputDevice	"Generic Keyboard"
+	InputDevice	"Configured Mouse"
+EndSection
+
+Section "DRI"
+	Mode	0666
+EndSection
+
+### END DEBCONF SECTION
+
+Section "ServerFlags"
+	Option "PciProbe1" "false"
+	Option "PciProbe2" "false"
+	Option "PciForceConfig1" "false"
+	Option "PciForceConfig2" "false"
+	Option "PciOsConfig" "true"
+	Option "AllowMouseOpenFail" "true"
+EndSection
+
+
+
+
+
