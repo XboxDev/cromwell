@@ -235,14 +235,17 @@ void xstart16 (unsigned long a, unsigned long b, char * c)
 
 extern void startLinux(void* initrdPos, unsigned long initrdSize, const char* appendLine);
 #define INITRD_POS 0x02000000
+#define MAX_APPEND_LINE_LENGTH 512
 
 int xstart32(unsigned long entry_point, ...)
 {
 	int ret = 1;
 	char* bootpCmdline;
-	char appendLine[257];
+	char appendLine[MAX_APPEND_LINE_LENGTH];
+	char* appendLinePtr = appendLine;
 	char length;
-	int initrdSize = 0;
+	unsigned long initrdSize = 0;
+	void* initrd = NULL;
 	va_list list;
 	void* eb;
 	va_start(list, entry_point);
@@ -253,17 +256,6 @@ int xstart32(unsigned long entry_point, ...)
 	parse_elf_boot_notes(eb, &header, &bootp);
 	if ((header != NULL) && (bootp != NULL))
 	{
-		// look for kernel command line
-		if (find_cmdline(bootp->bp_vend, &bootpCmdline, &length))
-		{
-			memcpy(appendLine, bootpCmdline, length);
-			appendLine[length] = '\0';
-			printf("Using cmdline from BOOTP: %s\n", appendLine);
-		}
-		else
-		{
-			appendLine[0] = '\0';
-		}
 		// ramdisk setup
 		switch(header->img.magic)
 		{
@@ -276,12 +268,50 @@ int xstart32(unsigned long entry_point, ...)
 			ret = 0;
 			break;
 		}
-		if (ret && seg[S_RAMDISK] != 0)
+		if (ret && (seg[S_RAMDISK] != 0))
 		{
 			initrdSize = seg[S_RAMDISK]->p_filesz;
-			printf("Using ramdisk at 0x%X, size 0x%X\n", seg[S_RAMDISK]->p_paddr, initrdSize);
-			memcpy((void*)INITRD_POS, (void*)seg[S_RAMDISK]->p_paddr, initrdSize);
+			initrd=(void*)seg[S_RAMDISK]->p_paddr;
+			if (initrd == NULL)
+			{
+				initrdSize = 0;
+			}
+			if (initrdSize != 0)
+			{
+				printf("Using ramdisk at 0x%X, size 0x%X\n", seg[S_RAMDISK]->p_paddr, initrdSize);
+				memcpy((void*)INITRD_POS, initrd, initrdSize);
+			}
 		}
+		
+		// look for kernel command line
+		if (ret && (seg[S_PARAMS] != 0))
+		{
+			memcpy(appendLine, (char*)seg[S_PARAMS]->p_paddr, MAX_APPEND_LINE_LENGTH);
+			appendLine[MAX_APPEND_LINE_LENGTH-1] = 0;
+			appendLinePtr += strlen(appendLine);
+		}
+		if (find_cmdline(bootp->bp_vend, &bootpCmdline, &length))
+		{
+			// adjust length to maxvalue
+			int oldLength=strlen(appendLine);
+			if (oldLength + length > MAX_APPEND_LINE_LENGTH - 2)
+			{
+				length = MAX_APPEND_LINE_LENGTH - oldLength - 2;
+			}
+			// Check if there is already an entry, add space if yes
+			if (appendLinePtr != appendLine)
+			{
+				*appendLinePtr = ' ';
+				appendLinePtr++;
+			}
+			memcpy(appendLinePtr, bootpCmdline, length);
+			appendLinePtr[length] = '\0';
+		}
+		else
+		{
+			*appendLinePtr= '\0';
+		}
+		printf("Using cmdline: %s\n", appendLine);
 		startLinux((void*)INITRD_POS, initrdSize, appendLine);
 	}
 	else
