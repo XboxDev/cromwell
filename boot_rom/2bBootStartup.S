@@ -41,6 +41,9 @@
 
 #define xcode_END(val1) .byte 0xEE; .long val1 ; .long 0x0;
 
+#define SMBUS 		0x0000c000
+
+
 .code32
 
 .section .low_rom, "ax"
@@ -83,6 +86,7 @@
 	.org 0x80
 
 	xcode_pciout(0x80000884, 0x00008001);
+	xcode_pciout(0x80000810, 0x00008001);	// from evox
 	xcode_pciout(0x80000804, 0x00000003);
 	xcode_outb(0x00008049, 0x00000008);
 	xcode_outb(0x000080d9, 0x00000000);
@@ -90,6 +94,7 @@
 	xcode_pciout(0x8000f04c, 0x00000001);
 	xcode_pciout(0x8000f018, 0x00010100);
 	xcode_pciout(0x80000084, 0x07ffffff);
+	
 	xcode_pciout(0x8000f020, 0x0ff00f00);
 	xcode_pciout(0x8000f024, 0xf7f0f000);
 	xcode_pciout(0x80010010, 0x0f000000);
@@ -97,11 +102,8 @@
 	xcode_pciout(0x80010004, 0x00000007);
 	xcode_pciout(0x8000f004, 0x00000007);
 
-
-
 	xcode_poke(0x0f0010b0, 0x07633461);
 	xcode_poke(0x0f0010cc, 0x66660000);
-	
 
 	xcode_peek(0x0f101000);
 	
@@ -131,7 +133,6 @@
 	xcode_peek(0x0f101000);
 	
 
-
 	xcode_bittoggle(0xe1f3ffff,0x820c0000);
 	xcode_poke_a(0x0f101000);
 	xcode_poke(0x0f0010b8, 0xffff0000);
@@ -149,84 +150,119 @@
 	xcode_poke(0x0f10032c, 0xffffcfff);
 	xcode_poke(0x0f100328, 0x00000001);
 	xcode_poke(0x0f100338, 0x000000df);
+
+	// Set up the SM - bus controller
 	xcode_pciout(0x80000904, 0x00000001);
 	xcode_pciout(0x80000914, 0x0000c001);
 	xcode_pciout(0x80000918, 0x0000c201);
-	
 	xcode_outb(0x0000c200, 0x00000070);
-	xcode_outb(0x0000c004, 0x0000008a);
-	xcode_outb(0x0000c008, 0x000000ba);
-	xcode_outb(0x0000c006, 0x0000003f);
-	xcode_outb(0x0000c002, 0x0000000a);
-        
-        xcode_inb(0x0000c000);
-        xcode_ifgoto(0x00000010,-1)
-
-	xcode_outb(0x0000c000, 0x00000010);
-	xcode_outb(0x0000c008, 0x0000006c);
-	xcode_outb(0x0000c006, 0x00000046);
-	xcode_outb(0x0000c002, 0x0000000a);
-        
-        xcode_inb(0x0000c000);
-        xcode_ifgoto(0x00000010,-1)
  
-	xcode_outb(0x0000c000, 0x00000010);
-	xcode_outb(0x0000c008, 0x000000b8);
-	xcode_outb(0x0000c006, 0x00000000);
-	xcode_outb(0x0000c002, 0x0000000a);
-	xcode_inb(0x0000c000);
-	xcode_ifgoto(0x00000010,-1);
+	// Connexant 
+	/*
+	we have to send him the following:
+	I2CTransmitWord(0x45,0xba3f);
+	I2CTransmitWord(0x45,0x6c46);
+	I2CTransmitWord(0x45,0xb800);
+	I2CTransmitWord(0x45,0xce19);
+	I2CTransmitWord(0x45,0xc69c);
+	I2CTransmitWord(0x45,0x3208);
+	I2CTransmitWord(0x45,0xc401);
+	*/
 
-	xcode_outb(0x0000c000, 0x00000010);
-	xcode_outb(0x0000c008, 0x000000ce);
-	xcode_outb(0x0000c006, 0x00000019);
-	xcode_outb(0x0000c002, 0x0000000a);
-        xcode_inb(0x0000c000);
-        xcode_ifgoto(0x00000010,-1);
-        
-	xcode_outb(0x0000c000, 0x00000010);
-	xcode_outb(0x0000c008, 0x000000c6);
-	xcode_outb(0x0000c006, 0x0000009c);
-	xcode_outb(0x0000c002, 0x0000000a);
-        xcode_inb(0x0000c000);
-        xcode_ifgoto(0x00000010,-1);
-        
-	xcode_outb(0x0000c000, 0x00000010);
-	xcode_outb(0x0000c008, 0x00000032);
-	xcode_outb(0x0000c006, 0x00000008);
-	xcode_outb(0x0000c002, 0x0000000a);
-        xcode_inb(0x0000c000);
-        xcode_ifgoto(0x00000010,-1);
-        
-	xcode_outb(0x0000c000, 0x00000010);
-	xcode_outb(0x0000c008, 0x000000c4);
-	xcode_outb(0x0000c006, 0x00000001);
-	xcode_outb(0x0000c002, 0x0000000a);
-        xcode_inb(0x0000c000);
-        xcode_ifgoto(0x00000010,-1);
-        
-	xcode_outb(0x0000c000, 0x00000010);
-	xcode_outb(0x0000c004, 0x00000020);
-	xcode_outb(0x0000c008, 0x00000001);
-	xcode_outb(0x0000c006, 0x00000000);
-	xcode_outb(0x0000c002, 0x0000000a);
-        xcode_inb(0x0000c000);
-        xcode_ifgoto(0x00000010,-1);
-        
-	xcode_outb(0x0000c000, 0x00000010);
-	xcode_outb(0x0000c004, 0x00000021);
-	xcode_outb(0x0000c008, 0x00000001);
-	xcode_outb(0x0000c002, 0x0000000a);
-        xcode_inb(0x0000c000);
-        xcode_ifgoto(0x00000010,-1);
-        
-	xcode_outb(0x0000c000, 0x00000010);
-	xcode_inb(0x0000c006);
+	xcode_outb(0x0000c004, 0x0000008a);
+	
+	//I2CTransmitWord(0x45,0xba3f);
+
+	xcode_outb(SMBUS+8, 0x000000ba);
+	xcode_outb(SMBUS+6, 0x0000003f);
+	xcode_outb(SMBUS+2, 0x0000000a);
+        xcode_inb(SMBUS);
+        xcode_ifgoto(0x00000010,-1)
+	xcode_outb(SMBUS, 0x00000010);
+
+	
+	//I2CTransmitWord(0x45,0x6c46);
+	xcode_outb(SMBUS+8, 0x0000006c);
+	xcode_outb(SMBUS+6, 0x00000046);
+	xcode_outb(SMBUS+2, 0x0000000a);
+        xcode_inb(SMBUS);
+        xcode_ifgoto(0x00000010,-1)
+	xcode_outb(SMBUS, 0x00000010);
+
+
+	//I2CTransmitWord(0x45,0xb800);
+	xcode_outb(SMBUS+8, 0x000000b8);
+	xcode_outb(SMBUS+6, 0x00000000);
+	xcode_outb(SMBUS+2, 0x0000000a);
+        xcode_inb(SMBUS);
+        xcode_ifgoto(0x00000010,-1)
+	xcode_outb(SMBUS, 0x00000010);
+
+
+	//I2CTransmitWord(0x45,0xce19);
+	xcode_outb(SMBUS+8, 0x000000ce);
+	xcode_outb(SMBUS+6, 0x00000019);
+	xcode_outb(SMBUS+2, 0x0000000a);
+        xcode_inb(SMBUS);
+        xcode_ifgoto(0x00000010,-1)
+	xcode_outb(SMBUS, 0x00000010);
+
+
+	//I2CTransmitWord(0x45,0xc69c);
+	xcode_outb(SMBUS+8, 0x000000c6);
+	xcode_outb(SMBUS+6, 0x0000009c);
+	xcode_outb(SMBUS+2, 0x0000000a);
+        xcode_inb(SMBUS);
+        xcode_ifgoto(0x00000010,-1)
+	xcode_outb(SMBUS, 0x00000010);
+
+
+	//I2CTransmitWord(0x45,0x3208);
+	xcode_outb(SMBUS+8, 0x00000032);
+	xcode_outb(SMBUS+6, 0x00000008);
+	xcode_outb(SMBUS+2, 0x0000000a);
+        xcode_inb(SMBUS);
+        xcode_ifgoto(0x00000010,-1)
+	xcode_outb(SMBUS, 0x00000010);
+
+	
+	//I2CTransmitWord(0x45,0xc401);
+	xcode_outb(SMBUS+8, 0x000000c4);
+	xcode_outb(SMBUS+6, 0x00000001);
+	xcode_outb(SMBUS+2, 0x0000000a);
+        xcode_inb(SMBUS);
+        xcode_ifgoto(0x00000010,-1)
+	xcode_outb(SMBUS, 0x00000010);
+
+        // PIC SLAVE Address (Write)
+	xcode_outb(SMBUS+4, 0x00000020);
+
+        // I2Ctransmit(0x20,0x1,0x0);
+	xcode_outb(SMBUS+8, 0x00000001);
+	xcode_outb(SMBUS+6, 0x00000000);
+	xcode_outb(SMBUS+2, 0x0000000a);
+        xcode_inb(SMBUS);
+        xcode_ifgoto(0x00000010,-1)
+        xcode_outb(SMBUS, 0x00000010);
+
+	// PIC SLAVE Address (Read)
+	xcode_outb(SMBUS+4, 0x00000021);
+
+	// I2Cgetbyte(0x8a,0x1);
+	xcode_outb(SMBUS+8, 0x00000001);
+	xcode_outb(SMBUS+2, 0x0000000a);
+        xcode_inb(SMBUS);
+        xcode_ifgoto(0x00000010,-1)
+        xcode_outb(SMBUS, 0x00000010);
+
+
+	// If SMC version does not match ... ?????
+	xcode_inb(SMBUS+6);
+#if 0
         xcode_ifgoto(0x00000050,2);
-        
         xcode_goto(2);
-
 	xcode_pciout(0x8000036c, 0x01000000);
+#endif
 	xcode_poke(0x0f680500, 0x00011c01);
 	xcode_poke(0x0f68050c, 0x000a0400);
 	xcode_poke(0x0f001220, 0x00000000);
@@ -273,8 +309,6 @@
 	
 	xcode_pciin_a(0x80000860);
 	xcode_bittoggle(0xffffffff,0x00000400);   
-	
-
 	xcode_pciout_a(0x80000860);
 	
 
@@ -293,111 +327,33 @@
 	xcode_poke(0x0f100200, 0x03070103);
 	xcode_poke(0x0f100204, 0x11448000);
 	xcode_pciout(0x8000103c, 0x00000000);
-	xcode_pciout(0x80000884, 0x00008001);
-	xcode_pciout(0x80000884, 0x00008001);
-	xcode_pciout(0x80000884, 0x00008001);
-	xcode_pciout(0x80000884, 0x00008001);
-	xcode_pciout(0x80000884, 0x00008001);
 
-	xcode_outb(0x0000c004, 0x0000008a);
-	xcode_outb(0x0000c008, 0x000000ba);
-	xcode_outb(0x0000c006, 0x0000003f);
-	xcode_outb(0x0000c002, 0x0000000a);
-        xcode_inb(0x0000c000);
-        xcode_ifgoto(0x00000010,-1);
 
-	xcode_outb(0x0000c000, 0x00000010);
-	xcode_outb(0x0000c008, 0x0000006c);
-	xcode_outb(0x0000c006, 0x00000046);
-	xcode_outb(0x0000c002, 0x0000000a);
-        xcode_inb(0x0000c000);
-        xcode_ifgoto(0x00000010,-1);
 
-	xcode_outb(0x0000c000, 0x00000010);
-	xcode_outb(0x0000c004, 0x0000008a);
-	xcode_outb(0x0000c008, 0x000000ba);
-	xcode_outb(0x0000c006, 0x0000003f);
-	xcode_outb(0x0000c002, 0x0000000a);
-        xcode_inb(0x0000c000);   
-        xcode_ifgoto(0x00000010,-1);
-
-	xcode_outb(0x0000c000, 0x00000010);
-	xcode_outb(0x0000c008, 0x0000006c);
-	xcode_outb(0x0000c006, 0x00000046);
-	xcode_outb(0x0000c002, 0x0000000a);
-        xcode_inb(0x0000c000);
-        xcode_ifgoto(0x00000010,-1);
-
-	xcode_outb(0x0000c000, 0x00000010);
-	xcode_outb(0x0000c004, 0x0000008a);
-	xcode_outb(0x0000c008, 0x000000ba);
-	xcode_outb(0x0000c006, 0x0000003f);
-	xcode_outb(0x0000c002, 0x0000000a);
-        xcode_inb(0x0000c000);
-        xcode_ifgoto(0x00000010,-1);
-
-	xcode_outb(0x0000c000, 0x00000010);
-	xcode_outb(0x0000c008, 0x0000006c);
-	xcode_outb(0x0000c006, 0x00000046);
-	xcode_outb(0x0000c002, 0x0000000a);
-        xcode_inb(0x0000c000);
-        xcode_ifgoto(0x00000010,-1);   
-
-        
-
-	xcode_outb(0x0000c000, 0x00000010);
-	xcode_pciout(0x80000884, 0x00008001);
-	xcode_pciout(0x80000884, 0x00008001);
-	xcode_pciout(0x80000884, 0x00008001);
-	xcode_pciout(0x80000884, 0x00008001);
-	xcode_pciout(0x80000884, 0x00008001);
-	xcode_pciout(0x80000884, 0x00008001);
-	xcode_pciout(0x80000884, 0x00008001);
-	xcode_pciout(0x80000884, 0x00008001);
-	xcode_pciout(0x80000884, 0x00008001);
-	xcode_pciout(0x80000884, 0x00008001);
-	xcode_pciout(0x80000884, 0x00008001);
-	xcode_pciout(0x80000884, 0x00008001);
-	xcode_pciout(0x80000884, 0x00008001);
-	xcode_pciout(0x80000884, 0x00008001);
-	xcode_pciout(0x80000884, 0x00008001);
-	xcode_pciout(0x80000884, 0x00008001);
-	xcode_pciout(0x80000884, 0x00008001);
-	xcode_pciout(0x80000884, 0x00008001);
-	xcode_pciout(0x80000884, 0x00008001);
-	xcode_pciout(0x80000884, 0x00008001);
-	xcode_pciout(0x80000884, 0x00008001);
-	xcode_pciout(0x80000884, 0x00008001);
-	xcode_pciout(0x80000884, 0x00008001);
-	xcode_pciout(0x80000884, 0x00008001);
-	xcode_pciout(0x80000884, 0x00008001);
-	xcode_pciout(0x80000884, 0x00008001);
-	xcode_pciout(0x80000884, 0x00008001);
-	xcode_pciout(0x80000884, 0x00008001);
-	xcode_pciout(0x80000884, 0x00008001);
-	xcode_pciout(0x80000884, 0x00008001);
-	xcode_pciout(0x80000884, 0x00008001);
-	xcode_pciout(0x80000884, 0x00008001);
-	xcode_pciout(0x80000884, 0x00008001);
-	xcode_pciout(0x80000884, 0x00008001);
-	xcode_pciout(0x80000884, 0x00008001);
-	xcode_pciout(0x80000884, 0x00008001);
-	xcode_pciout(0x80000884, 0x00008001);
-	xcode_pciout(0x80000884, 0x00008001);
-	xcode_pciout(0x80000884, 0x00008001);
-	xcode_outb(0x0000c000, 0x00000010);
+	xcode_outb(SMBUS, 0x00000010);
 	
-	xcode_pciin_a(0x8000183c);
-	xcode_bittoggle(0x000000ff,0x00000000);
+	/* ----  Report Memory Size to PIC scratch register ---- */
+        
+        // We emulate Good memory result to PIC
 
-	xcode_outb_a(0x0000c006);
-	xcode_outb(0x0000c008, 0x00000012);
-	xcode_outb(0x0000c002, 0x0000000a);
-        xcode_inb(0x0000c000);
+	//xcode_pciin_a(0x8000183c);
+	//xcode_bittoggle(0x000000ff,0x00000000);
+	//xcode_outb_a(SMBUS+6);
+	
+	xcode_outb(SMBUS+4, 0x00000020);
+	xcode_outb(SMBUS+6, 0x000000f0);	
+	xcode_outb(SMBUS+8, 0x00000012);
+	xcode_outb(SMBUS+2, 0x0000000a);
+        xcode_inb(SMBUS);
         xcode_ifgoto(0x00000010,-1);
-	xcode_outb(0x0000c000, 0x00000010);
+	xcode_outb(SMBUS, 0x00000010);
+	
+	/* ---- Reload Nvidia Registers  ------------------------*/
+	
 	xcode_pciout(0x8000f020, 0xfdf0fd00);
 	xcode_pciout(0x80010010, 0xfd000000);
+
+	// overflow trick
 	xcode_poke(0x00000000, 0xfc1000ea);
 	xcode_poke(0x00000004, 0x000008ff);
 
@@ -545,8 +501,9 @@
 	mov 	$_ram_location, %edi
 	mov 	$_start_ramcopy, %esi
 	mov 	$(_size_ramcopy + 100), %ecx
-	rep 	movsb
-
+	shr	$2,%ecx    // We dividy / 4, as we copy Dword oriented
+	rep 	movsl
+	
         jmp   initaftermemcpy
 
 
@@ -650,210 +607,6 @@ reload_cs:
 	mov	$0x61, %dx
 	out	%al, %dx
 
-
-	mov $0x80000810, %eax ;	movw $0xcf8, %dx ; outl	%eax, %dx ;	movw $0xcfc, %dx ;	mov	$0x8001, %eax ;	outl	%eax, %dx  // v1.0 ACPI IO region enable
-	mov $0x80000884, %eax ;	movw $0xcf8, %dx ; outl	%eax, %dx ;	movw $0xcfc, %dx ;	mov	$0x8001, %eax ;	outl	%eax, %dx  // v1.1  "
-	movw $0x8026, %dx ;	movw $0x2201, %ax ;	outb %al, %dx // extsmi# able to control power (b0<-0 causes CPU powerdown after couple of seconds)
-
-	mov $0x80000804, %eax ;	movw $0xcf8, %dx ;	outl	%eax, %dx ;	movw $0xcfc, %dx ;	mov	$0x3, %eax ;	outl	%eax, %dx
-
-	movw $0x80d6, %dx ;	movb $4, %al ;	outb %al, %dx
-	movw $0x80d8, %dx ;	movb $4, %al ;	outb %al, %dx
-	movw $0x8049, %dx ;	movb $8, %al ;	outb %al, %dx
-//	movw $0x80d9, %dx ;	movb $0, %al ;	outb %al, %dx
-
-//	mov $0x8000036c, %eax ;	movw $0xcf8, %dx ;	outl	%eax, %dx ;	movw $0xcfc, %dx ;	mov	$0x0, %eax ;	outl	%eax, %dx
-//	mov $0x80000340, %eax ;	movw $0xcf8, %dx ;	outl	%eax, %dx ;	movw $0xcfc, %dx ;	mov	$0xf81c4400, %eax ;	outl	%eax, %dx
-
-	mov $0x8000f04c, %eax ;	movw $0xcf8, %dx ;	outl	%eax, %dx ;	movw $0xcfc, %dx ;	mov	$0x00000001, %eax ;	outl	%eax, %dx
-	mov $0x8000f018, %eax ;	movw $0xcf8, %dx ;	outl	%eax, %dx ;	movw $0xcfc, %dx ;	mov	$0x00010100, %eax ;	outl	%eax, %dx
-	// What is this ?
-//	mov $0x80000084, %eax ;	movw $0xcf8, %dx ;	outl	%eax, %dx ;	movw $0xcfc, %dx ;	mov	$0x07ffffff, %eax ;	outl	%eax, %dx
-	
-	mov $0x8000f020, %eax ;	movw $0xcf8, %dx ;	outl	%eax, %dx ;	movw $0xcfc, %dx ;	mov	$0x0ff00f00, %eax ;	outl	%eax, %dx
-	mov $0x8000f024, %eax ;	movw $0xcf8, %dx ;	outl	%eax, %dx ;	movw $0xcfc, %dx ;	mov	$0xf7f0f000, %eax ;	outl	%eax, %dx
-	mov $0x80010010, %eax ;	movw $0xcf8, %dx ;	outl	%eax, %dx ;	movw $0xcfc, %dx ;	mov	$0x0f000000, %eax ;	outl	%eax, %dx
-	mov $0x80010014, %eax ;	movw $0xcf8, %dx ;	outl	%eax, %dx ;	movw $0xcfc, %dx ;	mov	$0xf0000000, %eax ;	outl	%eax, %dx
-	mov $0x80010004, %eax ;	movw $0xcf8, %dx ;	outl	%eax, %dx ;	movw $0xcfc, %dx ;	mov	$0x00000007, %eax ;	outl	%eax, %dx
-	mov $0x8000f004, %eax ;	movw $0xcf8, %dx ;	outl	%eax, %dx ;	movw $0xcfc, %dx ;	mov	$0x00000007, %eax ;	outl	%eax, %dx
-
-	movl $0x07633461, 0x0f0010b0
-	movl $0x66660000, 0x0f0010cc
-
-	cld             // clear direction flag
-
-	movl 0x0f101000, %eax
-	testl $0x000c0000, %eax
-	jnz nota1a
-
-	andl	$0xe1f3ffff, %eax
-	orl $0x80000000, %eax
-	movl %eax, 0x0f101000
-	movl	$0xeeee0000, 0x0f0010b8
-
-	jmp donea1a
-
-nota1a:
-
-	andl	$0xe1f3ffff, %eax
-	orl 	$0x860c0000, %eax
-	movl 	%eax, 0x0f101000
-	movl	$0xffff0000, 0x0f0010b8
-
-donea1a:
-
-	movl 	$0x0, 0x0f0010b4
-	movl 	$0x5866, 0x0f0010bc
-	movl 	$0x0351c858, 0x0f0010c4
-	movl 	$0x30007d67, 0x0f0010c8
-	movl 	$0x0, 0x0f0010d8
-	movl 	$0xa0423635, 0x0f0010dc
-	movl 	$0x0c6558c6, 0x0f0010e8
-
-	movl 	$0x03070103, 0x0f100200
-
-	movl 	$0x11000016, 0x0f100410
-	movl 	$0x11000016, 0x0f100410
-	movl 	$0x84848888, 0x0f100330
-
-	movl 	$0xffffcfff, 0x0f10032c
-	movl 	$0x00000001, 0x0f100328
-	movl 	$0x000000df, 0x0f100338
-
-	movb 	0x0f000000, %al
-	cmpb 	$0xa1, %al
-	jnz 	nota1b
-
-	mov 	$0x803d4401, %eax 
-	mov 	0x0f101000, %eax
-
-nota1b:
-
-	mov $0x80000904, %eax ;	movw $0xcf8, %dx ;	outl	%eax, %dx ;	movw $0xcfc, %dx ;	mov	$0x00000001, %eax ;	outl	%eax, %dx
-	mov $0x80000914, %eax ;	movw $0xcf8, %dx ;	outl	%eax, %dx ;	movw $0xcfc, %dx ;	mov	$0x0000c001, %eax ;	outl	%eax, %dx
-	mov $0x80000918, %eax ;	movw $0xcf8, %dx ;	outl	%eax, %dx ;	movw $0xcfc, %dx ;	mov	$0x0000c201, %eax ;	outl	%eax, %dx
-
-	mov $0x8000093c, %eax ;	movw $0xcf8, %dx ;	outl	%eax, %dx ;	movw $0xcfc, %dx ;	inl %dx, %eax ; orl	$0x7, %eax ;	outl	%eax, %dx // I2C int=7
-
-	movw $0xc200, %dx ;	movb $0x70, %al ;	outb %al, %dx
-//	movw $0xc002, %dx ;	movb $0x10, %al ;	outb %al, %dx // enable I2C interrupt
-
-	// skipped unnecessary conexant init
-
-	movb 	0x0f000000, %al
-	cmpb 	$0xa1, %al
-	jnz 	nota1c
-
-	mov 	$0x10101010, %eax 
-	mov 	0x0f001214, %eax
-
-	jmp donea1c
-
-nota1c:
-
-	mov $0x12121212, %eax  
-	mov 0x0f001214, %eax
-
-donea1c:
-
-	movl $0xaaaaaaaa, 0x0f00122c
-	movl $0xaaaaaaaa, 0x0f001230
-	movl $0xaaaaaaaa, 0x0f001234
-	movl $0xaaaaaaaa, 0x0f001238
-	movl $0x8b8b8b8b, 0x0f00123c
-	movl $0x8b8b8b8b, 0x0f001240
-	movl $0x8b8b8b8b, 0x0f001244
-	movl $0x8b8b8b8b, 0x0f001248
-	movl $0x00000001, 0x0f1002d4
-	movl $0x00100042, 0x0f1002c4
-	movl $0x00100042, 0x0f1002cc
-	movl $0x11, 0x0f1002c0
-	movl $0x11, 0x0f1002c8
-	movl $0x32, 0x0f1002c0
-	movl $0x32, 0x0f1002c8
-	movl $0x132, 0x0f1002c0
-	movl $0x132, 0x0f1002c8
-	movl $0x1, 0x0f1002d0
-	movl $0x1, 0x0f1002d0
-	movl $0x80000000, 0x0f100210
-	movl $0xaa8baa8b, 0x0f00124c
-	movl $0x0000aa8b, 0x0f001250
-	movl $0x081205ff, 0x0f100228
-	movl $0x00010000, 0x0f000218
-
-	mov $0x80000860, %eax ;	movw $0xcf8, %dx ;	outl	%eax, %dx ;	movw $0xcfc, %dx ;	in %dx, %eax ; orl $0x400, %eax ;	outl	%eax, %dx
-	mov $0x8000084c, %eax ;	movw $0xcf8, %dx ;	outl	%eax, %dx ;	movw $0xcfc, %dx ;	mov	$0xfdde, %eax ;	outl	%eax, %dx
-	mov $0x8000089c, %eax ;	movw $0xcf8, %dx ;	outl	%eax, %dx ;	movw $0xcfc, %dx ;	mov	$0x871cc707, %eax ;	outl	%eax, %dx
-
-	mov $0x800008b4, %eax ;	movw $0xcf8, %dx ;	outl	%eax, %dx ;	movw $0xcfc, %dx ;	in %dx, %eax ; orl $0xf00, %eax ;	outl	%eax, %dx
-
-	mov $0x80000340, %eax ;	movw $0xcf8, %dx ;	outl	%eax, %dx ;	movw $0xcfc, %dx ;	mov	$0xf0f0c0c0, %eax ;	outl	%eax, %dx
-	mov $0x80000344, %eax ;	movw $0xcf8, %dx ;	outl	%eax, %dx ;	movw $0xcfc, %dx ;	mov	$0x00c00000, %eax ;	outl	%eax, %dx
-	mov $0x8000035c, %eax ;	movw $0xcf8, %dx ;	outl	%eax, %dx ;	movw $0xcfc, %dx ;	mov	$0x04070000, %eax ;	outl	%eax, %dx
-	mov $0x8000036c, %eax ;	movw $0xcf8, %dx ;	outl	%eax, %dx ;	movw $0xcfc, %dx ;	mov	$0x00230801, %eax ;	outl	%eax, %dx
-	mov $0x8000036c, %eax ;	movw $0xcf8, %dx ;	outl	%eax, %dx ;	movw $0xcfc, %dx ;	mov	$0x01230801, %eax ;	outl	%eax, %dx
-
-	mov $8, %eax ; timloop2: dec %eax ; cmp $0, %eax ; jnz timloop2
-
-		// 5F1
-
-	movl $0x03070103, 0x0f100200
-	movl $0x11448000, 0x0f100204
-
-	// skipped actual memory test
-
-	// A95
-	movl $0x03070003, 0x0f100200
-
-	// A9E
-	mov $0x80000084, %eax ;	movw $0xcf8, %dx ;	outl	%eax, %dx ;	movw $0xcfc, %dx ;	mov	$0x03ffffff, %eax ;	outl	%eax, %dx
-
-	movw $0xc006, %dx ;	movb $0x0f, %al ;	outb %al, %dx // result1 AB9
-
-	movw $0xc004, %dx ;	movb $0x20, %al ;	outb %al, %dx
-	movw $0xc008, %dx ;	movb $0x13, %al ;	outb %al, %dx
-	movw $0xc002, %dx ;	movb $0x0a, %al ;	outb %al, %dx
-
-	// B2E
-spin2:
-	movw 	$0xc000, %dx
-	inb 	%dx, %al
-	cmp 	$0x10, %al
-	jnz	spin2
-
-	movw $0xc000, %dx ;	movb $0x10, %al ;	outb %al, %dx
-	movw $0xc006, %dx ;	movb $0xf0, %al ;	outb %al, %dx
-	movw $0xc004, %dx ;	movb $0x20, %al ;	outb %al, %dx
-	movw $0xc008, %dx ;	movb $0x12, %al ;	outb %al, %dx
-	movw $0xc006, %dx ;	movb $0xf0, %al ;	outb %al, %dx
-	movw $0xc002, %dx ;	movb $0x0a, %al ;	outb %al, %dx
-
-		// B76
-spin3:
-	movw 	$0xc000, %dx
-	inb 	%dx, %al
-	cmp 	$0x10, %al
-	jnz	spin3
-
-	movw 	$0xc000, %dx 
-	movb 	$0x10, %al 
-	outb 	%al, %dx
-
-	mov 	$0x8000f020, %eax 
-	movw 	$0xcf8, %dx 
-	outl	%eax, %dx 
-	movw 	$0xcfc, %dx 
-	mov	$0xfdf0fd00, %eax 
-	outl	%eax, %dx
-	
-	mov 	$0x80010010, %eax 
-	movw 	$0xcf8, %dx 
-	outl	%eax, %dx 
-	movw 	$0xcfc, %dx 
-	mov	$0xfd000000, %eax 
-	outl	%eax, %dx
-
-
 	// Enable IDE and NIC
 	mov 	$0x8000088C, %eax 
 	movw 	$0xcf8, %dx 
@@ -870,63 +623,9 @@ spin3:
 	movw 	$0xcfc, %dx 
 	movl 	$0x100, %eax 
 	outl	%eax, %dx 
+
         
-	jmp 	BootStartBiosLoader  // this can be found in BootResetAction.c
+	// this can be found in BootResetAction.c
+	jmp 	BootStartBiosLoader  
                          
-                         
-/*
 
-We finishes here, the code below is for the upper section of the MCPX swapout
-
-*/                         
-
-
-/************************************************************
-	the linker locates this file at the top
-	of the rom and fills the space with nops.
-*/
-////////////////////////////////////////////
-//  High ROM
-#if 0
-.section .high_rom, "ax"
-		.code32
-		.global sizeof_top
-		.equ start_top, .
-                
-                cld
-		ljmp $8, $0xffFc1000		// nop's fall through to here which
-						// jumps to our code earlier in this file at start_bootloader
-		nop
-
-gdt_table:
-		.quad 0			// beginning of gdt
-		.quad 0x0CF9B000000FFFF	// segment 8 offset
-								// code segment execute/read, base 0 limit 4GB
-		.quad 0x0CF93000000FFFF	// segment 10h offset
-								//data segment r/w base	0 limit	4GB
-// ---------------------------------------------------------------------
-
-// ---------------------------------------------------------------------
-		nop
-		nop
-		nop
-		nop
-gdt_ptr:
-		.word 0x18
-		.long 0x0FFFFFFD8		//pointer to gdt table
-		nop
-		nop
-		nop
-		nop
-		nop
-		nop
-
-	.equ end_top, .
-/*
-	this is used by the linker to put this at the top of
-	the rom.
-*/
-
-.equ sizeof_top, (. - start_top)
-
-#endif
