@@ -29,10 +29,10 @@ Cromwellconfig:
         .long 0x0	// 0x24 ImageRetryLoads
         .long 0x0	// 0x28 Bank, from where Loaded
         .long 0x0	// 0x2C 0 .. Bios = 256 k, 1 .. Bios = 1MB 
-        .long 0x0	// 0x30 Do we have a PC bios ?
-        .long _end_compleate_rom       // 0x34 where does the PC bios start (where cromwell ends, sizeof cromwell) (dumped by imagebld-pcbios mode)
-        .long 0x0       // 0x38 size of PC bios (dumped by imagebld-pcbios mode)
-        
+        .long 0x0	// 0x30 free
+        .long _end_compleate_rom       // 0x34 free
+        .long 0x0       // 0x38 free
+        .long 0x0	// free
 	
 .align 16
 tableGdt:

@@ -28,8 +28,7 @@ unsigned int cromwell_retryload;
 unsigned int cromwell_loadbank;
 unsigned int cromwell_Biostype;
 unsigned int cromwell_haverombios;
-unsigned int cromwell_rombiosstart;
-unsigned int cromwell_rombiossize;
+
 
 
 unsigned int xbox_ram;

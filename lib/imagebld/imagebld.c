@@ -421,85 +421,6 @@ int romcopy (
 
 
 
-int pcbiosprep(
-		unsigned char * cromimagein,
-		unsigned char * pcbiosname,
-		unsigned char * cromimageout
-		)
-{
-    	
-    	FILE *f;
-    	static unsigned char crom[1024*1024];
-    	static unsigned char pcbios[1024*1024];
-       	unsigned int romsize=0;
-       	unsigned int pcbiossize=0;
-       	unsigned int temp;
-       	
-       	memset(crom,0x00,sizeof(crom));
-       	memset(pcbios,0x00,sizeof(pcbios));
-
-       	printf("ImageBLD Hasher by XBL Project (c) hamtitampti\n");
-       	printf("PCBIOS Modus\n");
-       	       	       	       	
-    	f = fopen(cromimagein, "rb");
-	if (f!=NULL) 
-    	{    
- 		fseek(f, 0, SEEK_END); 
-         	romsize	 = ftell(f);        
-         	fseek(f, 0, SEEK_SET);
-    		fread(crom, 1, romsize, f);
-    		fclose(f);
-    	} else {
-    		printf("Error, NO CROM found\n");	
-    	}
-
-    	f = fopen(pcbiosname, "rb");
-	if (f!=NULL) 
-    	{    
- 		fseek(f, 0, SEEK_END); 
-         	pcbiossize = ftell(f);        
-         	fseek(f, 0, SEEK_SET);
-    		fread(pcbios, 1, pcbiossize, f);
-    		fclose(f);
-    		printf("PCBIOS found and merged in\n"); 
-    	} else {
-    		pcbiossize = 0;
-    		printf("NO PCBIOS found\n");
-    	}    	
-    	
-        if (pcbiossize!=0) 
-        {
-        	//romsize +=0x2000;
-
-        	memcpy(&temp,&crom[0x34],4);	
-		printf("File ROM Image Size      : %08x\n",romsize);	
-		printf("Real ROM Image SIZE      : %08x\n",temp);
-		romsize = temp+0x500;  // Secure space
-		
-        	// Yes, we have a pcbios to link into
-        	memcpy(&crom[romsize],pcbios,pcbiossize);
-        	// now we set the variables in crom
-        	temp = 1;
-        	memcpy(&crom[0x30],&temp,4);	// we say, we have a pcbios
-        	memcpy(&crom[0x34],&romsize,4);	
-        	memcpy(&crom[0x38],&pcbiossize,4);
-    		
-
-	
-		printf("PCBIOS Image Size        : %08x\n",pcbiossize);
-		romsize += pcbiossize;
-		printf("Merged File Size         : %08x (%d Byte)\n",romsize,romsize); 		    		        	
-        }       
-        
-	f = fopen(cromimageout, "wb");               
-	fwrite(crom, 1, romsize, f);
-	fclose(f);	
-	printf("Bios File merged Created : %s\n",cromimageout);
-}
-
-
-
-
 
 int main (int argc, const char * argv[])
 {
@@ -516,11 +437,6 @@ int main (int argc, const char * argv[])
 	if (strcmp(argv[1],"-rom")==0) { 
 		if( argc < 4 ) return -1;
 		romcopy((unsigned char*)argv[2],(unsigned char*)argv[3],(unsigned char*)argv[4]);
-	}
-
-	if (strcmp(argv[1],"-pcbios")==0) { 
-		if( argc < 4 ) return -1;
-		pcbiosprep((unsigned char*)argv[2],(unsigned char*)argv[3],(unsigned char*)argv[4]);
 	}
 
 	return 0;	

@@ -14,7 +14,7 @@ export CC
 TOPDIR  := $(shell /bin/pwd)
 SUBDIRS	= boot_rom fs drivers lib boot
 
-LDFLAGS-ROM     = -M -s -S -T $(TOPDIR)/scripts/ldscript-crom.ld
+LDFLAGS-ROM     = -s -S -T $(TOPDIR)/scripts/ldscript-crom.ld
 LDFLAGS-XBEBOOT = -s -S -T $(TOPDIR)/scripts/xbeboot.ld
 LDFLAGS-ROMBOOT = -s -S -T $(TOPDIR)/boot_rom/bootrom.ld
 LDFLAGS-VMLBOOT = -s -S -T $(TOPDIR)/boot_vml/vml_start.ld
@@ -110,6 +110,7 @@ OBJECTS-CROM += $(TOPDIR)/obj/linuxwrapper.o
 OBJECTS-CROM += $(TOPDIR)/obj/xpad.o
 
 RESOURCES = $(TOPDIR)/obj/backdrop.elf
+RESOURCES += $(TOPDIR)/obj/pcrombios.elf
 
 export INCLUDE
 export TOPDIR
@@ -125,7 +126,7 @@ dummy:
 resources:
 	# Background
 	${LD} -r --oformat elf32-i386 -o $(TOPDIR)/obj/backdrop.elf -T $(TOPDIR)/scripts/backdrop.ld -b binary $(TOPDIR)/pics/backdrop.jpg	
-
+	${LD} -r --oformat elf32-i386 -o $(TOPDIR)/obj/pcrombios.elf -T $(TOPDIR)/scripts/pcrombios.ld -b binary $(TOPDIR)/pcbios/rompcbios.bin
 
 install:
 	lmilk -f -p $(TOPDIR)/image/image.bin
@@ -146,6 +147,7 @@ clean:
 	mkdir $(TOPDIR)/image -p
 	mkdir $(TOPDIR)/obj -p
 	mkdir $(TOPDIR)/bin -p
+	echo "" > $(TOPDIR)/pcbios/rompcbios.bin
 
 #rombios.bin:
 #	${GCC295} -E $< > _rombios_.c
@@ -176,9 +178,6 @@ image.bin:
 	
 imagecompress:
 	gcc $(OBJECTS-IMAGEBLD) -o $(TOPDIR)/bin/imagebld $(INCLUDE)
-
-	$(TOPDIR)/bin/imagebld -pcbios $(TOPDIR)/obj/image-crom.bin $(TOPDIR)/pcbios/rompcbios.bin $(TOPDIR)/obj/cromrunimage.bin
-
-	$(TOPDIR)/bin/imagebld -rom $(TOPDIR)/image/image.bin $(TOPDIR)/obj/cromrunimage.bin  $(TOPDIR)/image/image_1024.bin	
-	$(TOPDIR)/bin/imagebld -xbe $(TOPDIR)/xbe/default.xbe $(TOPDIR)/obj/cromrunimage.bin
-	$(TOPDIR)/bin/imagebld -vml $(TOPDIR)/boot_vml/disk/vmlboot $(TOPDIR)/obj/cromrunimage.bin 
+	$(TOPDIR)/bin/imagebld -rom $(TOPDIR)/image/image.bin $(TOPDIR)/obj/image-crom.bin  $(TOPDIR)/image/image_1024.bin	
+	$(TOPDIR)/bin/imagebld -xbe $(TOPDIR)/xbe/default.xbe $(TOPDIR)/obj/image-crom.bin
+	$(TOPDIR)/bin/imagebld -vml $(TOPDIR)/boot_vml/disk/vmlboot $(TOPDIR)/obj/image-crom.bin 

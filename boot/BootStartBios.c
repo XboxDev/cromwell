@@ -1166,11 +1166,14 @@ int ExittoLinux(CONFIGENTRY *config) {
 
 int ExittoRomBios(void) {
 	
-	unsigned int haverombiostemp;
-	unsigned int romstarttemp;
-	unsigned int romsizetemp;
-	
-	
+        unsigned int tempstart;
+        unsigned int templen;
+	extern int _end_pcrombios;
+ 	extern int _start_pcrombios;
+ 	
+ 	tempstart = (unsigned int)((BYTE *)&_start_pcrombios);
+	templen = ((DWORD)(&_end_pcrombios)-(DWORD)(&_start_pcrombios));       
+        
 	// turn off USB
 	BootStopUSB();
 
@@ -1201,30 +1204,32 @@ int ExittoRomBios(void) {
 
 
 		
-	memcpy((void *)0xf0000, (void *)(cromwell_rombiosstart+0x03A00000), cromwell_rombiossize);
+	memcpy((void *)0xf0000, (void *)(tempstart), templen);
         	
         // Test code for integrity check
 	
-	/*
+	
 	{
+
 	unsigned char state2[20];
 	unsigned int i;
 	struct SHA1Context context;
-
-	SHA1Reset(&context);
 	
-	SHA1Input(&context,(void *)0xf0000,cromwell_rombiossize);
-	SHA1Result(&context,state2);
 	VIDEO_CURSOR_POSY= 200;
 	VIDEO_CURSOR_POSX = 100;
-	printk(" %08x\n",cromwell_rombiosstart);
-	printk(" %08x\n",cromwell_rombiossize);
+	
+	SHA1Reset(&context);
+	SHA1Input(&context,(void *)0xf0000,templen);
+	SHA1Result(&context,state2);
+
+	printk(" %08x\n",tempstart);
+	printk(" %08x\n", templen);
+       	printk(" SHA-1 Checksum of the pcbios/rompcbios.bin   ... this should match ..\n", templen);
+       	
 	for (i=0;i<20;i++) printk(" %02x",state2[i]); 
 
-	//memcpy(&i, (void *)(0x1e0+0x03A00000), 4);
-	//printk(" %08x",i); 	
 	}
-	*/
+	
 	
 	
 	// LEDs to yellow

@@ -34,6 +34,10 @@ SECTIONS {
 		_start_backdrop = .;
 		*(.backdrop);
 		_end_backdrop = .;
+		_start_pcrombios = .;
+		*(.pcrombios);
+		_end_pcrombios = .;
+		
 		_end_rodata = . ;
 	}
         

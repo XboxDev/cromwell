@@ -41,7 +41,7 @@ SECTIONS {
 		_end_data = .;
 	}
 
-	.bss ( ADDR(.data) + SIZEOF(.data) ) : {
+	.bss (LOW_ROM + SIZEOF(.rombios_start) + SIZEOF(.rodata)+SIZEOF(.data)) : AT (SIZEOF(.rombios_start) + SIZEOF(.rodata)+SIZEOF(.data)){
 		_bss = .;
 		*(.bss)
 		*(.sbss)
