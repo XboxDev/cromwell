@@ -155,13 +155,18 @@ void BootVgaInitializationKernelNG(CURRENT_VIDEO_MODE_DETAILS * pcurrentvideomod
 
 
    	memset((void *)pcurrentvideomodedetails,0,sizeof(CURRENT_VIDEO_MODE_DETAILS));
-	pcurrentvideomodedetails->m_nVideoModeIndex =VIDEO_MODE_800x600;
 
 
 	if(((BYTE *)&eeprom)[0x96]&0x01) { // 16:9 widescreen TV
 		pcurrentvideomodedetails->m_nVideoModeIndex=VIDEO_MODE_1024x576;
 	} else { // 4:3 TV
 		pcurrentvideomodedetails->m_nVideoModeIndex=VIDEO_PREFERRED_MODE;
+	}
+
+	if (VideoEncoder == VIDEO_FOCUS) {
+		pcurrentvideomodedetails->m_nVideoModeIndex =VIDEO_MODE_640x480;
+	} else {
+		pcurrentvideomodedetails->m_nVideoModeIndex =VIDEO_MODE_800x600;
 	}
 
 	pcurrentvideomodedetails->m_pbBaseAddressVideo=(BYTE *)0xfd000000;
