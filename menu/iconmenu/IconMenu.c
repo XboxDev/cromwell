@@ -129,7 +129,7 @@ void IconMenu(void) {
 	while(1)
 	{
 		int changed=0;
-		wait_ms(50);	
+		wait_ms(75);	
 		if (risefall_xpad_BUTTON(TRIGGER_XPAD_PAD_RIGHT) == 1)
 		{
 			if (selectedIcon->nextIcon!=0l) {

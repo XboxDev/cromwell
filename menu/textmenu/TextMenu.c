@@ -95,7 +95,7 @@ void TextMenu(void) {
 	while(1)
 	{
 		int changed=0;
-		wait_ms(50);
+		wait_ms(75);
 
 		if (risefall_xpad_BUTTON(TRIGGER_XPAD_PAD_UP) == 1)
 		{
