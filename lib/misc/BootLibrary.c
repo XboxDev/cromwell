@@ -328,4 +328,16 @@ void HelpGetParm(char *szBuffer, char *szOrig) {
 	*copy = 0;
 }
 
+int memcmp(const void *buffer1, const void *buffer2, size_t num) 
+{
+       register int r;
+       register const char *d=buffer1;
+       register const char *s=buffer2;
+       while (num--) {
+               if ((r=(*d - *s))) return r;
+               ++d;
+               ++s;
+       }
+       return 0;
+}
 
