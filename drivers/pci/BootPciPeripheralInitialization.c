@@ -132,6 +132,8 @@ void BootPciPeripheralInitialization()
 
 //	PciWriteByte(BUS_0, DEV_0, FUNC_0, 0x4b,0x00); --> BAD !!! -- Xbox Dies sometimes
 
+	PciWriteByte(BUS_0, DEV_0, 3, 0x4c,0x19);     // could this be the System inactivity timer disable ?
+	
 	IoOutputByte(0x2e, 0x55);
 	IoOutputByte(0x2e, 0x26);
 

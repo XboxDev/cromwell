@@ -130,11 +130,11 @@ typedef struct tsHarddiskInfo {  // this is the retained knowledge about an IDE 
     unsigned short m_wCountSectorsPerTrack;
     unsigned long m_dwCountSectorsTotal; /* total */
     unsigned char m_bLbaMode;	/* am i lba (0x40) or chs (0x00) */
-    unsigned char m_szIdentityModelNumber[41];      
+    unsigned char m_szIdentityModelNumber[40];      
     unsigned char term_space_1[2];
-    unsigned char m_szSerial[21]; 
+    unsigned char m_szSerial[20]; 
     unsigned char term_space_2[2];
-    char m_szFirmware[9];
+    char m_szFirmware[8];
     unsigned char term_space_3[2];
     unsigned char m_fDriveExists;
     unsigned char m_fAtapi;  // true if a CDROM, etc

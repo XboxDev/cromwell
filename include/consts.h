@@ -95,3 +95,48 @@
 #define MEMORYMANAGEREND 	0x01FFFFFF
 
 #endif // _Consts_H_
+
+/*
+
+Memory Mapping Cromwell
+ 	
+ 	0x0000 0000 -> free ?
+ 	
+ 	0x0009 0000 Kernel Info Header( 0x10000 size = 65536Bytes)
+ 	0x0009 FFFF Kernel Info Header
+ 	
+ 	0x0010 0000 Kompressed Kernel ( 0x200000 size = 2 MB)
+ 	0x002F FFFF Kompressed Kernel
+
+	0x0030 0000 Linked Rambase in Memory
+	?? until ?
+
+ 	0x0100 0000 Memorymanager for Cromwell (0x1000000 size = 16 MB)
+ 	0x01FF FFFF Memorymanager
+ 	
+ 	0x0200 0000 Linux Ramdisk Starting address (0x1B00000 size = 28MB)
+ 	0x03AF FFFF Linux Ramdisk End address
+ 	
+ 	0x03B0 0000 c/x romwell Ramcopy Start (0x100000 size = 1MB) 
+ 	0x03BF FFFF c/x romwell Ramcopy End
+
+ 	0x03C0 0000 Video Memory Start (4MB)
+ 	0x03FF FFFF Video Memory End
+ 	
+ 	
+ 	0x0400 0000 Physical Ram End
+ 	
+ 	0xFFF0 0000 Flash Copy(0) Start
+ 	0xFFF3 FFFF Flash Copy(0) End
+ 	
+ 	0xFFF4 0000 Flash Copy(1) Start
+ 	0xFFF7 FFFF Flash Copy(1) End
+ 		
+ 	0xFFF8 0000 Flash Copy(2) Start
+ 	0xFFFB FFFF Flash Copy(2) End 
+ 	0xFFFC 0000 Flash Copy(3) Start
+ 	0xFFFF FFFF Flash Copy(3) End 
+ 	
+hamtitampti & ed
+
+*/

@@ -312,8 +312,9 @@ void IntHandlerCI2C(void)
 void IntHandlerUnusedC(void)
 {
 	bprintf("Unhandled Interrupt\n");
+	//printk("Unhandled Interrupt");
 	nCountUnusedInterrupts++;
-	while(1) ;
+	//while(1) ;
 }
 
 
