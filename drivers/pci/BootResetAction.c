@@ -127,7 +127,7 @@ extern void BootResetAction ( void ) {
 	memcpy(&cromwell_loadbank,(void*)(0x03A00000+28),4);
           
 	// Very cosmetic, but very secure
-       	memset((void*)0x00090000,0x00,0x10000);  // Linux Kernel Info Space
+       	memset((void*)0x00090000,0x00,0x70000);  // Linux Kernel Info Space
       	memset((void*)0x00100000,0x00,0x200000);  // Kompressed Kernel
         
         nInteruptable = 0;	
@@ -280,7 +280,7 @@ extern void BootResetAction ( void ) {
 		VIDEO_ATTR=0xffc8c8c8;
 		printk("M/b Temp: ");
 		VIDEO_ATTR=0xffc8c800;
-		printk("%doC  ", nx);
+		printk("%doC  \n", nx);
 	}
 
 

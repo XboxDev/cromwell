@@ -125,6 +125,7 @@ clean:
 	rm -f $(TOPDIR)/xbe/*.elf
 	rm -f $(TOPDIR)/image/*.bin
 	rm -f $(TOPDIR)/obj/imagebld
+	mkdir $(TOPDIR)/obj -p
 	
 
 backdrop.elf:
