@@ -12,7 +12,7 @@
 #include "TextMenu.h"
 #include "FlashMenuActions.h"
 
-void FlashMenuInit(TEXTMENUITEM *parentItem) {
+TEXTMENU* FlashMenuInit(void) {
 	TEXTMENUITEM *itemPtr;
 	TEXTMENU *menuPtr;
 	int i=0;
@@ -20,8 +20,6 @@ void FlashMenuInit(TEXTMENUITEM *parentItem) {
 	menuPtr = (TEXTMENU*)malloc(sizeof(TEXTMENU));
 	memset(menuPtr,0x00,sizeof(TEXTMENU));
 	menuPtr->szCaption="Flash Menu";
-	menuPtr->parentMenu=(struct TEXTMENU*)firstMenu;
-	parentItem->childMenu = (struct TEXTMENU*)menuPtr;
 
 	for (i=0; i<2; ++i) {
 		if (tsaHarddiskInfo[i].m_fDriveExists && tsaHarddiskInfo[i].m_fAtapi) {
@@ -36,4 +34,5 @@ void FlashMenuInit(TEXTMENUITEM *parentItem) {
 			TextMenuAddItem(menuPtr, itemPtr);
 		}
 	}
+	return menuPtr;
 }

@@ -12,7 +12,7 @@
 #include "TextMenu.h"
 #include "HddMenuActions.h"
 
-void HddMenuInit(TEXTMENUITEM *parentItem) {
+TEXTMENU *HddMenuInit(void) {
 	TEXTMENUITEM *itemPtr;
 	TEXTMENU *menuPtr;
 	int i=0;
@@ -20,8 +20,6 @@ void HddMenuInit(TEXTMENUITEM *parentItem) {
 	menuPtr = (TEXTMENU*)malloc(sizeof(TEXTMENU));
 	memset(menuPtr,0x00,sizeof(TEXTMENU));
 	menuPtr->szCaption="Hdd Menu";
-	menuPtr->parentMenu=(struct TEXTMENU*)firstMenu;
-	parentItem->childMenu = (struct TEXTMENU*)menuPtr;
 
 	for (i=0; i<2; ++i) {
 		if (tsaHarddiskInfo[i].m_fDriveExists && !tsaHarddiskInfo[i].m_fAtapi) {
@@ -52,4 +50,5 @@ void HddMenuInit(TEXTMENUITEM *parentItem) {
 			}
 		}
 	}
+	return menuPtr;
 }

@@ -11,16 +11,13 @@
 #include "TextMenu.h"
 #include "ResetMenuActions.h"
 
-void ResetMenuInit(TEXTMENUITEM *parentItem) {
+TEXTMENU* ResetMenuInit(void) {
 	TEXTMENUITEM *itemPtr;
 	TEXTMENU *menuPtr;
 	
 	menuPtr = (TEXTMENU*)malloc(sizeof(TEXTMENU));
 	memset(menuPtr,0x00,sizeof(TEXTMENU));
 	menuPtr->szCaption="Reset Menu";
-	menuPtr->parentMenu=(struct TEXTMENU*)firstMenu;
-	parentItem->childMenu = (struct TEXTMENU*)menuPtr;
-
 
 	itemPtr = (TEXTMENUITEM*)malloc(sizeof(TEXTMENUITEM));
 	memset(itemPtr,0x00,sizeof(TEXTMENUITEM));
@@ -42,4 +39,6 @@ void ResetMenuInit(TEXTMENUITEM *parentItem) {
 	itemPtr->functionPtr=PowerOff;
 	itemPtr->functionDataPtr = NULL;
 	TextMenuAddItem(menuPtr, itemPtr);
+
+	return menuPtr;
 }

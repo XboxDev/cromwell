@@ -15,14 +15,10 @@
 #include <shared.h>
 #include "BootFATX.h"
 #include "xbox.h"
-#include "BootFlash.h"
 #include "cpu.h"
 #include "BootIde.h"
 #include "MenuActions.h"
 #include "config.h"
-
-void TextMenuDraw(void);
-void TextMenuBack(void);
 
 struct TEXTMENUITEM;
 struct TEXTMENU;
@@ -31,11 +27,10 @@ typedef struct {
 	//Menu item text
 	char *szCaption;
 	//Pointer to function to run when menu item selected.
+	//If NULL, menuitem will not do anything when selected
 	void (*functionPtr) (void *);
-	//Pointer data, NULL if none.
+	//Pointer to data used by the function above.
 	void *functionDataPtr;
-	//Child menu, if any, attached to this menu item
-	struct TEXTMENU *childMenu;
 	//Next / previous menu items within this menu
 	struct TEXTMENUITEM *previousMenuItem;
 	struct TEXTMENUITEM *nextMenuItem;

@@ -9,9 +9,11 @@
  *                                                                         *
  ***************************************************************************/
 
-//For the text menu jump
+//For the icon->text menu jump
 void MoveToTextMenu(void *nothing);
 
+//Used to display child menus
+void DrawChildTextMenu(void *menu);
 
 void SetWidescreen(void *);
 void SetVideoStandard(void *);

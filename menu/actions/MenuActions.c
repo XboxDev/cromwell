@@ -19,10 +19,10 @@
 #include "BootFlash.h"
 #include "cpu.h"
 #include "VideoInitialization.h"
-
+#include "TextMenu.h"
 void MoveToTextMenu(void *nothing) {
-	TextMenuInit();
-	TextMenu();
+	TEXTMENU *parentMenu = (TEXTMENU*)TextMenuInit();
+	TextMenu(parentMenu);
 }
 
 void BootFromCD(void *data) {
@@ -37,6 +37,10 @@ void BootFromCD(void *data) {
 	}
 	LoadKernelCdrom(config);
 	ExittoLinux(config);
+}
+
+void DrawChildTextMenu(void *menu) {
+	TextMenu((TEXTMENU*)menu);
 }
 
 #ifdef ETHERBOOT 

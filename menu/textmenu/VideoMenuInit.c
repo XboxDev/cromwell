@@ -12,16 +12,13 @@
 
 #include "VideoInitialization.h"
 
-void VideoMenuInit(TEXTMENUITEM *parentItem) {
+TEXTMENU *VideoMenuInit(void) {
 	TEXTMENUITEM *itemPtr;
 	TEXTMENU *menuPtr;
 
-	
 	menuPtr = (TEXTMENU*)malloc(sizeof(TEXTMENU));
 	memset(menuPtr,0x00,sizeof(TEXTMENU));
 	menuPtr->szCaption="Video Settings Menu";
-	menuPtr->parentMenu=(struct TEXTMENU*)firstMenu;
-	parentItem->childMenu = (struct TEXTMENU*)menuPtr;
 
 
 	itemPtr = (TEXTMENUITEM*)malloc(sizeof(TEXTMENUITEM));
@@ -59,4 +56,6 @@ void VideoMenuInit(TEXTMENUITEM *parentItem) {
 	itemPtr->functionPtr=SetVideoStandard;
 	itemPtr->functionDataPtr = &itemPtr->szCaption;
 	TextMenuAddItem(menuPtr, itemPtr);
+
+	return menuPtr;
 }
