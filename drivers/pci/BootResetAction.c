@@ -143,8 +143,6 @@ extern void BootResetAction ( void ) {
 
 	MemoryManagementInitialization((void *)MEMORYMANAGERSTART, MEMORYMANAGERSIZE);
 	
-	memset((ohci_t *)&usbcontroller[0],0,sizeof(ohci_t));
-	memset((ohci_t *)&usbcontroller[1],0,sizeof(ohci_t));
 
 	bprintf("BOOT: starting PCI init\n\r");
 	BootPciPeripheralInitialization();
@@ -158,6 +156,8 @@ extern void BootResetAction ( void ) {
 	BootPerformPicChallengeResponseAction();
 	bprintf("BOOT: done with PIC challenge\n\r");
 
+	memset((ohci_t *)&usbcontroller[0],0,sizeof(ohci_t));
+	memset((ohci_t *)&usbcontroller[1],0,sizeof(ohci_t));
 
 	// initialize the PCI devices
 
