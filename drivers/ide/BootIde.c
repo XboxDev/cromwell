@@ -106,7 +106,8 @@ const char * const szaSenseKeys[] = {
 //  Helper routines
 //
 
-
+int UnlockDrive(unsigned uIoBase, int driveId, char *password);
+int DisableDrivePassword(unsigned uIoBase, int driveId, char *password);
 /* -------------------------------------------------------------------------------- */
 
 int BootIdeWaitNotBusy(unsigned uIoBase)
@@ -396,8 +397,6 @@ int BootIdeDriveInit(unsigned uIoBase, int nIndexDrive,int drivetype)
 	}
 
 
-//	printk_debug("  Drive %d: happy\n", nIndexDrive);
-
         // Basically, if (nIndexdrive==0) .....(this is for the MAster drive)
         
 	
@@ -596,28 +595,20 @@ int BootIdeDriveInit(unsigned uIoBase, int nIndexDrive,int drivetype)
 //			drive_info[128]
 		);
 
-
-
-
 		if (cromwell_config==CROMWELL) {
 			// Cromwell Mode
 			if((drive_info[128]&0x0004)==0x0004) 
 			{ 
 				// 'security' is in force, unlock the drive (was 0x104/0x104)
 				BYTE baMagic[0x200], baKeyFromEEPROM[0x10], baEeprom[0x30];
-				bool fUnlocked=false;
 				int nVersionHashing;
 				tsIdeCommandParams tsicp1 = IDE_DEFAULT_COMMAND;
-				DWORD dwMagicFromEEPROM;
+				
 				DWORD BootHddKeyGenerateEepromKeyData(BYTE *eeprom_data,BYTE *HDKey);
 				
 				int nVersionSuccessfulDecrypt=0;
 
 				printk(" Lck[%x]", drive_info[128]);
-
-				// THE HDD_SANITY Code removed from the CODE
-
-				dwMagicFromEEPROM=0;
 
 	 			nVersionHashing = 0;
 	
@@ -640,103 +631,26 @@ int BootIdeDriveInit(unsigned uIoBase, int nIndexDrive,int drivetype)
 						 tsaHarddiskInfo[nIndexDrive].s_length);
 	                       
 				if (nVersionHashing == 0) {
-					printk("Got a 0 return from BootHddKeyGenerateEepromKeyData\n");
-					// ERROR -- Corrupt EEprom or Newer Version of EEprom - key
-				}
-	
-	
-				nVersionSuccessfulDecrypt=nVersionHashing;
-					// clear down the unlock packet, except for b8 set in first word (high security unlock)
-	
-				{
-					WORD * pword=(WORD *)&baMagic[0];
-					*pword=0;  // try user
-				}
-	
-				if(BootIdeWaitNotBusy(uIoBase)) 
-				{
-					printk("  %d:  Not Ready\n", nIndexDrive);
-					return 1;
-				}
-				tsicp1.m_bDrivehead = IDE_DH_DEFAULT | IDE_DH_HEAD(0) | IDE_DH_CHS | IDE_DH_DRIVE(nIndexDrive);
-	
-				if(BootIdeIssueAtaCommand(uIoBase, IDE_CMD_SECURITY_UNLOCK, &tsicp1)) 
-				{
-					printk("  %d:  when issuing unlock command FAILED, error=%02X\n", nIndexDrive, IoInputByte(IDE_REG_ERROR(uIoBase)));
-					return 1;
-				}
-				BootIdeWaitDataReady(uIoBase);
-				BootIdeWriteData(uIoBase, &baMagic[0], IDE_SECTOR_SIZE);
-        	
-				if (BootIdeWaitNotBusy(uIoBase))	
-				{
-					printk("..");
-					{
-						WORD * pword=(WORD *)&baMagic[0];
-						*pword=1;  // try master
-					}
-
-					if(BootIdeIssueAtaCommand(uIoBase, IDE_CMD_SECURITY_UNLOCK, &tsicp1)) 
-					{
-						printk("  %d:  when issuing unlock command FAILED, error=%02X\n", nIndexDrive, IoInputByte(IDE_REG_ERROR(uIoBase)));
-						return 1;
-					}
-					BootIdeWaitDataReady(uIoBase);
-					BootIdeWriteData(uIoBase, &baMagic[0], IDE_SECTOR_SIZE);
-
-					if (BootIdeWaitNotBusy(uIoBase))	
-					{
-//						printk("  - Both Master and User unlock attempts failed\n");
-					}
+					printk("Unable to generate password from EEPROM - corrupt?\n");
 				}
 
-				// check that we are unlocked
-
-				tsicp.m_bDrivehead = IDE_DH_DEFAULT | IDE_DH_HEAD(0) | IDE_DH_CHS | IDE_DH_DRIVE(nIndexDrive);
-				if(BootIdeIssueAtaCommand(uIoBase, IDE_CMD_GET_INFO, &tsicp)) 
-				{
-					printk("  %d:  on issuing get status after unlock detect FAILED, error=%02X\n", nIndexDrive, IoInputByte(IDE_REG_ERROR(uIoBase)));
-					return 1;
+				if (UnlockDrive(uIoBase, nIndexDrive, &baMagic[2])) {
+					printk("Unlock failed!");
 				}
-				BootIdeWaitDataReady(uIoBase);
-				if(BootIdeReadData(uIoBase, baBuffer, IDE_SECTOR_SIZE)) 
-				{
-					printk("  %d:  BootIdeReadData FAILED, error=%02X\n", nIndexDrive, IoInputByte(IDE_REG_ERROR(uIoBase)));
-					return 1;
+				else printk("Unlock successful");	
+				
+				//Uncomment this if you want cromwell to automatically disable the password
+				//on locked harddisks
+				
+				/*if (DisableDrivePassword(uIoBase, nIndexDrive, &baMagic[2])) {
+					printk("Disable failed");
 				}
-
-		//		printk("post-unlock sec status: 0x%x\n", drive_info[128]);
-				if(drive_info[128]&0x0004) 
-				{
-					printk("  %d:  FAILED to unlock drive, security: %04x\n", nIndexDrive, drive_info[128]);
-				} else {
-	//				printk("  %d:  Drive unlocked, new sec=%04X\n", nIndexDrive, drive_info[128]);
-					fUnlocked=true;
-		//			printk("    Unlocked");
-				}
-
-//			nVersionHashing++;
-
-			
-
-				if(!fUnlocked)
-				{
-					printk("\n");
-					printk("FAILED to unlock drive, sec: %04x; Version=%d, EEPROM:\n", drive_info[128], nVersionSuccessfulDecrypt);
-					VideoDumpAddressAndData(0, &baEeprom[0], 0x30);
-					printk("Computed key:\n");
-					VideoDumpAddressAndData(0, &baMagic[0], 20);
-					return 1;
-				}
+				else printk("Disable successful!");
+				*/
 			}
-
-		} else {
-			if(nIndexDrive==0) printk("  Unlocked");
-		}
-	}  
-
+		}  
+	}
 // End the C/X romwell Selection from above
-
 
 	if (drive_info[49] & 0x200) 
 	{ 
@@ -797,11 +711,7 @@ int BootIdeDriveInit(unsigned uIoBase, int nIndexDrive,int drivetype)
 				printk(" - No MBR", nIndexDrive);
 			}
 		}
-
-//		printk("BootIdeDriveInit() HDD completed ok\n");
-
 		printk("\n");
-
 	} 
 
 	if (drivetype == DRIVETYPE_ATAPI) 
@@ -817,6 +727,113 @@ int BootIdeDriveInit(unsigned uIoBase, int nIndexDrive,int drivetype)
 
 
 /* -------------------------------------------------------------------------------- */
+int UnlockDrive(unsigned uIoBase, int driveId, char *password) {
+				//Should check it's ACTUALLY locked first, but lets assume the caller did, for now.	
+				char ide_cmd_data[2+512];	
+				char baBuffer[512];
+				unsigned short*	drive_info = (unsigned short*)baBuffer;
+				
+				memset(ide_cmd_data,0x00,512);
+				tsIdeCommandParams tsicp = IDE_DEFAULT_COMMAND;
+				tsIdeCommandParams tsicp1 = IDE_DEFAULT_COMMAND;
+
+				//Password is only 20 bytes long - the rest is 0-padded.
+				memcpy(&ide_cmd_data[2],password,20);
+				
+				if(BootIdeWaitNotBusy(uIoBase)) 
+				{
+					printk("  %d:  Not Ready\n", driveId);
+					return 1;
+				}
+				tsicp1.m_bDrivehead = IDE_DH_DEFAULT | IDE_DH_HEAD(0) | IDE_DH_CHS | IDE_DH_DRIVE(driveId);
+	
+				if(BootIdeIssueAtaCommand(uIoBase, IDE_CMD_SECURITY_UNLOCK, &tsicp1)) return 1;
+				
+				BootIdeWaitDataReady(uIoBase);
+				BootIdeWriteData(uIoBase, ide_cmd_data, IDE_SECTOR_SIZE);
+        	
+				if (BootIdeWaitNotBusy(uIoBase))	
+				{
+					return 1;
+				}
+				// check that we are unlocked
+				tsicp.m_bDrivehead = IDE_DH_DEFAULT | IDE_DH_HEAD(0) | IDE_DH_CHS | IDE_DH_DRIVE(driveId);
+				if(BootIdeIssueAtaCommand(uIoBase, IDE_CMD_GET_INFO, &tsicp)) 
+				{
+					return 1;
+				}
+				BootIdeWaitDataReady(uIoBase);
+				if(BootIdeReadData(uIoBase, baBuffer, IDE_SECTOR_SIZE)) 
+				{
+					return 1;
+				}
+
+				if(drive_info[128]&0x0004) 
+				{
+					//Drive is still locked
+					return 1;
+				} else {
+					//Unlock was successful
+					return 0;
+				}
+}
+
+int LockDrive (char *password) {
+
+}
+
+int DisableDrivePassword(unsigned uIoBase, int driveId, char *password) {
+				//Drive should be already unlocked - this will fail if it isnt.
+				char ide_cmd_data[2+512];	
+				char baBuffer[512];
+				unsigned short*	drive_info = (unsigned short*)baBuffer;
+				
+				memset(ide_cmd_data,0x00,512);
+				tsIdeCommandParams tsicp = IDE_DEFAULT_COMMAND;
+				tsIdeCommandParams tsicp1 = IDE_DEFAULT_COMMAND;
+
+				//Password is only 20 bytes long - the rest is 0-padded.
+				memcpy(&ide_cmd_data[2],password,20);
+				
+				if(BootIdeWaitNotBusy(uIoBase)) 
+				{
+					printk("  %d:  Not Ready\n", driveId);
+					return 1;
+				}
+				tsicp1.m_bDrivehead = IDE_DH_DEFAULT | IDE_DH_HEAD(0) | IDE_DH_CHS | IDE_DH_DRIVE(driveId);
+	
+				if(BootIdeIssueAtaCommand(uIoBase, IDE_CMD_SECURITY_DISABLE, &tsicp1)) return 1;
+				
+				BootIdeWaitDataReady(uIoBase);
+				BootIdeWriteData(uIoBase, ide_cmd_data, IDE_SECTOR_SIZE);
+        	
+				if (BootIdeWaitNotBusy(uIoBase))	
+				{
+					return 1;
+				}
+				// check that we are unlocked
+				tsicp.m_bDrivehead = IDE_DH_DEFAULT | IDE_DH_HEAD(0) | IDE_DH_CHS | IDE_DH_DRIVE(driveId);
+				if(BootIdeIssueAtaCommand(uIoBase, IDE_CMD_GET_INFO, &tsicp)) 
+				{
+					return 1;
+				}
+				BootIdeWaitDataReady(uIoBase);
+				if(BootIdeReadData(uIoBase, baBuffer, IDE_SECTOR_SIZE)) 
+				{
+					return 1;
+				}
+
+				//These checks need updating.
+				if(drive_info[128]&0x0004) 
+				{
+					//Drive is still locked
+					return 1;
+				} else {
+					//Unlock was successful
+					return 0;
+				}
+}
+
 
 /////////////////////////////////////////////////
 //  BootIdeInit
