@@ -602,7 +602,7 @@ void StartBios(	int nDrive, int nActivePartition , int nFATXPresent) {
 	}
 	
 	if(nIcon == ICON_FATX) {
-	        strcpy(config.szAppend, "root=/dev/ram0 devfs=mount kbd-reset"); // default
+	        strcpy(config.szAppend, "init=/linuxrc root=/dev/ram0 pci=biosirq kbd-reset"); // default
 	        strcpy(config.szKernel, "/vmlinuz");
 	        strcpy(config.szInitrd, "/initrd");
 	} else {
