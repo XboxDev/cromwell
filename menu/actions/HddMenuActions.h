@@ -10,7 +10,8 @@
 #include "BootIde.h"
 #include "video.h"
 
-
 void LockHdd(void *driveId);
 
 void UnlockHdd(void *driveId);
+
+void DisplayHddPassword(void *driveId);

@@ -113,6 +113,7 @@ void TextMenu(TEXTMENU *menu, TEXTMENUITEM *selectedItem) {
 			//Menu item selected - invoke function pointer.
 			if (selectedMenuItem->functionPtr!=NULL) selectedMenuItem->functionPtr(selectedMenuItem->functionDataPtr);
 			//When we return from the function pointer, redraw ourselves.
+			BootVideoClearScreen(&jpegBackdrop, 0, 0xffff);
 			TextMenuDraw(menu, firstVisibleMenuItem, selectedMenuItem);
 		}
 		else if (risefall_xpad_BUTTON(TRIGGER_XPAD_KEY_B) == 1 || risefall_xpad_BUTTON(TRIGGER_XPAD_KEY_BACK) == 1) {

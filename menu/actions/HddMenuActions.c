@@ -38,7 +38,6 @@ void LockHdd(void *driveId) {
 	printk("press Button A to continue");
 
 	while ((risefall_xpad_BUTTON(TRIGGER_XPAD_KEY_A) != 1)) wait_ms(100);
-	BootVideoClearScreen(&jpegBackdrop, 0, 0xffff);
 }
 
 void UnlockHdd(void *driveId) {
@@ -56,7 +55,29 @@ void UnlockHdd(void *driveId) {
 	printk("\2Press Button A to continue");
 
 	while ((risefall_xpad_BUTTON(TRIGGER_XPAD_KEY_A) != 1)) wait_ms(100);
-
-	BootVideoClearScreen(&jpegBackdrop, 0, 0xffff);
 }
 
+
+void DisplayHddPassword(void *driveId) {
+	int nIndexDrive = *(int *)driveId;
+	u8 password[20];
+	int i;
+	
+	if (CalculateDrivePassword(nIndexDrive,password)) {
+		printk("Unable to calculate drive password - eeprom corrupt?");
+		return;
+	}
+	
+	printk("The normal password (user password) for this drive is as follows:\n\n");
+	printk("                              ");
+	VIDEO_ATTR=0xff0000;
+	for (i=0; i<20; i++) {
+		printk("\2%02x \2",password[i]);
+		if ((i+1)%5 == 0) {
+			printk("\n\n                              ");
+		}
+	}	
+	printk("\n\nPress Button A to continue");
+
+	while ((risefall_xpad_BUTTON(TRIGGER_XPAD_KEY_A) != 1)) wait_ms(100);
+}

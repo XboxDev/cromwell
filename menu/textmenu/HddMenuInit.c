@@ -44,6 +44,16 @@ TEXTMENU *HddMenuInit(void) {
                         	*(int*)itemPtr->functionDataPtr = i;
 				TextMenuAddItem(menuPtr, itemPtr);
 			}
+	
+			//Add a 'display password' menu
+			itemPtr = (TEXTMENUITEM*)malloc(sizeof(TEXTMENUITEM));
+			memset(itemPtr,0x00,sizeof(TEXTMENUITEM));
+			sprintf(itemPtr->szCaption,"Display HDD password (hd%c)",i ? 'b':'a');
+			itemPtr->functionPtr= DisplayHddPassword;
+    			itemPtr->functionDataPtr = malloc(sizeof(int));
+                       	*(int*)itemPtr->functionDataPtr = i;
+			TextMenuAddItem(menuPtr, itemPtr);
+		
 		}
 	}
 	return menuPtr;

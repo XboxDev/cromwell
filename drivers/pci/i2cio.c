@@ -213,13 +213,16 @@ bool I2CGetTemperature(int * pnLocalTemp, int * pExternalTemp)
 
 void I2CRebootQuick(void) {
 	WriteToSMBus(0x10,0x02,1,0x01);
+	while (1);
 }
 
 
 void I2CRebootSlow(void) {
 	WriteToSMBus(0x10,0x02,1,0x40);
+	while (1);
 }
 
 void I2CPowerOff(void) {
 	WriteToSMBus(0x10,0x02,1,0x80);
+	while (1);
 }
