@@ -133,6 +133,7 @@ void IconMenu(void) {
 	u32 COUNT_start;
 	u32 temp=1;
 	ICON *iconPtr=NULL;
+	int i;
 
 	extern int nTempCursorMbrX, nTempCursorMbrY; 
 	int nTempCursorResumeX, nTempCursorResumeY ;
@@ -174,7 +175,7 @@ void IconMenu(void) {
 				//A bit ugly, but need to find the last visible icon, and see if 
 				//we are moving further right from it.
 				lastVisibleIcon=firstVisibleIcon;
-				int i=0;
+				i=0;
 				for (i=0; i<2; i++) {
 					if (lastVisibleIcon->nextIcon==NULL) {
 						break;
