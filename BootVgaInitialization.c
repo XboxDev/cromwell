@@ -420,14 +420,14 @@ const VIDEO_MODE_TABLES videomodetables = {
 // memory mapped IO
 
 
-#define voutb(nAds, b) {	*((volatile BYTE*)((nAds))) = (b); }
-#define voutw(nAds, w) {	*((volatile WORD*)((nAds))) = (w); }
-#define voutl(nAds, dw) {	*((volatile DWORD*)((nAds))) = (dw); }
+#define voutb(nAds, b) {	*((BYTE* volatile)((nAds))) = (b); }
+#define voutw(nAds, w) {	*(( WORD* volatile)((nAds))) = (w); }
+#define voutl(nAds, dw) {	*((DWORD* volatile)((nAds))) = (dw); }
 
-#define vinb(nAds) (*((volatile BYTE*)((nAds))))
-#define vinl(nAds) (*((volatile DWORD*)((nAds))))
+#define vinb(nAds) (*(( BYTE* volatile)((nAds))))
+#define vinl(nAds) (*(( DWORD* volatile)((nAds))))
 
-void vgaout(volatile BYTE * pb, unsigned char reg, unsigned char data) {
+void vgaout(BYTE * volatile pb, unsigned char reg, unsigned char data) {
 	*pb++=reg;
 	*pb=data;
 }
@@ -519,7 +519,7 @@ void BootVgaInitializationKernel(CURRENT_VIDEO_MODE_DETAILS * pcurrentvidemodede
 		// frankenvideo-derived Video Mode setting
 
 	{
-		volatile DWORD *pdw=(volatile DWORD *)pcurrentvidemodedetails->m_pbBaseAddressVideo;
+		DWORD * volatile pdw=(DWORD * volatile)pcurrentvidemodedetails->m_pbBaseAddressVideo;
 		int n=0, n1=0;
 		BYTE b;
 
@@ -717,8 +717,20 @@ void BootVgaInitializationKernel(CURRENT_VIDEO_MODE_DETAILS * pcurrentvidemodede
 	voutl(pcurrentvidemodedetails->m_pbBaseAddressVideo+0x000140, 1);  // enable VSYNC int
 #endif
 
-	voutl(pcurrentvidemodedetails->m_pbBaseAddressVideo+0x600800, 0x03c00000);   // set video start address to 4M back from end of RAM
-
+	{
+		DWORD dwVideoFootprint=pcurrentvidemodedetails->m_dwWidthInPixels *pcurrentvidemodedetails->m_dwHeightInLines *4;
+		DWORD dwSpare=0x400000 - dwVideoFootprint;  // what's left from the 4MByte allocation after the pixel stg is accounted for
+		voutl(pcurrentvidemodedetails->m_pbBaseAddressVideo+0x600800, 0x03c00000);   // set video start address to 4M back from end of RAM
+			// Oliver Schwartz's 2D accelleration mods
+		voutl(pcurrentvidemodedetails->m_pbBaseAddressVideo+0x400820, dwSpare);
+		voutl(pcurrentvidemodedetails->m_pbBaseAddressVideo+0x400824, dwSpare);
+		voutl(pcurrentvidemodedetails->m_pbBaseAddressVideo+0x400828, dwSpare);
+		voutl(pcurrentvidemodedetails->m_pbBaseAddressVideo+0x40082c, dwSpare);
+		voutl(pcurrentvidemodedetails->m_pbBaseAddressVideo+0x400684, 0x03ffffff);
+		voutl(pcurrentvidemodedetails->m_pbBaseAddressVideo+0x400688, 0x03ffffff);
+		voutl(pcurrentvidemodedetails->m_pbBaseAddressVideo+0x40068c, 0x03ffffff);
+		voutl(pcurrentvidemodedetails->m_pbBaseAddressVideo+0x400690, 0x03ffffff);
+	}
 		// timing reset for Conexant
 
 	I2CTransmitWord(0x45, 0x6cc6); // nb this was inside the #ifndef XBE above, I think it should be outside, will not affect XBE

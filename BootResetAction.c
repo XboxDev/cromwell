@@ -377,6 +377,7 @@ extern void BootResetAction ( void ) {
 
 		I2cSetFrontpanelLed(I2C_LED_GREEN0 | I2C_LED_GREEN1 | I2C_LED_GREEN2);
 
+
 #ifdef DO_ETHERNET
 				// init Ethernet
 		printk("Initializing Ethernet... ");
@@ -385,6 +386,13 @@ extern void BootResetAction ( void ) {
 			if(n) { printk("Error %d\n", n); } else { printk("OK\n"); }
 		}
 #endif
+
+			// set Ethernet MAC address from EEPROM
+		{
+			BYTE * volatile pb=(BYTE *)0xfef000a8;  // Ethernet MMIO base + MAC register offset (<--thanks to Anders Gustaffson)
+			int n;
+			for(n=5;n>=0;n--) { *pb++=	eeprom.MACAddress[n]; } // send it in backwards, its reversed by the driver
+		}
 
 //		BootPciInterruptEnable();
 		BootEepromPrintInfo();
