@@ -12,20 +12,6 @@
 
 #include "2bload.h"
 
-
-void * memcpy(void *dest, const void *src,  size_t size) {
-
-	BYTE * pb=(BYTE *)src, *pbd=(BYTE *)dest;
-	while(size--) *pbd++=*pb++;
-	return dest;
-}
-
-
-int strlen(const char * sz) { 
-	int n=0; while(sz[n]) n++; 
-	return n; 
-	}
-
 void * memset(void *dest, int data,  size_t size)
 {
   	char *p = dest;
@@ -40,67 +26,3 @@ int _memcmp(const BYTE *pb, const BYTE *pb1, int n) {
 	return 0;
 }
 
-// this is the memory managemnt struct stored behind every allocation
-
-// This is a Pseudo-memory Manager
-void *malloc(size_t size)
-{
-	void *p;
-/*
-	free_mem_ptr = (free_mem_ptr + 3) & ~3;	
-	p = (void *) free_mem_ptr;
-	free_mem_ptr += size;
-	return p;
-*/
-	free_mem_ptr = (free_mem_ptr + 0x100) & ~0x100;	
-	p = (void *) free_mem_ptr;
-	free_mem_ptr += size+0x200;
-	return p;
-
-
-}
-
-void free(void *where)
-{
-	/* Don't care */
-}
-
-char * strcpy(char *sz, const char *szc)
-{
-	char *szStart=sz;
-	while(*szc) *sz++=*szc++;
-	*sz='\0';
-	return szStart;
-}
-
-char * _strncpy(char *sz, const char *szc, int nLenMax)
-{
-	char *szStart=sz;
-	while((*szc) && (nLenMax--)) *sz++=*szc++;
-	*sz='\0';
-	return szStart;
-}
-
-
-int _strncmp(const char *sz1, const char *sz2, int nMax) {
-
-	while((*sz1) && (*sz2) && nMax--) {
-		if(*sz1 != *sz2) return (*sz1 - *sz2);
-		sz1++; sz2++;
-	}
-	if(nMax==0) return 0;
-	if((*sz1) || (*sz2)) return 0;
-	return 0; // used up nMax
-}
-
-char *strrchr0(char *string, char ch) {
-        char *ptr = string;
-	while(*ptr != 0) {
-		if(*ptr == ch) {
-			return ptr;
-		} else {
-			ptr++;
-		}
-	}
-	return NULL;
-}

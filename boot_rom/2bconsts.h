@@ -1,5 +1,3 @@
-
-
 /*
  *
  * includes for startup code in a form usable by the .S files
@@ -28,7 +26,7 @@
 #define MASK0_H 0x0F
 #define MASK0_L 0xFC000800
 #define BASE1_H 0
-#define BASE1_L 0xFFF80005 // 0x0FFF80005
+#define BASE1_L 0xFFF80005
 #define MASK1_H 0x0F
 #define MASK1_L 0x0FFF80800
 
@@ -71,9 +69,3 @@
 #define DEV_1f 0x1f
 
 #define FUNC_0 0
-/*
-#define boot_post_macro(value)                     \
-		movb    $(value), %al                           ;\
-		outb    %al, $0x80 
-*/
-/* Filtror debug stuff  4K block used for communications */

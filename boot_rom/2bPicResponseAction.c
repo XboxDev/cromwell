@@ -90,12 +90,6 @@ int I2CTransmitWord(BYTE bPicAddressI2cFormat, WORD wDataToWrite)
 	return ERR_I2C_ERROR_BUS;
 }
 
-void I2CModifyBits(BYTE bAds, BYTE bReg, BYTE bData, BYTE bMask)
-{
-	BYTE b=I2CTransmitByteGetReturn(0x45, bReg)&(~bMask);
-	I2CTransmitWord(0x45, (bReg<<8)|((bData)&bMask)|b);
-}
-
 // ----------------------------  PIC challenge/response -----------------------------------------------------------
 //
 // given four bytes, returns a WORD
@@ -166,13 +160,4 @@ extern int I2cSetFrontpanelLed(BYTE b)
 	I2CTransmitWord( 0x10, 0x701);
 	return ERR_SUCCESS;
 }
-
-bool I2CGetTemperature(int * pnLocalTemp, int * pExternalTemp)
-{
-
-	*pnLocalTemp=I2CTransmitByteGetReturn(0x4c, 0x01);
-	*pExternalTemp=I2CTransmitByteGetReturn(0x4c, 0x00);
-	return true;
-}
-
 

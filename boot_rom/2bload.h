@@ -14,21 +14,6 @@
 #include "stdint.h"
 #include "cromwell_types.h"
 
-static inline double min (double a, double b)
-{
-	if (a < b) return a; else return b;
-}
-
-static inline double max (double a, double b)
-{
-	if (a > b) return a; else return b;
-}
-
-// filtror is a debugging device designed to make code available over LPC and allow a debug shell
-// details are at http://warmcat.com/milksop
-// if you don't have one, or are building a final ROM image, keep this at zero
-
-
 /////////////////////////////////
 // LED-flashing codes
 // or these together as argument to I2cSetFrontpanelLed
@@ -73,7 +58,6 @@ static __inline void IoOutputDword(WORD wAds, DWORD dwValue) {
     __asm__ __volatile__ ("outl %0,%w1": :"a" (dwValue), "Nd" (wAds));
 }
 
-
 static __inline BYTE IoInputByte(WORD wAds) {
   unsigned char _v;
   __asm__ __volatile__ ("inb %w1,%0":"=a" (_v):"Nd" (wAds));
@@ -92,48 +76,23 @@ static __inline DWORD IoInputDword(WORD wAds) {
   return _v;
 }
 
-#define rdmsr(msr,val1,val2) \
-       __asm__ __volatile__("rdmsr" \
-			    : "=a" (val1), "=d" (val2) \
-			    : "c" (msr))
-
-#define wrmsr(msr,val1,val2) \
-     __asm__ __volatile__("wrmsr" \
-			  : /* no outputs */ \
-			  : "c" (msr), "a" (val1), "d" (val2))
-
-
-	// boot process
+// boot process
 int BootPerformPicChallengeResponseAction(void);
-	// LED control (see associated enum above)
+// LED control (see associated enum above)
 int I2cSetFrontpanelLed(BYTE b);
-
 
 ////////// BootResetActions.c
 
 void BootStartBiosLoader(void);
 
-
-
 ///////// BootPerformPicChallengeResponseAction.c
 
 int I2CTransmitWord(BYTE bPicAddressI2cFormat, WORD wDataToWrite);
 int I2CTransmitByteGetReturn(BYTE bPicAddressI2cFormat, BYTE bDataToWrite);
-bool I2CGetTemperature(int *, int *);
-void I2CModifyBits(BYTE bAds, BYTE bReg, BYTE bData, BYTE bMask);
 
-
-
-void * memcpy(void *dest, const void *src,  size_t size);
-void * memset(void *dest, int data,  size_t size);
+void *memcpy(void *dest, const void *src,  size_t size);
+void *memset(void *dest, int data,  size_t size);
 int _memcmp(const BYTE *pb, const BYTE *pb1, int n);
-int _strncmp(const char *sz1, const char *sz2, int nMax);
-char * strcpy(char *sz, const char *szc);
-char * _strncpy(char *sz, const char *szc, int nLenMax);
-
-unsigned int free_mem_ptr;
-void *malloc(size_t size);
-void free(void *where);
 
 unsigned char *BufferIN;
 int BufferINlen;

@@ -18,8 +18,6 @@
 
 extern int decompress_kernel(char*out, char *data, int len);
 
-
-
 DWORD PciWriteDword(unsigned int bus, unsigned int dev, unsigned int func, unsigned int reg_off, unsigned int dw) 
 {
 		
@@ -62,10 +60,6 @@ void BootAGPBUSInitialization(void)
 	PciWriteDword(BUS_0, DEV_0, FUNC_0, 0x80, 0x00000100);
     
 }
-
-
- 
- 
  
 /* -------------------------  Main Entry for after the ASM sequences ------------------------ */
 
@@ -91,10 +85,8 @@ extern void BootStartBiosLoader ( void ) {
 	unsigned int compressed_image_size;
 	unsigned int Biossize_type;
 	int temp;
-//	unsigned int de_compressed_image_size=0;
 	
         int validimage;
-        free_mem_ptr = 0x02500000;		// Main Dynamic Memory starts here
         	
 	memcpy(&bootloaderChecksum[0],(void*)PROGRAMM_Memory_2bl,20);
 	memcpy(&bootloadersize,(void*)(PROGRAMM_Memory_2bl+20),4);
@@ -102,12 +94,6 @@ extern void BootStartBiosLoader ( void ) {
 	memcpy(&compressed_image_size,(void*)(PROGRAMM_Memory_2bl+28),4);
 	memcpy(&Biossize_type,(void*)(PROGRAMM_Memory_2bl+32),4);
 	        
-        #if 0
-        // This is for testing, no Validation will be made
-        BootPerformPicChallengeResponseAction();
-        
-        #else
-      	
       	SHA1Reset(&context);
 	SHA1Input(&context,(void*)(PROGRAMM_Memory_2bl+20),bootloadersize-20);
 	SHA1Result(&context,SHA1_result);
@@ -120,7 +106,6 @@ extern void BootStartBiosLoader ( void ) {
 		// Bad, the checksum does not match, but we can nothing do now, we wait until PIC kills us
 		while(1);
 	}
-	#endif
        
         // Sets the Graphics Card to 60 MB start address
         (*(unsigned int*)0xFD600800) = (0xf0000000 | ((64*0x100000) - 0x00400000));
@@ -131,8 +116,6 @@ extern void BootStartBiosLoader ( void ) {
 	(*(unsigned int*)(0xFD000000 + 0x100204)) = 0x11448000 ;
         
         PciWriteDword(BUS_0, DEV_0, FUNC_0, 0x84, 0x7FFFFFF);  // 128 MB
-	
-	
 	
 	// Lets go, we have finished, the Most important Startup, we have now a valid Micro-loder im Ram
 	// we are quite happy now
@@ -193,31 +176,11 @@ extern void BootStartBiosLoader ( void ) {
                         
                         I2cSetFrontpanelLed(I2C_LED_RED0 | I2C_LED_RED1 | I2C_LED_RED2 | I2C_LED_RED3 );
 		
-//      		       	compressinit();
-
 			BufferIN = (unsigned char*)(CROMWELL_compress_temploc);
 			BufferINlen=compressed_image_size;
 			BufferOUT = (unsigned char*)CROMWELL_Memory_pos;
 			decompress_kernel(BufferOUT, BufferIN, BufferINlen);
-//  			Decode();
-//      		de_compressed_image_size = BufferOUTPos;
-      			#if 0
-      			SHA1Reset(&context);
-			SHA1Input(&context,(void*)(CROMWELL_Memory_pos+0x20),(de_compressed_image_size-0x20));
-			SHA1Result(&context,SHA1_result);
 			
-			if (_memcmp(SHA1_result,(void*)(CROMWELL_Memory_pos+0x0c),20)!=0) 
-			{       	
-				I2CTransmitWord(0x10, 0x0201); 
-				while(1); 
-			};
-			#endif
-			
-//			memset((void*)(CROMWELL_Memory_pos+de_compressed_image_size),0x0,1024);
-
-			
-			//I2cSetFrontpanelLed(I2C_LED_RED0 | I2C_LED_RED1 | I2C_LED_RED2 | I2C_LED_RED3 );
-					
 			// This is a config bit in Cromwell, telling the Cromwell, that it is a Cromwell and not a Xromwell
 			flashbank++; // As counting starts with 0, we increase +1
 			memcpy((void*)(CROMWELL_Memory_pos+0x20),&cromwellidentify,4);
@@ -227,15 +190,10 @@ extern void BootStartBiosLoader ( void ) {
 		 	validimage=1;
 		 	
 		 	break;
-
 		}
-		
 	}
-	
-	
         
         if (validimage==1) {
-                
                 
                 I2cSetFrontpanelLed(
 		I2C_LED_GREEN0 | I2C_LED_GREEN1 | I2C_LED_GREEN2 | I2C_LED_GREEN3 |
@@ -259,17 +217,9 @@ extern void BootStartBiosLoader ( void ) {
 		I2C_LED_GREEN0 | I2C_LED_GREEN1 | I2C_LED_GREEN2 | I2C_LED_GREEN3 |
 		I2C_LED_RED0 | I2C_LED_RED1 | I2C_LED_RED2 | I2C_LED_RED3
 	);
-	
-      
-      
         
 //	I2CTransmitWord(0x10, 0x1901); // no reset on eject
-
 //	I2CTransmitWord(0x10, 0x0c00); // eject DVD tray        
 
-
-
         while(1);
-
-
 }
