@@ -124,7 +124,8 @@ void BootVgaInitializationKernelNG(CURRENT_VIDEO_MODE_DETAILS * pcurrentvideomod
 
    	memset((void *)pcurrentvideomodedetails,0,sizeof(CURRENT_VIDEO_MODE_DETAILS));
 
-	if(((BYTE *)&eeprom)[0x96]&0x01) { // 16:9 widescreen TV
+	//Focus driver (presumably XLB also) doesnt do widescreen yet - only blackscreens otherwise.
+	if(((BYTE *)&eeprom)[0x96]&0x01 && video_encoder == ENCODER_CONEXANT) { // 16:9 widescreen TV
 		pcurrentvideomodedetails->m_nVideoModeIndex=VIDEO_MODE_1024x576;
 	} else { // 4:3 TV
 		pcurrentvideomodedetails->m_nVideoModeIndex=VIDEO_PREFERRED_MODE;
