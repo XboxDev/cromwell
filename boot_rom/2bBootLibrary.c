@@ -40,9 +40,9 @@ int _memcmp(const BYTE *pb, const BYTE *pb1, int n) {
 	return 0;
 }
 
-	// this is the memory managemnt struct stored behind every allocation
+// this is the memory managemnt struct stored behind every allocation
 
-	// This is a Pseudo-memory Manager
+// This is a Pseudo-memory Manager
 void *malloc(size_t size)
 {
 	void *p;
@@ -64,9 +64,6 @@ void free(void *where)
 {
 	/* Don't care */
 }
-
-
-
 
 char * strcpy(char *sz, const char *szc)
 {
@@ -95,8 +92,6 @@ int _strncmp(const char *sz1, const char *sz2, int nMax) {
 	if((*sz1) || (*sz2)) return 0;
 	return 0; // used up nMax
 }
-
-
 
 char *strrchr0(char *string, char ch) {
         char *ptr = string;

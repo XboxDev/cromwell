@@ -40,7 +40,9 @@ int _strncmp(const char *sz1, const char *sz2, int nMax);
 
 void setup(void* KernelPos, void* PhysInitrdPos, unsigned long InitrdSize, const char* kernel_cmdline);
 
+#ifdef ETHERBOOT
 extern int etherboot(void);
+#endif
 
 static int nRet;
 static DWORD dwKernelSize= 0, dwInitrdSize = 0;
@@ -933,8 +935,9 @@ int BootMenu(CONFIGENTRY *config,int nDrive,int nActivePartition, int nFATXPrese
 int ExittoLinux(CONFIGENTRY *config);
 void startLinux(void* initrdStart, unsigned long initrdSize, const char* appendLine);
 int ExittoRomBios(void);
+#ifdef ETHERBOOT
 int etherboot(void);
-
+#endif
 
 void StartBios(CONFIGENTRY *config, int nActivePartition , int nFATXPresent,int bootfrom) {
 
@@ -1009,7 +1012,9 @@ void StartBios(CONFIGENTRY *config, int nActivePartition , int nFATXPresent,int 
 			ExittoLinux(config);
 			break;
 		case ICON_FLASH:
+			#ifdef ETHERBOOT
 			etherboot();
+			#endif
 			break;
 		default:
 			printk("Selection not implemented\n");
