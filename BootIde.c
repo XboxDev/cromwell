@@ -30,24 +30,6 @@
 ////////////////////////////////////
 // IDE types and constants
 
-typedef enum {
-	EDT_UNKNOWN= 0,
-	EDT_XBOXFS
-} enumDriveType;
-
-typedef struct {  // this is the retained knowledge about an IDE device after init
-    unsigned short m_fwPortBase;
-    unsigned short m_wCountHeads;
-    unsigned short m_wCountCylinders;
-    unsigned short m_wCountSectorsPerTrack;
-    unsigned long m_dwCountSectorsTotal; /* total */
-    unsigned char m_bLbaMode;	/* am i lba (0x40) or chs (0x00) */
-    unsigned char m_szIdentityModelNumber[41];
-    unsigned char m_szSerial[21];
-		unsigned char m_fDriveExists;
-		unsigned char m_fAtapi;  // true if a CDROM, etc
-		enumDriveType m_enumDriveType;
-} tsHarddiskInfo;
 
 #define IDE_SECTOR_SIZE 0x200
 #define IDE_BASE1             (0x1F0u) /* primary controller */
@@ -321,6 +303,7 @@ static int BootIdeDriveInit(unsigned uIoBase, int nIndexDrive)
 	tsaHarddiskInfo[nIndexDrive].m_fDriveExists = 0;
 	tsaHarddiskInfo[nIndexDrive].m_enumDriveType=EDT_UNKNOWN;
 	tsaHarddiskInfo[nIndexDrive].m_fAtapi=false;
+	tsaHarddiskInfo[nIndexDrive].m_wAtaRevisionSupported=0;
 
 	tsicp.m_bDrivehead = IDE_DH_DEFAULT | IDE_DH_HEAD(0) | IDE_DH_CHS | IDE_DH_DRIVE(nIndexDrive);
 	IoOutputByte(IDE_REG_DRIVEHEAD(uIoBase), tsicp.m_bDrivehead);
@@ -351,19 +334,14 @@ static int BootIdeDriveInit(unsigned uIoBase, int nIndexDrive)
 				return 1;
 			}
 		}
-
 	} else { // slave... death if you send it IDE_CMD_GET_INFO, it needs an ATAPI request
-
-			if(BootIdeIssueAtaCommand(uIoBase, 0xa1, &tsicp)) {
-				printk("  %d: detect FAILED, error=%02X\n", nIndexDrive, IoInputByte(IDE_REG_ERROR(uIoBase)));
-				return 1;
-			}
-
+		if(BootIdeIssueAtaCommand(uIoBase, 0xa1, &tsicp)) {
+			printk("  %d: detect FAILED, error=%02X\n", nIndexDrive, IoInputByte(IDE_REG_ERROR(uIoBase)));
+			return 1;
+		}
 	}
 
 	BootIdeWaitDataReady(uIoBase);
-
-
 	if(BootIdeReadData(uIoBase, baBuffer, IDE_SECTOR_SIZE)) {
 		printk("  %d: Drive not detected\n", nIndexDrive);
 		return 1;
@@ -374,6 +352,7 @@ static int BootIdeDriveInit(unsigned uIoBase, int nIndexDrive)
 	tsaHarddiskInfo[nIndexDrive].m_wCountCylinders = drive_info[1];
 	tsaHarddiskInfo[nIndexDrive].m_wCountSectorsPerTrack = drive_info[6];
 	tsaHarddiskInfo[nIndexDrive].m_dwCountSectorsTotal = *((unsigned int*)&(drive_info[60]));
+	tsaHarddiskInfo[nIndexDrive].m_wAtaRevisionSupported = drive_info[88];
 
 	{ int n;  // get rid of trailing spaces, add terminating '\0'
 		WORD * pw=(WORD *)&(drive_info[10]);
@@ -418,11 +397,17 @@ static int BootIdeDriveInit(unsigned uIoBase, int nIndexDrive)
 	} else { // HDD
 		BYTE bAdsBase=0x1b;
 		unsigned long ulDriveCapacity1024=((tsaHarddiskInfo[nIndexDrive].m_dwCountSectorsTotal /1000)*512)/1000;
-
-		printk("  %d: %s %s  %u.%uGB  ",
+		int nAta=0;
+		if(tsaHarddiskInfo[nIndexDrive].m_wAtaRevisionSupported&2) nAta=1;
+		if(tsaHarddiskInfo[nIndexDrive].m_wAtaRevisionSupported&4) nAta=2;
+		if(tsaHarddiskInfo[nIndexDrive].m_wAtaRevisionSupported&8) nAta=3;
+		if(tsaHarddiskInfo[nIndexDrive].m_wAtaRevisionSupported&16) nAta=4;
+		if(tsaHarddiskInfo[nIndexDrive].m_wAtaRevisionSupported&32) nAta=5;
+		printk("  %d: %s %s UDMA%d %u.%uGB  ",
 			nIndexDrive,
 			tsaHarddiskInfo[nIndexDrive].m_szIdentityModelNumber,
 			tsaHarddiskInfo[nIndexDrive].m_szSerial,
+			nAta,
 // 			tsaHarddiskInfo[nIndexDrive].m_wCountHeads,
 //  		tsaHarddiskInfo[nIndexDrive].m_wCountCylinders,
 //   		tsaHarddiskInfo[nIndexDrive].m_wCountSectorsPerTrack,
@@ -629,10 +614,38 @@ static int BootIdeDriveInit(unsigned uIoBase, int nIndexDrive)
 
 int BootIdeInit(void)
 {
-
+	tsaHarddiskInfo[0].m_bCableConductors=40;
 
 	BootIdeDriveInit(IDE_BASE1, 0);
 	BootIdeDriveInit(IDE_BASE1, 1);
+
+	if(tsaHarddiskInfo[0].m_fDriveExists) {
+		unsigned int uIoBase = tsaHarddiskInfo[0].m_fwPortBase;
+		tsIdeCommandParams tsicp = IDE_DEFAULT_COMMAND;
+
+		tsicp.m_bDrivehead = IDE_DH_DEFAULT | IDE_DH_HEAD(0) | IDE_DH_CHS | IDE_DH_DRIVE(0);
+		IoOutputByte(IDE_REG_DRIVEHEAD(uIoBase), tsicp.m_bDrivehead);
+
+		if(!BootIdeIssueAtaCommand(uIoBase, IDE_CMD_GET_INFO, &tsicp)) {
+			WORD waBuffer[256];
+			BootIdeWaitDataReady(uIoBase);
+			if(!BootIdeReadData(uIoBase, (BYTE *)&waBuffer[0], IDE_SECTOR_SIZE)) {
+//				printk("%04X ", waBuffer[80]);
+				if( ((waBuffer[93]&0xc000)!=0) && ((waBuffer[93]&0x8000)==0) && ((waBuffer[93]&0xe000)!=0x6000)) 	tsaHarddiskInfo[0].m_bCableConductors=80;
+			}
+		}
+	}
+	if(tsaHarddiskInfo[0].m_bCableConductors==40) {
+		printk("Default 40 conductor IDE cable, limiting to UDMA2\n");
+	} else {
+		int nAta=0;
+		if(tsaHarddiskInfo[0].m_wAtaRevisionSupported&2) nAta=1;
+		if(tsaHarddiskInfo[0].m_wAtaRevisionSupported&4) nAta=2;
+		if(tsaHarddiskInfo[0].m_wAtaRevisionSupported&8) nAta=3;
+		if(tsaHarddiskInfo[0].m_wAtaRevisionSupported&16) nAta=4;
+		if(tsaHarddiskInfo[0].m_wAtaRevisionSupported&32) nAta=5;
+		printk("Enhanced 80 conductor IDE cable, using full UDMA%d\n", nAta);
+	}
 
 	return 0;
 }

@@ -80,6 +80,28 @@ typedef struct {  // inside an 8-byte protected mode interrupt vector
 	WORD m_wHandlerLinearAddressHigh16;
 } ts_pm_interrupt;
 
+typedef enum {
+	EDT_UNKNOWN= 0,
+	EDT_XBOXFS
+} enumDriveType;
+
+typedef struct {  // this is the retained knowledge about an IDE device after init
+    unsigned short m_fwPortBase;
+    unsigned short m_wCountHeads;
+    unsigned short m_wCountCylinders;
+    unsigned short m_wCountSectorsPerTrack;
+    unsigned long m_dwCountSectorsTotal; /* total */
+    unsigned char m_bLbaMode;	/* am i lba (0x40) or chs (0x00) */
+    unsigned char m_szIdentityModelNumber[41];
+    unsigned char m_szSerial[21];
+		unsigned char m_fDriveExists;
+		unsigned char m_fAtapi;  // true if a CDROM, etc
+		enumDriveType m_enumDriveType;
+		unsigned char m_bCableConductors;  // valid for device 0 if present
+		unsigned short m_wAtaRevisionSupported;
+} tsHarddiskInfo;
+
+
 /* the protected mode part of the kernel has to reside at 1 MB in RAM */
 #define PM_KERNEL_DEST 0x100000
 /* parameters for the kernel have to be here */
@@ -265,7 +287,7 @@ int BootPerformXCodeActions();
 
 ////////// BootStartBios.c
 
-void StartBios(int nDrive);
+void StartBios(int nDrive, int nActivePartition);
 
 ////////// BootResetActions.c
 
@@ -297,6 +319,7 @@ BYTE BootVgaInitializationKernel(int nLinesPref);  // returns AV pack index, cal
 
 ///////// BootIde.c
 
+extern tsHarddiskInfo tsaHarddiskInfo[];  // static struct stores data about attached drives
 int BootIdeInit(void);
 int BootIdeReadSector(int nDriveIndex, void * pbBuffer, unsigned int block, int byte_offset, int n_bytes);
 int BootIdeBootSectorHddOrElTorito(int nDriveIndex, BYTE * pbaResult);

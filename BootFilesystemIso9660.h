@@ -74,7 +74,6 @@ typedef struct {
 
 
 void BootIso9660DescriptorToString(const char * szcDescriptor, int nLength, char * szStringResult);
-void BootIso9660ConvertAsciiStringToDchar8point3String(char *szIso, const char *szAscii);
 int BootIso9660GetFile(const char *szcPath, BYTE *pbaFile, DWORD dwFileLengthMax, DWORD dwOffset);
 int BootIso9660GetFileDetails(const char * szcPath, ISO_SYSTEM_DIRECTORY_RECORD * pisdr);
 

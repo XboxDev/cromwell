@@ -29,99 +29,110 @@ void BootIso9660DescriptorToString(const char * szcDescriptor, int nLength, char
 	szStringResult[nLastNonspace]='\0';
 }
 
-void BootIso9660ConvertAsciiStringToDchar8point3String(char *szIso, const char *szAscii)
-{
-	int n=0;
-	szIso[0]='/';
-	while(n<8) {
-		if((szAscii[n]>='a') && (szAscii[n]<='z')) {
-			szIso[n+1]=szAscii[n]-('a'-'A');
-		} else {
-			if(
-				( (szAscii[n]>='0') && (szAscii[n]<='9') ) ||
-				( (szAscii[n]>='A') && (szAscii[n]<='Z') )
-			) {
-				szIso[n+1]=szAscii[n];
-			} else {
-				szIso[n+1]='_';
-			}
-		}
-		n++;
-	}
-	szIso[n+1]='.'; szIso[n+2]='\0';
-}
 
 // this is a helper function for BootIso9660GetFileDetails() below
 // returns zero if error, 1 if file, 2 if directory
 
 int BootIso9660GoDownOneLevelOrHit(DWORD dwSector, DWORD dwBytesToScan, const char * szcName, ISO_SYSTEM_DIRECTORY_RECORD * pisdrForFile)
 {
-	BYTE ba[2048];
+	BYTE *ba=malloc(dwBytesToScan);  // enough for 50 sectors
 	ISO_SYSTEM_DIRECTORY_RECORD * pisdr=(ISO_SYSTEM_DIRECTORY_RECORD *)&ba[0];
-
+	int nPos=0;
+	DWORD dwTotalLength;
 //	printk("BootIso9660GoDownOneLevelOrHit(0x%x, 0x%x, %s ...)\n", dwSector, dwBytesToScan, szcName);
 
-	while((dwBytesToScan>=0x800) || (dwSector==ROOT_SECTOR)) {
+	dwTotalLength=dwBytesToScan;
+
+		// pull in the whole dir struct at once, to avoid probs at sector boundaries
+
+	while(dwBytesToScan || (dwSector==ROOT_SECTOR)) {
 
 		if(dwBytesToScan>=0x800) dwBytesToScan-=0x800; else dwBytesToScan=0;
 
-		if(BootIdeReadSector(1, &ba[0], dwSector, 0, 2048)) return 0;
+		if(BootIdeReadSector(1, &ba[nPos], dwSector, 0, 2048)) return 0;
+		nPos+=2048;
+		dwSector++;
+	}
 
 			// root sector has a single struct pointing to root dir
 
-		if(dwSector==ROOT_SECTOR) {
-			pisdr=(ISO_SYSTEM_DIRECTORY_RECORD *)&ba[ROOT_DIR_STRUCT_OFFSET];
-//			VideoDumpAddressAndData(0, &ba[0], 0x200);
-//			printk("Root dir length=0x%x, 0x%lx, 0x%lx\n",
-//				pisdr->m_bLength,
-//				pisdr->m_dwrExtentLocation.m_dwLittleEndian,
-//				pisdr->m_dwrDataLength.m_dwLittleEndian
-//			);
-			*pisdrForFile = *pisdr;
-			return 2;
-		}
-
-		dwSector++;
+	if((dwSector-1)==ROOT_SECTOR) {
+		pisdr=(ISO_SYSTEM_DIRECTORY_RECORD *)&ba[ROOT_DIR_STRUCT_OFFSET];
+		*pisdrForFile = *pisdr;
+		free(ba);
+		return 2;
+	}
 
 			// otherwise we are looking at a number of back-to-back structs
 			// each talking about a file
 
-		while(pisdr->m_bLength) {
+	nPos=0;
 
-			char *szc = (char *)(&pisdr->m_cFirstFileIdPlaceholder);
-			 /* {
-				char sz[64];
-				memcpy(sz, szc, 64);
-				sz[pisdr->m_bFileIdentifierLength]='\0';
-				printk("'%s'(%d)\n", sz, pisdr->m_bFileIdentifierLength);
-			} */
-			int n=0, n1=0;
-			bool fGood=true;
-			while(n<pisdr->m_bFileIdentifierLength) {
-				if(szc[n]==';') { n=pisdr->m_bFileIdentifierLength; continue; }
-				if(szc[n++]!=szcName[n1++]) { fGood=false; n=pisdr->m_bFileIdentifierLength; }
-			}
-			if(fGood) if(szcName[n1]!='\0') fGood=false;
+	while((((BYTE *)pisdr)-&ba[0])<dwTotalLength) {  // while we haven't gone off the end the dir structs
 
-			if(fGood) {
-				*pisdrForFile = *pisdr; // copy over results
-				if(pisdr->m_bFileFlags & 1) {
-//					printk("returning dir hit\n");
-					return 2; // its a hit: its a directory
+		char *szc = (char *)(&pisdr->m_cFirstFileIdPlaceholder);
+			// compute what's left after total struct size and 8.3 name
+		int nCharsLeft=pisdr->m_bLength - ((szc-((char *)pisdr)) + pisdr->m_bFileIdentifierLength );
+		szc+=pisdr->m_bFileIdentifierLength; // skip over the horrible mangled 8.3 version
+
+//		 VideoDumpAddressAndData((DWORD)pisdr, (BYTE *)szc-0x10, 0x20);
+
+//		printk("pisdr->m_bFileIdentifierLength=%d\n", pisdr->m_bFileIdentifierLength);
+		if(*szc=='\0') szc++;  // 00 separator on some, not on others.  Can never be 00 by accident
+
+			// structure of extended names seems to be two char extension descriptor, eg, RR
+			// followed by byte length count of extension including descriptor chars
+			// then for all descriptors an LH format version word
+			// for the name that we want the extension descriptor is NM (name?)
+
+			// first we iterate through the descriptors looking for NM
+
+		{
+			bool fSeen=false;
+			int nHitLength=0;
+
+			while((nCharsLeft>1) && (!fSeen)) {
+
+				if((*szc=='N') && (szc[1]=='M')) {
+					fSeen=true;
+					nHitLength=((BYTE)szc[2])-5;
+					szc+=5;
+					continue;
 				}
-//				printk("returning file hit\n");
-				return 1; // its a hit: its a file
+				nCharsLeft-=szc[2];
+				szc+=(int)(BYTE)szc[2];
 			}
 
-			pisdr=(ISO_SYSTEM_DIRECTORY_RECORD *)(((BYTE *)pisdr)+pisdr->m_bLength);
+			if(fSeen) { // szc is aligned to start of candidate extended name, nHitLength is length of that name
+				int n=0, n1=0;
+				bool fGood=true;
+
+				while(n<nHitLength) {
+					if(szcName[n1]=='\0') { fGood=false; n=nHitLength; }
+					if(szc[n++]!=szcName[n1++]) { fGood=false; n=nHitLength; }
+				}
+				
+				if(fGood) if(szcName[n1]!='\0') fGood=false;
+
+				if(fGood) {
+					*pisdrForFile = *pisdr; // copy over results
+					if(pisdr->m_bFileFlags & 1) {
+//						printk("returning dir hit\n");
+						free(ba);
+						return 2; // its a hit: its a directory
+					}
+//					printk("returning file hit\n");
+					free(ba);
+					return 1; // its a hit: its a file
+				} // if fGood
+			} // if fSeen
 		}
 
-//		printk("*");
-
-	}
+		pisdr=(ISO_SYSTEM_DIRECTORY_RECORD *)(((BYTE *)pisdr)+pisdr->m_bLength);
+	} // while there are more dir structs
 
 //	printk("returning fail\n");
-
+	free(ba);
 	return 0;
 }
 
@@ -162,11 +173,8 @@ int BootIso9660GetFileDetails(const char * szcPath, ISO_SYSTEM_DIRECTORY_RECORD 
 			}
 			n=0;
 		}
-		if((*szc>='a') && (*szc<='z')) { // convert to uppercase
-			szPathElement[n++]=(*szc++)-('a'-'A');
-		} else {
-			szPathElement[n++]=*szc++;
-		}
+		szPathElement[n++]=*szc++;
+
 		if(n==sizeof(szPathElement)) return -1; // avoid buffer overflow, path element too long
 	}
 	return -2;

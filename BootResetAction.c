@@ -38,8 +38,6 @@
 #define DISPLAY_MBR_INFO
 
 
-
-
 #ifdef memcpy
 #undef memcpy
 #endif
@@ -145,6 +143,7 @@ extern void BootResetAction ( void ) {
 	BYTE bAvPackType;
 	__int64 i64Timestamp;
 	bool fMbrPresent=false;
+	int nActivePartitionIndex=0;
 
 #if INCLUDE_FILTROR
 	// clear down channel quality stats
@@ -443,20 +442,35 @@ extern void BootResetAction ( void ) {
 
 				if( (ba[0x1fe]==0x55) && (ba[0x1ff]==0xaa) ) fMbrPresent=true;
 
-#ifdef DISPLAY_MBR_INFO
 				if(fMbrPresent) {
 					BYTE * pb;
 					int n=0, nPos=0;
-					char sz[512];
 					bool fSeenActive=false;
+#ifdef DISPLAY_MBR_INFO
+					char sz[512];
 
 					VIDEO_ATTR=0xffe8e8e8;
 					printk("MBR Partition Table:\n");
+#endif
 					(BYTE *)pb=&ba[0x1be];
 					n=0; nPos=0;
 					while(n<4) {
+#ifdef DISPLAY_MBR_INFO
 						nPos=sprintf(sz, " hda%d: ", n+1);
-						if(pb[0]&0x80) { fSeenActive=true; nPos+=sprintf(&sz[nPos], "boot\t"); } else { nPos+=sprintf(&sz[nPos], "   \t"); }
+#endif
+						if(pb[0]&0x80) {
+							nActivePartitionIndex=n;
+							fSeenActive=true;
+#ifdef DISPLAY_MBR_INFO
+							nPos+=sprintf(&sz[nPos], "boot\t");
+#endif
+						} else {
+#ifdef DISPLAY_MBR_INFO
+							nPos+=sprintf(&sz[nPos], "   \t");
+#endif
+						}
+
+#ifdef DISPLAY_MBR_INFO
 	//					nPos+=sprintf(&sz[nPos],"type:%02X\tStart: %02X/%02X/%02X\tEnd: %02X/%02X/%02X  ", pb[4], pb[1],pb[2],pb[3],pb[5],pb[6],pb[7]);
 						switch(pb[4]) {
 							case 0x00:
@@ -484,6 +498,7 @@ extern void BootResetAction ( void ) {
 							sz[nPos++]='\n'; sz[nPos]='\0';
 						}
 						printk(sz);
+	#endif
 						n++; pb+=16;
 					}
 
@@ -498,7 +513,6 @@ extern void BootResetAction ( void ) {
 				} else { // no mbr signature
 					;
 				}
-#endif
 
 			}
 		}
@@ -518,12 +532,12 @@ extern void BootResetAction ( void ) {
 	// Used to start Bochs; now a misnomer as it runs vmlinux
 	// argument 0 for hdd and 1 for from CDROM
 #ifdef FORCE_CD_BOOT
-	StartBios(1);
+	StartBios(1, 0);
 #else
 		if(fMbrPresent) { // if there's an MBR, try to boot from HDD
-			StartBios(0);
+			StartBios(0, nActivePartitionIndex);
 		} else { // otherwise prompt for CDROM
-			StartBios(1);
+			StartBios(1, 0);
 		}
 #endif
 	}

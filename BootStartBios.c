@@ -1,6 +1,8 @@
 /**************************************************************************/
 /* BIOS start                                                             */
 /*  Michael Steil                                                         */
+/*  2002-12-19 andy@warmcat.com changed to use partition marked as boot   */
+/*                              changed to use non 8.3 ISO9660 names      */
 /*  2002-12-18 andy@warmcat.com added stuff for ISO9660                   */
 /*  2002-11-25 andy@warmcat.com changed to using existing GDT/IDT         */
 /*                              fixed AND bug in 16-bit code, tidied      */
@@ -72,10 +74,15 @@ int _strncmp(const char *sz1, const char *sz2, int nMax) {
 	return 0; // used up nMax
 }
 
-void StartBios(	int nDrive ) {
+void StartBios(	int nDrive, int nActivePartition ) {
 	char szKernelFile[128], szInitrdFile[128], szCommandline[1024];
 	DWORD dwConfigSize=0;
 	bool fHaveConfig=false;
+	char szGrub[256+4];
+
+	szGrub[0]=0xff; szGrub[1]=0xff; szGrub[2]=nActivePartition; szGrub[3]=0x00;
+
+	MALLOC_BASE=0x02000000;
 
 	errnum=0; boot_drive=0; saved_drive=0; saved_partition=0x0001ffff; buf_drive=-1;
 	current_partition=0x0001ffff; current_drive=0xff; buf_drive=-1; fsys_type = NUM_FSYS;
@@ -84,7 +91,11 @@ void StartBios(	int nDrive ) {
 
 	strcpy(szCommandline, "root=/dev/hda2 devfs=mount kbd-reset"); // default
 
-
+	{
+		char c='1'+nActivePartition;
+		if(nDrive==1) c=' ';
+		printk("Booting from /dev/hd%c%c\n", 'a'+nDrive, c);
+	}
 
 	if(nDrive==1) {  // CDROM
 			BYTE ba[2048], baBackground[320*32*4];
@@ -110,7 +121,7 @@ void StartBios(	int nDrive ) {
 				printk("\2Please insert CD\2");
 				for(n=0;n<1000000;n++) { ; }
 			}
-			
+
 			VIDEO_ATTR=0xffffffff;
 
 			VIDEO_CURSOR_POSX=dwX;
@@ -135,7 +146,7 @@ void StartBios(	int nDrive ) {
 							bCount++;
 							bCount1=bCount; if(bCount1&0x80) { bCount1=(-bCount1)-1; }
 
-							VIDEO_ATTR=0xff000000|(((bCount1>>1)+192)<<16)|(((bCount1>>1)+192)<<8)|(((bCount1>>1)+192)) ;
+							VIDEO_ATTR=0xff000000|(((bCount1)+64)<<16)|(((bCount1>>1)+128)<<8)|(((bCount1)+128)) ;
 
 							printk("\2Waiting for drive\2");
 							for(n=0;n<1000000;n++) { ; }
@@ -184,9 +195,11 @@ void StartBios(	int nDrive ) {
 	VIDEO_ATTR=0xffd8d8d8;
 
 	if(nDrive==0) { // grub/reiserfs on HDD
-		printk("  Looking for optional /boot/linuxboot.cfg ");
+		printk("  Looking for optional /boot/linuxboot.cfg... ");
 		VIDEO_ATTR=0xffa8a8a8;
-		nRet=grub_open("\377\377\1\0/boot/linuxboot.cfg");
+
+		strcpy(&szGrub[4], "/boot/linuxboot.cfg");
+		nRet=grub_open(szGrub);
 		dwConfigSize=filemax;
 		nRet=2;
 		if(nRet!=1) {
@@ -201,8 +214,8 @@ void StartBios(	int nDrive ) {
 		grub_close();
 	} else {  // ISO9660 traversal on CDROM
 
-		printk("  Loading linuxboot.cfg from CDROM ");
-		dwConfigSize=BootIso9660GetFile("/LINUXBOO.CFG", (BYTE *)0x90000, 0x400, 0x0);
+		printk("  Loading linuxboot.cfg from CDROM... ");
+		dwConfigSize=BootIso9660GetFile("/linuxboot.cfg", (BYTE *)0x90000, 0x400, 0x0);
 		if((int)dwConfigSize<0) { // has to be there on CDROM
 			printk("Unable to find it, halting\n");
 			while(1) ;
@@ -222,7 +235,8 @@ void StartBios(	int nDrive ) {
 				if(_strncmp(sz, szaTokens[n1], strlen(szaTokens[n1]))==0) { // hit
 					int n=0;
 					sz+=strlen(szaTokens[n1]);
-					while(*sz!='\n') szaDestinations[n1][n++]=*sz++;
+					if(*sz!='/') szaDestinations[n1][n++]='/'; // prepend with / if not present
+					while((*sz!='\n') && (*sz!=0x0d)) szaDestinations[n1][n++]=*sz++;
 					szaDestinations[n1][n]='\0';
 					n1++; nSpan=0;
 				}
@@ -233,8 +247,6 @@ void StartBios(	int nDrive ) {
 
 
 	if(nDrive==0) { // grub/reiserfs on HDD
-		char szGrub[256+4];
-		szGrub[0]=0xff; szGrub[1]=0xff; szGrub[2]=0x01; szGrub[3]=0x00;
 
 		printk("  Loading %s ", szKernelFile);
 		VIDEO_ATTR=0xffa8a8a8;
@@ -251,7 +263,7 @@ void StartBios(	int nDrive ) {
 		dwKernelSize+=grub_read((void *)0x90400, nSizeHeader-0x400);
 		dwKernelSize+=grub_read((void *)0x00100000, filemax-nSizeHeader);
 		grub_close();
-		printk(" -  %d bytes done...\n", dwKernelSize);
+		printk(" -  %d bytes...\n", dwKernelSize);
 
 		VIDEO_ATTR=0xffd8d8d8;
 		printk("  Loading %s ", szInitrdFile);
@@ -267,38 +279,33 @@ void StartBios(	int nDrive ) {
 			while(1) ;
 		}
 		dwInitrdSize=grub_read((void *)0x03000000, filemax);
-		printk(" - %d bytes done\n", dwInitrdSize);
+		printk(" - %d bytes\n", dwInitrdSize);
 		grub_close();
 
 
 	} else {  // ISO9660 traversal on CDROM
-		char szIso[256];
 
-		BootIso9660ConvertAsciiStringToDchar8point3String(szIso, szKernelFile);
-
-		printk("  Loading %s from CDROM ", szIso);
+		printk("  Loading %s from CDROM ", szKernelFile);
 		VIDEO_ATTR=0xffa8a8a8;
 
-		dwKernelSize=BootIso9660GetFile(szIso, (BYTE *)0x90000, 0x400, 0x0);
+		dwKernelSize=BootIso9660GetFile(szKernelFile, (BYTE *)0x90000, 0x400, 0x0);
 		nSizeHeader=((*((BYTE *)0x901f1))+1)*512;
-		dwKernelSize+=BootIso9660GetFile(szIso, (void *)0x90400, nSizeHeader-0x400, 0x400);
-		dwKernelSize+=BootIso9660GetFile(szIso, (void *)0x00100000, 4096*1024, nSizeHeader);
+		dwKernelSize+=BootIso9660GetFile(szKernelFile, (void *)0x90400, nSizeHeader-0x400, 0x400);
+		dwKernelSize+=BootIso9660GetFile(szKernelFile, (void *)0x00100000, 4096*1024, nSizeHeader);
 
-		printk(" -  %d bytes done...\n", dwKernelSize);
-
-		BootIso9660ConvertAsciiStringToDchar8point3String(szIso, szInitrdFile);
+		printk(" -  %d bytes...\n", dwKernelSize);
 
 		VIDEO_ATTR=0xffd8d8d8;
-		printk("  Loading %s from CDROM ", szIso);
+		printk("  Loading %s from CDROM ", szInitrdFile);
 		VIDEO_ATTR=0xffa8a8a8;
 
-		dwInitrdSize=BootIso9660GetFile(szIso, (void *)0x03000000, 4096*1024, 0);
-		printk(" - %d bytes done\n", dwInitrdSize);
+		dwInitrdSize=BootIso9660GetFile(szInitrdFile, (void *)0x03000000, 4096*1024, 0);
+		printk(" - %d bytes\n", dwInitrdSize);
 
 	}
 
 	VIDEO_ATTR=0xff8888a8;
-	printk("     Kernel Version:  %s\n", (char *)(0x00090200+(*((WORD *)0x9020e)) ));
+	printk("     Kernel:  %s\n", (char *)(0x00090200+(*((WORD *)0x9020e)) ));
 
 	printf("\n");
 	{
@@ -320,10 +327,21 @@ void StartBios(	int nDrive ) {
 
 	setup( (void *)0x90000, (void *)0x03000000, (void *)dwInitrdSize, szCommandline);
 
-	// force the HDD into a good mode 0x40 ==UDMA | 2 == UDMA2
-	BootIdeSetTransferMode(0, 0x42); // best transfer mode without 80-pin cable
-
-    __asm __volatile__ (
+	{
+		int nAta=0;
+		if(tsaHarddiskInfo[0].m_bCableConductors == 80) {
+			if(tsaHarddiskInfo[0].m_wAtaRevisionSupported&2) nAta=1;
+			if(tsaHarddiskInfo[0].m_wAtaRevisionSupported&4) nAta=2;
+			if(tsaHarddiskInfo[0].m_wAtaRevisionSupported&8) nAta=3;
+			if(tsaHarddiskInfo[0].m_wAtaRevisionSupported&16) nAta=4;
+			if(tsaHarddiskInfo[0].m_wAtaRevisionSupported&32) nAta=5;
+		} else {
+			// force the HDD into a good mode 0x40 ==UDMA | 2 == UDMA2
+			nAta=2; // best transfer mode without 80-pin cable
+		}
+		BootIdeSetTransferMode(0, 0x40 | nAta);
+	}
+		__asm __volatile__ (
 
 //	"wbinvd \n"
 
