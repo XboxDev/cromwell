@@ -55,8 +55,11 @@ void BootVgaInitializationKernelNG(CURRENT_VIDEO_MODE_DETAILS * pcurrentvideomod
 
        	// This is sure the hard way telling the register what we want
         maxcounter=2000;
-        while (*((DWORD * )0xfd600800)^ FRAMEBUFFER_START ) {
-        	(*((DWORD * )0xfd600800)) = FRAMEBUFFER_START;
+        (*(unsigned int*)0xFD600800) = FRAMEBUFFER_START;
+        (*(unsigned int*)0xFD600800) = FRAMEBUFFER_START;
+        
+        while ((*(unsigned int*)0xFD600800) != FRAMEBUFFER_START) {
+        	(*(unsigned int*)0xFD600800) = FRAMEBUFFER_START;
         	maxcounter--;
         	if (maxcounter==0) break;
         }

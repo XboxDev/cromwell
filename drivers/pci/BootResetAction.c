@@ -576,8 +576,9 @@ extern void BootResetAction ( void ) {
   
   
         //printk("We are starting the config %d\n",temp); 
-       	StartBios(&kernel_config, nActivePartitionIndex, nFATXPresent,temp);
-       
+     	StartBios(&kernel_config, nActivePartitionIndex, nFATXPresent,temp);
+    
+    while(1);   
 /*
 #ifdef FORCE_CD_BOOT
 	StartBios(1, 0, 0);

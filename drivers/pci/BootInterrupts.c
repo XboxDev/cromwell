@@ -238,25 +238,27 @@ void BootInterruptsWriteIdt() {
 void IntHandlerCSmc(void)
 {
 	BYTE bStatus, nBit=0;
-
+        int temp;
+        
 	nCountInterruptsSmc++;
 
-//	bprintf("&nCountInterruptsSmc=0x%x\n", &nCountInterruptsSmc);
-	
-	#ifdef DEBUG_MODE     
-	{
-	int count;
-        printk(" SMC Interrupt Detected");
-        for (count=0;count<nCountInterruptsSmc;count++) printk("##");
-        }
-	#endif
+	temp = IoInputWord(0x8000);
+	if (temp!=0x0) {
+		IoOutputWord(0x8000,temp);
+		//printk("System Timer wants to sleep we kill him");
+	//	return;
+		}
+
 	
 	bStatus=I2CTransmitByteGetReturn(0x10, 0x11); // Query PIC for interrupt reason
+	
+	// we do nothing, if there is not Interrupt reason
+//	if (bStatus==0x0) return;
+	
 	while(nBit<7) {
 		if(bStatus & 1) {
 			BYTE b=0x04;
-			switch(nBit) {
-
+			       switch(nBit) {
 				case 0: // POWERDOWN EVENT
 					bprintf("SMC Interrupt %d: Powerdown\n", nCountInterruptsSmc);
 					I2CTransmitWord(0x10, 0x0200);
@@ -339,12 +341,15 @@ if (cromwell_config==CROMWELL) {
 				case 7: // UNKNOWN
 					bprintf("SMC Interrupt %d: b7 Reason code\n", nCountInterruptsSmc);
 					break;
+				
+				
 			}
 		}
 		nBit++;
 		bStatus>>=1;
 	}
-
+	
+	
 }
 
 void IntHandlerCIde(void)

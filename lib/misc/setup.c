@@ -114,8 +114,9 @@ void setup(void* KernelPos, void* PhysInitrdPos, void* InitrdSize, char* kernel_
     kernel_setup->lfb_height = currentvideomodedetails.m_dwHeightInLines; // SCREEN_HEIGHT_480;
    
     kernel_setup->lfb_base = FRAMEBUFFER_START;
+    (*(unsigned int*)0xFD600800)= FRAMEBUFFER_START;
 
-    kernel_setup->lfb_size = (4 * 1024 * 1024); 
+    kernel_setup->lfb_size = (4 * 1024 * 1024)/0x10000; 
 
     kernel_setup->lfb_linelength = currentvideomodedetails.m_dwWidthInPixels*4;
     kernel_setup->pages=1;

@@ -6,6 +6,12 @@
  * and work by Johan Rydberg and Daniel Kahlin.
  *
  * $Log$
+ * Revision 1.3  2003/05/20 15:57:22  franz
+ * SYNC with SF 20052003-1800
+ *
+ * Revision 1.5  2003/05/16 18:27:52  hamtitampti
+ * Now better Inits of the CPU, more documenation and sync with my developer tree
+ *
  * Revision 1.2  2003/05/07 07:47:34  franz
  * Syncing with my developer Tree now
  *

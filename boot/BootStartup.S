@@ -31,21 +31,19 @@ Cromwellconfig:
 	
 .align 16
 tableGdt:
-        
 	.byte 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 // 0x00 dummy
 	.byte 0xff, 0xff, 0x00, 0x00, 0x00, 0x9a, 0xcf, 0x00 // 0x08 code32
 	.byte 0xff, 0xff, 0x00, 0x00, 0x00, 0x9a, 0xcf, 0x00 // 0x10 code32
 	.byte 0xff, 0xff, 0x00, 0x00, 0x00, 0x92, 0xcf, 0x00 // 0x18 data32
 	.byte 0xff, 0xff, 0x00, 0x00, 0x00, 0x9a, 0x8f, 0x00 // 0x20 code16 (8f indicates 4K granularity, ie, huge limit)
 	.byte 0xff, 0xff, 0x00, 0x00, 0x00, 0x92, 0x8f, 0x00 // 0x28 data16
-	
+
+tableGdtDescriptor:
 	// This is the GDT header having 8 bytes
-	.word 0x30	// 30 Bytes Big GDT
-	.long 0xa0000	// GDT located @ 0xa0000
-	.word 0		// Fillup
-	
-	// Summary = 0x38 bytes
-	
+	.word tableGdtDescriptor-tableGdt      // 30 byte GDT
+	.long 0xA0000                          // GDT located at 0xA0000
+	.word 0                                // Padding
+tableGdtEnd:
 
 .align 16
 tableIdtDescriptor:
@@ -55,7 +53,8 @@ tableIdtDescriptor:
 	.word 0     // fill Word, so we get alliged again
         
         // We are again Dword Alligated now
-        
+
+.align 16        
 	.globl start_linux
 start_linux:
        	
@@ -66,39 +65,76 @@ start_linux:
 	// kill the cache  = Disable bit 30 + 29 = CD + NW 
 	// CD = Cache Disable (disable = 1)
 	// NW Not write through (disable = 1)
-       	mov 	%cr0, %eax
-	orl	$0x60000000, %eax
+       //	mov 	%cr0, %eax
+	//orl	$0x60000000, %eax
+	mov 	$0x60000033, %eax
 	mov	%eax, %cr0
 	wbinvd
 
-	// Move the Stack Pointer to Upper Limit
-	
-	movl    $RAM_BASE, %esp
+	// Flush the TLB
+	xor %eax, %eax
+	mov %eax, %cr3
 	
 	// We kill the Local Descriptor Table        
         xor	%eax, %eax
 	lldt	%ax	
 	
-	/*
-	IMPORTANT !
-	Linux Expects the GDT located at this position, so we have to move it to 0xa0000
-	*/
+	// DR6/DR7: Clear the debug registers
+	xor %eax, %eax
+	mov %eax, %dr6
+	mov %eax, %dr7
+	mov %eax, %dr0
+	mov %eax, %dr1
+	mov %eax, %dr2
+	mov %eax, %dr3
+
 	
-	// We copy the GDT at the final location in RAM
-	mov 	$0xa0000, %edi
-	mov 	$tableGdt, %esi
-	mov 	$0x40, %ecx  // this value should be GDT size + GDT header
-	repe movsb
+	// IMPORTANT!  Linux expects the GDT located at a specific position,
+	// 0xA0000, so we have to move it there.
+
+	// Copy the GDT to its final location
+	movl $0xA0000, %edi
+	movl $tableGdt, %esi
+	movl $(tableGdtEnd-tableGdt)/4, %ecx
+	rep movsl
+
+	// Load the new GDT
+	lgdt 0xA0000+(tableGdtDescriptor-tableGdt)
 	
-	// We load a new GDT Table 
-	lgdt 0xa0030	// this is the pointer to the GDT header
+	// Kill the LDT, if any
+	xor	%eax, %eax
+	lldt %ax
+
+	// Reload CS as 0010 from the new GDT using a far jump
+	.byte 0xEA          // jmp far 0010:reload_cs
+	.long reload_cs
+	.word 0x0010
+.align 16
+reload_cs:
+
+	// CS is now a valid entry in the GDT.  Set SS, DS, and ES to valid
+	// descriptors, but clear FS and GS as they are not necessary.
+
+	// Set SS, DS, and ES to a data32 segment with maximum limit.
+	movw $0x0018, %ax
+	mov %eax, %ss
+	mov %eax, %ds
+	mov %eax, %es
+
+	// Clear FS and GS
+	xor %eax, %eax
+	mov %eax, %fs
+	mov %eax, %gs
+
+	// Set the stack pointer to give us a valid stack
+	movl $0x03BFFFFC, %esp
 
         
         // We clear the IDT in RAM   (IDT located @  0xb0000 )
-        xor %eax,%eax
-	mov $0x5000,%ecx
-	mov $0xb0000,%edi
-	rep stosb
+	xor %eax, %eax
+	movl $0x5000/4, %ecx
+	movl $0xB0000, %edi
+	rep stosl
 	
 	// We load the Interrupt Descriptor Table
 	lidt tableIdtDescriptor
@@ -127,7 +163,6 @@ start_linux:
 	wrmsr
 
 
-#if 0
 	// MTRR for RAM
 	// from address 0, Writeback Caching, 64MB range
         movl	$0x200, %ecx 		
@@ -140,67 +175,18 @@ start_linux:
 	movl	$0x0000000f, %edx 	
 	movl	$0xfc000800, %eax  	
 	wrmsr
-#else      
 
-
-	// Very funny. We have no memory there, but if we set the memory from 64 to 192MB to 0 (UC type)
-	// we freeze .. maybe a kind of memory from the Video Card
-      	// So we set 64 MB memory + 128 MB (found out with try and error)
-      	// PLEASE find the problem, it is happening in loading from .xbe mode
-      	
-      	movl	$0x200, %ecx 		
-	movl	$0x00000000, %edx 	
-	movl	$0x00000006, %eax 	// == WB_CACHE == 6
-	wrmsr
-
-	// MASK0 set to  == 192 MB
-        movl	$0x201, %ecx  		
-	movl	$0x0000000f, %edx 	
-	movl	$0xf4000800, %eax  	
-	wrmsr
-
-
-#endif
-
-
-#if 0
-	/*
-	Mega Mysterios thing.
-	
-	MS sets the Memory Type for the flash to 5 (means WP write-protected)
-	Seems to be locical.
-	
-	BUT !
-	Linux loader crashes then
-	
-	very mysterious 
-	also, they defined only !?? the last 512 kbyte of the flash, no idea why
-	But i did 1MB
-	
-	BUT: As this memory type == 0, and the global Memory type is set to 0, we can leave out the whole thing.
-	
-	*/
-	
 	// MTRR for FLASH   
 	movl	$0x202, %ecx		
 	movl	$0x00000000, %edx 	
-	movl	$0xFff00000, %eax 	
+	movl	$0xFff00005, %eax 	    // We set to Write Protected
 	wrmsr
 
         movl	$0x203, %ecx             
 	movl	$0x0000000f, %edx 
 	movl	$0xfff00800, %eax  
 	wrmsr	        
-#else   
-  	xor	%eax, %eax
-	xor	%edx, %edx
-	movl	$0x202, %ecx	
-        wrmsr                                                   
-	movl	$0x203, %ecx	
-        wrmsr                                                   
 
-#endif
-    
         xor	%eax, %eax
 	xor	%edx, %edx
 	

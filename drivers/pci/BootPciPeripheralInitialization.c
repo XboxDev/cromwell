@@ -248,7 +248,8 @@ void BootPciPeripheralInitialization()
 	IoOutputByte(0x61, 0xff);
 	IoOutputByte(0x92, 0x01);
 
-	IoOutputByte(0xcf9, 0x08);
+//	IoOutputByte(0xcf9, 0x08);	// Reset Port
+	IoOutputByte(0xcf9, 0x0);	// Reset Port
 
 	// gah, failure to do this caused long delays and timeouts on boot and shutdown of Linux
 	// RTC CMOS was disabled, rtc driver was polling "safe to read" bit which was never okay

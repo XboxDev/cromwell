@@ -16,7 +16,8 @@
  *                                                                         *
  ***************************************************************************/
 
-#define VERSION "2.11 dev"
+#define VERSION "2.12 dev"
+//#define VERSION "2.12 (private)"
 
 #define PCI_CFG_ADDR 0x0CF8
 #define PCI_CFG_DATA 0x0CFC
