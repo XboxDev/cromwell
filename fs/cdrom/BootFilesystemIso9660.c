@@ -191,7 +191,7 @@ int BootIso9660GetFileDetails(const char * szcPath, ISO_SYSTEM_DIRECTORY_RECORD 
 			}
 			szPathElement[n]='\0';
 			if(n==0) {
-				nReturn=BootIso9660GoDownOneLevelOrHit(ROOT_SECTOR, 0, szPathElement, pisdr);
+				nReturn=BootIso9660GoDownOneLevelOrHit(ROOT_SECTOR, 0x800, szPathElement, pisdr);
 			} else {
 				nReturn=BootIso9660GoDownOneLevelOrHit(
 					pisdr->m_dwrExtentLocation.m_dwLittleEndian,
