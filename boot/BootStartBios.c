@@ -18,6 +18,7 @@
 #include "xbox.h"
 #include "BootFlash.h"
 #include "cpu.h"
+#include "BootIde.h"
 
 #include "config.h"
 
@@ -334,10 +335,14 @@ int BootLoadConfigCD(CONFIGENTRY *config) {
 	char sz[64];
 	BYTE bCount=0, bCount1;
 	int n;
+	int cdromId=0;
 	DWORD dwY=VIDEO_CURSOR_POSY;
 	DWORD dwX=VIDEO_CURSOR_POSX;
 	BYTE* tempBuf;
 
+	if(tsaHarddiskInfo[0].m_fAtapi) cdromId=0; 
+	else cdromId=1;
+	
 	memset((BYTE *)KERNEL_SETUP,0,4096);
 
 	I2CTransmitWord(0x10, 0x0c00); // eject DVD tray
@@ -409,7 +414,7 @@ selectinsert:
 			}
 			wait_ms(200);
 			
-			if(BootIdeReadSector(1, &ba[0], 0x10, 0, 2048)) { // starts at 16
+			if(BootIdeReadSector(cdromId, &ba[0], 0x10, 0, 2048)) { // starts at 16
 				VIDEO_CURSOR_POSX=dwX;
 				VIDEO_CURSOR_POSY=dwY;
 				bCount++;
@@ -459,10 +464,10 @@ selectinsert:
 
 	printk("  Loading linuxboot.cfg from CDROM... \n");
 	
-	dwConfigSize=BootIso9660GetFile("/linuxboot.cfg", (BYTE *)KERNEL_SETUP, 0x800, 0x0);
+	dwConfigSize=BootIso9660GetFile(cdromId,"/linuxboot.cfg", (BYTE *)KERNEL_SETUP, 0x800, 0x0);
 
 	if(((int)dwConfigSize)<0) // not found, try mangled 8.3 version
-		dwConfigSize=BootIso9660GetFile("/LINUXBOO.CFG", (BYTE *)KERNEL_SETUP, 0x800, 0x0);
+		dwConfigSize=BootIso9660GetFile(cdromId,"/LINUXBOO.CFG", (BYTE *)KERNEL_SETUP, 0x800, 0x0);
 		
 	if(((int)dwConfigSize)<0) { // has to be there on CDROM
 		printk("linuxboot.cfg not found on CDROM... Halting\n");
@@ -477,15 +482,15 @@ selectinsert:
 
 	// Use INITRD_START as temporary location for loading the Kernel 
 	tempBuf = (BYTE*)INITRD_START;
-	dwKernelSize=BootIso9660GetFile(config->szKernel, tempBuf, MAX_KERNEL_SIZE, 0);
+	dwKernelSize=BootIso9660GetFile(cdromId,config->szKernel, tempBuf, MAX_KERNEL_SIZE, 0);
 
 	// If failed, lets look for an other name ...
 	if(((int)dwKernelSize)<0) { // not found, try 8.3
 		strcpy(config->szKernel, "/VMLINUZ.");
-		dwKernelSize=BootIso9660GetFile(config->szKernel, tempBuf, MAX_KERNEL_SIZE, 0);
+		dwKernelSize=BootIso9660GetFile(cdromId,config->szKernel, tempBuf, MAX_KERNEL_SIZE, 0);
 		if(((int)dwKernelSize)<0) { 
 			strcpy(config->szKernel, "/VMLINUZ_.");
-			dwKernelSize=BootIso9660GetFile(config->szKernel, tempBuf, MAX_KERNEL_SIZE, 0);
+			dwKernelSize=BootIso9660GetFile(cdromId,config->szKernel, tempBuf, MAX_KERNEL_SIZE, 0);
 			if(((int)dwKernelSize)<0) { 
 				printk("Not Found, error %d\nHalting\n", dwKernelSize); 
 				while(1);
@@ -507,13 +512,13 @@ selectinsert:
 		printk("  Loading %s from CDROM", config->szInitrd);
 		VIDEO_ATTR=0xffa8a8a8;
 		
-		dwInitrdSize=BootIso9660GetFile(config->szInitrd, (void*)INITRD_START, MAX_INITRD_SIZE, 0);
+		dwInitrdSize=BootIso9660GetFile(cdromId,config->szInitrd, (void*)INITRD_START, MAX_INITRD_SIZE, 0);
 		if((int)dwInitrdSize<0) { // not found, try 8.3
 			strcpy(config->szInitrd, "/INITRD.");
-			dwInitrdSize=BootIso9660GetFile(config->szInitrd, (void*)INITRD_START, MAX_INITRD_SIZE, 0);
+			dwInitrdSize=BootIso9660GetFile(cdromId,config->szInitrd, (void*)INITRD_START, MAX_INITRD_SIZE, 0);
 			if((int)dwInitrdSize<0) { // not found, try 8.3
 				strcpy(config->szInitrd, "/INITRD_I.");
-				dwInitrdSize=BootIso9660GetFile(config->szInitrd, (void*)INITRD_START, MAX_INITRD_SIZE, 0);
+				dwInitrdSize=BootIso9660GetFile(cdromId,config->szInitrd, (void*)INITRD_START, MAX_INITRD_SIZE, 0);
 				if((int)dwInitrdSize<0) { printk("Not Found, error %d\nHalting\n", dwInitrdSize); while(1) ; }
 			}
 		}
@@ -836,8 +841,11 @@ int BootMenu(CONFIGENTRY *config,int nDrive,int nActivePartition, int nFATXPrese
 				break;
 	
 			case ICON_CD:
-				icon[menu].nEnabled = 1;
-				if(nSelected == -1) nSelected = menu;
+				//Check we have a cdrom attached
+				if(tsaHarddiskInfo[0].m_fAtapi || tsaHarddiskInfo[1].m_fAtapi) {
+					icon[menu].nEnabled = 1;
+					if(nSelected == -1) nSelected = menu;
+				}
 				break;
 	
 			case ICON_FLASH:
@@ -847,7 +855,7 @@ int BootMenu(CONFIGENTRY *config,int nDrive,int nActivePartition, int nFATXPrese
 		}
 	}	
         
-        if (nSelected==-1) nSelected = ICON_CD;
+        if (nSelected==-1) nSelected = ICON_FLASH;
         
         // Initial Selected Icon
         menu = nSelected;
