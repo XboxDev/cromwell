@@ -53,7 +53,7 @@ char *VideoEncoderName(void) {
 
 char *AvCableName(void) {
 	char *composite_name="Composite";
-	char *svideo_name="SVideo";
+	char *svideo_name="S-Video";
 	char *rgb_name="RGB SCART";
 	char *hdtv_name="HDTV";
 	char *vga_name="VGA";
@@ -76,7 +76,6 @@ char *AvCableName(void) {
 			return vga_name;
 		default:
 			return unknown_name;
-
 	}
 }
 
@@ -341,7 +340,7 @@ void BootVgaInitializationKernelNG(CURRENT_VIDEO_MODE_DETAILS * pvmode) {
 			case ENCODER_CONEXANT:
 				I2CWriteBytetoRegister(0x45,0xc4, 0x00); // EN_OUT = 1
 		        	// Conexant init (starts at register 0x2e)
-				regs = (unsigned char*)newmode.encoder_regs;
+				regs = newmode.encoder_regs;
 		        	for(i=0x2e,n1=0;i<0x100;i+=2,n1++) {
 		        		switch(i) {
 		        			case 0x6c: // reset
@@ -365,7 +364,7 @@ void BootVgaInitializationKernelNG(CURRENT_VIDEO_MODE_DETAILS * pvmode) {
 				I2CWriteBytetoRegister(0x45, 0xc4, 0x01|b); // EN_OUT = 1
 				break;
 			case ENCODER_FOCUS:
-				regs = (unsigned char*)newmode.encoder_regs;
+				regs = newmode.encoder_regs;
 	             		for (i=0; i<0xc4; ++i) {
                         		I2CWriteBytetoRegister(0x6a, i, regs[i]);
 					wait_us(500);
@@ -373,7 +372,7 @@ void BootVgaInitializationKernelNG(CURRENT_VIDEO_MODE_DETAILS * pvmode) {
 				break;
 			case ENCODER_XCALIBUR:
 				//Xlb init
-				XCal_Reg = (unsigned long*)newmode.encoder_regs;
+				XCal_Reg = newmode.encoder_regs;
 				regs = malloc(4);
 				
 				ReadfromSMBus(0x70,4,4,&i);
@@ -388,7 +387,7 @@ void BootVgaInitializationKernelNG(CURRENT_VIDEO_MODE_DETAILS * pvmode) {
 					memcpy(regs+2,(unsigned char*)(&XCal_Reg[i])+1,0x01);
 					memcpy(regs+3,(unsigned char*)(&XCal_Reg[i]),0x01);
 				
-					WriteToSMBus(0x70, i, 4, *(unsigned long*)regs);
+					WriteToSMBus(0x70, i, 4, regs);
 					wait_us(500);
 				}
 				free(regs);
@@ -396,7 +395,7 @@ void BootVgaInitializationKernelNG(CURRENT_VIDEO_MODE_DETAILS * pvmode) {
 		}	
 	}
 	//Free the malloc'd registers
-	free((char *)newmode.encoder_regs);
+	free(newmode.encoder_regs);
         
 	NVDisablePalette (&riva, 0);
 	writeCrtNv (&riva, 0, 0x44, 0x03);
