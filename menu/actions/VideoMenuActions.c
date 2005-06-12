@@ -40,6 +40,11 @@ void SetVideoStandard(void *menuItemText) {
 		strcpy(text, "TV Standard: PAL");
 		EepromSetVideoStandard(PAL_I);
 	}
+	// We want people with broken EEPROMs to be able to recover!
+	else if (!strcmp(text, "TV Standard: Unknown")) {
+		strcpy(text, "TV Standard: PAL");
+		EepromSetVideoStandard(PAL_I);
+	}
 
 }
 
