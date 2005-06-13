@@ -313,6 +313,11 @@ CONFIGENTRY *LoadConfigCD(int cdromId) {
 			configLoaded=1;
 			break;
 		}
+		dwConfigSize = BootIso9660GetFile(cdromId,"/linuxboot.cfg", (u8 *)KERNEL_SETUP, 0x800);
+		if (dwConfigSize>0) {
+			configLoaded=1;
+			break;
+		}
 		wait_ms(250);
 	}
 
@@ -343,15 +348,25 @@ CONFIGENTRY *LoadConfigCD(int cdromId) {
 				//the cd is valid.
 				break;
 			}
+			else if (BootIso9660GetFile(cdromId,"/linuxboot.cfg", (u8 *)KERNEL_SETUP, 0x800)>0) {
+				break;
+			}
 			wait_ms(10);
-		}						
+		}
+
+		wait_ms(250);
 
 		VIDEO_ATTR=0xffffffff;
 
 		printk("Loading linuxboot.cfg from CDROM... \n");
 		//Try to load linuxboot.cfg - if we can't after a while, give up.
 		for (n=0;n<48;++n) {
-			dwConfigSize = BootIso9660GetFile(cdromId,"/linuxboo.cfg", (u8 *)KERNEL_SETUP, 0x800);
+			dwConfigSize = BootIso9660GetFile(cdromId,"/linduxboo.cfg", (u8 *)KERNEL_SETUP, 0x800);
+			if (dwConfigSize>0) {
+				configLoaded=1;
+				break;
+			}
+			dwConfigSize = BootIso9660GetFile(cdromId,"/linduxboot.cfg", (u8 *)KERNEL_SETUP, 0x800);
 			if (dwConfigSize>0) {
 				configLoaded=1;
 				break;
