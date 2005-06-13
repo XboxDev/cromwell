@@ -12,6 +12,8 @@
 
 #ifndef STANDALONE
 #include "boot.h"
+#else
+#	define printk printf
 #endif
 #include "iso_fs.h"
 
@@ -98,25 +100,31 @@ unsigned long read_dir(int driveId, struct iso_directory_record *dir_read, char 
 			sprintf(newfilename, "%s/",filename);
 			iso9660_name_translate(newfilename + strlen(newfilename), 
 					dir->name, (unsigned char)dir->name_len[0]);
-//			printk("Read : Sector %d Filename %s %d\n", 
-//					*((unsigned long *)(dir->extent)),  newfilename,
-//					(unsigned char)dir->ext_attr_length[0]);
+#ifdef DEBUG_ISO
+			printk("Read : Sector %d Filename %s %d\n", 
+				*((unsigned long *)(dir->extent)),  newfilename,
+				(unsigned char)dir->ext_attr_length[0]);
+#endif
 		}
 		
 		if(strlen(newfilename) <= strlen(search)) {
 			if(memcmp(newfilename, search, strlen(search)) == 0) {
 				sect = *((unsigned long *)(dir->extent));
 				memcpy(dir_found, dir, sizeof(struct iso_directory_record));
-//				printk("Found : Sector %d Directory %s Filename %s  %d %d \n", 
-//					sect, newfilename, search, 
-//					strlen(newfilename), strlen(search));
+#ifdef DEBUG_ISO
+				printk("Found : Sector %d Directory %s Filename %s  %d %d \n", 
+					sect, newfilename, search, 
+					strlen(newfilename), strlen(search));
+#endif
 //				free(newfilename);
 //				free(buffer);
 				return sect;
 			}
 		}
 		if((*((char *)(dir->flags)) & IS_DIR) && (*((unsigned char *)(dir->name_len)) > 1)) {
-//			printk("Directory %s Filename %s\n", newfilename, search);
+#ifdef DEBUG_ISO
+			printk("Directory %s Filename %s\n", newfilename, search);
+#endif
 			if (strlen(newfilename) < strlen(search) && !memcmp(search,newfilename,
 						strlen(newfilename)) && search[strlen(newfilename)]=='/') {
 				sect = read_dir(driveId, dir, search, newfilename, dir_found);
@@ -157,8 +165,9 @@ unsigned long read_file(int driveId, struct iso_directory_record *dir_read, char
 		read_size+=(ISO_BLOCKSIZE - (read_size % ISO_BLOCKSIZE));
 	}
 	
-//	printk("         read_file sector %d %d\n", offset, read_size);
-	
+#ifdef DEBUG_ISO
+	printk("         read_file sector %d %d\n", offset, read_size);
+#endif	
 	for(i = 0; i < (read_size >> ISOFS_BLOCK_BITS) ; i++) {
 		memset(tmpbuff, 0x0, ISO_BLOCKSIZE);
 		BootIdeReadSector(driveId, tmpbuff, offset , 0, ISO_BLOCKSIZE);
@@ -189,7 +198,9 @@ int BootIso9660GetFile(int driveId, char *szcPath, unsigned char *pbaFile, unsig
 	memset(dir,0x0,sizeof(struct iso_directory_record));
 	
 	if(BootIdeReadSector(driveId, pvd, 16 , 0, ISO_BLOCKSIZE)) {
-//		printk("BootIso9660GetFile : Error read Sector\n");
+#ifdef DEBUG_ISO
+		printk("BootIso9660GetFile : Error read Sector\n");
+#endif
 		free(pvd);
 		free(dir);
 		return -1;
