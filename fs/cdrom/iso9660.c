@@ -10,7 +10,9 @@
 	2004-07-22 "Edgar Hucek"<hostmaster@ed-soft.at>  Created
 */
 
+#ifndef STANDALONE
 #include "boot.h"
+#endif
 #include "iso_fs.h"
 
 int isupper( int ch )
