@@ -23,8 +23,6 @@ int main(int argc, const char * argv[]) {
 	}
 	buffer = (char *)malloc(max_length);
 	
-	printf("hansi\n");
-
 	memset(buffer, 0x0, max_length);
 	
 
