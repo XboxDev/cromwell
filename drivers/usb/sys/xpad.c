@@ -126,6 +126,7 @@ static struct usb_device_id xpad_ids [] = {
 	{ USB_DEVICE(0x044f, 0x0f07) },//Thrustmaster, Inc. Controller
 	{ USB_DEVICE(0x045e, 0x0202) },//Microsoft Xbox Controller
 	{ USB_DEVICE(0x045e, 0x0285) },//Microsoft Xbox Controller S
+	{ USB_DEVICE(0x045e, 0x0287) },//Microsoft Xbox Controller S
 	{ USB_DEVICE(0x045e, 0x0289) },//Microsoft Xbox Controller S
 	{ USB_DEVICE(0x046d, 0xca84) },//Logitech Cordless Controller for Xbox
 	{ USB_DEVICE(0x046d, 0xca88) },//Logitech Compact Controller for Xbox
