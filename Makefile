@@ -143,6 +143,7 @@ OBJECTS-CROM += $(TOPDIR)/obj/xbox_pci.o
 OBJECTS-CROM += $(TOPDIR)/obj/etherboot_config.o
 OBJECTS-CROM += $(TOPDIR)/obj/xbox_main.o
 OBJECTS-CROM += $(TOPDIR)/obj/elf.o
+OBJECTS-CROM += $(TOPDIR)/obj/exec_elf.o
 endif
 
 RESOURCES = $(TOPDIR)/obj/backdrop.elf

@@ -237,7 +237,7 @@ void xstart16 (unsigned long a, unsigned long b, char * c)
 	restart_etherboot(-1);
 }
 
-extern void startLinux(void* initrdPos, unsigned long initrdSize, const char* appendLine);
+extern void startLinux(void* initrdPos, unsigned long initrdSize, const char* appendLine, unsigned int entry);
 
 int xstart32(unsigned long entry_point, ...)
 {
@@ -315,7 +315,7 @@ int xstart32(unsigned long entry_point, ...)
 			*appendLinePtr= '\0';
 		}
 		printf("Using cmdline: %s\n", appendLine);
-		startLinux((void*)INITRD_START, initrdSize, appendLine);
+		startLinux((void*)INITRD_START, initrdSize, appendLine, entry_point);
 	}
 	else
 	{

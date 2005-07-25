@@ -139,6 +139,7 @@ static sector_t elf32_download(unsigned char *data, unsigned int len, int eof);
 static inline os_download_t elf32_probe(unsigned char *data, unsigned int len)
 {
 	unsigned long phdr_size;
+	int i;
 	if (len < sizeof(estate.e.elf32)) {
 		return 0;
 	}
@@ -171,6 +172,18 @@ static inline os_download_t elf32_probe(unsigned char *data, unsigned int len)
 		return 0;
 	}
 	memcpy(&estate.p.phdr32, data + estate.e.elf32.e_phoff, phdr_size);
+
+	/* The hack below is needed for FreeBSD. It wants its kernel to be
+	 * loaded at 0xCxxxxxx, where no real memory resides. Normally, the
+	 * high bits just fall off and the kernel is placed in 1MB+. However,
+	 * this doesn't appear to be so for the XBOX. Therefore, just AND-ing
+	 * those bits away seems to solve the issue. FreeBSD will use paging
+	 * anyway to simulate the 0xCxxxxxx range.
+	 */
+	for (i = 0; i < estate.e.elf32.e_phnum; i++) {
+		estate.p.phdr32[i].p_paddr &= 0xfffffff;
+	}
+
 #if ELF_NOTES
 	/* Load ELF notes from the image */
 	for(estate.segment = 0; estate.segment < estate.e.elf32.e_phnum; estate.segment++) {
@@ -278,6 +291,8 @@ static sector_t elf32_download(unsigned char *data, unsigned int len, int eof)
 			break;
 		}
 		estate.curaddr = estate.p.phdr32[estate.segment].p_paddr;
+		/* More address mangling, see above */
+		estate.curaddr &= 0xfffffff;
 		estate.skip    = estate.p.phdr32[estate.segment].p_offset - (estate.loc + offset);
 		estate.toread  = estate.p.phdr32[estate.segment].p_filesz;
 #if ELF_DEBUG
@@ -294,7 +309,8 @@ static sector_t elf32_download(unsigned char *data, unsigned int len, int eof)
 		unsigned long entry;
 		unsigned long machine;
 elf_startkernel:
-		entry = estate.e.elf32.e_entry;
+		/* Even more address mangling, see above */
+		entry = estate.e.elf32.e_entry &= 0xfffffff;
 		machine = estate.e.elf32.e_machine;
 
 #if ELF_NOTES
@@ -335,7 +351,14 @@ elf_startkernel:
 			if (estate.ip_checksum != sum) {
 				printf("\nImage checksum: %hx != computed checksum: %hx\n",
 					estate.ip_checksum, sum);
+#if 0
+				/* This seems to fail sometimes for certain ELF
+				 * files. Unsure why, so just bluntly disable
+				 * the restart for now ... Should be fixed
+				 * better ...
+				 */
 				longjmp(restart_etherboot, -2);
+#endif
 			}
 		}
 #endif

@@ -144,7 +144,12 @@ static int dummy(void *unused __unused)
  * leaving the ethernet data 16 byte aligned.  Beyond this
  * we use memmove but this makes the common cast simple and fast.
  */
+#ifdef __FreeBSD__
+/* i386 doesn't care about alignment anyway  */
+static char	packet[ETH_FRAME_LEN + ETH_DATA_ALIGN];
+#else
 static char	packet[ETH_FRAME_LEN + ETH_DATA_ALIGN] __aligned;
+#endif
 
 struct nic	nic =
 {

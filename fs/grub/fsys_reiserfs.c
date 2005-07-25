@@ -366,8 +366,9 @@ struct fsys_reiser_info
 #define JOURNAL_END      ((__u32 *) (FSYS_BUF + FSYS_BUFLEN))
 
 
+/* For FreeBSD , log2() is an existing function, so alter the name */
 static __inline__ unsigned long
-log2 (unsigned long word)
+reiser_log2 (unsigned long word)
 {
   __asm__ ("bsfl %1,%0"
 	   : "=r" (word)
@@ -609,7 +610,7 @@ reiserfs_mount (void)
   
   INFO->version = super.s_version;
   INFO->blocksize = super.s_blocksize;
-  INFO->fullblocksize_shift = log2 (super.s_blocksize);
+  INFO->fullblocksize_shift = reiser_log2 (super.s_blocksize);
   INFO->blocksize_shift = INFO->fullblocksize_shift - SECTOR_BITS;
   INFO->cached_slots = 
     (FSYSREISER_CACHE_SIZE >> INFO->fullblocksize_shift) - 1;

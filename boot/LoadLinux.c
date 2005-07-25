@@ -33,9 +33,11 @@ static u32 dwKernelSize= 0, dwInitrdSize = 0;
 
 
 void ExittoLinux(CONFIGENTRY *config);
-void startLinux(void* initrdStart, unsigned long initrdSize, const char* appendLine);
+void startLinux(void* initrdStart, unsigned long initrdSize, const char* appendLine, unsigned int entry);
 void setup(void* KernelPos, void* PhysInitrdPos, unsigned long InitrdSize, const char* kernel_cmdline);
 void I2CRebootSlow(void);
+
+void try_elf_boot (char* data, int len);
 
 
 void BootPrintConfig(CONFIGENTRY *config) {
@@ -69,6 +71,10 @@ void memPlaceKernel(const u8* kernelOrg, u32 kernelSize)
 	unsigned int nSizeHeader=((*(kernelOrg + 0x01f1))+1)*512;
 	memcpy((u8 *)KERNEL_SETUP, kernelOrg, nSizeHeader);
 	memcpy((u8 *)KERNEL_PM_CODE,(kernelOrg+nSizeHeader),kernelSize-nSizeHeader);
+
+	/* Try to execute a pure ELF binary here, using the etherboot
+	 * code. This is required for ELF kernels, such as FreeBSD */
+	try_elf_boot ((char*)kernelOrg, kernelSize);
 }
 
 
@@ -529,11 +535,11 @@ void ExittoLinux(CONFIGENTRY *config) {
 		printk(sz);
 	}
 	setLED("rrrr");
-	startLinux((void*)INITRD_START, dwInitrdSize, config->szAppend);
+	startLinux((void*)INITRD_START, dwInitrdSize, config->szAppend, 0x100000);
 }
 	
 
-void startLinux(void* initrdStart, unsigned long initrdSize, const char* appendLine)
+void startLinux(void* initrdStart, unsigned long initrdSize, const char* appendLine, unsigned int entry)
 {
 	int nAta=0;
 	// turn off USB
@@ -565,6 +571,8 @@ void startLinux(void* initrdStart, unsigned long initrdSize, const char* appendL
 	
 	// clear idt area
 	memset((void*)IDT_LOC,0x0,1024*8);
+	
+	__asm__ ("movl %0,%%ebx" : : "a" (entry));	/* ebx = entry */
 	
 	__asm __volatile__ (
 	"wbinvd\n"
@@ -614,13 +622,15 @@ void startLinux(void* initrdStart, unsigned long initrdSize, const char* appendL
 	// Set the stack pointer to give us a valid stack
 	"movl $0x03BFFFFC, %esp \n"
 	
-	"xor 	%ebx, %ebx \n"
 	"xor 	%eax, %eax \n"
 	"xor 	%ecx, %ecx \n"
 	"xor 	%edx, %edx \n"
 	"xor 	%edi, %edi \n"
 	"movl 	$0x90000, %esi\n"       // kernel setup area
-	"ljmp 	$0x10, $0x100000\n"     // Jump to Kernel protected mode entry
+	"pushl	$0x10\n"
+	"pushl	%ebx\n"			// 0x10:ebx is the entry point
+	"xor	%ebx,%ebx\n"		// clean leftover ebx (held entry point)
+	".byte	0xcb\n	"		// retf
 	);
 	
 	// We are not longer here, we are already in the Linux loader, we never come back here
