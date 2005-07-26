@@ -105,6 +105,7 @@ OBJECTS-CROM += $(TOPDIR)/obj/ioapic.o
 OBJECTS-CROM += $(TOPDIR)/obj/BootInterrupts.o
 OBJECTS-CROM += $(TOPDIR)/obj/fsys_reiserfs.o
 OBJECTS-CROM += $(TOPDIR)/obj/fsys_ext2fs.o
+OBJECTS-CROM += $(TOPDIR)/obj/fsys_ufs2.o
 OBJECTS-CROM += $(TOPDIR)/obj/char_io.o
 OBJECTS-CROM += $(TOPDIR)/obj/disk_io.o
 OBJECTS-CROM += $(TOPDIR)/obj/decode-jpg.o
