@@ -138,6 +138,7 @@ static struct usb_device_id xpad_ids [] = {
 	{ USB_DEVICE(0x0738, 0x4536) },//Mad Catz MicroCON
 	{ USB_DEVICE(0x0738, 0x4540) },//Mad Catz Beat Pad
 	{ USB_DEVICE(0x0738, 0x4556) },//Mad Catz Lynx Wireless Controller
+	{ USB_DEVICE(0x0c12, 0x8802) },//Zeroplus Xbox Controller
 	{ USB_DEVICE(0x0c12, 0x8809) },//Level Six Xbox DDR Dancepad
 	{ USB_DEVICE(0x0c12, 0x8810) },//Zeroplus Xbox Controller
 	{ USB_DEVICE(0x0c12, 0x9902) },//HAMA VibraX - *FAULTY HARDWARE*
@@ -147,6 +148,7 @@ static struct usb_device_id xpad_ids [] = {
 	{ USB_DEVICE(0x0e6f, 0x0005) },//Eclipse wireless Controlle
 	{ USB_DEVICE(0x0e6f, 0x0006) },//Edge wireless Controller
 	{ USB_DEVICE(0x0f30, 0x0202) },//Joytech Advanced Controller 
+	{ USB_DEVICE(0x102c, 0xff0c) },//Joytech Wireless Advanced Controller
 	{ USB_DEVICE(0x12ab, 0x8809) },//Xbox DDR dancepad 
 	{ USB_DEVICE(0xffff, 0xffff) },//Chinese-made Xbox Controller 
 	{ USB_DEVICE(0x0000, 0x0000) }, // nothing detected - FAIL
