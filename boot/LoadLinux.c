@@ -627,6 +627,15 @@ void startLinux(void* initrdStart, unsigned long initrdSize, const char* appendL
 	"xor 	%edx, %edx \n"
 	"xor 	%edi, %edi \n"
 	"movl 	$0x90000, %esi\n"       // kernel setup area
+
+	// This is for FreeBSD; i386/i386/locore.s expects certain stack
+	// values for bootload info - Linux doesn't care
+	"pushl	$0x0\n"
+	"pushl	$0x0\n"
+	"pushl	$0x0\n"
+	"pushl	$0x0\n"
+	"pushl	$0x0\n"
+
 	"pushl	$0x10\n"
 	"pushl	%ebx\n"			// 0x10:ebx is the entry point
 	"xor	%ebx,%ebx\n"		// clean leftover ebx (held entry point)
