@@ -149,6 +149,7 @@ static struct usb_device_id xpad_ids [] = {
 	{ USB_DEVICE(0x0e6f, 0x0006) },//Edge wireless Controller
 	{ USB_DEVICE(0x0e8f, 0x0201) },//Smartjoy Frag PS2/Xpad adaptor
 	{ USB_DEVICE(0x0f30, 0x0202) },//Joytech Advanced Controller 
+   { USB_DEVICE(0x0f30, 0x8888) },//BigBen XBMiniPad Controller
 	{ USB_DEVICE(0x102c, 0xff0c) },//Joytech Wireless Advanced Controller
 	{ USB_DEVICE(0x12ab, 0x8809) },//Xbox DDR dancepad 
 	{ USB_DEVICE(0xffff, 0xffff) },//Chinese-made Xbox Controller 
