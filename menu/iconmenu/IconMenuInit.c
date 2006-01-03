@@ -101,8 +101,8 @@ void InitNativeIcons(void) {
 			memset(ba,0x00,512);
 			BootIdeReadSector(driveId, ba, 0, 0, 512);
 			        
-			//See if there is an MBR - no MBR means no native boot options.
-			if( !(ba[0x1fe]==0x55) || !(ba[0x1ff]==0xaa)) return;
+			//See if there is an MBR - no MBR means no native boot options for this drive.
+			if( !(ba[0x1fe]==0x55) || !(ba[0x1ff]==0xaa)) continue;
 	
 			(volatile u8 *)pb=&ba[0x1be];
 			//Check the primary partitions
