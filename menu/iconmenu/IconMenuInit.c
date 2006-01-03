@@ -104,7 +104,7 @@ void InitNativeIcons(void) {
 			//See if there is an MBR - no MBR means no native boot options for this drive.
 			if( !(ba[0x1fe]==0x55) || !(ba[0x1ff]==0xaa)) continue;
 	
-			(volatile u8 *)pb=&ba[0x1be];
+			pb=&ba[0x1be];
 			//Check the primary partitions
 			for (n=0; n<4; n++,pb+=16) {
 				if(pb[0]&0x80) {
