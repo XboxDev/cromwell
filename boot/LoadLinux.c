@@ -94,7 +94,7 @@ CONFIGENTRY* LoadConfigNative(int drive, int partition) {
 	szGrub[0]=0xff;
 	szGrub[1]=0xff;
 	szGrub[2]=partition;
-	szGrub[3]=0x00;
+	szGrub[3]=drive;
 
 	errnum=0;
 	boot_drive=0;
@@ -156,7 +156,7 @@ int LoadKernelNative(CONFIGENTRY *config) {
 	szGrub[0]=0xff;
 	szGrub[1]=0xff;
 	szGrub[2]=config->partition;
-	szGrub[3]=0x00;
+	szGrub[3]=config->drive;
 
 	errnum=0;
 	boot_drive=0;
