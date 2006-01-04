@@ -116,7 +116,7 @@ void InitNativeIcons(void) {
 						iconPtr = malloc(sizeof(ICON));
 			  			iconPtr->iconSlot = ICON_SOURCE_SLOT1;
 						iconPtr->szCaption=malloc(10);
-						sprintf(iconPtr->szCaption, "hd%c%d", driveId+'a', n);
+						sprintf(iconPtr->szCaption, "hd%c%d", driveId+'a', n+1);
 						iconPtr->functionPtr = DrawBootMenu;
 						iconPtr->functionDataPtr = (void *)entry;
 			  			AddIcon(iconPtr);
