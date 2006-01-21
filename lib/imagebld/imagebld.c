@@ -94,8 +94,8 @@ void writeBiosIdentifier(unsigned char *cromimage, int biosSize) {
 	MD5Final(BiosHeader->MD5Hash, &hashcontext);      
 }
 
-int xberepair (	unsigned char * xbeimage,
-		unsigned char * cromimage
+int xberepair ( const char * xbeimage,
+		const char * cromimage
 		)
 {
 	FILE *f;
@@ -205,8 +205,8 @@ int xberepair (	unsigned char * xbeimage,
 }
 
 
-int vmlbuild (	unsigned char * vmlimage,
-		unsigned char * cromimage
+int vmlbuild (	const char * vmlimage,
+		const char * cromimage
 		)
 {
 	FILE *f;
@@ -274,10 +274,10 @@ int vmlbuild (	unsigned char * vmlimage,
 }
 
 int romcopy (
-		unsigned char * blbinname,
-		unsigned char * cromimage,
-		unsigned char * binname256,
-		unsigned char * binname1024
+		const char * blbinname,
+		const char * cromimage,
+		const char * binname256,
+		const char * binname1024
 		
 		)
 {
@@ -493,17 +493,17 @@ int main (int argc, const char * argv[])
 	}
 
 	if (!strcmp(argv[1],"-xbe")) { 
-		xberepair((unsigned char*)argv[2],(unsigned char*)argv[3]);
+		xberepair(argv[2],argv[3]);
 	}
 	else if (!strcmp(argv[1],"-vml")) { 
-		vmlbuild((unsigned char*)argv[2],(unsigned char*)argv[3]);
+		vmlbuild(argv[2],argv[3]);
 	}
 	else if (!strcmp(argv[1],"-rom")) { 
 		if( argc != 6  ) {
 			showUsage(argv[0]);
 			exit(1);
 		}
-		romcopy((unsigned char*)argv[2],(unsigned char*)argv[3],(unsigned char*)argv[4],(unsigned char*)argv[5]);
+		romcopy(argv[2],argv[3],argv[4],argv[5]);
 	}
 	else {
 		showUsage(argv[0]);
