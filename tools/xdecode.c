@@ -158,7 +158,7 @@ int process_xcodes(const char *filename) {
 				return;
 			default:
 				/* Unknown - just output it verbatim in 'asm' type format */
-				printf(".byte 0x%02x; .long 0x%08x; .long 0x%08x\n",code.op, code.val1, code.val2);
+				printf(".byte 0x%02x; .long 0x%08x; .long 0x%08x;\n",code.op, code.val1, code.val2);
 		}
 	}
 	/* We shouln't get here - we should have left via the 0xEE xcode_END above */
