@@ -387,7 +387,7 @@ void BootVgaInitializationKernelNG(CURRENT_VIDEO_MODE_DETAILS * pvmode) {
 					memcpy(regs+2,(unsigned char*)(&XCal_Reg[i])+1,0x01);
 					memcpy(regs+3,(unsigned char*)(&XCal_Reg[i]),0x01);
 				
-					WriteToSMBus(0x70, i, 4, regs);
+					WriteToSMBus(0x70, i, 4, *(unsigned long*)regs);
 					wait_us(500);
 				}
 				free(regs);
