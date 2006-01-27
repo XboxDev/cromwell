@@ -51,8 +51,6 @@ void show_usage();
 
 int main(int argc, char **argv) {
 	
-	char *bios_filename = NULL;
-
 	struct option options[] = {
 		{ "help", no_argument, NULL, 'h' },
 		{ "overflow-trick", no_argument, NULL, 't' },
@@ -80,6 +78,8 @@ int main(int argc, char **argv) {
 		exit(1);
 	}
 	process_xcodes(argv[optind]);
+
+	exit(0);
 }
 
 int process_xcodes(const char *filename) {
@@ -107,69 +107,70 @@ int process_xcodes(const char *filename) {
 
 		switch(code.op) {
 			case 0x02:
-				printf("xcode_peek(0x%08x)\n",code.val1);
+				printf("xcode_peek(0x%08lx)\n",code.val1);
 				break;
 			case 0x03:
-				printf("xcode_poke(0x%08x,0x%08x)\n", code.val1, code.val2);
+				printf("xcode_poke(0x%08lx,0x%08lx)\n", code.val1, code.val2);
 				break;
 			case 0x04:
-				printf("xcode_pciout(0x%08x, 0x%08x)\n", code.val1, code.val2);
+				printf("xcode_pciout(0x%08lx, 0x%08lx)\n", code.val1, code.val2);
 				break;
 			case 0x05:
-				printf("xcode_pciin_a(0x%08x)\n", code.val1);
+				printf("xcode_pciin_a(0x%08lx)\n", code.val1);
 				break;
 			case 0x06:
-				printf("xcode_bittoggle(0x%08x, 0x%08x)\n", code.val1, code.val2);
+				printf("xcode_bittoggle(0x%08lx, 0x%08lx)\n", code.val1, code.val2);
 				break;
 			case 0x08:
-				printf("xcode_ifgoto(0x%08x, 0x%08x)\n", code.val1, (code.val2/9)+1);
+				printf("xcode_ifgoto(0x%08lx, 0x%08lx)\n", code.val1, (code.val2/9)+1);
 				break;
 			case 0x11:
-				printf("xcode_outb(0x%08x, 0x%08x)\n", code.val1, code.val2);
+				printf("xcode_outb(0x%08lx, 0x%08lx)\n", code.val1, code.val2);
 				break;
 			case 0x12:
-				printf("xcode_inb(0x%08x)\n", code.val1);
+				printf("xcode_inb(0x%08lx)\n", code.val1);
 				break;
 			case 0x07:
 				/* These have sub-opts */
 				switch(code.val1) {
 					case 0x03:
-						printf("xcode_poke_a(0x%08x)\n", code.val2);
+						printf("xcode_poke_a(0x%08lx)\n", code.val2);
 						break;
 					case 0x04:
-						printf("xcode_pciout_a(0x%08x)\n", code.val2);
+						printf("xcode_pciout_a(0x%08lx)\n", code.val2);
 						break;
 					case 0x11:
-						printf("xcode_outb_a(0x%08x)\n", code.val2);
+						printf("xcode_outb_a(0x%08lx)\n", code.val2);
 						break;
 					default:
 						printf("Invalid 0x07 code\n");
 				}
 				break;
 			case 0x09:
-				printf("xcode_goto(%d)\n", (code.val2/9)+1);
+				printf("xcode_goto(%ld)\n", (code.val2/9)+1);
 				break;
 			case 0xEE:
 				if (insert_overflow_trick) {
 					printf("%s\n", overflow_trick);				
 				}
-				printf("xcode_END(0x%08x)\n",code.val1);
+				printf("xcode_END(0x%08lx)\n",code.val1);
 				free(xcode_segment);
-				return;
+				return 0;
 			default:
 				/* Unknown - just output it verbatim in 'asm' type format */
-				printf(".byte 0x%02x; .long 0x%08x; .long 0x%08x;\n",code.op, code.val1, code.val2);
+				printf(".byte 0x%02x; .long 0x%08lx; .long 0x%08lx;\n",code.op, code.val1, code.val2);
 		}
 	}
 	/* We shouln't get here - we should have left via the 0xEE xcode_END above */
 	fprintf(stderr, "%s: Warning, reached end of xcode processing without encountering xcode_END marker\n",prog_name);
 	free(xcode_segment);
+	return 1;
 }
 
 void show_usage() {
 	fprintf(stderr, "%s: Xbox bios xcode decompiler - (c) David Pye/Xbox Linux Team 2005 - GPL\n", prog_name);
-	fprintf(stderr, "Usage: %s filename\nwhere filename is an Xbox bios image, from which the xcodes are to be read\n");
-	fprintf(stderr, "\nOptions:\n\n", prog_name);
+	fprintf(stderr, "Usage: %s filename\nwhere filename is an Xbox bios image, from which the xcodes are to be read\n", prog_name);
+	fprintf(stderr, "\nOptions:\n\n");
 	fprintf(stderr, "\t-h, --help			Display this help message\n");
 	fprintf(stderr, "\t-t, --insert-overflow-trick	Inserts the Xcode overflow trick into the xcodes\n");
 	fprintf(stderr, "					output. (Required if they are to be used for Cromwell)\n\n");
