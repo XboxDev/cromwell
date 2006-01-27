@@ -1,0 +1,101 @@
+Xbox Xcode decompiler - David Pye, 2006 (c) dmp@davidmpye.dyndns.org
+
+This tool is available under the GNU GPL - please see source
+file boilerplate for details.
+	
+Please note I can accept no liability for hardware/software damaged or 
+destroyed as a result of following these instructions.
+
+What does it do?
+====================
+
+This tool reads the Xcodes from an Xbox bios image, and prints them to standard
+output in a format suitable for creating a Cromwell bios image.
+
+Why do I need it?
+====================
+
+The Xbox hardware is initialised at system startup based on information 
+stored in the Xcodes of the bios.
+
+On the 1.6(b?) series Xboxes, Cromwell does not set up the memory timings 
+and other hardware initialisation sequences properly.  This leads to system
+instability and boot-time failures.  Some symptoms of this problem post-boot 
+are kernel oopses and panics, and SIGSEGVs of userspace programs.
+
+One day, hopefully, the Xcodes used on the 1.6 Xboxes will be reimplemented
+in a clean-room fashion by the Xbox Linux team.  However, this has not yet
+been accomplished, and progress has been very slow. 
+
+Using this tool, you can build your own Cromwell bios image for your Xbox 
+using the Xcodes that are already stored in the Microsoft bios on your
+system (and therefore, you are not infringing their copyright by obtaining
+these from an illegal source).
+
+Is it legal?
+====================
+
+I believe that the use of this tool should be legal, but I must draw your
+attention to the fact that you *CAN NOT* distribute a Cromwell bios image
+which contains the Microsoft Xcodes built in, as this infringes their copyright.
+
+I am a software developer, not a lawyer, so if you are in any doubt as to
+whether you are allowed to distribute things, please consult a lawyer.
+
+How do I use it?
+====================
+
+You will need the following:
+
+Cromwell CVS-HEAD source code tree.
+
+	This can be obtained from the Xbox-Linux 
+	anonymous CVS repository.  Instructions for checking out the code are
+	available here:
+
+	http://sourceforge.net/cvs/?group_id=54192 
+	(module name is cromwell)
+
+A Microsoft Xbox bios from your xbox (or at least, an Xbox of the same hardware
+version).  You can read this out from your Xbox on a 1.6 xbox by booting into Xbox Linux, turning OFF your modchip, and reading the bios contents using raincoat (raincoat -r OUTPUTFILENAME will dump the bios to a file).
+
+A working Linux C development environment (e.g. gcc).
+
+This program.
+
+Usage - Steps
+====================
+
+1)	Check out cromwell, and cd into the tools sub-directory.
+	Type 'make' to compile xdecode (any errors, please report them to me)
+
+2)	./xdecode -t 
+		PATH_TO_MICROSOFT_BIOS_IMAGE > CROMWELL_DIR/boot_rom/Xcodes.h
+	
+	(all on one line)
+	
+	This reads the Xcodes from the Microsoft bios image, and writes them
+	into the file Xcodes.h which will be used when compiling Cromwell.
+	(Obviously, replace the PATH_TO_MICROSOFT_BIOS_IMAGE with the full path
+	to the Microsoft bios image whose Xcodes you wish to use, and the 
+	CROMWELL_DIR with the directory of Cromwell source eg. /tmp/cromwell).
+	
+3)	cd CROMWELL_DIR (again, replace this with the source dir)
+	Type 'make'
+
+	This should then generate a pair of Cromwell bios images in the 
+	CROMWELL_DIR/image directory (cromwell.bin is the 256k image, and 
+	cromwell_1024.bin is the 1024k image)
+
+	If you have a modchip which requires 512k bios images, you can create
+	this as follows:
+
+	cd CROMWELL_DIR/image
+	cat cromwell.bin > cromwell_512k.bin
+	cat cromwell.bin >> cromwell_512k.bin
+
+4)	Flash the resulting bios image to your modchip.  If you have a modchip
+	with only bank, I recommend caution for now - if there is a mistake, 
+	and the resulting bios image fails to boot, you could end up having
+	to replace your modchip.  For information about how to flash bioses
+	to your modchip, please contact your modchip vendor.
