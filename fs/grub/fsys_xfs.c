@@ -492,7 +492,7 @@ xfs_read (char *buf, int len)
 	int toread, startpos, endpos;
 
 	if (icore.di_format == XFS_DINODE_FMT_LOCAL) {
-		grub_memmove (buf, inode->di_u.di_c + filepos, len);
+		memmove (buf, inode->di_u.di_c + filepos, len);
 		filepos += len;
 		return len;
 	}
