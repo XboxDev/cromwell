@@ -27,31 +27,26 @@
 // x = Off
 // 
 // E.g. rgog will cycle through red, green, orange, green and then loop.
-//
-// If the pattern string isn't 4 characters in length, nothing is done.
+
 void setLED(char *pattern) {
-	char *x = pattern;
-	int r, g;
+	int i, r, g;
+	r = g = 0;
 	
-	if(strlen(pattern) == 4) {
-		r = g = 0;
-		while (*x) {
-			r *= 2;
-			g *= 2;
-			switch (*x) {
-				case 'r':
-					r++; 
-					break;
-				case 'g':
-					g++;
-					break;
-				case 'o':
-					r++;
-					g++;
-					break;
-			}
-			x++;
+	for (i=0; i<4; ++i) {
+		switch (pattern[i]) {
+			case 'r':
+				r++; 
+				break;
+			case 'g':
+				g++;
+				break;
+			case 'o':
+				r++;
+				g++;
+				break;
 		}
-		I2cSetFrontpanelLed(((r<<4) & 0xF0) + (g & 0xF));
+		r *= 2;
+		g *= 2;
 	}
+	I2cSetFrontpanelLed(((r<<4) & 0xF0) + (g & 0xF));
 }
