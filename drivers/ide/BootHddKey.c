@@ -5,12 +5,7 @@
 #include <stdarg.h>
 //#include <string.h>
 
-
-
 void HMAC_hdd_calculation(int version,unsigned char *HMAC_result, ... );
-
-extern size_t strlen(const char * s);
-
 
 int copy_swap_trim(unsigned char *dst, unsigned char *src, int len)
 {

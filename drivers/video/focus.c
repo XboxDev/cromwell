@@ -13,6 +13,7 @@
 */
 #include "focus.h"
 #include "encoder.h"
+#include "boot.h"
 
 typedef struct _focus_pll_settings{
 	long dotclock;

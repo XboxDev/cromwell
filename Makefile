@@ -14,7 +14,7 @@ INCLUDE = -I$(TOPDIR)/grub -I$(TOPDIR)/include -I$(TOPDIR)/ -I./ -I$(TOPDIR)/fs/
 CROM_CFLAGS=$(INCLUDE)
 
 #You can override these if you wish.
-CFLAGS= -O2 -g -mcpu=pentium -Werror -pipe -fomit-frame-pointer -Wstrict-prototypes
+CFLAGS= -O2 -g -march=pentium -Werror -pipe -fomit-frame-pointer -Wstrict-prototypes
 
 # add the option for gcc 3.3 only, again, non-overridable
 ifeq ($(GCC_3.3), 1)

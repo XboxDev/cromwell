@@ -21,13 +21,13 @@
 #define NUM_CONEXANT_REGS       0x69
 #define MAX_ENCODER_REGS        256
 
-#define u8 unsigned char 
 #define U032 long
 #ifndef encoder_h
 #define encoder_h
 
 //#include <linux/xboxfbctl.h>
 #include "VideoInitialization.h"
+#include "boot.h"
 
 typedef struct {
 	double m_dHzBurstFrequency;
