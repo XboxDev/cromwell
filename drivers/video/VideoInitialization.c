@@ -44,12 +44,12 @@ static double fabs(double d) {
 }
 #endif
 
-static u8 NvGetCrtc(u8 * pbRegs, int nIndex) {
+static u8 NvGetCrtc(volatile u8 * pbRegs, int nIndex) {
 	pbRegs[0x6013d4]=nIndex;
 	return pbRegs[0x6013d5];
 }
 
-static void NvSetCrtc(u8 * pbRegs, int nIndex, u8 b) {
+static void NvSetCrtc(volatile u8 * pbRegs, int nIndex, u8 b) {
 	pbRegs[0x6013d4]=nIndex;
 	pbRegs[0x6013d5]=b;
 }
@@ -86,19 +86,19 @@ void SetGPURegister(const GPU_PARAMETER* gpu, u8 *pbRegs) {
 	u8 b;
 	u32 m = 0;
 	// NVHDISPEND
-	*((u32 *)&pbRegs[0x680820]) = gpu->crtchdispend - 1;
+	*((volatile u32 *)&pbRegs[0x680820]) = gpu->crtchdispend - 1;
 	// NVHTOTAL
-	*((u32 *)&pbRegs[0x680824]) = gpu->nvhtotal;
+	*((volatile u32 *)&pbRegs[0x680824]) = gpu->nvhtotal;
 	// NVHCRTC
-	*((u32 *)&pbRegs[0x680828]) = gpu->xres - 1;
+	*((volatile u32 *)&pbRegs[0x680828]) = gpu->xres - 1;
 	// NVHVALIDSTART
-	*((u32 *)&pbRegs[0x680834]) = 0;
+	*((volatile u32 *)&pbRegs[0x680834]) = 0;
 	// NVHSYNCSTART
-	*((u32 *)&pbRegs[0x68082c]) = gpu->nvhstart;
+	*((volatile u32 *)&pbRegs[0x68082c]) = gpu->nvhstart;
 	// NVHSYNCEND = NVHSYNCSTART + 32
-	*((u32 *)&pbRegs[0x680830]) = gpu->nvhstart+32;
+	*((volatile u32 *)&pbRegs[0x680830]) = gpu->nvhstart+32;
 	// NVHVALIDEND
-	*((u32 *)&pbRegs[0x680838]) = gpu->xres - 1;
+	*((volatile u32 *)&pbRegs[0x680838]) = gpu->xres - 1;
 	// CRTC_HSYNCSTART = h_total - 32 (heuristic)
 	m = gpu->nvhtotal - 32;
 	NvSetCrtc(pbRegs, 4, m/8);
@@ -121,19 +121,19 @@ void SetGPURegister(const GPU_PARAMETER* gpu, u8 *pbRegs) {
 	NvSetCrtc(pbRegs, 0x19, (NvGetCrtc(pbRegs, 0x19)&0x1f) | ((m >> 3) & 0xe0));
 	NvSetCrtc(pbRegs, 0x13, (m & 0xff));
 	// NVVDISPEND
-	*((u32 *)&pbRegs[0x680800]) = gpu->yres - 1;
+	*((volatile u32 *)&pbRegs[0x680800]) = gpu->yres - 1;
 	// NVVTOTAL
-	*((u32 *)&pbRegs[0x680804]) = gpu->nvvtotal;
+	*((volatile u32 *)&pbRegs[0x680804]) = gpu->nvvtotal;
 	// NVVCRTC
-	*((u32 *)&pbRegs[0x680808]) = gpu->yres - 1;
+	*((volatile u32 *)&pbRegs[0x680808]) = gpu->yres - 1;
 	// NVVVALIDSTART
-	*((u32 *)&pbRegs[0x680814]) = 0;
+	*((volatile u32 *)&pbRegs[0x680814]) = 0;
 	// NVVSYNCSTART
-	*((u32 *)&pbRegs[0x68080c])=gpu->nvvstart;
+	*((volatile u32 *)&pbRegs[0x68080c])=gpu->nvvstart;
 	// NVVSYNCEND = NVVSYNCSTART + 3
-	*((u32 *)&pbRegs[0x680810])=(gpu->nvvstart+3);
+	*((volatile u32 *)&pbRegs[0x680810])=(gpu->nvvstart+3);
 	// NVVVALIDEND
-	*((u32 *)&pbRegs[0x680818]) = gpu->yres - 1;
+	*((volatile u32 *)&pbRegs[0x680818]) = gpu->yres - 1;
 	// CRTC_VSYNCSTART
 	b = NvGetCrtc(pbRegs, 7) & 0x7b;
 	NvSetCrtc(pbRegs, 7, b | ((gpu->crtcvstart >> 2) & 0x80) | ((gpu->crtcvstart >> 6) & 0x04));
