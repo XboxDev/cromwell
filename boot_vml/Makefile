@@ -1,4 +1,9 @@
 
-O_TARGET :=  vml_Startup.o
+O_TARGET := vml_Startup.o
 
-include $(TOPDIR)/Rules.make
+vml_Startup.o:
+
+%.o     : %.S
+	${CC} -DASSEMBLER ${CFLAGS} -o $@ -c $<
+
+#include $(TOPDIR)/Rules.make

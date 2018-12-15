@@ -18,6 +18,7 @@ TOP_ROM = ( LOW_ROM + ROM_SIZE - 512 );
 TOP_ROM_LOAD = ( ROM_SIZE - 512 );
 
 SECTIONS {
+	/DISCARD/ : { *(.note.gnu.property) }
 
 	/* ROM Part of the programm */
 
@@ -32,14 +33,18 @@ SECTIONS {
 		_ram_location = .;
 		_start_ramcopy = _end_rom;
 		*(.text);
+		*(.text.*)
+		*(.eh_frame)
 		_start_checksum = _start_ramcopy - LOW_ROM;
 	}
 
 	.data (RAM_CODE + SIZEOF(.text)) : AT( SIZEOF(.low_rom) + SIZEOF(.text)) {
 		*(.data);
+		*(.data.*);
 		*(.sdata);
 		*(.sdata2);
 		*(.got);
+		*(.got.*);
 	}
        	
        	.rodata ( RAM_CODE + SIZEOF(.text) + SIZEOF(.data) ) : AT ( SIZEOF(.low_rom) + SIZEOF(.text) + SIZEOF(.data)) {

@@ -14,14 +14,16 @@ MEMORY
 ROM_SIZE = 256K;
 LOW_ROM = 0x03A00000; /* 58MB */
 
-
 SECTIONS {
+	/DISCARD/ : { *(.note.gnu.property) }
 
-		/* ROM allocations */
+	/* ROM allocations */
 
 	.text LOW_ROM : AT ( 0 ){
 		_start_low_rom = . ;
 		*(.text);
+		*(.text.*)
+		*(.eh_frame)
 		_end_low_rom = . ;
 	}
 
@@ -38,23 +40,23 @@ SECTIONS {
 		_start_pcrombios = .;
 		*(.pcrombios);
 		_end_pcrombios = .;
-		
 		_end_rodata = . ;
 	}
-        
-	/* ram allocations */        
-	
+
+	/* RAM allocations */
+
 	.data (LOW_ROM + SIZEOF(.text) + SIZEOF(.rodata)) : AT( SIZEOF(.text) + SIZEOF(.rodata) ) {
 		_start_data = .;
 		*(.data);
+		*(.data.*);
 		*(.sdata);
 		*(.sdata2);
 		*(.got);
+		*(.got.*);
 		_end_data = .;
 	}
 
 	/* the data (initialized globals) is moved to ram by the startup code */
-
 
 	.bss (LOW_ROM + SIZEOF(.text) + SIZEOF(.rodata) + SIZEOF(.data)) : AT( SIZEOF(.text) + SIZEOF(.rodata) + SIZEOF(.data)) {
 		_bss = .;
@@ -64,7 +66,6 @@ SECTIONS {
 		_ebss = . ;
 		_heap = . ;
 	}
-	
-	_end_complete_rom = SIZEOF(.text) + SIZEOF(.rodata) + SIZEOF(.data) + SIZEOF(.bss);
 
+	_end_complete_rom = SIZEOF(.text) + SIZEOF(.rodata) + SIZEOF(.data) + SIZEOF(.bss);
 }

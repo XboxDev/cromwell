@@ -11,10 +11,10 @@ INCLUDE = -I$(TOPDIR)/grub -I$(TOPDIR)/include -I$(TOPDIR)/ -I./ -I$(TOPDIR)/fs/
 	-I$(TOPDIR)/lib/jpeg/ -I$(TOPDIR)/menu/actions -I$(TOPDIR)/menu/textmenu -I$(TOPDIR)/menu/iconmenu
 
 #These are intended to be non-overridable.
-CROM_CFLAGS=$(INCLUDE)
+CROM_CFLAGS=$(INCLUDE) -m32 -fno-builtin -fno-stack-protector -no-pie
 
 #You can override these if you wish.
-CFLAGS= -O2 -g -march=pentium -Werror -pipe -fomit-frame-pointer -Wstrict-prototypes
+CFLAGS= -m32 -O2 -g -march=pentium -pipe -fomit-frame-pointer -Wstrict-prototypes -fno-builtin -fno-stack-protector -no-pie
 
 # add the option for gcc 3.3 only, again, non-overridable
 ifeq ($(GCC_3.3), 1)
@@ -27,21 +27,21 @@ OBJCOPY = objcopy
 export CC
 
 TOPDIR  := $(shell /bin/pwd)
-SUBDIRS	= boot_rom fs drivers lib boot menu
+SUBDIRS	= boot_rom fs drivers lib boot menu boot_xbe boot_vml boot_eth
 #### Etherboot specific stuff
 ifeq ($(ETHERBOOT), yes)
 ETH_SUBDIRS = etherboot
 CROM_CFLAGS	+= -DETHERBOOT
 ETH_INCLUDE = 	-I$(TOPDIR)/etherboot/include -I$(TOPDIR)/etherboot/arch/i386/include	
-ETH_CFLAGS  = 	-O2 -mcpu=pentium -Werror $(ETH_INCLUDE) -Wstrict-prototypes -fomit-frame-pointer -pipe -Ui386
+ETH_CFLAGS  = 	-m32 -O2 -mcpu=pentium $(ETH_INCLUDE) -Wstrict-prototypes -fomit-frame-pointer -pipe -Ui386 -fno-builtin -fno-stack-protector -no-pie
 endif
 
-LDFLAGS-ROM     = -s -S -T $(TOPDIR)/scripts/ldscript-crom.ld
-LDFLAGS-XBEBOOT = -s -S -T $(TOPDIR)/scripts/xbeboot.ld
-LDFLAGS-ROMBOOT = -s -S -T $(TOPDIR)/boot_rom/bootrom.ld
-LDFLAGS-VMLBOOT = -s -S -T $(TOPDIR)/boot_vml/vml_start.ld
+LDFLAGS-ROM     = -s -S -T $(TOPDIR)/scripts/ldscript-crom.ld -z muldefs
+LDFLAGS-XBEBOOT = -s -S -T $(TOPDIR)/scripts/xbeboot.ld -z muldefs
+LDFLAGS-ROMBOOT = -s -S -T $(TOPDIR)/boot_rom/bootrom.ld -z muldefs
+LDFLAGS-VMLBOOT = -s -S -T $(TOPDIR)/boot_vml/vml_start.ld -z muldefs
 ifeq ($(ETHERBOOT), yes)
-LDFLAGS-ETHBOOT = -s -S -T $(TOPDIR)/boot_eth/eth_start.ld
+LDFLAGS-ETHBOOT = -s -S -T $(TOPDIR)/boot_eth/eth_start.ld -z muldefs
 endif
 
 # add the option for gcc 3.3 only
@@ -219,10 +219,10 @@ cromwell.bin:
 
 # This is a local executable, so don't use a cross compiler...
 bin/imagebld: lib/imagebld/imagebld.c lib/crypt/sha1.c lib/crypt/md5.c
-	gcc -Ilib/crypt -o bin/sha1.o -c lib/crypt/sha1.c
-	gcc -Ilib/crypt -o bin/md5.o -c lib/crypt/md5.c
-	gcc -Ilib/crypt -o bin/imagebld.o -c lib/imagebld/imagebld.c
-	gcc -o bin/imagebld bin/imagebld.o bin/sha1.o bin/md5.o
+	gcc -m32 -Ilib/crypt -o bin/sha1.o -c lib/crypt/sha1.c
+	gcc -m32 -Ilib/crypt -o bin/md5.o -c lib/crypt/md5.c
+	gcc -m32 -Ilib/crypt -o bin/imagebld.o -c lib/imagebld/imagebld.c
+	gcc -m32 -o bin/imagebld bin/imagebld.o bin/sha1.o bin/md5.o
 	
 imagecompress: obj/image-crom.bin bin/imagebld
 	cp obj/image-crom.bin obj/image-crom.bin.tmp
