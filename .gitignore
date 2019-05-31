@@ -1,0 +1,9 @@
+*.o
+
+bin/
+image/
+obj/
+xbe/
+
+boot_eth/ethboot
+boot_vml/disk/vmlboot
