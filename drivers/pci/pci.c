@@ -159,6 +159,53 @@ void rtc_set_checksum(int range_start, int range_end, int cks_loc)
 	CMOS_WRITE(((sum >> 0) & 0x0ff), cks_loc+1);
 }
 
+/* SMSC LPC47M157 Super I/O functions */
+/* pin and register compatible with LPC47M192 */
+void LpcSelectRegister(u8 index)
+{
+	IoOutputByte(0x2E, index);
+}
+
+void LpcEnterConfiguration()
+{
+	LpcSelectRegister(0x55);
+}
+
+void LpcExitConfiguration()
+{
+	LpcSelectRegister(0xAA);
+}
+
+u8 LpcReadRegister(u8 index)
+{
+	LpcSelectRegister(index);
+	return IoInputByte(0x2F);
+}
+
+void LpcWriteRegister(u8 index, u8 value)
+{
+	LpcSelectRegister(index);
+	IoOutputByte(0x2F, value);
+}
+
+int LpcGetSerialState()
+{
+	// Select serial device
+	LpcWriteRegister(0x07, 0x04);
+
+	// Check whether device is enabled
+	return LpcReadRegister(0x30);
+}
+
+void LpcSetSerialState(int enable)
+{
+	// Select serial device
+	LpcWriteRegister(0x07, 0x04);
+
+	// Enable device
+	LpcWriteRegister(0x30, enable ? 0x01 : 0x00);
+}
+
 void BootAGPBUSInitialization(void)
 {
 	u32 temp;
@@ -235,8 +282,8 @@ void BootPciPeripheralInitialization()
 	PciWriteByte(BUS_0, DEV_0, FUNC_0, 0x87, 3); // kern 8001FC21
 	PciWriteByte(BUS_0, DEV_0, 8, 0, 0x42);       // Xbeboot-compare
 	
-	IoOutputByte(0x2e, 0x55);	// Enter Configuration
-	IoOutputByte(0x2e, 0x26);	// Select CONFIG_PORT_LOW register (fixme: describe why it's done)
+	LpcEnterConfiguration();
+	LpcSelectRegister(0x26);	// Select CONFIG_PORT_LOW register (fixme: describe why it's done)
 	IoOutputByte(0x61, 0xff);
 	IoOutputByte(0x92, 0x01);
 	IoOutputByte(0xcf9, 0x0);	// Reset Port
@@ -409,24 +456,15 @@ void BootPciPeripheralInitialization()
 	PciWriteDword(BUS_1, DEV_0, FUNC_0, 0x0c, 0x0);
 	PciWriteDword(BUS_1, DEV_0, FUNC_0, 0x18, 0x08);
 
-	// Select serial device
-	IoOutputByte(0x2e, 0x07);
-	IoOutputByte(0x2f, 0x04);
-
-	// Enable device
-	IoOutputByte(0x2e, 0x30);
-	IoOutputByte(0x2f, 0x01);
+	// Enable Serial COM1 by default
+	LpcSetSerialState(1);
 
 	// Set Serial Base
-	IoOutputByte(0x2e, 0x61);
-	IoOutputByte(0x2f, SERIAL_PORT & 0xff);
-
-	IoOutputByte(0x2e, 0x60);
-	IoOutputByte(0x2f, SERIAL_PORT >> 8);
+	LpcWriteRegister(0x61, SERIAL_PORT & 0xFF);
+	LpcWriteRegister(0x60, SERIAL_PORT >> 8);
 
 	// Set Serial Interrupt
-	IoOutputByte(0x2e, 0x70);
-	IoOutputByte(0x2f, SERIAL_IRQ);
+	LpcWriteRegister(0x70, SERIAL_IRQ);
 
-	IoOutputByte(0x2e, 0xAA);	// Exit Configuration
+	LpcExitConfiguration();
 }

@@ -132,6 +132,15 @@ char * strstr(const char * s1,const char * s2)
 	return NULL;
 }
 
+char * strcat(char * s, const char * append)
+{
+	char * save = s;
+
+	for (; *s; ++s);
+	while ((*s++ = *append++));
+	return save;
+}
+
 char * strpbrk(const char * cs,const char * ct)
 {
         const char *sc1,*sc2;
