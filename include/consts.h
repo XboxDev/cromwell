@@ -20,7 +20,10 @@
 #define PCI_CFG_DATA 0x0CFC
 
 
-#define I2C_IO_BASE 0xc000
+#define I2C_IO_BASE 0xC000
+
+#define SERIAL_PORT 0x3F8
+#define SERIAL_IRQ  4
 
 #define BUS_0 0
 #define BUS_1 1
