@@ -261,6 +261,11 @@ u8 PciReadByte(unsigned int bus, unsigned int dev, unsigned int func, unsigned i
 u32 PciWriteDword(unsigned int bus, unsigned int dev, unsigned int func, unsigned int reg_off, u32 dw);
 u32 PciReadDword(unsigned int bus, unsigned int dev, unsigned int func, unsigned int reg_off);
 
+void LpcEnterConfiguration();
+void LpcExitConfiguration();
+int LpcGetSerialState();
+void LpcSetSerialState(int enable);
+
 ///////// BootPerformPicChallengeResponseAction.c
 
 int I2CTransmitWord(u8 bPicAddressI2cFormat, u16 wDataToWrite);
@@ -339,4 +344,5 @@ int strlen(const char * s);
 int sprintf(char * buf, const char *fmt, ...);
 char * strncpy(char * dest,const char *src,int count);
 char * strstr(const char * s1,const char * s2);
+char * strcat(char * s, const char * append);
 #endif // _Boot_H_

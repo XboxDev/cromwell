@@ -22,6 +22,14 @@ TEXTMENU *TextMenuInit(void) {
 	strcpy(menuPtr->szCaption, "Main Menu");
 	menuPtr->firstMenuItem=NULL;
 	
+	//PERIPHERALS MENU
+	itemPtr = malloc(sizeof(TEXTMENUITEM));
+	memset(itemPtr,0x00,sizeof(TEXTMENUITEM));
+	strcpy(itemPtr->szCaption, "Peripherals");
+	itemPtr->functionPtr=DrawChildTextMenu;
+	itemPtr->functionDataPtr = (void *)PhyMenuInit();
+	TextMenuAddItem(menuPtr, itemPtr);
+
 	//VIDEO SETTINGS MENU
 	itemPtr = malloc(sizeof(TEXTMENUITEM));
 	memset(itemPtr,0x00,sizeof(TEXTMENUITEM));
