@@ -8,6 +8,9 @@
  *   the Free Software Foundation; either version 2 of the License, or     *
  *   (at your option) any later version.                                   *
  *                                                                         *
+ *   Copyright (C) 2018 Matt Borgerson                                     *
+ *   Copyright (C) 2019 Stanislav Motylkov                                 *
+ *                                                                         *
  ***************************************************************************/
 
 u8 PciReadByte(unsigned int bus, unsigned int dev, unsigned int func, unsigned int reg_off)
@@ -104,7 +107,6 @@ u32 PciWriteDword(unsigned int bus, unsigned int dev, unsigned int func, unsigne
 #define RTC_FREQ_SELECT_DEFAULT (RTC_REF_CLCK_32KHZ | RTC_RATE_1024HZ)
 #define RTC_24H 		0x02
 #define RTC_CONTROL_DEFAULT (RTC_24H)
-
 
 // access to RTC CMOS memory
 u8 CMOS_READ(u8 addr) { 
@@ -233,8 +235,8 @@ void BootPciPeripheralInitialization()
 	PciWriteByte(BUS_0, DEV_0, FUNC_0, 0x87, 3); // kern 8001FC21
 	PciWriteByte(BUS_0, DEV_0, 8, 0, 0x42);       // Xbeboot-compare
 	
-	IoOutputByte(0x2e, 0x55);
-	IoOutputByte(0x2e, 0x26);
+	IoOutputByte(0x2e, 0x55);	// Enter Configuration
+	IoOutputByte(0x2e, 0x26);	// Select CONFIG_PORT_LOW register (fixme: describe why it's done)
 	IoOutputByte(0x61, 0xff);
 	IoOutputByte(0x92, 0x01);
 	IoOutputByte(0xcf9, 0x0);	// Reset Port
@@ -406,4 +408,25 @@ void BootPciPeripheralInitialization()
 	// frankenregisters so Xromwell matches Cromwell
 	PciWriteDword(BUS_1, DEV_0, FUNC_0, 0x0c, 0x0);
 	PciWriteDword(BUS_1, DEV_0, FUNC_0, 0x18, 0x08);
+
+	// Select serial device
+	IoOutputByte(0x2e, 0x07);
+	IoOutputByte(0x2f, 0x04);
+
+	// Enable device
+	IoOutputByte(0x2e, 0x30);
+	IoOutputByte(0x2f, 0x01);
+
+	// Set Serial Base
+	IoOutputByte(0x2e, 0x61);
+	IoOutputByte(0x2f, SERIAL_PORT & 0xff);
+
+	IoOutputByte(0x2e, 0x60);
+	IoOutputByte(0x2f, SERIAL_PORT >> 8);
+
+	// Set Serial Interrupt
+	IoOutputByte(0x2e, 0x70);
+	IoOutputByte(0x2f, SERIAL_IRQ);
+
+	IoOutputByte(0x2e, 0xAA);	// Exit Configuration
 }
