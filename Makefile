@@ -2,6 +2,19 @@ CC	= gcc
 # prepare check for gcc 3.3, $(GCC_3.3) will either be 0 or 1
 GCC_3.3 := $(shell expr `$(CC) -dumpversion` \>= 3.3)
 
+SRC_PATH=.
+
+GITREV = $(shell \
+  cd $(SRC_PATH); \
+  if test -e .git; then \
+    git rev-parse --short HEAD 2>/dev/null | tr -d '\n'; \
+    if ! git diff --quiet HEAD &>/dev/null; then \
+      echo "-dirty"; \
+    fi; \
+  else \
+    echo "unknown"; \
+  fi)
+
 ETHERBOOT := yes
 INCLUDE = -I$(TOPDIR)/grub -I$(TOPDIR)/include -I$(TOPDIR)/ -I./ -I$(TOPDIR)/fs/cdrom \
 	-I$(TOPDIR)/fs/fatx -I$(TOPDIR)/fs/grub -I$(TOPDIR)/lib/eeprom -I$(TOPDIR)/lib/crypt \
@@ -11,7 +24,7 @@ INCLUDE = -I$(TOPDIR)/grub -I$(TOPDIR)/include -I$(TOPDIR)/ -I./ -I$(TOPDIR)/fs/
 	-I$(TOPDIR)/lib/jpeg/ -I$(TOPDIR)/menu/actions -I$(TOPDIR)/menu/textmenu -I$(TOPDIR)/menu/iconmenu
 
 #These are intended to be non-overridable.
-CROM_CFLAGS=$(INCLUDE) -m32 -fno-builtin -fno-stack-protector -no-pie
+CROM_CFLAGS=$(INCLUDE) -m32 -fno-builtin -fno-stack-protector -no-pie -DGITREV=\\\"$(GITREV)\\\"
 
 #You can override these if you wish.
 CFLAGS= -m32 -O2 -g -march=pentium -pipe -fomit-frame-pointer -Wstrict-prototypes -fno-builtin -fno-stack-protector -no-pie

@@ -112,15 +112,14 @@ extern void BootResetAction ( void ) {
 	VIDEO_CURSOR_POSY=vmode.ymargin;
 	VIDEO_CURSOR_POSX=(vmode.xmargin/*+64*/)*4;
 #ifndef SILENT_MODE	
-	if (cromwell_config==XROMWELL) 	printk("\2Xbox Linux Xromwell  " VERSION "\2\n" );
-	if (cromwell_config==CROMWELL)	printk("\2Xbox Linux Cromwell BIOS  " VERSION "\2\n" );
+	if (cromwell_config==XROMWELL) 	printk("\2Xromwell " VERSION "\2\n" );
+	if (cromwell_config==CROMWELL)	printk("\2Cromwell BIOS " VERSION "\2\n" );
 	VIDEO_CURSOR_POSY=vmode.ymargin+32;
 	VIDEO_CURSOR_POSX=(vmode.xmargin/*+64*/)*4;
-	printk( __DATE__ " -  http://xbox-linux.org\n");
+	printk( __DATE__ " (rev. %s) -  https://github.com/XboxDev/cromwell\n", GITREV);
 	VIDEO_CURSOR_POSX=(vmode.xmargin/*+64*/)*4;
-	printk("(C)2002-2004 Xbox Linux Team   RAM : %d MB  ",xbox_ram);
-        printk("\n");
-    
+	printk("Available RAM: %d MB\n",xbox_ram);
+
 	// capture title area
 	VIDEO_ATTR=0xffc8c8c8;
 	printk("Encoder: ");
