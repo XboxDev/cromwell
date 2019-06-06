@@ -172,6 +172,9 @@ int LoadKernelNative(CONFIGENTRY *config) {
 	
 	I2CTransmitWord(0x10, 0x0c01); // Close DVD tray
 	
+	VIDEO_ATTR=0xffd8d8d8;
+	printk("  Loading %s ", config->szKernel);
+	VIDEO_ATTR=0xffa8a8a8;
         strncpy(&szGrub[4], config->szKernel,strlen(config->szKernel));
 
 	nRet=grub_open(szGrub);
@@ -186,7 +189,7 @@ int LoadKernelNative(CONFIGENTRY *config) {
 	dwKernelSize=grub_read(tempBuf, MAX_KERNEL_SIZE);
 	memPlaceKernel(tempBuf, dwKernelSize);
 	grub_close();
-	printk(" -  %d bytes...\n", dwKernelSize);
+	printk(" - %d bytes\n", dwKernelSize);
 
 	if(strlen(config->szInitrd)!=0) {
 		VIDEO_ATTR=0xffd8d8d8;
@@ -266,6 +269,8 @@ int LoadKernelFatX(CONFIGENTRY *config) {
 	
 	if(partition == NULL) return 0;
 
+	VIDEO_ATTR=0xffd8d8d8;
+	printk("  Loading %s from FATX", config->szKernel);
 	// Use INITRD_START as temporary location for loading the Kernel 
 	tempBuf = (u8*)INITRD_START;
 	if(! LoadFATXFilefixed(partition,config->szKernel,&infokernel,tempBuf)) {
@@ -276,7 +281,7 @@ int LoadKernelFatX(CONFIGENTRY *config) {
 		// moving the kernel to its final location
 		memPlaceKernel(tempBuf, dwKernelSize);
 		
-		printk(" -  %d bytes...\n", infokernel.fileRead);
+		printk(" - %d bytes\n", infokernel.fileRead);
 	}
 
 	if(strlen(config->szInitrd)!=0) {
@@ -401,6 +406,9 @@ again:
 int LoadKernelCdrom(CONFIGENTRY *config) {
 	u8* tempBuf;
 	
+	VIDEO_ATTR=0xffd8d8d8;
+	printk("  Loading %s from CDROM", config->szKernel);
+	VIDEO_ATTR=0xffa8a8a8;
 	// Use INITRD_START as temporary location for loading the Kernel 
 	tempBuf = (u8*)INITRD_START;
 	dwKernelSize=BootIso9660GetFile(config->drive,config->szKernel, tempBuf, MAX_KERNEL_SIZE);
@@ -410,7 +418,7 @@ int LoadKernelCdrom(CONFIGENTRY *config) {
 		while(1);
 	} else {
 		memPlaceKernel(tempBuf, dwKernelSize);
-		printk(" -  %d bytes...\n", dwKernelSize);
+		printk(" - %d bytes\n", dwKernelSize);
 	}
 
 	if(strlen(config->szInitrd)!=0) {
