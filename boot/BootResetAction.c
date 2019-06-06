@@ -142,8 +142,6 @@ extern void BootResetAction ( void ) {
 	}
 	
 	printk("\n");
-	nTempCursorX=VIDEO_CURSOR_POSX;
-	nTempCursorY=VIDEO_CURSOR_POSY;
 #endif
 	setLED("rrrr");
 
@@ -176,6 +174,8 @@ extern void BootResetAction ( void ) {
 	}
 #endif
 */
+	nTempCursorX=VIDEO_CURSOR_POSX;
+	nTempCursorY=VIDEO_CURSOR_POSY;
 #ifndef SILENT_MODE
 	printk("BOOT: start USB init\n");
 #endif
