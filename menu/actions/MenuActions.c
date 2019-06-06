@@ -33,8 +33,6 @@ void BootFromCD(void *data) {
 	int nTempCursorY = VIDEO_CURSOR_POSY; 
 	CONFIGENTRY *config = LoadConfigCD(*(int*)data);
 	if (config==NULL) {
-		printk("Boot from CD failed.\nCheck that linuxboot.cfg exists.\n");
-		wait_ms(2000);
 		//Clear the screen and return to the menu
 		BootVideoClearScreen(&jpegBackdrop, nTempCursorY, VIDEO_CURSOR_POSY+1);	
 		return;
