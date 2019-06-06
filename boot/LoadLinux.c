@@ -306,13 +306,18 @@ CONFIGENTRY *LoadConfigCD(int cdromId) {
 	int n;
 	int configLoaded=0;
 	CONFIGENTRY *config, *currentConfigItem;
+	int nTempCursorX, nTempCursorY;
 
 	memset((u8 *)KERNEL_SETUP,0,4096);
 
 	printk("\2Please wait\n\n");
 	//See if we already have a CDROM in the drive
 	//Try for 8 seconds - takes a while to 'spin up'.
+	nTempCursorX = VIDEO_CURSOR_POSX;
+	nTempCursorY = VIDEO_CURSOR_POSY;
+again:
 	I2CTransmitWord(0x10, 0x0c01); // close DVD tray
+	printk("Loading linuxboot.cfg from CDROM... \n");
 	for (n=0;n<32;++n) {
 		dwConfigSize = BootIso9660GetFile(cdromId,"/linuxboo.cfg", (u8 *)KERNEL_SETUP, 0x800);
 		if (dwConfigSize>0) {
@@ -329,13 +334,14 @@ CONFIGENTRY *LoadConfigCD(int cdromId) {
 
 	//We couldn't read the disk, so we eject the drive so the user can insert one.
 	if (!configLoaded) {
+		printk("Boot from CD failed.\nCheck that linuxboot.cfg exists.\n\n");
 		//Needs to be changed for non-xbox drives, which don't have an eject line
 		//Need to send ATA eject command.
 		I2CTransmitWord(0x10, 0x0c00); // eject DVD tray
 		wait_ms(2000); // Wait for DVD to become responsive to inject command
 			
 		VIDEO_ATTR=0xffeeeeff;
-		printk("\2Please insert CD and press Button A\n\n");
+		printk("\2Please insert CD and press Button A\n\n\2Press Button B to return to main menu\n\n");
 
 		while(1) {
 			// Make button 'A' close the DVD tray
@@ -357,6 +363,13 @@ CONFIGENTRY *LoadConfigCD(int cdromId) {
 			else if (BootIso9660GetFile(cdromId,"/linuxboot.cfg", (u8 *)KERNEL_SETUP, 0x800)>0) {
 				break;
 			}
+			// Allow to cancel CD boot with button 'B'
+			else if (risefall_xpad_BUTTON(TRIGGER_XPAD_KEY_B) == 1) {
+				// Close DVD tray and return to main menu
+				I2CTransmitWord(0x10, 0x0c01);
+				wait_ms(500);
+				return NULL;
+			}
 			wait_ms(10);
 		}
 
@@ -364,21 +377,10 @@ CONFIGENTRY *LoadConfigCD(int cdromId) {
 
 		VIDEO_ATTR=0xffffffff;
 
-		printk("Loading linuxboot.cfg from CDROM... \n");
-		//Try to load linuxboot.cfg - if we can't after a while, give up.
-		for (n=0;n<48;++n) {
-			dwConfigSize = BootIso9660GetFile(cdromId,"/linuxboo.cfg", (u8 *)KERNEL_SETUP, 0x800);
-			if (dwConfigSize>0) {
-				configLoaded=1;
-				break;
-			}
-			dwConfigSize = BootIso9660GetFile(cdromId,"/linuxboot.cfg", (u8 *)KERNEL_SETUP, 0x800);
-			if (dwConfigSize>0) {
-				configLoaded=1;
-				break;
-			}
-			wait_ms(250);
-		}
+		BootVideoClearScreen(&jpegBackdrop, nTempCursorY, VIDEO_CURSOR_POSY+1);
+		VIDEO_CURSOR_POSX = nTempCursorX;
+		VIDEO_CURSOR_POSY = nTempCursorY;
+		goto again;
 	}
 
 	//Failed to load the config file
