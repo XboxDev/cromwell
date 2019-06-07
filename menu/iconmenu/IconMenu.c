@@ -214,20 +214,23 @@ void IconMenu(void) {
 		//If anybody has toggled the xpad left/right, disable the timeout.
 		if (temp!=0) {
 			temp = IoInputDword(0x8008) - COUNT_start;
+			if (temp > (0x369E99*BOOT_TIMEWAIT)) timedOut=1;
 		}
 		
 		if ((risefall_xpad_BUTTON(TRIGGER_XPAD_KEY_A) == 1) || risefall_xpad_BUTTON(TRIGGER_XPAD_KEY_START) == 1 || 
-				(u32)(temp>(0x369E99*BOOT_TIMEWAIT))) {
+				timedOut) {
 			memcpy((void*)FB_START,videosavepage,FB_SIZE);
 			VIDEO_CURSOR_POSX=nTempCursorResumeX;
 			VIDEO_CURSOR_POSY=nTempCursorResumeY;
 			
-			if (temp>(0x369E99*BOOT_TIMEWAIT)) timedOut=1;
 			//Icon selected - invoke function pointer.
 			if (selectedIcon->functionPtr!=NULL) selectedIcon->functionPtr(selectedIcon->functionDataPtr);
 			//If we come back to this menu, make sure we are redrawn, and that we replace the saved video page
 			changed=1;
 			memcpy((void*)FB_START,videosavepage,FB_SIZE);
+			//Also disable the timeout to avoid infinite boot loop
+			temp=0;
+			timedOut=0;
 		}
 		if (changed) {
 			BootVideoClearScreen(&jpegBackdrop, nTempCursorY, VIDEO_CURSOR_POSY+1);
