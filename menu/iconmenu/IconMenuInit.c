@@ -29,7 +29,7 @@ void IconMenuInit(void) {
 			iconPtr = malloc(sizeof(ICON));
 			iconPtr->iconSlot = ICON_SOURCE_SLOT2;
 			iconPtr->szCaption = driveName;
-			iconPtr->functionPtr = BootFromCD;
+			iconPtr->functionPtr = PrepareBootFromCD;
 			iconPtr->functionDataPtr = malloc(sizeof(int));
 			*(int*)iconPtr->functionDataPtr = i;
 			AddIcon(iconPtr);
@@ -71,7 +71,7 @@ void InitFatXIcons(void) {
 		BootIdeReadSector(driveId, ba, 3, 0, 512);
 		if (!strncmp("BRFR",ba,4)) {
 			//Got a FATX formatted HDD
-			CONFIGENTRY *entry = (CONFIGENTRY*)LoadConfigFatX();
+			CONFIGENTRY *entry = (CONFIGENTRY*)DetectSystemFatX();
 			if (entry !=NULL) {
 				//There is a config file present.
 				iconPtr = malloc(sizeof(ICON));
@@ -109,7 +109,7 @@ void InitNativeIcons(void) {
 			for (n=0; n<4; n++,pb+=16) {
 				if(pb[0]&0x80) {
 					//Bootable flag IS set on this partition.
-					CONFIGENTRY *entry = (CONFIGENTRY*)LoadConfigNative(driveId, n);
+					CONFIGENTRY *entry = (CONFIGENTRY*)DetectSystemNative(driveId, n);
 					if (entry!=NULL) {
 						//There is a valid config file here.
 						//Add an icon for this partition 

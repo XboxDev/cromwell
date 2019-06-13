@@ -20,18 +20,17 @@
 #include "cpu.h"
 #include "VideoInitialization.h"
 #include "TextMenu.h"
-CONFIGENTRY *LoadConfigCD(int);
 TEXTMENU *TextMenuInit(void);
 
 void AdvancedMenu(void *textmenu) {
 	TextMenu((TEXTMENU*)textmenu, NULL);
 }
 
-void BootFromCD(void *data) {
+void PrepareBootFromCD(void *data) {
 	//We have to go an extra step when the CD icon is selected, as unlike
-	//the other boot modes, we have not parsed the linuxboot.cfg file yet.
+	//the other boot modes, we have not determined available OSes here yet.
 	int nTempCursorY = VIDEO_CURSOR_POSY; 
-	CONFIGENTRY *config = LoadConfigCD(*(int*)data);
+	CONFIGENTRY *config = DetectSystemCD(*(int*)data);
 	if (config==NULL) {
 		//Clear the screen and return to the menu
 		BootVideoClearScreen(&jpegBackdrop, nTempCursorY, VIDEO_CURSOR_POSY+1);	
@@ -95,18 +94,7 @@ void DrawBootMenu(void *rootEntry) {
 
 void BootMenuEntry(void *entry) {
 	CONFIGENTRY *config = (CONFIGENTRY*)entry;
-	switch (config->bootType) {
-		case BOOT_CDROM:
-			LoadKernelCdrom(config);
-			break;
-		case BOOT_FATX:
-			LoadKernelFatX(config);
-			break;
-		case BOOT_NATIVE:
-			LoadKernelNative(config);
-			break;
-	}
-	ExittoLinux(config);
+	BootFromDevice(config);
 }
 
 void DrawChildTextMenu(void *menu) {
@@ -119,10 +107,3 @@ void BootFromEtherboot(void *data) {
 	etherboot();
 }
 #endif
-
-#ifdef FLASH
-void FlashBios(void *data) {
-	BootLoadFlashCD();
-}
-#endif
-
