@@ -23,12 +23,7 @@ void SetLEDColor(void *);
 void DrawBootMenu(void *entry);
 void BootMenuEntry(void *entry);
 
-//Ick, this needs to be removed.
-void BootFromCD(void *driveId);
-
-#ifdef FLASH
-void FlashBios(void *);
-#endif
+void PrepareBootFromCD(void *driveId);
 
 #ifdef ETHERBOOT
 void BootFromEtherboot(void *);
