@@ -53,21 +53,38 @@ char *InitGrubRequest(int size, int drive, int partition) {
 	return szGrub;
 }
 
+void FillConfigEntries(CONFIGENTRY *config, enum BootTypes bootType, int drive, int partition) {
+	CONFIGENTRY *currentConfigItem;
+
+	for (currentConfigItem = config; currentConfigItem != NULL; currentConfigItem = currentConfigItem->nextConfigEntry) {
+		currentConfigItem->bootType = bootType;
+
+		// Set the drive ID and partition IDs for the returned config items
+		switch (bootType) {
+		case BOOT_NATIVE:
+			currentConfigItem->drive = drive;
+			currentConfigItem->partition = partition;
+			break;
+		case BOOT_FATX:
+			break;
+		case BOOT_CDROM:
+			currentConfigItem->drive = drive;
+			break;
+		default:
+			break;
+		}
+	}
+}
+
 CONFIGENTRY *DetectSystemNative(int drive, int partition) {
 	CONFIGENTRY *config;
-	CONFIGENTRY *currentConfigItem;
 	char *szGrub;
 
 	szGrub = InitGrubRequest(GRUB_REQUEST_SIZE, drive, partition);
 	config = LoadConfigNative(szGrub);
 	free(szGrub);
 
-	for (currentConfigItem = config; currentConfigItem != NULL; currentConfigItem = currentConfigItem->nextConfigEntry) {
-		//Set the drive ID and partition IDs for the returned config items
-		currentConfigItem->bootType = BOOT_NATIVE;
-		currentConfigItem->drive = drive;
-		currentConfigItem->partition = partition;
-	}
+	FillConfigEntries(config, BOOT_NATIVE, drive, partition);
 
 	return config;
 }
@@ -87,7 +104,6 @@ int BootFromNative(CONFIGENTRY *config) {
 
 CONFIGENTRY *DetectSystemFatX(void) {
 	CONFIGENTRY *config;
-	CONFIGENTRY *currentConfigItem;
 	FATXPartition *partition;
 
 	partition = OpenFATXPartition(0, SECTOR_STORE, STORE_SIZE);
@@ -97,9 +113,7 @@ CONFIGENTRY *DetectSystemFatX(void) {
 	config = LoadConfigFatX(partition);
 	CloseFATXPartition(partition);
 
-	for (currentConfigItem = config; currentConfigItem != NULL; currentConfigItem = currentConfigItem->nextConfigEntry) {
-		currentConfigItem->bootType = BOOT_FATX;
-	}
+	FillConfigEntries(config, BOOT_FATX, 0, 0);
 
 	return config;
 }
@@ -123,7 +137,6 @@ int BootFromFatX(CONFIGENTRY *config) {
 CONFIGENTRY *DetectSystemCD(int cdromId) {
 	int n;
 	CONFIGENTRY *config = NULL;
-	CONFIGENTRY *currentConfigItem;
 	int nTempCursorX, nTempCursorY;
 
 	printk("\2Please wait\n\n");
@@ -196,11 +209,7 @@ CONFIGENTRY *DetectSystemCD(int cdromId) {
 	}
 
 	//Populate the configs with the drive ID
-	for (currentConfigItem = config; currentConfigItem != NULL; currentConfigItem = currentConfigItem->nextConfigEntry) {
-		//Set the drive ID and partition IDs for the returned config items
-		currentConfigItem->drive = cdromId;
-		currentConfigItem->bootType = BOOT_CDROM;
-	}
+	FillConfigEntries(config, BOOT_CDROM, cdromId, 0);
 
 	return config;
 }
