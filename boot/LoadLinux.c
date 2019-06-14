@@ -29,14 +29,14 @@ unsigned long saved_partition;
 unsigned long boot_drive;
 	
 static int nRet;
-static u32 dwKernelSize= 0, dwInitrdSize = 0;
+static u32 dwKernelSize = 0, dwInitrdSize = 0;
 
 
 void startLinux(void* initrdStart, unsigned long initrdSize, const char* appendLine, unsigned int entry);
 void setup(void* KernelPos, void* PhysInitrdPos, unsigned long InitrdSize, const char* kernel_cmdline);
 void I2CRebootSlow(void);
 
-void try_elf_boot (char* data, int len);
+void try_elf_boot(char *data, int len);
 
 
 void BootPrintConfig(CONFIGENTRY *config) {
@@ -69,59 +69,37 @@ void memPlaceKernel(const u8* kernelOrg, u32 kernelSize)
 {
 	unsigned int nSizeHeader=((*(kernelOrg + 0x01f1))+1)*512;
 	memcpy((u8 *)KERNEL_SETUP, kernelOrg, nSizeHeader);
-	memcpy((u8 *)KERNEL_PM_CODE,(kernelOrg+nSizeHeader),kernelSize-nSizeHeader);
+	memcpy((u8 *)KERNEL_PM_CODE, kernelOrg + nSizeHeader, kernelSize - nSizeHeader);
 
 	/* Try to execute a pure ELF binary here, using the etherboot
 	 * code. This is required for ELF kernels, such as FreeBSD */
-	try_elf_boot ((char*)kernelOrg, kernelSize);
+	try_elf_boot((char *)kernelOrg, kernelSize);
 }
 
 
 
-CONFIGENTRY* LoadConfigNative(int drive, int partition) {
+CONFIGENTRY *LoadConfigNative(char *szGrub) {
 	CONFIGENTRY *config;
-	CONFIGENTRY *currentConfigItem;
 	unsigned int nLen;
-	u32 dwConfigSize=0;
-	char *szGrub;
-	
-	szGrub = (char *) malloc(265+4);
-        memset(szGrub,0,256+4);
-        
-	memset((u8 *)KERNEL_SETUP,0,2048);
+	u32 dwConfigSize = 0;
 
-	szGrub[0]=0xff;
-	szGrub[1]=0xff;
-	szGrub[2]=partition;
-	szGrub[3]=drive;
-
-	errnum=0;
-	boot_drive=0;
-	saved_drive=0;
-	saved_partition=0x0001ffff;
-	buf_drive=-1;
-	current_partition=0x0001ffff;
-	current_drive=drive;
-	buf_drive=-1;
-	fsys_type = NUM_FSYS;
-	disk_read_hook=NULL;
-	disk_read_func=NULL;
+	memset((u8 *)KERNEL_SETUP, 0, KERNEL_HDR_SIZE);
 
 	//Try for /boot/linuxboot.cfg first
 	strcpy(&szGrub[4], "/boot/linuxboot.cfg");
 	nRet=grub_open(szGrub);
 
-	if(nRet!=1 || errnum) {
+	if (nRet != 1 || errnum) {
 		//Not found - try /linuxboot.cfg
-		errnum=0;
+		errnum = 0;
 		strcpy(&szGrub[4], "/linuxboot.cfg");
 		nRet=grub_open(szGrub);
 	}
 	
 	dwConfigSize=filemax;
-	if (nRet!=1 || errnum) {
+	if (nRet != 1 || errnum) {
 		//File not found
-		free(szGrub);
+		errnum = 0;
 		return NULL;
 	}
 	
@@ -131,56 +109,27 @@ CONFIGENTRY* LoadConfigNative(int drive, int partition) {
 	
 	config = ParseConfig((char *)KERNEL_SETUP, nLen, NULL);
 
-	for (currentConfigItem = (CONFIGENTRY*) config; currentConfigItem!=NULL ; currentConfigItem = (CONFIGENTRY*)currentConfigItem->nextConfigEntry) {
-		//Set the drive ID and partition IDs for the returned config items
-		currentConfigItem->bootType=BOOT_NATIVE;
-		currentConfigItem->drive=drive;
-		currentConfigItem->partition=partition;
-	}
-	
 	grub_close();
-	free(szGrub);
 	return config;
 }
 
-int LoadKernelNative(CONFIGENTRY *config) {
-	char *szGrub;
+int LoadKernelNative(char *szGrub, CONFIGENTRY *config) {
 	u8* tempBuf;
 
-	szGrub = (char *) malloc(265+4);
-        memset(szGrub,0,256+4);
-        
-	memset((u8 *)KERNEL_SETUP,0,2048);
+	memset((u8 *)KERNEL_SETUP, 0, KERNEL_HDR_SIZE);
 
-	szGrub[0]=0xff;
-	szGrub[1]=0xff;
-	szGrub[2]=config->partition;
-	szGrub[3]=config->drive;
-
-	errnum=0;
-	boot_drive=0;
-	saved_drive=0;
-	saved_partition=0x0001ffff;
-	buf_drive=-1;
-	current_partition=0x0001ffff;
-	current_drive=config->drive;
-	buf_drive=-1;
-	fsys_type = NUM_FSYS;
-	disk_read_hook=NULL;
-	disk_read_func=NULL;
-	
-	DVDTrayClose();
-	
 	VIDEO_ATTR=0xffd8d8d8;
 	printk("  Loading %s ", config->szKernel);
 	VIDEO_ATTR=0xffa8a8a8;
-        strncpy(&szGrub[4], config->szKernel,strlen(config->szKernel));
+	strncpy(&szGrub[4], config->szKernel, strlen(config->szKernel));
 
 	nRet=grub_open(szGrub);
 
-	if(nRet!=1) {
+	if (nRet != 1) {
 		printk("Unable to load kernel, Grub error %d\n", errnum);
-		while(1) ;
+		errnum = 0;
+		wait_ms(2000);
+		return false;
 	}
         
 	// Use INITRD_START as temporary location for loading the Kernel 
@@ -190,18 +139,22 @@ int LoadKernelNative(CONFIGENTRY *config) {
 	grub_close();
 	printk(" - %d bytes\n", dwKernelSize);
 
-	if(strlen(config->szInitrd)!=0) {
+	if (strlen(config->szInitrd)) {
 		VIDEO_ATTR=0xffd8d8d8;
 		printk("  Loading %s ", config->szInitrd);
 		VIDEO_ATTR=0xffa8a8a8;
  		strncpy(&szGrub[4], config->szInitrd,sizeof(config->szInitrd));
 		nRet=grub_open(szGrub);
-		if(filemax==0) {
-			printf("Empty file\n"); while(1);
+		if (filemax == 0) {
+			printf("Error: initrd file is empty!\n");
+			wait_ms(2000);
+			return false;
 		}
-		if( (nRet!=1) || (errnum)) {
+		if ((nRet != 1) || errnum) {
 			printk("Unable to load initrd, Grub error %d\n", errnum);
-			while(1) ;
+			errnum = 0;
+			wait_ms(2000);
+			return false;
 		}
 		printk(" - %d bytes\n", filemax);
 		dwInitrdSize=grub_read((void*)INITRD_START, MAX_INITRD_SIZE);
@@ -212,69 +165,49 @@ int LoadKernelNative(CONFIGENTRY *config) {
 		VIDEO_ATTR=0xffa8a8a8;
 		dwInitrdSize=0;
 	}
-	free(szGrub);
 	return true;
 }
 
-CONFIGENTRY* LoadConfigFatX(void) {
-	FATXPartition *partition = NULL;
+CONFIGENTRY *LoadConfigFatX(FATXPartition *partition) {
 	FATXFILEINFO fileinfo;
 	CONFIGENTRY *config=NULL, *currentConfigItem=NULL;
 	
-	partition = OpenFATXPartition(0,SECTOR_STORE,STORE_SIZE);
-	
-	if(partition != NULL) {
-
-		if(LoadFATXFile(partition,"/linuxboot.cfg",&fileinfo)) {
-			//Root of E has a linuxboot.cfg in
-			config = (CONFIGENTRY*)malloc(sizeof(CONFIGENTRY));	
-			config = ParseConfig(fileinfo.buffer, fileinfo.fileSize, NULL);
-			free(fileinfo.buffer);
-		}
-		else if(LoadFATXFile(partition,"/debian/linuxboot.cfg",&fileinfo) ) {
-			//Try in /debian on E
-			config = (CONFIGENTRY*)malloc(sizeof(CONFIGENTRY));	
-			config = ParseConfig(fileinfo.buffer, fileinfo.fileSize, "/debian");
-			free(fileinfo.buffer);
-			CloseFATXPartition(partition);
-		}
-	} 
-	if (config == NULL) return NULL;
-
-	for (currentConfigItem = (CONFIGENTRY*) config; currentConfigItem!= NULL ; currentConfigItem = (CONFIGENTRY*)currentConfigItem->nextConfigEntry) {
-		currentConfigItem->bootType = BOOT_FATX;
+	if (LoadFATXFile(partition, "/linuxboot.cfg", &fileinfo)) {
+		//Root of E has a linuxboot.cfg in
+		config = (CONFIGENTRY *)malloc(sizeof(CONFIGENTRY));
+		config = ParseConfig(fileinfo.buffer, fileinfo.fileSize, NULL);
+		free(fileinfo.buffer);
 	}
+	else if (LoadFATXFile(partition, "/debian/linuxboot.cfg", &fileinfo)) {
+		//Try in /debian on E
+		config = (CONFIGENTRY *)malloc(sizeof(CONFIGENTRY));
+		config = ParseConfig(fileinfo.buffer, fileinfo.fileSize, "/debian");
+		free(fileinfo.buffer);
+	}
+
 	return config;
 }
 
-int LoadKernelFatX(CONFIGENTRY *config) {
+int LoadKernelFatX(FATXPartition *partition, CONFIGENTRY *config) {
 
-	static FATXPartition *partition = NULL;
 	static FATXFILEINFO fileinfo;
 	static FATXFILEINFO infokernel;
 	static FATXFILEINFO infoinitrd;
 	u8* tempBuf;
 
-	memset((u8 *)KERNEL_SETUP,0,4096);
-	memset(&fileinfo,0x00,sizeof(fileinfo));
-	memset(&infokernel,0x00,sizeof(infokernel));
-	memset(&infoinitrd,0x00,sizeof(infoinitrd));
-
-	DVDTrayClose();
-	
-	partition = OpenFATXPartition(0,
-			SECTOR_STORE,
-			STORE_SIZE);
-	
-	if(partition == NULL) return 0;
+	memset((u8 *)KERNEL_SETUP, 0, KERNEL_HDR_SIZE);
+	memset(&fileinfo, 0x00, sizeof(fileinfo));
+	memset(&infokernel, 0x00, sizeof(infokernel));
+	memset(&infoinitrd, 0x00, sizeof(infoinitrd));
 
 	VIDEO_ATTR=0xffd8d8d8;
 	printk("  Loading %s from FATX", config->szKernel);
 	// Use INITRD_START as temporary location for loading the Kernel 
 	tempBuf = (u8*)INITRD_START;
-	if(! LoadFATXFilefixed(partition,config->szKernel,&infokernel,tempBuf)) {
+	if (!LoadFATXFilefixed(partition, config->szKernel, &infokernel, tempBuf)) {
 		printk("Error loading kernel %s\n",config->szKernel);
-		while(1);
+		wait_ms(2000);
+		return false;
 	} else {
 		dwKernelSize = infokernel.fileSize;
 		// moving the kernel to its final location
@@ -287,9 +220,10 @@ int LoadKernelFatX(CONFIGENTRY *config) {
 		VIDEO_ATTR=0xffd8d8d8;
 		printk("  Loading %s from FATX", config->szInitrd);
 		wait_ms(50);
-		if(! LoadFATXFilefixed(partition,config->szInitrd,&infoinitrd, (void*)INITRD_START)) {
-			printk("Error loading initrd %s\n",config->szInitrd);
-			while(1);
+		if (!LoadFATXFilefixed(partition, config->szInitrd, &infoinitrd, (void *)INITRD_START)) {
+			printk("Error loading initrd %s\n", config->szInitrd);
+			wait_ms(2000);
+			return false;
 		}
 		
 		dwInitrdSize = infoinitrd.fileSize;
@@ -307,97 +241,21 @@ int LoadKernelFatX(CONFIGENTRY *config) {
 
 CONFIGENTRY *LoadConfigCD(int cdromId) {
 	long dwConfigSize=0;
-	int n;
-	int configLoaded=0;
-	CONFIGENTRY *config, *currentConfigItem;
-	int nTempCursorX, nTempCursorY;
+	CONFIGENTRY *config;
 
-	memset((u8 *)KERNEL_SETUP,0,4096);
+	memset((u8 *)KERNEL_SETUP, 0, KERNEL_HDR_SIZE);
 
-	printk("\2Please wait\n\n");
-	//See if we already have a CD in the drive
-	//Try for 8 seconds - takes a while to 'spin up'.
-	nTempCursorX = VIDEO_CURSOR_POSX;
-	nTempCursorY = VIDEO_CURSOR_POSY;
-again:
-	DVDTrayClose();
-	printk("Loading linuxboot.cfg from CD... \n");
-	for (n=0;n<32;++n) {
-		dwConfigSize = BootIso9660GetFile(cdromId, "/linuxboo.cfg", (u8 *)KERNEL_SETUP, 0x800);
-		if (dwConfigSize>0) {
-			configLoaded=1;
-			break;
-		}
+	dwConfigSize = BootIso9660GetFile(cdromId, "/linuxboo.cfg", (u8 *)KERNEL_SETUP, 0x800);
+
+	if (dwConfigSize <= 0) {
 		dwConfigSize = BootIso9660GetFile(cdromId, "/linuxboot.cfg", (u8 *)KERNEL_SETUP, 0x800);
-		if (dwConfigSize>0) {
-			configLoaded=1;
-			break;
-		}
-		wait_ms(250);
-	}
-
-	//We couldn't read the disk, so we eject the drive so the user can insert one.
-	if (!configLoaded) {
-		printk("Boot from CD failed.\nCheck that linuxboot.cfg exists.\n\n");
-		//Needs to be changed for non-xbox drives, which don't have an eject line
-		//Need to send ATA eject command.
-		DVDTrayEject();
-		wait_ms(2000); // Wait for DVD to become responsive to inject command
-		
-		VIDEO_ATTR=0xffeeeeff;
-		printk("\2Please insert CD and press Button A\n\n\2Press Button B to return to main menu\n\n");
-
-		while(1) {
-			// Make button 'A' close the DVD tray
-			if (risefall_xpad_BUTTON(TRIGGER_XPAD_KEY_A) == 1) {
-				DVDTrayClose();
-				wait_ms(500);
-				break;
-			}
-			else if (DVD_TRAY_STATE == DVD_CLOSING) {
-				//It's an xbox drive, and somebody pushed the tray in manually
-				wait_ms(500);
-				break;
-			}
-			else if (BootIso9660GetFile(cdromId, "/linuxboo.cfg", (u8 *)KERNEL_SETUP, 0x800)>0) {
-				//It isnt an xbox drive, and somebody pushed the tray in manually, and 
-				//the cd is valid.
-				break;
-			}
-			else if (BootIso9660GetFile(cdromId, "/linuxboot.cfg", (u8 *)KERNEL_SETUP, 0x800)>0) {
-				break;
-			}
-			// Allow to cancel CD boot with button 'B'
-			else if (risefall_xpad_BUTTON(TRIGGER_XPAD_KEY_B) == 1) {
-				// Close DVD tray and return to main menu
-				DVDTrayClose();
-				wait_ms(500);
-				return NULL;
-			}
-			wait_ms(10);
-		}
-
-		wait_ms(250);
-
-		VIDEO_ATTR=0xffffffff;
-
-		BootVideoClearScreen(&jpegBackdrop, nTempCursorY, VIDEO_CURSOR_POSY+1);
-		VIDEO_CURSOR_POSX = nTempCursorX;
-		VIDEO_CURSOR_POSY = nTempCursorY;
-		goto again;
 	}
 
 	//Failed to load the config file
-	if (!configLoaded) return NULL;
+	if (dwConfigSize <= 0) return NULL;
         
 	// LinuxBoot.cfg File Loaded
 	config = ParseConfig((char *)KERNEL_SETUP, dwConfigSize, NULL);
-	//Populate the configs with the drive ID
-	for (currentConfigItem = (CONFIGENTRY*) config; currentConfigItem!=NULL; currentConfigItem = (CONFIGENTRY*)currentConfigItem->nextConfigEntry) {
-		//Set the drive ID and partition IDs for the returned config items
-		currentConfigItem->drive=cdromId;
-		currentConfigItem->bootType=BOOT_CDROM;
-	}
 	
 	return config;
 }
@@ -405,30 +263,34 @@ again:
 int LoadKernelCdrom(CONFIGENTRY *config) {
 	u8* tempBuf;
 	
+	memset((u8 *)KERNEL_SETUP, 0, KERNEL_HDR_SIZE);
+
 	VIDEO_ATTR=0xffd8d8d8;
 	printk("  Loading %s from CD", config->szKernel);
 	VIDEO_ATTR=0xffa8a8a8;
 	// Use INITRD_START as temporary location for loading the Kernel 
 	tempBuf = (u8*)INITRD_START;
-	dwKernelSize=BootIso9660GetFile(config->drive,config->szKernel, tempBuf, MAX_KERNEL_SIZE);
+	dwKernelSize = BootIso9660GetFile(config->drive, config->szKernel, tempBuf, MAX_KERNEL_SIZE);
 
-	if( dwKernelSize < 0 ) {
-		printk("Not Found, error %d\nHalting\n", dwKernelSize); 
-		while(1);
+	if (dwKernelSize < 0) {
+		printk("Not Found, error %d\nHalting\n", dwKernelSize);
+		wait_ms(2000);
+		return false;
 	} else {
 		memPlaceKernel(tempBuf, dwKernelSize);
 		printk(" - %d bytes\n", dwKernelSize);
 	}
 
-	if(strlen(config->szInitrd)!=0) {
+	if (strlen(config->szInitrd)) {
 		VIDEO_ATTR=0xffd8d8d8;
 		printk("  Loading %s from CD", config->szInitrd);
 		VIDEO_ATTR=0xffa8a8a8;
 		
-		dwInitrdSize=BootIso9660GetFile(config->drive, config->szInitrd, (void*)INITRD_START, MAX_INITRD_SIZE);
-		if( dwInitrdSize < 0 ) {
-			printk("Not Found, error %d\nHalting\n", dwInitrdSize); 
-			while(1);
+		dwInitrdSize = BootIso9660GetFile(config->drive, config->szInitrd, (void *)INITRD_START, MAX_INITRD_SIZE);
+		if (dwInitrdSize < 0) {
+			printk("Not Found, error %d\nHalting\n", dwInitrdSize);
+			wait_ms(2000);
+			return false;
 		}
 		printk(" - %d bytes\n", dwInitrdSize);
 	} else {

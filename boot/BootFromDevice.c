@@ -25,24 +25,184 @@
 #include "config.h"
 #include "iso_fs.h"
 
-CONFIGENTRY* DetectSystemNative(int drive, int partition) {
-	return LoadConfigNative(drive, partition);
+#define GRUB_REQUEST_SIZE (256+4)
+
+char *InitGrubRequest(int size, int drive, int partition) {
+	char *szGrub;
+
+	szGrub = (char *)malloc(size);
+	memset(szGrub, 0, size);
+
+	szGrub[0] = 0xff;
+	szGrub[1] = 0xff;
+	szGrub[2] = partition;
+	szGrub[3] = drive;
+
+	errnum = 0;
+	boot_drive = 0;
+	saved_drive = 0;
+	saved_partition = 0x0001ffff;
+	buf_drive = -1;
+	current_partition = 0x0001ffff;
+	current_drive = drive;
+	buf_drive = -1;
+	fsys_type = NUM_FSYS;
+	disk_read_hook = NULL;
+	disk_read_func = NULL;
+
+	return szGrub;
+}
+
+CONFIGENTRY *DetectSystemNative(int drive, int partition) {
+	CONFIGENTRY *config;
+	CONFIGENTRY *currentConfigItem;
+	char *szGrub;
+
+	szGrub = InitGrubRequest(GRUB_REQUEST_SIZE, drive, partition);
+	config = LoadConfigNative(szGrub);
+	free(szGrub);
+
+	for (currentConfigItem = config; currentConfigItem != NULL; currentConfigItem = currentConfigItem->nextConfigEntry) {
+		//Set the drive ID and partition IDs for the returned config items
+		currentConfigItem->bootType = BOOT_NATIVE;
+		currentConfigItem->drive = drive;
+		currentConfigItem->partition = partition;
+	}
+
+	return config;
 }
 
 int BootFromNative(CONFIGENTRY *config) {
-	return LoadKernelNative(config);
+	char *szGrub;
+	int result;
+
+	DVDTrayClose();
+
+	szGrub = InitGrubRequest(GRUB_REQUEST_SIZE, config->drive, config->partition);
+	result = LoadKernelNative(szGrub, config);
+	free(szGrub);
+
+	return result;
 }
 
-CONFIGENTRY* DetectSystemFatX(void) {
-	return LoadConfigFatX();
+CONFIGENTRY *DetectSystemFatX(void) {
+	CONFIGENTRY *config;
+	CONFIGENTRY *currentConfigItem;
+	FATXPartition *partition;
+
+	partition = OpenFATXPartition(0, SECTOR_STORE, STORE_SIZE);
+	if (!partition)
+		return NULL;
+
+	config = LoadConfigFatX(partition);
+	CloseFATXPartition(partition);
+
+	for (currentConfigItem = config; currentConfigItem != NULL; currentConfigItem = currentConfigItem->nextConfigEntry) {
+		currentConfigItem->bootType = BOOT_FATX;
+	}
+
+	return config;
 }
 
 int BootFromFatX(CONFIGENTRY *config) {
-	return LoadKernelFatX(config);
+	FATXPartition *partition;
+	int result;
+
+	DVDTrayClose();
+
+	partition = OpenFATXPartition(0, SECTOR_STORE, STORE_SIZE);
+	if (!partition)
+		return false;
+
+	result = LoadKernelFatX(partition, config);
+	CloseFATXPartition(partition);
+
+	return result;
 }
 
 CONFIGENTRY *DetectSystemCD(int cdromId) {
-	return LoadConfigCD(cdromId);
+	int n;
+	CONFIGENTRY *config = NULL;
+	CONFIGENTRY *currentConfigItem;
+	int nTempCursorX, nTempCursorY;
+
+	printk("\2Please wait\n\n");
+	//See if we already have a CD in the drive
+	//Try for 8 seconds - takes a while to 'spin up'.
+	nTempCursorX = VIDEO_CURSOR_POSX;
+	nTempCursorY = VIDEO_CURSOR_POSY;
+
+	while (config == NULL)
+	{
+		DVDTrayClose();
+		printk("Detecting system on CD... \n");
+		for (n = 0; n < 32; ++n) {
+			config = LoadConfigCD(cdromId);
+			if (config != NULL) {
+				break;
+			}
+			wait_ms(250);
+		}
+
+		//We couldn't read the disk, so we eject the drive so the user can insert one.
+		if (config == NULL) {
+			printk("Boot from CD failed.\nCheck that supported system exists on the CD.\n\n");
+			//Needs to be changed for non-xbox drives, which don't have an eject line
+			//Need to send ATA eject command.
+			DVDTrayEject();
+			wait_ms(2000); // Wait for DVD to become responsive to inject command
+
+			VIDEO_ATTR = 0xffeeeeff;
+			printk("\2Please insert CD and press Button A\n\n\2Press Button B to return to main menu\n\n");
+
+			while (1) {
+				// Retry system detection
+				config = LoadConfigCD(cdromId);
+
+				// Make button 'A' close the DVD tray
+				if (risefall_xpad_BUTTON(TRIGGER_XPAD_KEY_A) == 1) {
+					DVDTrayClose();
+					wait_ms(500);
+					break;
+				}
+				else if (DVD_TRAY_STATE == DVD_CLOSING) {
+					//It's an xbox drive, and somebody pushed the tray in manually
+					wait_ms(500);
+					break;
+				}
+				else if (config != NULL) {
+					//It isnt an xbox drive, and somebody pushed the tray in manually, and
+					//the cd is valid.
+					break;
+				}
+				// Allow to cancel CD boot with button 'B'
+				else if (risefall_xpad_BUTTON(TRIGGER_XPAD_KEY_B) == 1) {
+					// Close DVD tray and return to main menu
+					DVDTrayClose();
+					wait_ms(500);
+					return NULL;
+				}
+				wait_ms(10);
+			}
+
+			wait_ms(250);
+
+			VIDEO_ATTR = 0xffffffff;
+
+			BootVideoClearScreen(&jpegBackdrop, nTempCursorY, VIDEO_CURSOR_POSY + 1);
+			VIDEO_CURSOR_POSX = nTempCursorX;
+			VIDEO_CURSOR_POSY = nTempCursorY;
+		}
+	}
+
+	//Populate the configs with the drive ID
+	for (currentConfigItem = config; currentConfigItem != NULL; currentConfigItem = currentConfigItem->nextConfigEntry) {
+		//Set the drive ID and partition IDs for the returned config items
+		currentConfigItem->drive = cdromId;
+		currentConfigItem->bootType = BOOT_CDROM;
+	}
+
+	return config;
 }
 
 int BootFromCD(CONFIGENTRY *config) {
@@ -80,7 +240,7 @@ int BootLoadFlashCD(int cdromId) {
 	unsigned char SHA1_result[20];
 	unsigned char checksum[20];
 
-	memset((u8 *)KERNEL_SETUP, 0, 4096);
+	memset((u8 *)KERNEL_SETUP, 0, KERNEL_HDR_SIZE);
 
 	//See if we already have a CD in the drive
 	//Try for 4 seconds.

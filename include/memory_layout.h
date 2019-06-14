@@ -5,6 +5,7 @@
 #define RAMSIZE (64 * 1024*1024)
 /* parameters for the kernel have to be here */
 #define KERNEL_SETUP   0x90000
+#define KERNEL_HDR_SIZE (4 * 1024)
 /* command line must not be overwritten, place it in unused setup area */
 #define CMD_LINE_LOC (KERNEL_SETUP+0x0800)
 /* place GDT at 0xA0000 */
