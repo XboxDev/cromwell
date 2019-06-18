@@ -14,18 +14,30 @@ enum BootTypes {
 	BOOT_NATIVE,
 };
 
+enum BootSystems {
+	SYS_LINUX,
+};
+
+typedef struct OPTLINUX {
+	char szKernel[MAX_LINE];
+	char szInitrd[MAX_LINE];
+	char szAppend[MAX_LINE];
+} OPTLINUX;
+
 typedef struct CONFIGENTRY {
-        int  drive;
+	int  drive;
 	int  partition;
 	int  isDefault;
 	enum BootTypes bootType;
+	enum BootSystems bootSystem;
 	char title[15];
 	char szPath[MAX_LINE];
-        char szKernel[MAX_LINE];
-        char szInitrd[MAX_LINE];
-        char szAppend[MAX_LINE];
+	union {
+		struct OPTLINUX Linux;
+	} opt;
 	struct CONFIGENTRY *previousConfigEntry;
 	struct CONFIGENTRY *nextConfigEntry;
+	struct CONFIGENTRY *nestedConfigEntry;
 } CONFIGENTRY;
 
 CONFIGENTRY* ParseConfig(char *szBuffer, unsigned int fileLen, char *szPath);
