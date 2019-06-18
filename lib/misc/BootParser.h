@@ -16,6 +16,7 @@ enum BootTypes {
 
 enum BootSystems {
 	SYS_LINUX,
+	SYS_REACTOS,
 };
 
 typedef struct OPTLINUX {
@@ -23,6 +24,12 @@ typedef struct OPTLINUX {
 	char szInitrd[MAX_LINE];
 	char szAppend[MAX_LINE];
 } OPTLINUX;
+
+typedef struct OPTMULTIBOOT {
+	u8* pBuffer;
+	u32 uBufferSize;
+	u32 uBootDevice;
+} OPTMULTIBOOT;
 
 typedef struct CONFIGENTRY {
 	int  drive;
@@ -34,6 +41,7 @@ typedef struct CONFIGENTRY {
 	char szPath[MAX_LINE];
 	union {
 		struct OPTLINUX Linux;
+		struct OPTMULTIBOOT Multiboot;
 	} opt;
 	struct CONFIGENTRY *previousConfigEntry;
 	struct CONFIGENTRY *nextConfigEntry;

@@ -3,7 +3,7 @@
 
 /* a retail Xbox has 64 MB of RAM */
 #define RAMSIZE (64 * 1024*1024)
-/* parameters for the kernel have to be here */
+/* parameters for the Linux kernel have to be here */
 #define KERNEL_SETUP   0x90000
 #define KERNEL_HDR_SIZE (4 * 1024)
 /* command line must not be overwritten, place it in unused setup area */
@@ -20,14 +20,18 @@
 #define INITRD_START       KERNEL_PM_CODE_END
 #define MAX_INITRD_END     0x02A00000
 
+#define MAX_KERNEL_SIZE    (KERNEL_PM_CODE_END - KERNEL_PM_CODE)
+#define MAX_INITRD_SIZE    (MAX_INITRD_END - INITRD_START)
+
+/* parameters for ReactOS have to be here */
+#define FREELDR_LOAD_AREA  (u8 *)0x00001000
+#define FREELDR_MAX_SIZE   0x80000
+
 #define MEMORYMANAGERSTART MAX_INITRD_END
 #define MEMORYMANAGEREND   0x039FFFFF
+#define MEMORYMANAGERSIZE  (MEMORYMANAGEREND - MEMORYMANAGERSTART)
 
 #define STACK_TOP 0x03C00000
-
-#define MAX_KERNEL_SIZE    (KERNEL_PM_CODE_END - KERNEL_PM_CODE)
-#define MEMORYMANAGERSIZE  (MEMORYMANAGEREND - MEMORYMANAGERSTART)
-#define MAX_INITRD_SIZE    (MAX_INITRD_END - INITRD_START)
 
 /* the size of the framebuffer (defaults to 4 MB) */
 #define FB_SIZE 0x00400000

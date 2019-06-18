@@ -130,6 +130,7 @@ int BootFromNative(CONFIGENTRY *config) {
 CONFIGENTRY *DetectSystemFatX(void) {
 	CONFIGENTRY *config = NULL;
 	CONFIGENTRY *cfgLinux;
+	CONFIGENTRY *cfgReactOS;
 	FATXPartition *partition;
 
 	partition = OpenFATXPartition(0, SECTOR_STORE, STORE_SIZE);
@@ -140,6 +141,11 @@ CONFIGENTRY *DetectSystemFatX(void) {
 	if (cfgLinux != NULL) {
 		FillConfigEntries(cfgLinux, BOOT_FATX, 0, 0);
 		config = AddNestedConfigEntry(config, cfgLinux, "Linux");
+	}
+	cfgReactOS = DetectReactOSFATX(partition);
+	if (cfgReactOS != NULL) {
+		FillConfigEntries(cfgReactOS, BOOT_FATX, 0, 0);
+		config = AddNestedConfigEntry(config, cfgReactOS, "ReactOS");
 	}
 	CloseFATXPartition(partition);
 
@@ -158,6 +164,8 @@ int BootFromFatX(CONFIGENTRY *config) {
 
 	if (config->bootSystem == SYS_LINUX)
 		result = LoadLinuxFATX(partition, &config->opt.Linux);
+	if (config->bootSystem == SYS_REACTOS)
+		result = LoadReactOSFATX(partition, config);
 	CloseFATXPartition(partition);
 
 	return result;
@@ -167,6 +175,7 @@ CONFIGENTRY *DetectSystemCD(int cdromId) {
 	int n;
 	CONFIGENTRY *config = NULL;
 	CONFIGENTRY *cfgLinux = NULL;
+	CONFIGENTRY *cfgReactOS = NULL;
 	int nTempCursorX, nTempCursorY;
 
 	printk("\2Please wait\n\n");
@@ -175,20 +184,21 @@ CONFIGENTRY *DetectSystemCD(int cdromId) {
 	nTempCursorX = VIDEO_CURSOR_POSX;
 	nTempCursorY = VIDEO_CURSOR_POSY;
 
-	while (cfgLinux == NULL)
+	while (cfgLinux == NULL && cfgReactOS == NULL)
 	{
 		DVDTrayClose();
 		printk("Detecting system on CD... \n");
 		for (n = 0; n < 32; ++n) {
 			cfgLinux = DetectLinuxCD(cdromId);
-			if (cfgLinux != NULL) {
+			cfgReactOS = DetectReactOSCD(cdromId);
+			if (cfgLinux != NULL || cfgReactOS != NULL) {
 				break;
 			}
 			wait_ms(250);
 		}
 
 		//We couldn't read the disk, so we eject the drive so the user can insert one.
-		if (cfgLinux == NULL) {
+		if (cfgLinux == NULL && cfgReactOS == NULL) {
 			printk("Boot from CD failed.\nCheck that supported system exists on the CD.\n\n");
 			//Needs to be changed for non-xbox drives, which don't have an eject line
 			//Need to send ATA eject command.
@@ -201,6 +211,7 @@ CONFIGENTRY *DetectSystemCD(int cdromId) {
 			while (1) {
 				// Retry system detection
 				cfgLinux = DetectLinuxCD(cdromId);
+				cfgReactOS = DetectReactOSCD(cdromId);
 
 				// Make button 'A' close the DVD tray
 				if (risefall_xpad_BUTTON(TRIGGER_XPAD_KEY_A) == 1) {
@@ -213,7 +224,7 @@ CONFIGENTRY *DetectSystemCD(int cdromId) {
 					wait_ms(500);
 					break;
 				}
-				else if (cfgLinux != NULL) {
+				else if (cfgLinux != NULL || cfgReactOS != NULL) {
 					//It isnt an xbox drive, and somebody pushed the tray in manually, and
 					//the cd is valid.
 					break;
@@ -239,8 +250,14 @@ CONFIGENTRY *DetectSystemCD(int cdromId) {
 	}
 
 	//Populate the configs with the drive ID
-	FillConfigEntries(cfgLinux, BOOT_CDROM, cdromId, 0);
-	config = AddNestedConfigEntry(config, cfgLinux, "Linux");
+	if (cfgLinux != NULL) {
+		FillConfigEntries(cfgLinux, BOOT_CDROM, cdromId, 0);
+		config = AddNestedConfigEntry(config, cfgLinux, "Linux");
+	}
+	if (cfgReactOS != NULL) {
+		FillConfigEntries(cfgReactOS, BOOT_CDROM, cdromId, 0);
+		config = AddNestedConfigEntry(config, cfgReactOS, "ReactOS");
+	}
 
 	return config;
 }
@@ -248,6 +265,8 @@ CONFIGENTRY *DetectSystemCD(int cdromId) {
 int BootFromCD(CONFIGENTRY *config) {
 	if (config->bootSystem == SYS_LINUX)
 		return LoadLinuxCD(config);
+	if (config->bootSystem == SYS_REACTOS)
+		return LoadReactOSCD(config);
 	return false;
 }
 
@@ -271,6 +290,8 @@ int BootFromDevice(CONFIGENTRY *config) {
 	if (result) {
 		if (config->bootSystem == SYS_LINUX)
 			ExittoLinux(&config->opt.Linux);
+		if (config->bootSystem == SYS_REACTOS)
+			ExittoReactOS(&config->opt.Multiboot);
 	}
 	return result;
 }
