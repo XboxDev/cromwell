@@ -78,7 +78,7 @@ void memPlaceKernel(const u8* kernelOrg, u32 kernelSize)
 
 
 
-CONFIGENTRY *LoadConfigNative(char *szGrub) {
+CONFIGENTRY *DetectLinuxNative(char *szGrub) {
 	CONFIGENTRY *config;
 	unsigned int nLen;
 	u32 dwConfigSize = 0;
@@ -113,7 +113,7 @@ CONFIGENTRY *LoadConfigNative(char *szGrub) {
 	return config;
 }
 
-int LoadKernelNative(char *szGrub, CONFIGENTRY *config) {
+int LoadLinuxNative(char *szGrub, CONFIGENTRY *config) {
 	u8* tempBuf;
 
 	memset((u8 *)KERNEL_SETUP, 0, KERNEL_HDR_SIZE);
@@ -168,7 +168,7 @@ int LoadKernelNative(char *szGrub, CONFIGENTRY *config) {
 	return true;
 }
 
-CONFIGENTRY *LoadConfigFatX(FATXPartition *partition) {
+CONFIGENTRY *DetectLinuxFATX(FATXPartition *partition) {
 	FATXFILEINFO fileinfo;
 	CONFIGENTRY *config=NULL, *currentConfigItem=NULL;
 	
@@ -188,7 +188,7 @@ CONFIGENTRY *LoadConfigFatX(FATXPartition *partition) {
 	return config;
 }
 
-int LoadKernelFatX(FATXPartition *partition, CONFIGENTRY *config) {
+int LoadLinuxFATX(FATXPartition *partition, CONFIGENTRY *config) {
 
 	static FATXFILEINFO fileinfo;
 	static FATXFILEINFO infokernel;
@@ -239,7 +239,7 @@ int LoadKernelFatX(FATXPartition *partition, CONFIGENTRY *config) {
 }
 
 
-CONFIGENTRY *LoadConfigCD(int cdromId) {
+CONFIGENTRY *DetectLinuxCD(int cdromId) {
 	long dwConfigSize=0;
 	CONFIGENTRY *config;
 
@@ -260,7 +260,7 @@ CONFIGENTRY *LoadConfigCD(int cdromId) {
 	return config;
 }
 
-int LoadKernelCdrom(CONFIGENTRY *config) {
+int LoadLinuxCD(CONFIGENTRY *config) {
 	u8* tempBuf;
 	
 	memset((u8 *)KERNEL_SETUP, 0, KERNEL_HDR_SIZE);

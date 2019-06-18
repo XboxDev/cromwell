@@ -81,7 +81,7 @@ CONFIGENTRY *DetectSystemNative(int drive, int partition) {
 	char *szGrub;
 
 	szGrub = InitGrubRequest(GRUB_REQUEST_SIZE, drive, partition);
-	config = LoadConfigNative(szGrub);
+	config = DetectLinuxNative(szGrub);
 	free(szGrub);
 
 	FillConfigEntries(config, BOOT_NATIVE, drive, partition);
@@ -96,7 +96,7 @@ int BootFromNative(CONFIGENTRY *config) {
 	DVDTrayClose();
 
 	szGrub = InitGrubRequest(GRUB_REQUEST_SIZE, config->drive, config->partition);
-	result = LoadKernelNative(szGrub, config);
+	result = LoadLinuxNative(szGrub, config);
 	free(szGrub);
 
 	return result;
@@ -110,7 +110,7 @@ CONFIGENTRY *DetectSystemFatX(void) {
 	if (!partition)
 		return NULL;
 
-	config = LoadConfigFatX(partition);
+	config = DetectLinuxFATX(partition);
 	CloseFATXPartition(partition);
 
 	FillConfigEntries(config, BOOT_FATX, 0, 0);
@@ -128,7 +128,7 @@ int BootFromFatX(CONFIGENTRY *config) {
 	if (!partition)
 		return false;
 
-	result = LoadKernelFatX(partition, config);
+	result = LoadLinuxFATX(partition, config);
 	CloseFATXPartition(partition);
 
 	return result;
@@ -150,7 +150,7 @@ CONFIGENTRY *DetectSystemCD(int cdromId) {
 		DVDTrayClose();
 		printk("Detecting system on CD... \n");
 		for (n = 0; n < 32; ++n) {
-			config = LoadConfigCD(cdromId);
+			config = DetectLinuxCD(cdromId);
 			if (config != NULL) {
 				break;
 			}
@@ -170,7 +170,7 @@ CONFIGENTRY *DetectSystemCD(int cdromId) {
 
 			while (1) {
 				// Retry system detection
-				config = LoadConfigCD(cdromId);
+				config = DetectLinuxCD(cdromId);
 
 				// Make button 'A' close the DVD tray
 				if (risefall_xpad_BUTTON(TRIGGER_XPAD_KEY_A) == 1) {
@@ -215,7 +215,7 @@ CONFIGENTRY *DetectSystemCD(int cdromId) {
 }
 
 int BootFromCD(CONFIGENTRY *config) {
-	return LoadKernelCdrom(config);
+	return LoadLinuxCD(config);
 }
 
 int BootFromDevice(CONFIGENTRY *config) {
