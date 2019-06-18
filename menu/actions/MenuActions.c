@@ -94,7 +94,10 @@ void DrawBootMenu(void *rootEntry) {
 
 void BootMenuEntry(void *entry) {
 	CONFIGENTRY *config = (CONFIGENTRY*)entry;
-	BootFromDevice(config);
+	if (config->nestedConfigEntry)
+		DrawBootMenu(config->nestedConfigEntry);
+	else
+		BootFromDevice(config);
 }
 
 void DrawChildTextMenu(void *menu) {

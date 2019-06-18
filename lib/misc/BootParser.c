@@ -43,19 +43,19 @@ CONFIGENTRY *ParseConfig(char *szBuffer, unsigned int fileLen, char *szPath) {
 				currentEntry = (CONFIGENTRY*)currentEntry->nextConfigEntry;
 				strncpy(currentEntry->title, paramdata, strlen(paramdata));
 			}
-			
+			currentEntry->bootSystem = SYS_LINUX;
 		}
 		else if (!strncmp(param,"kernel",6)) {
 			//Handle 'xbox-os' naming conventions
 			chrreplace(paramdata, '\\', '/');
 
 			if (szPath!=NULL) { 
-				sprintf(currentEntry->szKernel,"%s/%s",szPath, paramdata);
+				sprintf(currentEntry->opt.Linux.szKernel, "%s/%s", szPath, paramdata);
 			}
 			else {
 				//Add a leading slash, if the path name does not already contain one
-				if (*paramdata=='/') sprintf(currentEntry->szKernel,"%s", paramdata);
-				else sprintf(currentEntry->szKernel,"/%s", paramdata);
+				if (*paramdata=='/') sprintf(currentEntry->opt.Linux.szKernel, "%s", paramdata);
+				else sprintf(currentEntry->opt.Linux.szKernel, "/%s", paramdata);
 			}
 		}
 		else if (!strncmp(param,"initrd",6)) {
@@ -69,16 +69,16 @@ CONFIGENTRY *ParseConfig(char *szBuffer, unsigned int fileLen, char *szPath) {
 			}
 
 			if (szPath!=NULL) { 
-				sprintf(currentEntry->szInitrd,"%s/%s",szPath, paramdata);
+				sprintf(currentEntry->opt.Linux.szInitrd, "%s/%s", szPath, paramdata);
 			}
 			else {
 				//Add a leading slash, if the path name does not already contain one
-				if (*paramdata=='/') sprintf(currentEntry->szInitrd,"%s", paramdata);
-				else sprintf(currentEntry->szInitrd,"/%s", paramdata);
+				if (*paramdata=='/') sprintf(currentEntry->opt.Linux.szInitrd, "%s", paramdata);
+				else sprintf(currentEntry->opt.Linux.szInitrd, "/%s", paramdata);
 			}
 		}
 		else if (!strncmp(param,"append",6)) {
-			strncpy(currentEntry->szAppend, paramdata, strlen(paramdata));
+			strncpy(currentEntry->opt.Linux.szAppend, paramdata, strlen(paramdata));
 		}
 		else if (!strncmp(param,"default",7)) {
 			defaultTitle = paramdata;

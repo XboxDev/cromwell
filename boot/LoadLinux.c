@@ -39,18 +39,18 @@ void I2CRebootSlow(void);
 void try_elf_boot(char *data, int len);
 
 
-void BootPrintConfig(CONFIGENTRY *config) {
+void BootPrintConfig(const OPTLINUX *optLinux) {
 	int CharsProcessed=0, CharsSinceNewline=0, Length=0;
 	char c;
-	printk("  Bootconfig : Kernel  %s \n", config->szKernel);
+	printk("  Bootconfig : Kernel  %s \n", optLinux->szKernel);
 	VIDEO_ATTR=0xffa8a8a8;
-	if (strlen(config->szInitrd)!=0) {
-		printk("  Bootconfig : Initrd  %s \n", config->szInitrd);
+	if (strlen(optLinux->szInitrd)) {
+		printk("  Bootconfig : Initrd  %s \n", optLinux->szInitrd);
 	}
 	printk("  Bootconfig : Kernel commandline :\n");
-	Length=strlen(config->szAppend);
+	Length = strlen(optLinux->szAppend);
 	while (CharsProcessed<Length) {
-		c = config->szAppend[CharsProcessed];
+		c = optLinux->szAppend[CharsProcessed];
 		CharsProcessed++;
 		CharsSinceNewline++;
 		if ((CharsSinceNewline>50 && c==' ') || CharsSinceNewline>65) {
@@ -113,15 +113,15 @@ CONFIGENTRY *DetectLinuxNative(char *szGrub) {
 	return config;
 }
 
-int LoadLinuxNative(char *szGrub, CONFIGENTRY *config) {
+int LoadLinuxNative(char *szGrub, const OPTLINUX *optLinux) {
 	u8* tempBuf;
 
 	memset((u8 *)KERNEL_SETUP, 0, KERNEL_HDR_SIZE);
 
 	VIDEO_ATTR=0xffd8d8d8;
-	printk("  Loading %s ", config->szKernel);
+	printk("  Loading %s ", optLinux->szKernel);
 	VIDEO_ATTR=0xffa8a8a8;
-	strncpy(&szGrub[4], config->szKernel, strlen(config->szKernel));
+	strncpy(&szGrub[4], optLinux->szKernel, strlen(optLinux->szKernel));
 
 	nRet=grub_open(szGrub);
 
@@ -139,11 +139,11 @@ int LoadLinuxNative(char *szGrub, CONFIGENTRY *config) {
 	grub_close();
 	printk(" - %d bytes\n", dwKernelSize);
 
-	if (strlen(config->szInitrd)) {
+	if (strlen(optLinux->szInitrd)) {
 		VIDEO_ATTR=0xffd8d8d8;
-		printk("  Loading %s ", config->szInitrd);
+		printk("  Loading %s ", optLinux->szInitrd);
 		VIDEO_ATTR=0xffa8a8a8;
- 		strncpy(&szGrub[4], config->szInitrd,sizeof(config->szInitrd));
+		strncpy(&szGrub[4], optLinux->szInitrd, sizeof(optLinux->szInitrd));
 		nRet=grub_open(szGrub);
 		if (filemax == 0) {
 			printf("Error: initrd file is empty!\n");
@@ -188,7 +188,7 @@ CONFIGENTRY *DetectLinuxFATX(FATXPartition *partition) {
 	return config;
 }
 
-int LoadLinuxFATX(FATXPartition *partition, CONFIGENTRY *config) {
+int LoadLinuxFATX(FATXPartition *partition, const OPTLINUX *optLinux) {
 
 	static FATXFILEINFO fileinfo;
 	static FATXFILEINFO infokernel;
@@ -201,11 +201,11 @@ int LoadLinuxFATX(FATXPartition *partition, CONFIGENTRY *config) {
 	memset(&infoinitrd, 0x00, sizeof(infoinitrd));
 
 	VIDEO_ATTR=0xffd8d8d8;
-	printk("  Loading %s from FATX", config->szKernel);
+	printk("  Loading %s from FATX", optLinux->szKernel);
 	// Use INITRD_START as temporary location for loading the Kernel 
 	tempBuf = (u8*)INITRD_START;
-	if (!LoadFATXFilefixed(partition, config->szKernel, &infokernel, tempBuf)) {
-		printk("Error loading kernel %s\n",config->szKernel);
+	if (!LoadFATXFilefixed(partition, optLinux->szKernel, &infokernel, tempBuf)) {
+		printk("Error loading kernel %s\n", optLinux->szKernel);
 		wait_ms(2000);
 		return false;
 	} else {
@@ -216,12 +216,12 @@ int LoadLinuxFATX(FATXPartition *partition, CONFIGENTRY *config) {
 		printk(" - %d bytes\n", infokernel.fileRead);
 	}
 
-	if(strlen(config->szInitrd)!=0) {
+	if (strlen(optLinux->szInitrd)) {
 		VIDEO_ATTR=0xffd8d8d8;
-		printk("  Loading %s from FATX", config->szInitrd);
+		printk("  Loading %s from FATX", optLinux->szInitrd);
 		wait_ms(50);
-		if (!LoadFATXFilefixed(partition, config->szInitrd, &infoinitrd, (void *)INITRD_START)) {
-			printk("Error loading initrd %s\n", config->szInitrd);
+		if (!LoadFATXFilefixed(partition, optLinux->szInitrd, &infoinitrd, (void *)INITRD_START)) {
+			printk("Error loading initrd %s\n", optLinux->szInitrd);
 			wait_ms(2000);
 			return false;
 		}
@@ -261,16 +261,17 @@ CONFIGENTRY *DetectLinuxCD(int cdromId) {
 }
 
 int LoadLinuxCD(CONFIGENTRY *config) {
+	const OPTLINUX *optLinux = &config->opt.Linux;
 	u8* tempBuf;
-	
+
 	memset((u8 *)KERNEL_SETUP, 0, KERNEL_HDR_SIZE);
 
 	VIDEO_ATTR=0xffd8d8d8;
-	printk("  Loading %s from CD", config->szKernel);
+	printk("  Loading %s from CD", optLinux->szKernel);
 	VIDEO_ATTR=0xffa8a8a8;
 	// Use INITRD_START as temporary location for loading the Kernel 
 	tempBuf = (u8*)INITRD_START;
-	dwKernelSize = BootIso9660GetFile(config->drive, config->szKernel, tempBuf, MAX_KERNEL_SIZE);
+	dwKernelSize = BootIso9660GetFile(config->drive, optLinux->szKernel, tempBuf, MAX_KERNEL_SIZE);
 
 	if (dwKernelSize < 0) {
 		printk("Not Found, error %d\nHalting\n", dwKernelSize);
@@ -281,12 +282,12 @@ int LoadLinuxCD(CONFIGENTRY *config) {
 		printk(" - %d bytes\n", dwKernelSize);
 	}
 
-	if (strlen(config->szInitrd)) {
+	if (strlen(optLinux->szInitrd)) {
 		VIDEO_ATTR=0xffd8d8d8;
-		printk("  Loading %s from CD", config->szInitrd);
+		printk("  Loading %s from CD", optLinux->szInitrd);
 		VIDEO_ATTR=0xffa8a8a8;
 		
-		dwInitrdSize = BootIso9660GetFile(config->drive, config->szInitrd, (void *)INITRD_START, MAX_INITRD_SIZE);
+		dwInitrdSize = BootIso9660GetFile(config->drive, optLinux->szInitrd, (void *)INITRD_START, MAX_INITRD_SIZE);
 		if (dwInitrdSize < 0) {
 			printk("Not Found, error %d\nHalting\n", dwInitrdSize);
 			wait_ms(2000);
@@ -303,9 +304,9 @@ int LoadLinuxCD(CONFIGENTRY *config) {
 	return true;
 }
 
-void ExittoLinux(CONFIGENTRY *config) {
+void ExittoLinux(const OPTLINUX *optLinux) {
 	VIDEO_ATTR=0xff8888a8;
-	BootPrintConfig(config);
+	BootPrintConfig(optLinux);
 	printk("     Kernel:  %s\n", (char *)(0x00090200+(*((u16 *)0x9020e)) ));
 	printk("\n");
 	{
@@ -317,7 +318,7 @@ void ExittoLinux(CONFIGENTRY *config) {
 		printk(sz);
 	}
 	setLED("rrrr");
-	startLinux((void*)INITRD_START, dwInitrdSize, config->szAppend, 0x100000);
+	startLinux((void*)INITRD_START, dwInitrdSize, optLinux->szAppend, 0x100000);
 }
 	
 

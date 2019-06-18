@@ -76,51 +76,79 @@ void FillConfigEntries(CONFIGENTRY *config, enum BootTypes bootType, int drive, 
 	}
 }
 
+CONFIGENTRY *AddNestedConfigEntry(CONFIGENTRY *config, CONFIGENTRY *nested, char *title) {
+	CONFIGENTRY *root;
+
+	if (config != NULL) {
+		/* Append new config entry to the end of list */
+		root = config;
+		while (config->nextConfigEntry != NULL)
+			config = config->nextConfigEntry;
+		config->nextConfigEntry = (CONFIGENTRY *)malloc(sizeof(CONFIGENTRY));
+		config = config->nextConfigEntry;
+	} else {
+		/* No config entry, create new one */
+		root = (CONFIGENTRY *)malloc(sizeof(CONFIGENTRY));
+		config = root;
+	}
+	memset(config, 0x00, sizeof(CONFIGENTRY));
+	strncpy(config->title, title, sizeof(config->title));
+	config->nestedConfigEntry = nested;
+	return root;
+}
+
 CONFIGENTRY *DetectSystemNative(int drive, int partition) {
-	CONFIGENTRY *config;
+	CONFIGENTRY *config = NULL;
+	CONFIGENTRY *cfgLinux;
 	char *szGrub;
 
 	szGrub = InitGrubRequest(GRUB_REQUEST_SIZE, drive, partition);
-	config = DetectLinuxNative(szGrub);
+	cfgLinux = DetectLinuxNative(szGrub);
+	if (cfgLinux != NULL) {
+		FillConfigEntries(cfgLinux, BOOT_NATIVE, drive, partition);
+		config = AddNestedConfigEntry(config, cfgLinux, "Linux");
+	}
 	free(szGrub);
-
-	FillConfigEntries(config, BOOT_NATIVE, drive, partition);
 
 	return config;
 }
 
 int BootFromNative(CONFIGENTRY *config) {
 	char *szGrub;
-	int result;
+	int result = 0;
 
 	DVDTrayClose();
 
 	szGrub = InitGrubRequest(GRUB_REQUEST_SIZE, config->drive, config->partition);
-	result = LoadLinuxNative(szGrub, config);
+	if (config->bootSystem == SYS_LINUX)
+		result = LoadLinuxNative(szGrub, &config->opt.Linux);
 	free(szGrub);
 
 	return result;
 }
 
 CONFIGENTRY *DetectSystemFatX(void) {
-	CONFIGENTRY *config;
+	CONFIGENTRY *config = NULL;
+	CONFIGENTRY *cfgLinux;
 	FATXPartition *partition;
 
 	partition = OpenFATXPartition(0, SECTOR_STORE, STORE_SIZE);
 	if (!partition)
 		return NULL;
 
-	config = DetectLinuxFATX(partition);
+	cfgLinux = DetectLinuxFATX(partition);
+	if (cfgLinux != NULL) {
+		FillConfigEntries(cfgLinux, BOOT_FATX, 0, 0);
+		config = AddNestedConfigEntry(config, cfgLinux, "Linux");
+	}
 	CloseFATXPartition(partition);
-
-	FillConfigEntries(config, BOOT_FATX, 0, 0);
 
 	return config;
 }
 
 int BootFromFatX(CONFIGENTRY *config) {
 	FATXPartition *partition;
-	int result;
+	int result = 0;
 
 	DVDTrayClose();
 
@@ -128,7 +156,8 @@ int BootFromFatX(CONFIGENTRY *config) {
 	if (!partition)
 		return false;
 
-	result = LoadLinuxFATX(partition, config);
+	if (config->bootSystem == SYS_LINUX)
+		result = LoadLinuxFATX(partition, &config->opt.Linux);
 	CloseFATXPartition(partition);
 
 	return result;
@@ -137,6 +166,7 @@ int BootFromFatX(CONFIGENTRY *config) {
 CONFIGENTRY *DetectSystemCD(int cdromId) {
 	int n;
 	CONFIGENTRY *config = NULL;
+	CONFIGENTRY *cfgLinux = NULL;
 	int nTempCursorX, nTempCursorY;
 
 	printk("\2Please wait\n\n");
@@ -145,20 +175,20 @@ CONFIGENTRY *DetectSystemCD(int cdromId) {
 	nTempCursorX = VIDEO_CURSOR_POSX;
 	nTempCursorY = VIDEO_CURSOR_POSY;
 
-	while (config == NULL)
+	while (cfgLinux == NULL)
 	{
 		DVDTrayClose();
 		printk("Detecting system on CD... \n");
 		for (n = 0; n < 32; ++n) {
-			config = DetectLinuxCD(cdromId);
-			if (config != NULL) {
+			cfgLinux = DetectLinuxCD(cdromId);
+			if (cfgLinux != NULL) {
 				break;
 			}
 			wait_ms(250);
 		}
 
 		//We couldn't read the disk, so we eject the drive so the user can insert one.
-		if (config == NULL) {
+		if (cfgLinux == NULL) {
 			printk("Boot from CD failed.\nCheck that supported system exists on the CD.\n\n");
 			//Needs to be changed for non-xbox drives, which don't have an eject line
 			//Need to send ATA eject command.
@@ -170,7 +200,7 @@ CONFIGENTRY *DetectSystemCD(int cdromId) {
 
 			while (1) {
 				// Retry system detection
-				config = DetectLinuxCD(cdromId);
+				cfgLinux = DetectLinuxCD(cdromId);
 
 				// Make button 'A' close the DVD tray
 				if (risefall_xpad_BUTTON(TRIGGER_XPAD_KEY_A) == 1) {
@@ -183,7 +213,7 @@ CONFIGENTRY *DetectSystemCD(int cdromId) {
 					wait_ms(500);
 					break;
 				}
-				else if (config != NULL) {
+				else if (cfgLinux != NULL) {
 					//It isnt an xbox drive, and somebody pushed the tray in manually, and
 					//the cd is valid.
 					break;
@@ -209,13 +239,16 @@ CONFIGENTRY *DetectSystemCD(int cdromId) {
 	}
 
 	//Populate the configs with the drive ID
-	FillConfigEntries(config, BOOT_CDROM, cdromId, 0);
+	FillConfigEntries(cfgLinux, BOOT_CDROM, cdromId, 0);
+	config = AddNestedConfigEntry(config, cfgLinux, "Linux");
 
 	return config;
 }
 
 int BootFromCD(CONFIGENTRY *config) {
-	return LoadLinuxCD(config);
+	if (config->bootSystem == SYS_LINUX)
+		return LoadLinuxCD(config);
+	return false;
 }
 
 int BootFromDevice(CONFIGENTRY *config) {
@@ -235,7 +268,10 @@ int BootFromDevice(CONFIGENTRY *config) {
 		break;
 	}
 
-	if (result) ExittoLinux(config);
+	if (result) {
+		if (config->bootSystem == SYS_LINUX)
+			ExittoLinux(&config->opt.Linux);
+	}
 	return result;
 }
 
