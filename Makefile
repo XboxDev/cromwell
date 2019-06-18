@@ -114,6 +114,7 @@ OBJECTS-CROM += $(TOPDIR)/obj/HddMenuActions.o
 OBJECTS-CROM += $(TOPDIR)/obj/PhyMenuActions.o
 OBJECTS-CROM += $(TOPDIR)/obj/Confirm.o
 OBJECTS-CROM += $(TOPDIR)/obj/LoadLinux.o
+OBJECTS-CROM += $(TOPDIR)/obj/LoadReactOS.o
 OBJECTS-CROM += $(TOPDIR)/obj/BootFromDevice.o
 OBJECTS-CROM += $(TOPDIR)/obj/setup.o
 OBJECTS-CROM += $(TOPDIR)/obj/iso9660.o
