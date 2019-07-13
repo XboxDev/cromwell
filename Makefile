@@ -123,6 +123,7 @@ OBJECTS-CROM += $(TOPDIR)/obj/cputools.o
 OBJECTS-CROM += $(TOPDIR)/obj/microcode.o
 OBJECTS-CROM += $(TOPDIR)/obj/ioapic.o
 OBJECTS-CROM += $(TOPDIR)/obj/BootInterrupts.o
+OBJECTS-CROM += $(TOPDIR)/obj/fsys_fat.o
 OBJECTS-CROM += $(TOPDIR)/obj/fsys_reiserfs.o
 OBJECTS-CROM += $(TOPDIR)/obj/fsys_ext2fs.o
 OBJECTS-CROM += $(TOPDIR)/obj/fsys_ufs2.o

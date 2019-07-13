@@ -13,6 +13,9 @@
 #include "boot.h"
 #include "BootFATX.h"
 #include "memory_layout.h"
+#include <shared.h>
+
+extern grub_error_t errnum;
 
 /* Length of area to be searched for multiboot header. */
 #define MULTIBOOT_SEARCHAREA_LEN        8192
@@ -126,6 +129,65 @@ PMULTIBOOTHEADER CheckMultibootHeader(u8 *buffer) {
 	}
 
 	return mbHeader;
+}
+
+CONFIGENTRY *DetectReactOSNative(char *szGrub) {
+	CONFIGENTRY *config;
+	int nRet;
+
+	strcpy(&szGrub[4], "/freeldr.sys");
+	nRet = grub_open(szGrub);
+
+	if (nRet != 1 || errnum) {
+		// File not found
+		errnum = 0;
+		return NULL;
+	}
+
+	config = (CONFIGENTRY *)malloc(sizeof(CONFIGENTRY));
+	memset(config, 0x00, sizeof(CONFIGENTRY));
+	config->bootSystem = SYS_REACTOS;
+	strcpy(config->title, "ReactOS");
+	strcpy(config->szPath, "/freeldr.sys");
+
+	grub_close();
+	return config;
+}
+
+int LoadReactOSNative(char *szGrub, CONFIGENTRY *config) {
+	int nRet;
+	long dwSize;
+	OPTMULTIBOOT *multiboot = &config->opt.Multiboot;
+
+	VIDEO_ATTR = 0xffd8d8d8;
+	printk("  Loading %s ", config->szPath);
+	VIDEO_ATTR = 0xffa8a8a8;
+
+	strncpy(&szGrub[4], config->szPath, strlen(config->szPath));
+
+	nRet = grub_open(szGrub);
+
+	if (nRet != 1) {
+		printk("Unable to load file, Grub error %d\n", errnum);
+		errnum = 0;
+		wait_ms(2000);
+		return false;
+	}
+
+	dwSize = grub_read(FREELDR_LOAD_AREA, filemax);
+	grub_close();
+	printk(" - %d bytes\n", dwSize);
+
+	if (CheckMultibootHeader(FREELDR_LOAD_AREA) == NULL) {
+		wait_ms(2000);
+		return false;
+	}
+	multiboot->pBuffer = FREELDR_LOAD_AREA;
+	multiboot->uBufferSize = dwSize;
+	/* Multiboot partition indices starting at 0 */
+	multiboot->uBootDevice = GetMultibootBootDevice(0x80 + config->drive, config->partition, 0xFF, 0xFF);
+
+	return true;
 }
 
 CONFIGENTRY *DetectReactOSFATX(FATXPartition *partition) {

@@ -100,6 +100,7 @@ CONFIGENTRY *AddNestedConfigEntry(CONFIGENTRY *config, CONFIGENTRY *nested, char
 CONFIGENTRY *DetectSystemNative(int drive, int partition) {
 	CONFIGENTRY *config = NULL;
 	CONFIGENTRY *cfgLinux;
+	CONFIGENTRY *cfgReactOS;
 	char *szGrub;
 
 	szGrub = InitGrubRequest(GRUB_REQUEST_SIZE, drive, partition);
@@ -107,6 +108,11 @@ CONFIGENTRY *DetectSystemNative(int drive, int partition) {
 	if (cfgLinux != NULL) {
 		FillConfigEntries(cfgLinux, BOOT_NATIVE, drive, partition);
 		config = AddNestedConfigEntry(config, cfgLinux, "Linux");
+	}
+	cfgReactOS = DetectReactOSNative(szGrub);
+	if (cfgReactOS != NULL) {
+		FillConfigEntries(cfgReactOS, BOOT_NATIVE, drive, partition);
+		config = AddNestedConfigEntry(config, cfgReactOS, "ReactOS");
 	}
 	free(szGrub);
 
@@ -122,6 +128,8 @@ int BootFromNative(CONFIGENTRY *config) {
 	szGrub = InitGrubRequest(GRUB_REQUEST_SIZE, config->drive, config->partition);
 	if (config->bootSystem == SYS_LINUX)
 		result = LoadLinuxNative(szGrub, &config->opt.Linux);
+	if (config->bootSystem == SYS_REACTOS)
+		result = LoadReactOSNative(szGrub, config);
 	free(szGrub);
 
 	return result;
