@@ -4,6 +4,9 @@ GCC_3.3 := $(shell expr `$(CC) -dumpversion` \>= 3.3)
 
 SRC_PATH=.
 
+# Use bash as sh if-statement evaluation is wonky
+SHELL := /usr/bin/env bash
+
 GITREV = $(shell \
   cd $(SRC_PATH); \
   if test -e .git; then \
