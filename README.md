@@ -1,6 +1,10 @@
 cromwell
 ========
 
+| Build Status                                                                                                                     | Download                                                      |
+| -------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------- |
+| [![Build Status](https://api.travis-ci.org/XboxDev/cromwell.svg?branch=master)](https://travis-ci.org/XboxDev/cromwell/branches) | [Latest](https://github.com/XboxDev/cromwell/releases/latest) |
+
 **Cromwell** is a free, legal BIOS replacement for the original Xbox. It is
 capable of loading Linux from the Xbox's Hard Disk, and CD-ROM. It is not able
 to load original Xbox games, neither originals nor copies.
