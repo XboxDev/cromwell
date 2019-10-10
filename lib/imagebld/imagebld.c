@@ -514,13 +514,13 @@ int main (int argc, const char * argv[])
 }
 
 void showUsage(char *progname) {
-	printf("Usage:\n",progname);
-	printf("%s -vml vmlname romname\n");
+	printf("Usage:\n");
+	printf("%s -vml vmlname romname\n", progname);
 
-	printf("%s -xbe xbename romname\n");
+	printf("%s -xbe xbename romname\n", progname);
 	printf("\tGenerates Xbox .xbe executable xbename from the rom image romname\n\n");
 
-	printf("%s -rom blname romname image256name image1024name\n");
+	printf("%s -rom blname romname image256name image1024name\n", progname);
 	printf("\tGenerates Xbox bios images image256name, image1024name, from the\n");
 	printf("\tbootloader image blname, and the rom image romname\n\n");
 }
