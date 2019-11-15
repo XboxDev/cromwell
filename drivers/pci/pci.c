@@ -1,4 +1,5 @@
 #include "boot.h"
+#include <stdarg.h>
 // by ozpaulb@hotmail.com 2002-07-14
 
 /***************************************************************************
@@ -204,6 +205,38 @@ void LpcSetSerialState(int enable)
 
 	// Enable device
 	LpcWriteRegister(0x30, enable ? 0x01 : 0x00);
+}
+
+int serial_putchar(int ch)
+{
+	/* Wait for THRE (bit 5) to be high */
+	while ((IoInputByte(SERIAL_PORT + SERIAL_LSR) & (1 << 5)) == 0);
+	IoOutputByte(SERIAL_PORT + SERIAL_THR, ch);
+
+	if (ch == '\n')
+	{
+		/* Also send carriage return to the terminal */
+		serial_putchar('\r');
+	}
+
+	return ch;
+}
+
+void bprintf(const char *fmt, ...)
+{
+	va_list args;
+	char buf[256] = {0};
+	int i;
+
+	va_start(args, fmt);
+	/* FIXME: vsprintf should know the size of buffer */
+	vsprintf(&buf, fmt, args);
+	va_end(args);
+
+	for (i = 0; i < strlen(buf); i++)
+	{
+		serial_putchar(buf[i]);
+	}
 }
 
 void BootAGPBUSInitialization(void)

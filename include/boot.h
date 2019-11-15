@@ -207,10 +207,10 @@ int BootPerformPicChallengeResponseAction(void);
 	// LED control (see associated enum above)
 int I2cSetFrontpanelLed(u8 b);
 
-#define bprintf(...)
+void bprintf(const char *fmt, ...);
 
 #if PRINT_TRACE
-#define TRACE bprintf(__FILE__ " :%d\n\r",__LINE__);
+#define TRACE bprintf(__FILE__ " :%d\n", __LINE__);
 #else
 #define TRACE
 #endif
