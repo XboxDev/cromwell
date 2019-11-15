@@ -24,6 +24,8 @@
 
 #define SERIAL_PORT 0x3F8
 #define SERIAL_IRQ  4
+#define SERIAL_THR  0
+#define SERIAL_LSR  5
 
 #define BUS_0 0
 #define BUS_1 1

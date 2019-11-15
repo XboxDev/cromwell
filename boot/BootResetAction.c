@@ -62,7 +62,7 @@ extern void BootResetAction ( void ) {
 	BootInterruptsWriteIdt();	
 
 	// initialize the PCI devices
-	//bprintf("BOOT: starting PCI init\n\r");
+	//bprintf("BOOT: starting PCI init\n");
 	BootPciPeripheralInitialization();
 	// Reset the AGP bus and start with good condition
 	BootAGPBUSInitialization();
