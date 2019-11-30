@@ -110,7 +110,9 @@ const ISR_PREP isrprep[] = {
 	{ 0, 0 }
 };
 
-
+u32 GetTimerTicks() {
+	return IoInputDword(TIMER_IO);
+}
 
 void wait_smalldelay(void) {
 	wait_us(80);
@@ -134,12 +136,12 @@ void wait_us(u32 ticks) {
 	if (ticks>(1200*1000)) ticks = 1200*1000;
 	
 	COUNT_TO = (u32) ((float)(ticks*3.579545));
-	COUNT_start = IoInputDword(0x8008);	
+	COUNT_start = GetTimerTicks();
 
 	while(1) {
 
 		// Reads out the System timer
-		HH = IoInputDword(0x8008);		
+		HH = GetTimerTicks();
 		temp = HH-COUNT_start;
 		// We reached the counter
 		if (temp>COUNT_TO) break;
@@ -167,11 +169,11 @@ void wait_ms(u32 ticks) {
 	if (ticks>(1200*1000)) ticks = 1200*1000;
 	
 	COUNT_TO = (u32) ((float)(ticks*3579.545));
-	COUNT_start = IoInputDword(0x8008);	
+	COUNT_start = GetTimerTicks();
 
 	while(1) {
 		// Reads out the System timer
-		HH = IoInputDword(0x8008);		
+		HH = GetTimerTicks();
 		temp = HH-COUNT_start;
 		// We reached the counter
 		if (temp>COUNT_TO) break;
@@ -242,6 +244,16 @@ void BootInterruptsWriteIdt() {
 //
 // ISRs
 
+
+void DVDTrayEject()
+{
+	I2CTransmitWord(0x10, 0x0c00);
+}
+
+void DVDTrayClose()
+{
+	I2CTransmitWord(0x10, 0x0c01);
+}
 
 void IntHandlerCSmc(void)
 {
@@ -330,7 +342,7 @@ void IntHandlerCSmc(void)
 				case 5: // BUTTON PRESSED REQUESTING TRAY OPEN
 					traystate=ETS_OPEN_OR_OPENING;
 					I2CTransmitWord(0x10, 0x0d04);
-					I2CTransmitWord(0x10, 0x0c00);
+					DVDTrayEject();
 					bprintf("SMC Interrupt %d: CDROM tray opening by Button press\n", nCountInterruptsSmc);
 					bStatus&=~0x02; // kill possibility of conflicting closing report
 					break;

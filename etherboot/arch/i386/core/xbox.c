@@ -112,7 +112,7 @@ static __inline uint32_t IoInputDword(uint16_t wAds) {
 }
 unsigned long currticks(void)
 {
-	return IoInputDword(0x8008);
+	return GetTimerTicks();
 }
 
 void ndelay(unsigned int nsecs)
