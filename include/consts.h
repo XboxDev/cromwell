@@ -20,6 +20,9 @@
 #define PCI_CFG_DATA 0x0CFC
 
 
+#define TIMER_IO   0x8008
+#define TIMER_FREQ 0x369E99
+
 #define I2C_IO_BASE 0xC000
 
 #define SERIAL_PORT 0x3F8

@@ -170,7 +170,7 @@ int LoadKernelNative(CONFIGENTRY *config) {
 	disk_read_hook=NULL;
 	disk_read_func=NULL;
 	
-	I2CTransmitWord(0x10, 0x0c01); // Close DVD tray
+	DVDTrayClose();
 	
 	VIDEO_ATTR=0xffd8d8d8;
 	printk("  Loading %s ", config->szKernel);
@@ -261,7 +261,7 @@ int LoadKernelFatX(CONFIGENTRY *config) {
 	memset(&infokernel,0x00,sizeof(infokernel));
 	memset(&infoinitrd,0x00,sizeof(infoinitrd));
 
-	I2CTransmitWord(0x10, 0x0c01); // Close DVD tray
+	DVDTrayClose();
 	
 	partition = OpenFATXPartition(0,
 			SECTOR_STORE,
@@ -316,20 +316,20 @@ CONFIGENTRY *LoadConfigCD(int cdromId) {
 	memset((u8 *)KERNEL_SETUP,0,4096);
 
 	printk("\2Please wait\n\n");
-	//See if we already have a CDROM in the drive
+	//See if we already have a CD in the drive
 	//Try for 8 seconds - takes a while to 'spin up'.
 	nTempCursorX = VIDEO_CURSOR_POSX;
 	nTempCursorY = VIDEO_CURSOR_POSY;
 again:
-	I2CTransmitWord(0x10, 0x0c01); // close DVD tray
-	printk("Loading linuxboot.cfg from CDROM... \n");
+	DVDTrayClose();
+	printk("Loading linuxboot.cfg from CD... \n");
 	for (n=0;n<32;++n) {
-		dwConfigSize = BootIso9660GetFile(cdromId,"/linuxboo.cfg", (u8 *)KERNEL_SETUP, 0x800);
+		dwConfigSize = BootIso9660GetFile(cdromId, "/linuxboo.cfg", (u8 *)KERNEL_SETUP, 0x800);
 		if (dwConfigSize>0) {
 			configLoaded=1;
 			break;
 		}
-		dwConfigSize = BootIso9660GetFile(cdromId,"/linuxboot.cfg", (u8 *)KERNEL_SETUP, 0x800);
+		dwConfigSize = BootIso9660GetFile(cdromId, "/linuxboot.cfg", (u8 *)KERNEL_SETUP, 0x800);
 		if (dwConfigSize>0) {
 			configLoaded=1;
 			break;
@@ -342,16 +342,16 @@ again:
 		printk("Boot from CD failed.\nCheck that linuxboot.cfg exists.\n\n");
 		//Needs to be changed for non-xbox drives, which don't have an eject line
 		//Need to send ATA eject command.
-		I2CTransmitWord(0x10, 0x0c00); // eject DVD tray
+		DVDTrayEject();
 		wait_ms(2000); // Wait for DVD to become responsive to inject command
-			
+		
 		VIDEO_ATTR=0xffeeeeff;
 		printk("\2Please insert CD and press Button A\n\n\2Press Button B to return to main menu\n\n");
 
 		while(1) {
 			// Make button 'A' close the DVD tray
 			if (risefall_xpad_BUTTON(TRIGGER_XPAD_KEY_A) == 1) {
-				I2CTransmitWord(0x10, 0x0c01);
+				DVDTrayClose();
 				wait_ms(500);
 				break;
 			}
@@ -360,18 +360,18 @@ again:
 				wait_ms(500);
 				break;
 			}
-			else if (BootIso9660GetFile(cdromId,"/linuxboo.cfg", (u8 *)KERNEL_SETUP, 0x800)>0) {
+			else if (BootIso9660GetFile(cdromId, "/linuxboo.cfg", (u8 *)KERNEL_SETUP, 0x800)>0) {
 				//It isnt an xbox drive, and somebody pushed the tray in manually, and 
 				//the cd is valid.
 				break;
 			}
-			else if (BootIso9660GetFile(cdromId,"/linuxboot.cfg", (u8 *)KERNEL_SETUP, 0x800)>0) {
+			else if (BootIso9660GetFile(cdromId, "/linuxboot.cfg", (u8 *)KERNEL_SETUP, 0x800)>0) {
 				break;
 			}
 			// Allow to cancel CD boot with button 'B'
 			else if (risefall_xpad_BUTTON(TRIGGER_XPAD_KEY_B) == 1) {
 				// Close DVD tray and return to main menu
-				I2CTransmitWord(0x10, 0x0c01);
+				DVDTrayClose();
 				wait_ms(500);
 				return NULL;
 			}
@@ -407,7 +407,7 @@ int LoadKernelCdrom(CONFIGENTRY *config) {
 	u8* tempBuf;
 	
 	VIDEO_ATTR=0xffd8d8d8;
-	printk("  Loading %s from CDROM", config->szKernel);
+	printk("  Loading %s from CD", config->szKernel);
 	VIDEO_ATTR=0xffa8a8a8;
 	// Use INITRD_START as temporary location for loading the Kernel 
 	tempBuf = (u8*)INITRD_START;
@@ -423,7 +423,7 @@ int LoadKernelCdrom(CONFIGENTRY *config) {
 
 	if(strlen(config->szInitrd)!=0) {
 		VIDEO_ATTR=0xffd8d8d8;
-		printk("  Loading %s from CDROM", config->szInitrd);
+		printk("  Loading %s from CD", config->szInitrd);
 		VIDEO_ATTR=0xffa8a8a8;
 		
 		dwInitrdSize=BootIso9660GetFile(config->drive, config->szInitrd, (void*)INITRD_START, MAX_INITRD_SIZE);
@@ -455,11 +455,11 @@ int BootLoadFlashCD(int cdromId) {
 	 
 	memset((u8 *)KERNEL_SETUP,0,4096);
 
-	//See if we already have a CDROM in the drive
+	//See if we already have a CD in the drive
 	//Try for 4 seconds.
-	I2CTransmitWord(0x10, 0x0c01); // close DVD tray
+	DVDTrayClose();
 	for (n=0;n<16;++n) {
-		if((BootIso9660GetFile(cdromId,"/image.bin", (u8 *)KERNEL_PM_CODE, 0x10)) >=0 ) {
+		if((BootIso9660GetFile(cdromId, "/image.bin", (u8 *)KERNEL_PM_CODE, 0x10)) >=0 ) {
 			cdPresent=1;
 			break;
 		}
@@ -469,7 +469,7 @@ int BootLoadFlashCD(int cdromId) {
 	if (!cdPresent) {
 		//Needs to be changed for non-xbox drives, which don't have an eject line
 		//Need to send ATA eject command.
-		I2CTransmitWord(0x10, 0x0c00); // eject DVD tray
+		DVDTrayEject();
 		wait_ms(2000); // Wait for DVD to become responsive to inject command
 			
 		VIDEO_ATTR=0xffeeeeff;
@@ -478,11 +478,11 @@ int BootLoadFlashCD(int cdromId) {
 
 		while(1) {
 			if (risefall_xpad_BUTTON(TRIGGER_XPAD_KEY_A) == 1) {
-				I2CTransmitWord(0x10, 0x0c01); // close DVD tray
+				DVDTrayClose();
 				wait_ms(500);
 				break;
 			}
-        	        USBGetEvents();
+			USBGetEvents();
 			wait_ms(10);
 		}						
 
@@ -490,18 +490,18 @@ int BootLoadFlashCD(int cdromId) {
 
 		// wait until the media is readable
 		while(1) {
-			if((BootIso9660GetFile(cdromId,"/image.bin", (u8 *)KERNEL_PM_CODE, 0x10)) >=0 ) {
+			if((BootIso9660GetFile(cdromId, "/image.bin", (u8 *)KERNEL_PM_CODE, 0x10)) >=0 ) {
 				break;
 			}
 			wait_ms(200);
 		}
 	}
-	printk("CDROM: ");
-	printk("Loading bios image from CDROM:/image.bin. \n");
+	printk("CD: ");
+	printk("Loading BIOS image from /image.bin. \n");
 	dwConfigSize=BootIso9660GetFile(cdromId, "/image.bin", (u8 *)KERNEL_PM_CODE, 	256*1024);
 	
 	if( dwConfigSize < 0 ) { //It's not there
-		printk("image.bin not found on CDROM... Halting\n");
+		printk("image.bin not found on CD... Halting\n");
 		while(1) ;
 	}
 

@@ -131,12 +131,12 @@ void IconMenu(void) {
 	unsigned char *videosavepage;
         
 	u32 COUNT_start;
-	u32 temp=1;
+	u32 ticks = 1;
 	ICON *iconPtr=NULL;
 	int i;
 
 	extern int nTempCursorMbrX, nTempCursorMbrY; 
-	int nTempCursorResumeX, nTempCursorResumeY ;
+	int nTempCursorResumeX, nTempCursorResumeY;
 	int nTempCursorX, nTempCursorY;
 	int nModeDependentOffset=(vmode.width-640)/2;  
 	
@@ -163,7 +163,7 @@ void IconMenu(void) {
 	VIDEO_ATTR=0xffffffff;
 	IconMenuDraw(nModeDependentOffset, nTempCursorY);
 #endif
-	COUNT_start = IoInputDword(0x8008);
+	COUNT_start = GetTimerTicks();
 	//Main menu event loop.
 	while(1)
 	{
@@ -193,7 +193,7 @@ void IconMenu(void) {
 				selectedIcon = selectedIcon->nextIcon;
 				changed=1;
 			}
-			temp=0;
+			ticks = 0;
 		}
 		else if (risefall_xpad_BUTTON(TRIGGER_XPAD_PAD_LEFT) == 1)
 		{
@@ -209,12 +209,12 @@ void IconMenu(void) {
 				selectedIcon = selectedIcon->previousIcon;
 				changed=1;
 			}
-			temp=0;
+			ticks = 0;
 		}
 		//If anybody has toggled the xpad left/right, disable the timeout.
-		if (temp!=0) {
-			temp = IoInputDword(0x8008) - COUNT_start;
-			if (temp > (0x369E99*BOOT_TIMEWAIT)) timedOut=1;
+		if (ticks != 0) {
+			ticks = GetTimerTicks() - COUNT_start;
+			if (ticks > (TIMER_FREQ * BOOT_TIMEWAIT)) timedOut = 1;
 		}
 		
 		if ((risefall_xpad_BUTTON(TRIGGER_XPAD_KEY_A) == 1) || risefall_xpad_BUTTON(TRIGGER_XPAD_KEY_START) == 1 || 
@@ -229,8 +229,8 @@ void IconMenu(void) {
 			changed=1;
 			memcpy((void*)FB_START,videosavepage,FB_SIZE);
 			//Also disable the timeout to avoid infinite boot loop
-			temp=0;
-			timedOut=0;
+			ticks = 0;
+			timedOut = 0;
 		}
 		if (changed) {
 			BootVideoClearScreen(&jpegBackdrop, nTempCursorY, VIDEO_CURSOR_POSY+1);
