@@ -124,37 +124,36 @@ struct geometry buf_geom;
 int filepos;
 int filemax;
 
+#define MIN(x,y) ((x)<(y)?(x):(y))
+
 //Cromwell hooks
-int
-rawread (int drive, int sector, int byte_offset, int byte_len, char *buf)
-{
-	sector+=byte_offset/512;
-	byte_offset%=512;
-	
-	while(byte_len) {
-		int nThisTime=512;
-	       	if(byte_len<512) nThisTime=byte_len;
-		if(byte_offset) {
-			u8 ba[512];
-			if(BootIdeReadSector(drive, buf, sector, 0, 512)) {
-				bprintf("Unable to get first sector\n");
-                             	return 1;
-			}
-			memcpy(buf, &ba[byte_offset], nThisTime-byte_offset);
-                      	buf+=nThisTime-byte_offset;
-                   	byte_len-=nThisTime-byte_offset;
-                      	byte_offset=0;
-             	} else {
-                     	if(BootIdeReadSector(drive, buf, sector, 0, nThisTime)) {
-                      		bprintf("Unable to get first sector\n");
-                             	return 1;
-                     	}
-                   	buf+=nThisTime;
-                   	byte_len-=nThisTime;
-              	}
+int rawread(int drive, int sector, int byte_offset, int byte_len, char *buf) {
+	if (byte_len <= 0)
+		return 1;
+
+	ASSERT(byte_offset >= 0);
+
+	// Advance sector counter by offset to get sub-sector-size offset
+	sector += byte_offset/SECTOR_SIZE;
+	byte_offset %= SECTOR_SIZE;
+
+	while (byte_len > 0 && !errnum) {
+		// Note: BootIdeReadSector will only read a single sector
+		int bytes_to_copy = MIN(byte_len, SECTOR_SIZE-byte_offset);
+		int status = BootIdeReadSector(drive, buf, sector, byte_offset, bytes_to_copy);
+		if (status != 0) {
+			bprintf("Unable to read sector %d of IDE drive %d (%d bytes)\n", sector, drive, bytes_to_copy);
+			errnum = ERR_READ;
+			return 1;
+		}
+		
+		buf += bytes_to_copy;
+		byte_len -= bytes_to_copy;
 		sector++;
+		byte_offset = 0;
 	}
-	return (!errnum);
+
+	return !(errnum);
 }
 
 			
