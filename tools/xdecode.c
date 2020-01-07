@@ -2,8 +2,8 @@
                xdecode - Xbox bios Xcode 'decompiler'     
   			-------------------
     begin                : Sat Jan 21 2005
-    copyright            : (C) 2005 by David Pye
-    email                : dmp@davidmpye.dyndns.org
+    copyright            : (C) 2005 by David Pye <dmp@davidmpye.dyndns.org>
+                         : (C) 2020 by Jannik Vogel
  ***************************************************************************/
 
 /***************************************************************************
@@ -17,6 +17,8 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdint.h>
+#include <inttypes.h>
 #include <string.h>
 #include <errno.h>
 #include <getopt.h>
@@ -27,9 +29,9 @@
 
 /* The normal binary representation of an xcode - 9 bytes total */
 typedef struct xcode {
-	unsigned char op;
-	long val1;
-	long val2;
+	uint8_t op;
+	uint32_t val1;
+	uint32_t val2;
 } xcode;
 
 /* We insert this into the read-xcodes if we're asked to, just before
@@ -102,63 +104,63 @@ int process_xcodes(const char *filename) {
 	for (xcode_index = 0; xcode_index < MAX_XCODES; xcode_index++) {
 		xcode code;
 		code.op = xcode_segment[XCODE_LENGTH*xcode_index];
-		memcpy(&code.val1, &xcode_segment[(XCODE_LENGTH*xcode_index)+sizeof(char)], sizeof(long));
-		memcpy(&code.val2, &xcode_segment[(XCODE_LENGTH*xcode_index)+sizeof(char)+sizeof(long)], sizeof(long));
+		memcpy(&code.val1, &xcode_segment[(XCODE_LENGTH*xcode_index)+1], 4);
+		memcpy(&code.val2, &xcode_segment[(XCODE_LENGTH*xcode_index)+5], 4);
 
 		switch(code.op) {
 			case 0x02:
-				printf("xcode_peek(0x%08lx)\n",code.val1);
+				printf("xcode_peek(0x%08" PRIx32 ")\n",code.val1);
 				break;
 			case 0x03:
-				printf("xcode_poke(0x%08lx,0x%08lx)\n", code.val1, code.val2);
+				printf("xcode_poke(0x%08" PRIx32 ",0x%08" PRIx32 ")\n", code.val1, code.val2);
 				break;
 			case 0x04:
-				printf("xcode_pciout(0x%08lx, 0x%08lx)\n", code.val1, code.val2);
+				printf("xcode_pciout(0x%08" PRIx32 ", 0x%08" PRIx32 ")\n", code.val1, code.val2);
 				break;
 			case 0x05:
-				printf("xcode_pciin_a(0x%08lx)\n", code.val1);
+				printf("xcode_pciin_a(0x%08" PRIx32 ")\n", code.val1);
 				break;
 			case 0x06:
-				printf("xcode_bittoggle(0x%08lx, 0x%08lx)\n", code.val1, code.val2);
+				printf("xcode_bittoggle(0x%08" PRIx32 ", 0x%08" PRIx32 ")\n", code.val1, code.val2);
 				break;
 			case 0x08:
-				printf("xcode_ifgoto(0x%08lx, 0x%08lx)\n", code.val1, (code.val2/9)+1);
+				printf("xcode_ifgoto(0x%08" PRIx32 ", 0x%08" PRIx32 ")\n", code.val1, (code.val2/9)+1);
 				break;
 			case 0x11:
-				printf("xcode_outb(0x%08lx, 0x%08lx)\n", code.val1, code.val2);
+				printf("xcode_outb(0x%08" PRIx32 ", 0x%08" PRIx32 ")\n", code.val1, code.val2);
 				break;
 			case 0x12:
-				printf("xcode_inb(0x%08lx)\n", code.val1);
+				printf("xcode_inb(0x%08" PRIx32 ")\n", code.val1);
 				break;
 			case 0x07:
 				/* These have sub-opts */
 				switch(code.val1) {
 					case 0x03:
-						printf("xcode_poke_a(0x%08lx)\n", code.val2);
+						printf("xcode_poke_a(0x%08" PRIx32 ")\n", code.val2);
 						break;
 					case 0x04:
-						printf("xcode_pciout_a(0x%08lx)\n", code.val2);
+						printf("xcode_pciout_a(0x%08" PRIx32 ")\n", code.val2);
 						break;
 					case 0x11:
-						printf("xcode_outb_a(0x%08lx)\n", code.val2);
+						printf("xcode_outb_a(0x%08" PRIx32 ")\n", code.val2);
 						break;
 					default:
 						printf("Invalid 0x07 code\n");
 				}
 				break;
 			case 0x09:
-				printf("xcode_goto(%ld)\n", (code.val2/9)+1);
+				printf("xcode_goto(%" PRId32 ")\n", (code.val2/9)+1);
 				break;
 			case 0xEE:
 				if (insert_overflow_trick) {
 					printf("%s\n", overflow_trick);				
 				}
-				printf("xcode_END(0x%08lx)\n",code.val1);
+				printf("xcode_END(0x%08" PRIx32 ")\n",code.val1);
 				free(xcode_segment);
 				return 0;
 			default:
 				/* Unknown - just output it verbatim in 'asm' type format */
-				printf(".byte 0x%02x; .long 0x%08lx; .long 0x%08lx;\n",code.op, code.val1, code.val2);
+				printf(".byte 0x%02" PRIx8 "; .long 0x%08" PRIx32 "; .long 0x%08" PRIx32 ";\n",code.op, code.val1, code.val2);
 		}
 	}
 	/* We shouln't get here - we should have left via the 0xEE xcode_END above */
@@ -168,7 +170,7 @@ int process_xcodes(const char *filename) {
 }
 
 void show_usage() {
-	fprintf(stderr, "%s: Xbox bios xcode decompiler - (c) David Pye/Xbox Linux Team 2005 - GPL\n", prog_name);
+	fprintf(stderr, "%s: Xbox bios xcode decompiler - GPL\n", prog_name);
 	fprintf(stderr, "Usage: %s filename\nwhere filename is an Xbox bios image, from which the xcodes are to be read\n", prog_name);
 	fprintf(stderr, "\nOptions:\n\n");
 	fprintf(stderr, "\t-h, --help			Display this help message\n");

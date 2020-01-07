@@ -1,4 +1,4 @@
 CC := gcc
 
 all:
-	${CC} -pedantic -Wall -o xdecode xdecode.c
+	${CC} -std=c99 -pedantic -Wall -o xdecode xdecode.c
