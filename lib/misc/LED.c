@@ -50,3 +50,7 @@ void setLED(char *pattern) {
 	}
 	I2cSetFrontpanelLed(((r<<4) & 0xF0) + (g & 0xF));
 }
+
+void resetLED(void) {
+	I2cResetFrontpanelLed();
+}

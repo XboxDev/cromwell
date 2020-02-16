@@ -345,8 +345,8 @@ void startReactOS(PMULTIBOOTHEADER mbHeader, u32 loaderSize, u32 bootDevice) {
 	BootIdeSetTransferMode(0, 0x40 | nAta);
 	BootIdeSetTransferMode(1, 0x40 | nAta);
 
-	/* orange, people seem to like that colour */
-	setLED("oooo");
+	/* Set the LED to auto-mode */
+	resetLED();
 
 	/* Do not update framebuffer address, as ReactOS video drivers reuse it as is,
 	 * and do not perform video hardware initialization. See also FIXME below. */

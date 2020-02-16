@@ -198,6 +198,14 @@ extern int I2cSetFrontpanelLed(u8 b)
 	return ERR_SUCCESS;
 }
 
+extern int I2cResetFrontpanelLed(void)
+{
+	I2CTransmitWord( 0x10, 0x700);
+
+
+	return ERR_SUCCESS;
+}
+
 bool I2CGetTemperature(int * pnLocalTemp, int * pExternalTemp)
 {
 	*pnLocalTemp=I2CTransmitByteGetReturn(0x4c, 0x01);
