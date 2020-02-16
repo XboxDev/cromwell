@@ -343,8 +343,8 @@ void startLinux(void* initrdStart, unsigned long initrdSize, const char* appendL
 	BootIdeSetTransferMode(0, 0x40 | nAta);
 	BootIdeSetTransferMode(1, 0x40 | nAta);
 
-	// orange, people seem to like that colour
-	setLED("oooo");
+	// Set the LED to auto-mode
+	resetLED();
 	         
 	// Set framebuffer address to final location (for vesafb driver)
 	(*(unsigned int*)0xFD600800) = (0xf0000000 | ((xbox_ram*0x100000) - FB_SIZE));

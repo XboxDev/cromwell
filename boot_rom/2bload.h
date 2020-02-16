@@ -81,6 +81,7 @@ static __inline u32 IoInputDword(u16 wAds) {
 int BootPerformPicChallengeResponseAction(void);
 // LED control (see associated enum above)
 int I2cSetFrontpanelLed(u8 b);
+int I2cResetFrontpanelLed(void);
 
 ////////// BootResetActions.c
 
