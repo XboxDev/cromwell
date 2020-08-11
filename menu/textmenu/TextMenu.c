@@ -8,9 +8,8 @@
  ***************************************************************************/
 
 #include "TextMenu.h"
-int breakOutOfMenu=0;
 
-void TextMenuDraw(TEXTMENU *menu, TEXTMENUITEM *firstVisibleMenuItem, TEXTMENUITEM *selectedItem);
+int breakOutOfMenu = 0;
 
 void TextMenuAddItem(TEXTMENU *menu, TEXTMENUITEM *newMenuItem) {
 	TEXTMENUITEM *menuItem = menu->firstMenuItem;
