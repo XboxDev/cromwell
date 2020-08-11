@@ -14,6 +14,7 @@
 #include "BootIde.h"
 #include "IconMenu.h"
 #include "MenuActions.h"
+#include "TextMenu.h"
 
 void InitFatXIcons(void);
 void InitNativeIcons(void);

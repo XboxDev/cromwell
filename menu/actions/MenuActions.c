@@ -20,7 +20,6 @@
 #include "cpu.h"
 #include "VideoInitialization.h"
 #include "TextMenu.h"
-TEXTMENU *TextMenuInit(void);
 
 void AdvancedMenu(void *textmenu) {
 	TextMenu((TEXTMENU*)textmenu, NULL);
@@ -101,7 +100,7 @@ void BootMenuEntry(void *entry) {
 }
 
 void DrawChildTextMenu(void *menu) {
-	TextMenu((TEXTMENU*)menu);
+	TextMenu((TEXTMENU*)menu, NULL);
 }
 
 #ifdef ETHERBOOT 
