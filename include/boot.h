@@ -262,9 +262,9 @@ u8 PciReadByte(unsigned int bus, unsigned int dev, unsigned int func, unsigned i
 u32 PciWriteDword(unsigned int bus, unsigned int dev, unsigned int func, unsigned int reg_off, u32 dw);
 u32 PciReadDword(unsigned int bus, unsigned int dev, unsigned int func, unsigned int reg_off);
 
-void LpcEnterConfiguration();
-void LpcExitConfiguration();
-int LpcGetSerialState();
+void LpcEnterConfiguration(void);
+void LpcExitConfiguration(void);
+int LpcGetSerialState(void);
 void LpcSetSerialState(int enable);
 
 ///////// BootPerformPicChallengeResponseAction.c
