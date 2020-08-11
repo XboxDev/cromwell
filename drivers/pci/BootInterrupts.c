@@ -110,7 +110,7 @@ const ISR_PREP isrprep[] = {
 	{ 0, 0 }
 };
 
-u32 GetTimerTicks() {
+u32 GetTimerTicks(void) {
 	return IoInputDword(TIMER_IO);
 }
 
@@ -245,12 +245,12 @@ void BootInterruptsWriteIdt() {
 // ISRs
 
 
-void DVDTrayEject()
+void DVDTrayEject(void)
 {
 	I2CTransmitWord(0x10, 0x0c00);
 }
 
-void DVDTrayClose()
+void DVDTrayClose(void)
 {
 	I2CTransmitWord(0x10, 0x0c01);
 }
