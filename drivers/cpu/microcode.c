@@ -307,7 +307,6 @@ void display_cpuid_update_microcode(void)
 	unsigned int pf, rev, sig, val[2];
 	unsigned int x86_model, x86_family, i;
 	struct microcode *m;
-	int found = 0 ;
 	/* cpuid sets msr 0x8B iff a microcode update has been loaded. */
 	wrmsr(0x8B, 0, 0);
 	cpuid(1, &eax, &ebx, &ecx, &edx);
@@ -332,7 +331,6 @@ void display_cpuid_update_microcode(void)
 			__asm__ __volatile__ ("cpuid" : : : "ax", "bx", "cx", "dx");
 			rdmsr(0x8B, val[0], val[1]);
 			//printk("microcode updated from revision %d to %d\n", rev, val[1]);
-			found = 1;
 		}
 	}
 //	if (found == 0) printk("No Valid Microcode Update for this processor found\n")

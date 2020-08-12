@@ -79,8 +79,6 @@ static void gzip_release(void **);
 /*
  * This is set up by the setup-routine at boot-time
  */
-static unsigned char *real_mode; /* Pointer to real-mode data */
-
 char *input_data;
 int input_len;
 

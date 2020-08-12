@@ -343,7 +343,7 @@ int focus_calc_mode(xbox_video_mode * mode, struct riva_regs * riva_out)
 }
 
 int focus_calc_pll_settings(focus_pll_settings *settings, volatile char *regs) {
-        int m, n, p;
+        int m, n;
 	long dotclock = (*settings).dotclock;
 	int pll_multiplier;
 	long ncon, ncod;

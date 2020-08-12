@@ -414,8 +414,6 @@ static int conexant_calc_mode_params(
 	double dTempVOC = 0;
 	double dTempHOC = 0;
 	double dBestMetric = invalidMetric;
-	double dTempVSR = 0;
-	double dBestVSR = 0;
 	double dTempCLKRATIO = 1;
 	double dBestCLKRATIO = 1;
 	unsigned int  minTLI = 0;
@@ -458,7 +456,6 @@ static int conexant_calc_mode_params(
 		if (actCLKRATIO) dTempCLKRATIO = 3.0/2.0;
 		for(tempTLI = minTLI; tempTLI <= maxTLI; tempTLI++)
 		{
-			dTempVSR = (double)tempTLI / tlo;
 			dTempVACTIVEO = (int)((((double)mode->yres * tlo) +
 						(tempTLI - 1)) / tempTLI);
 			dTempVOC = 1 - dTempVACTIVEO / alo;
@@ -479,7 +476,6 @@ static int conexant_calc_mode_params(
 						(2 * dDelta * dDelta);
 					if(dMetric < dBestMetric)
 					{
-						dBestVSR = dTempVSR;
 						dBestMetric = dMetric;
 						bestTLI = tempTLI;
 						bestHCLKI = tempHCLKI;

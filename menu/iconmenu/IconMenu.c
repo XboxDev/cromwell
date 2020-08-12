@@ -132,18 +132,16 @@ void IconMenu(void) {
         
 	u32 COUNT_start;
 	u32 ticks = 1;
-	ICON *iconPtr=NULL;
 	int i;
 
 	extern int nTempCursorMbrX, nTempCursorMbrY; 
 	int nTempCursorResumeX, nTempCursorResumeY;
-	int nTempCursorX, nTempCursorY;
+	int nTempCursorY;
 	int nModeDependentOffset=(vmode.width-640)/2;  
 	
 	nTempCursorResumeX=nTempCursorMbrX;
 	nTempCursorResumeY=nTempCursorMbrY;
 
-	nTempCursorX=VIDEO_CURSOR_POSX;
 	nTempCursorY=vmode.height-80;
 	
 	// We save the complete framebuffer to memory (we restore at exit)

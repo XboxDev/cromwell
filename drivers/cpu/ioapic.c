@@ -52,7 +52,7 @@ struct ioapicreg ioapicregvalues[] = {
 void setup_ioapic(void)
 {
 	int i;
-	unsigned long value_low, value_high;
+	unsigned long value_low;
 	unsigned long nvram = 0xfec00000;
 	volatile unsigned long *l;
 	struct ioapicreg *a = ioapicregvalues;
@@ -66,7 +66,6 @@ void setup_ioapic(void)
 		value_low = l[4];
 		l[0] = (a->reg *2) + 0x11;
 		l[4] = a->value_high;
-		value_high = l[4];
 		if ((i==0) && (value_low == 0xffffffff)) {
 			printk("IO APIC not responding.\n");
 			return;

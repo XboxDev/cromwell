@@ -237,8 +237,7 @@ void _DumpFATXTree(FATXPartition* partition, int clusterId, int nesting) {
 	int endOfDirectory;
 	unsigned char* curEntry;
 	unsigned char clusterData[partition->clusterSize];
-	int i,j;
-	char writeBuf[512];
+	int i;
 	char filename[50];
 	u_int32_t filenameSize;
 	u_int32_t fileSize;
@@ -316,11 +315,6 @@ void _DumpFATXTree(FATXPartition* partition, int clusterId, int nesting) {
 				printk("WARNING: file %s has unknown flags %x\n", filename, flags);
 			}
 */
-			
-			// Output it
-			for(j=0; j< nesting; j++) {
-				writeBuf[j] = ' ';
-			}
 
 			VIDEO_ATTR=0xffe8e8e8;
 			printk("/%s  [%s] (SZ:%i CL%x))\n",filename, flagsStr,

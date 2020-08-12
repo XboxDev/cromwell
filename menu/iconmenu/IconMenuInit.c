@@ -97,7 +97,7 @@ void InitNativeIcons(void) {
 	for (driveId=0; driveId<2; driveId++) {
 		if (tsaHarddiskInfo[driveId].m_fDriveExists && !tsaHarddiskInfo[driveId].m_fAtapi) {
 			volatile u8 *pb;
-			int n=0, nPos=0;
+			int n=0;
 			
 			memset(ba,0x00,512);
 			BootIdeReadSector(driveId, ba, 0, 0, 512);

@@ -756,7 +756,7 @@ real_open_partition (int flags)
   unsigned long ext_offset;
   int entry;
   char buf[SECTOR_SIZE];
-  int bsd_part, pc_slice;
+  int bsd_part;
 
   /* For simplicity.  */
   auto int next (void);
@@ -767,7 +767,6 @@ real_open_partition (int flags)
 				&part_start, &part_length,
 				&part_offset, &entry, &ext_offset, buf);
       bsd_part = (current_partition >> 8) & 0xFF;
-      pc_slice = current_partition >> 16;
       return ret;
     }
   

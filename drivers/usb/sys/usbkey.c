@@ -28,7 +28,6 @@ struct usb_kbd_info {
 static void usb_kbd_irq(struct urb *urb, struct pt_regs *regs)
 {
 	struct usb_kbd_info *kbd = urb->context;
-	int i;
 
 	if (urb->status) return;
 	
@@ -54,11 +53,7 @@ static int usb_kbd_probe(struct usb_interface *intf, const struct usb_device_id 
 	struct urb *urb;
 	struct usb_device *udev = interface_to_usbdev (intf);
 	struct usb_endpoint_descriptor *ep_irq_in;
-	struct usb_endpoint_descriptor *ep_irq_out;
 	struct usb_kbd_info *usbk;
-
-	int i, pipe, maxp;
-	char *buf;
 
 	usbk=(struct usb_kbd_info *)kmalloc(sizeof(struct usb_kbd_info),0);
 	if (!usbk) return -1;

@@ -81,7 +81,6 @@ void memPlaceKernel(const u8* kernelOrg, u32 kernelSize)
 CONFIGENTRY *DetectLinuxNative(char *szGrub) {
 	CONFIGENTRY *config;
 	unsigned int nLen;
-	u32 dwConfigSize = 0;
 
 	memset((u8 *)KERNEL_SETUP, 0, KERNEL_HDR_SIZE);
 
@@ -95,8 +94,7 @@ CONFIGENTRY *DetectLinuxNative(char *szGrub) {
 		strcpy(&szGrub[4], "/linuxboot.cfg");
 		nRet=grub_open(szGrub);
 	}
-	
-	dwConfigSize=filemax;
+
 	if (nRet != 1 || errnum) {
 		//File not found
 		errnum = 0;
@@ -170,7 +168,7 @@ int LoadLinuxNative(char *szGrub, const OPTLINUX *optLinux) {
 
 CONFIGENTRY *DetectLinuxFATX(FATXPartition *partition) {
 	FATXFILEINFO fileinfo;
-	CONFIGENTRY *config=NULL, *currentConfigItem=NULL;
+	CONFIGENTRY *config=NULL;
 	
 	if (LoadFATXFile(partition, "/linuxboot.cfg", &fileinfo)) {
 		//Root of E has a linuxboot.cfg in
