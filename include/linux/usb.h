@@ -690,7 +690,7 @@ struct urb
 	int timeout;			/* (in) timeout, in jiffies */
 	void *context;			/* (in) context for completion */
 	usb_complete_t complete;	/* (in) completion routine */
-	struct usb_iso_packet_descriptor iso_frame_desc[0];	/* (in) ISO ONLY */
+	struct usb_iso_packet_descriptor iso_frame_desc[];	/* (in) ISO ONLY */
 };
 
 /* -------------------------------------------------------------------------- */

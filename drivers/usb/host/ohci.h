@@ -315,7 +315,7 @@ typedef struct urb_priv {
 	__u16			length;		// # tds in this request
 	__u16			td_cnt;		// tds already serviced
 	int   			state;
-	struct td		*td [0];	// all TDs in this request
+	struct td		*td [];	// all TDs in this request
 
 } urb_priv_t;
 
