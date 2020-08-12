@@ -33,14 +33,10 @@ enum {
 ///////////////////////////////
 /* BIOS-wide error codes		all have b31 set  */
 
-enum {
-	ERR_SUCCESS = 0,  // completed without error
-
-	ERR_I2C_ERROR_TIMEOUT = 0x80000001,  // I2C action failed because it did not complete in a reasonable time
-	ERR_I2C_ERROR_BUS = 0x80000002, // I2C action failed due to non retryable bus error
-
-	ERR_BOOT_PIC_ALG_BROKEN = 0x80000101 // PIC algorithm did not pass its self-test
-};
+#define ERR_SUCCESS 0
+#define ERR_I2C_ERROR_TIMEOUT 0x80000001
+#define ERR_I2C_ERROR_BUS 0x80000002
+#define ERR_BOOT_PIC_ALG_BROKEN 0x80000101
 
 //////// BootPerformPicChallengeResponseAction.c
 
