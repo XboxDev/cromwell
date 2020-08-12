@@ -392,7 +392,7 @@ static int __init ohci_hcd_pci_init (void)
 		sizeof (struct ed), sizeof (struct td));
 	return pci_module_init (&ohci_pci_driver);
 }
-module_init (ohci_hcd_pci_init);
+module_init (ohci_hcd_pci_init)
 
 /*-------------------------------------------------------------------------*/
 
@@ -400,4 +400,4 @@ static void __exit ohci_hcd_pci_cleanup (void)
 {	
 	pci_unregister_driver (&ohci_pci_driver);
 }
-module_exit (ohci_hcd_pci_cleanup);
+module_exit (ohci_hcd_pci_cleanup)

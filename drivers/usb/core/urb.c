@@ -414,10 +414,10 @@ int usb_unlink_urb(struct urb *urb)
 		return -ENODEV;
 }
 
-EXPORT_SYMBOL(usb_init_urb);
-EXPORT_SYMBOL(usb_alloc_urb);
-EXPORT_SYMBOL(usb_free_urb);
-EXPORT_SYMBOL(usb_get_urb);
-EXPORT_SYMBOL(usb_submit_urb);
-EXPORT_SYMBOL(usb_unlink_urb);
+EXPORT_SYMBOL(usb_init_urb)
+EXPORT_SYMBOL(usb_alloc_urb)
+EXPORT_SYMBOL(usb_free_urb)
+EXPORT_SYMBOL(usb_get_urb)
+EXPORT_SYMBOL(usb_submit_urb)
+EXPORT_SYMBOL(usb_unlink_urb)
 

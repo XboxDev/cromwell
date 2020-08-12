@@ -1034,20 +1034,20 @@ int usb_string(struct usb_device *dev, int index, char *buf, size_t size)
 }
 
 // synchronous request completion model
-EXPORT_SYMBOL(usb_control_msg);
-EXPORT_SYMBOL(usb_bulk_msg);
+EXPORT_SYMBOL(usb_control_msg)
+EXPORT_SYMBOL(usb_bulk_msg)
 
-EXPORT_SYMBOL(usb_sg_init);
-EXPORT_SYMBOL(usb_sg_cancel);
-EXPORT_SYMBOL(usb_sg_wait);
+EXPORT_SYMBOL(usb_sg_init)
+EXPORT_SYMBOL(usb_sg_cancel)
+EXPORT_SYMBOL(usb_sg_wait)
 
 // synchronous control message convenience routines
-EXPORT_SYMBOL(usb_get_descriptor);
-EXPORT_SYMBOL(usb_get_device_descriptor);
-EXPORT_SYMBOL(usb_get_status);
-EXPORT_SYMBOL(usb_get_string);
-EXPORT_SYMBOL(usb_string);
-EXPORT_SYMBOL(usb_clear_halt);
-EXPORT_SYMBOL(usb_set_configuration);
-EXPORT_SYMBOL(usb_set_interface);
+EXPORT_SYMBOL(usb_get_descriptor)
+EXPORT_SYMBOL(usb_get_device_descriptor)
+EXPORT_SYMBOL(usb_get_status)
+EXPORT_SYMBOL(usb_get_string)
+EXPORT_SYMBOL(usb_string)
+EXPORT_SYMBOL(usb_clear_halt)
+EXPORT_SYMBOL(usb_set_configuration)
+EXPORT_SYMBOL(usb_set_interface)
 

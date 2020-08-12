@@ -1543,54 +1543,54 @@ static void __exit usb_exit(void)
 	bus_unregister(&usb_bus_type);
 }
 
-subsys_initcall(usb_init);
-module_exit(usb_exit);
+subsys_initcall(usb_init)
+module_exit(usb_exit)
 
 /*
  * USB may be built into the kernel or be built as modules.
  * These symbols are exported for device (or host controller)
  * driver modules to use.
  */
-EXPORT_SYMBOL(usb_epnum_to_ep_desc);
+EXPORT_SYMBOL(usb_epnum_to_ep_desc)
 
-EXPORT_SYMBOL(usb_register);
-EXPORT_SYMBOL(usb_deregister);
-EXPORT_SYMBOL(usb_disabled);
+EXPORT_SYMBOL(usb_register)
+EXPORT_SYMBOL(usb_deregister)
+EXPORT_SYMBOL(usb_disabled)
 
-EXPORT_SYMBOL(usb_device_probe);
-EXPORT_SYMBOL(usb_device_remove);
+EXPORT_SYMBOL(usb_device_probe)
+EXPORT_SYMBOL(usb_device_remove)
 
-EXPORT_SYMBOL(usb_alloc_dev);
-EXPORT_SYMBOL(usb_put_dev);
-EXPORT_SYMBOL(usb_get_dev);
-EXPORT_SYMBOL(usb_hub_tt_clear_buffer);
+EXPORT_SYMBOL(usb_alloc_dev)
+EXPORT_SYMBOL(usb_put_dev)
+EXPORT_SYMBOL(usb_get_dev)
+EXPORT_SYMBOL(usb_hub_tt_clear_buffer)
 
-EXPORT_SYMBOL(usb_driver_claim_interface);
-EXPORT_SYMBOL(usb_interface_claimed);
-EXPORT_SYMBOL(usb_driver_release_interface);
-EXPORT_SYMBOL(usb_match_id);
-EXPORT_SYMBOL(usb_find_interface);
-EXPORT_SYMBOL(usb_ifnum_to_if);
+EXPORT_SYMBOL(usb_driver_claim_interface)
+EXPORT_SYMBOL(usb_interface_claimed)
+EXPORT_SYMBOL(usb_driver_release_interface)
+EXPORT_SYMBOL(usb_match_id)
+EXPORT_SYMBOL(usb_find_interface)
+EXPORT_SYMBOL(usb_ifnum_to_if)
 
-EXPORT_SYMBOL(usb_new_device);
-EXPORT_SYMBOL(usb_reset_device);
-EXPORT_SYMBOL(usb_connect);
-EXPORT_SYMBOL(usb_disconnect);
+EXPORT_SYMBOL(usb_new_device)
+EXPORT_SYMBOL(usb_reset_device)
+EXPORT_SYMBOL(usb_connect)
+EXPORT_SYMBOL(usb_disconnect)
 
-EXPORT_SYMBOL(__usb_get_extra_descriptor);
+EXPORT_SYMBOL(__usb_get_extra_descriptor)
 
-EXPORT_SYMBOL(usb_find_device);
-EXPORT_SYMBOL(usb_get_current_frame_number);
+EXPORT_SYMBOL(usb_find_device)
+EXPORT_SYMBOL(usb_get_current_frame_number)
 
-EXPORT_SYMBOL (usb_buffer_alloc);
-EXPORT_SYMBOL (usb_buffer_free);
+EXPORT_SYMBOL (usb_buffer_alloc)
+EXPORT_SYMBOL (usb_buffer_free)
 
-EXPORT_SYMBOL (usb_buffer_map);
-EXPORT_SYMBOL (usb_buffer_dmasync);
-EXPORT_SYMBOL (usb_buffer_unmap);
+EXPORT_SYMBOL (usb_buffer_map)
+EXPORT_SYMBOL (usb_buffer_dmasync)
+EXPORT_SYMBOL (usb_buffer_unmap)
 
-EXPORT_SYMBOL (usb_buffer_map_sg);
-EXPORT_SYMBOL (usb_buffer_dmasync_sg);
-EXPORT_SYMBOL (usb_buffer_unmap_sg);
+EXPORT_SYMBOL (usb_buffer_map_sg)
+EXPORT_SYMBOL (usb_buffer_dmasync_sg)
+EXPORT_SYMBOL (usb_buffer_unmap_sg)
 
-MODULE_LICENSE("GPL");
+MODULE_LICENSE("GPL")

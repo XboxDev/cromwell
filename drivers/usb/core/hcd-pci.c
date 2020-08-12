@@ -190,7 +190,7 @@ clean_3:
 
 	return retval;
 } 
-EXPORT_SYMBOL (usb_hcd_pci_probe);
+EXPORT_SYMBOL (usb_hcd_pci_probe)
 
 
 /* may be called without controller electrically present */
@@ -250,7 +250,7 @@ void usb_hcd_pci_remove (struct pci_dev *dev)
 	}
 	hcd->driver->hcd_free (hcd);
 }
-EXPORT_SYMBOL (usb_hcd_pci_remove);
+EXPORT_SYMBOL (usb_hcd_pci_remove)
 
 
 #ifdef	CONFIG_PM
@@ -309,7 +309,7 @@ int usb_hcd_pci_suspend (struct pci_dev *dev, u32 state)
  	pci_set_power_state (dev, state);
 	return retval;
 }
-EXPORT_SYMBOL (usb_hcd_pci_suspend);
+EXPORT_SYMBOL (usb_hcd_pci_suspend)
 
 /**
  * usb_hcd_pci_resume - power management resume of a PCI-based HCD
@@ -358,7 +358,7 @@ done:
 	atomic_dec (&hcd->resume_count);
 	return retval;
 }
-EXPORT_SYMBOL (usb_hcd_pci_resume);
+EXPORT_SYMBOL (usb_hcd_pci_resume)
 
 #endif	/* CONFIG_PM */
 

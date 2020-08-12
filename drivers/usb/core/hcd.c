@@ -86,7 +86,7 @@
 
 /* host controllers we manage */
 LIST_HEAD (usb_bus_list);
-EXPORT_SYMBOL_GPL (usb_bus_list);
+EXPORT_SYMBOL_GPL (usb_bus_list)
 
 /* used when allocating bus numbers */
 #define USB_MAXBUS		64
@@ -97,7 +97,7 @@ static struct usb_busmap busmap;
 
 /* used when updating list of hcds */
 DECLARE_MUTEX (usb_bus_list_lock);	/* exported only for usbfs */
-EXPORT_SYMBOL_GPL (usb_bus_list_lock);
+EXPORT_SYMBOL_GPL (usb_bus_list_lock)
 
 /* used when updating hcd data */
 static spinlock_t hcd_data_lock = SPIN_LOCK_UNLOCKED;
@@ -601,7 +601,7 @@ void usb_bus_init (struct usb_bus *bus)
 
 	atomic_set (&bus->refcnt, 1);
 }
-EXPORT_SYMBOL (usb_bus_init);
+EXPORT_SYMBOL (usb_bus_init)
 
 /**
  * usb_alloc_bus - creates a new USB host controller structure
@@ -626,7 +626,7 @@ struct usb_bus *usb_alloc_bus (struct usb_operations *op)
 	bus->op = op;
 	return bus;
 }
-EXPORT_SYMBOL (usb_alloc_bus);
+EXPORT_SYMBOL (usb_alloc_bus)
 
 /**
  * usb_free_bus - frees the memory used by a bus structure
@@ -646,7 +646,7 @@ void usb_free_bus (struct usb_bus *bus)
 		err ("usb_free_bus #%d, count != 1", bus->busnum);
 	usb_bus_put (bus);
 }
-EXPORT_SYMBOL (usb_free_bus);
+EXPORT_SYMBOL (usb_free_bus)
 
 /*-------------------------------------------------------------------------*/
 
@@ -680,7 +680,7 @@ void usb_register_bus(struct usb_bus *bus)
 
 	dev_info (bus->controller, "new USB bus registered, assigned bus number %d\n", bus->busnum);
 }
-EXPORT_SYMBOL (usb_register_bus);
+EXPORT_SYMBOL (usb_register_bus)
 
 /**
  * usb_deregister_bus - deregisters the USB host controller
@@ -709,7 +709,7 @@ void usb_deregister_bus (struct usb_bus *bus)
 
 	usb_bus_put (bus);
 }
-EXPORT_SYMBOL (usb_deregister_bus);
+EXPORT_SYMBOL (usb_deregister_bus)
 
 /**
  * usb_register_root_hub - called by HCD to register its root hub 
@@ -733,7 +733,7 @@ int usb_register_root_hub (struct usb_device *usb_dev, struct device *parent_dev
 				usb_dev->dev.bus_id, retval);
 	return retval;
 }
-EXPORT_SYMBOL (usb_register_root_hub);
+EXPORT_SYMBOL (usb_register_root_hub)
 
 
 /*-------------------------------------------------------------------------*/
@@ -782,7 +782,7 @@ long usb_calc_bus_time (int speed, int is_input, int isoc, int bytecount)
 		return -1;
 	}
 }
-EXPORT_SYMBOL (usb_calc_bus_time);
+EXPORT_SYMBOL (usb_calc_bus_time)
 
 /*
  * usb_check_bandwidth():
@@ -846,7 +846,7 @@ int usb_check_bandwidth (struct usb_device *dev, struct urb *urb)
 
 	return bustime;
 }
-EXPORT_SYMBOL (usb_check_bandwidth);
+EXPORT_SYMBOL (usb_check_bandwidth)
 
 
 /**
@@ -882,7 +882,7 @@ void usb_claim_bandwidth (struct usb_device *dev, struct urb *urb, int bustime, 
 		dev->bus->bandwidth_int_reqs + dev->bus->bandwidth_isoc_reqs);
 #endif
 }
-EXPORT_SYMBOL (usb_claim_bandwidth);
+EXPORT_SYMBOL (usb_claim_bandwidth)
 
 
 /**
@@ -912,7 +912,7 @@ void usb_release_bandwidth (struct usb_device *dev, struct urb *urb, int isoc)
 #endif
 	urb->bandwidth = 0;
 }
-EXPORT_SYMBOL (usb_release_bandwidth);
+EXPORT_SYMBOL (usb_release_bandwidth)
 
 
 /*-------------------------------------------------------------------------*/
@@ -1392,7 +1392,7 @@ struct usb_operations usb_hcd_operations = {
 	.buffer_free =		hcd_buffer_free,
 	.disable =		hcd_endpoint_disable,
 };
-EXPORT_SYMBOL (usb_hcd_operations);
+EXPORT_SYMBOL (usb_hcd_operations)
 
 /*-------------------------------------------------------------------------*/
 
@@ -1435,7 +1435,7 @@ void usb_hcd_giveback_urb (struct usb_hcd *hcd, struct urb *urb, struct pt_regs 
 	urb->complete (urb, regs);
 	usb_put_urb (urb);
 }
-EXPORT_SYMBOL (usb_hcd_giveback_urb);
+EXPORT_SYMBOL (usb_hcd_giveback_urb)
 
 /*-------------------------------------------------------------------------*/
 
@@ -1462,7 +1462,7 @@ irqreturn_t usb_hcd_irq (int irq, void *__hcd, struct pt_regs * r)
 		usb_hc_died (hcd);
 	return IRQ_HANDLED;
 }
-EXPORT_SYMBOL (usb_hcd_irq);
+EXPORT_SYMBOL (usb_hcd_irq)
 
 /*-------------------------------------------------------------------------*/
 
@@ -1508,5 +1508,5 @@ void usb_hc_died (struct usb_hcd *hcd)
 	INIT_WORK (&hcd->work, hcd_panic, hcd);
 	(void) schedule_work (&hcd->work);
 }
-EXPORT_SYMBOL (usb_hc_died);
+EXPORT_SYMBOL (usb_hc_died)
 
