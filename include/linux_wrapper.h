@@ -339,13 +339,17 @@ struct usbdevfs_hub_portinfo
 #define DECLARE_MUTEX(x) struct semaphore x
 #define init_MUTEX(x)
 
+/* According to https://kernel.readthedocs.io/en/sphinx-samples/kernel-locking.html
+ * proper locking is only required on SMP-enabled kernels and saving/restoring
+ * IRQ state is only required on preemptive kernels, so it should be fine
+ * to have these be no-ops here. */
 #define SPIN_LOCK_UNLOCKED 0
-#define spin_lock_init(a)  do {} while(0)
-#define spin_lock(a) *(int*)a=1
-#define spin_unlock(a) do {} while(0)
+#define spin_lock_init(a)  do {(void)a;} while(0)
+#define spin_lock(a) do {(void)a;} while(0)
+#define spin_unlock(a) do {(void)a;} while(0)
 
-#define spin_lock_irqsave(a,b) b=0
-#define spin_unlock_irqrestore(a,b)
+#define spin_lock_irqsave(a,b) do {(void)(a); (void)(b);} while(0)
+#define spin_unlock_irqrestore(a,b) do {(void)(a); (void)(b);} while(0)
 
 #if 0
 #define local_irq_save(x) __asm__ __volatile__("pushfl ; popl %0 ; cli":"=g" (x): /* no input */ :"memory")
