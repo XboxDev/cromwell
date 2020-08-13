@@ -1,0 +1,35 @@
+name: Build Release
+
+on: {push}
+
+jobs:
+  build-ubuntu:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Install Deps
+        run: sudo apt-get install gcc-multilib
+      - name: Build
+        run: make -k -s
+      - name: Prepare artifacts for release
+        run: echo "::set-env name=short_commit_sha::$(git rev-parse --short HEAD)"
+      - name: Push Release
+        uses: actions/create-release@v1
+        id: create_release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: CI-${{ env.short_commit_sha }}
+          release_name: CI-${{ env.short_commit_sha }}
+          prerelease: true
+      - name: Compress Assets
+        run: 7z a -tzip cromwell.zip image/cromwell.bin image/cromwell_1024.bin xbe/xromwell.xbe
+      - name: Upload Assets
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./cromwell.zip
+          asset_name: cromwell.zip
+          asset_content_type: application/zip
