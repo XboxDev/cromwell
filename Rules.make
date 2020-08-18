@@ -20,7 +20,7 @@ comma	:= ,
 # Get things started.
 #
 first_rule: sub_dirs
-	$(MAKE) all_targets
+	@$(MAKE) all_targets
 
 SUB_DIRS	:= $(subdir)
 
@@ -29,13 +29,13 @@ SUB_DIRS	:= $(subdir)
 #
 
 BootPerformPicChallengeResponseAction.o: BootPerformPicChallengeResponseAction.c
-	$(CC) $(CFLAGSBR) $(INCLUDE) -o $(TOPDIR)/obj/$@ -c $<
+	@$(CC) $(CFLAGSBR) $(INCLUDE) -o $(TOPDIR)/obj/$@ -c $<
 
 %.o     : %.c
-	$(CC) $(CFLAGS) -no-pie $(EXTRA_CFLAGS) -o $(TOPDIR)/obj/$@ -c $<
+	@$(CC) $(CFLAGS) -no-pie $(EXTRA_CFLAGS) -o $(TOPDIR)/obj/$@ -c $<
 
 %.o     : %.S
-	$(CC) -m32 -no-pie -DASSEMBLER $(CFLAGS)  -o $(TOPDIR)/obj/$@ -c $<
+	@$(CC) -m32 -no-pie -DASSEMBLER $(CFLAGS)  -o $(TOPDIR)/obj/$@ -c $<
 
 all_targets: $(O_TARGET)
 
@@ -49,7 +49,7 @@ sub_dirs: dummy $(subdir-list)
 
 ifdef SUB_DIRS
 $(subdir-list) : dummy
-	$(MAKE) -C $(patsubst _subdir_%,%,$@)
+	@$(MAKE) -C $(patsubst _subdir_%,%,$@)
 endif
 
 #

@@ -183,12 +183,12 @@ all: clean resources $(BOOT_ETH_SUBDIRS) cromsubdirs xromwell.xbe vmlboot $(BOOT
 ifeq ($(ETHERBOOT), yes)
 ethsubdirs: $(patsubst %, _dir_%, $(ETH_SUBDIRS))
 $(patsubst %, _dir_%, $(ETH_SUBDIRS)) : dummy
-	$(MAKE) CFLAGS="$(ETH_CFLAGS)" -C $(patsubst _dir_%, %, $@)
+	@$(MAKE) CFLAGS="$(ETH_CFLAGS)" -C $(patsubst _dir_%, %, $@)
 endif
 
 cromsubdirs: $(patsubst %, _dir_%, $(SUBDIRS))
 $(patsubst %, _dir_%, $(SUBDIRS)) : dummy
-	$(MAKE) CFLAGS="$(CFLAGS) $(CROM_CFLAGS)" -C $(patsubst _dir_%, %, $@)
+	@$(MAKE) CFLAGS="$(CFLAGS) $(CROM_CFLAGS)" -C $(patsubst _dir_%, %, $@)
 
 dummy:
 
@@ -216,34 +216,34 @@ clean:
 	mkdir -p $(TOPDIR)/bin
 
 obj/image-crom.bin:
-	${LD} -o obj/image-crom.elf ${OBJECTS-CROM} ${RESOURCES} ${LDFLAGS-ROM}
-	${OBJCOPY} --output-target=binary --strip-all obj/image-crom.elf $@
+	@${LD} -o obj/image-crom.elf ${OBJECTS-CROM} ${RESOURCES} ${LDFLAGS-ROM}
+	@${OBJCOPY} --output-target=binary --strip-all obj/image-crom.elf $@
 
 vmlboot: ${OBJECTS-VML}
-	${LD} -o $(TOPDIR)/obj/vmlboot.elf ${OBJECTS-VML} ${LDFLAGS-VMLBOOT}
-	${OBJCOPY} --output-target=binary --strip-all $(TOPDIR)/obj/vmlboot.elf $(TOPDIR)/boot_vml/disk/$@
+	@${LD} -o $(TOPDIR)/obj/vmlboot.elf ${OBJECTS-VML} ${LDFLAGS-VMLBOOT}
+	@${OBJCOPY} --output-target=binary --strip-all $(TOPDIR)/obj/vmlboot.elf $(TOPDIR)/boot_vml/disk/$@
 
 ifeq ($(ETHERBOOT), yes)
 boot_eth/ethboot: ${OBJECTS-ETH} obj/image-crom.bin
-	${LD} -o obj/ethboot.elf ${OBJECTS-ETH} -b binary obj/image-crom.bin ${LDFLAGS-ETHBOOT}
-	${OBJCOPY} --output-target=binary --strip-all obj/ethboot.elf obj/ethboot.bin
+	@${LD} -o obj/ethboot.elf ${OBJECTS-ETH} -b binary obj/image-crom.bin ${LDFLAGS-ETHBOOT}
+	@${OBJCOPY} --output-target=binary --strip-all obj/ethboot.elf obj/ethboot.bin
 	perl -I boot_eth boot_eth/mknbi.pl --output=$@ obj/ethboot.bin
 endif
 
 xromwell.xbe: ${OBJECTS-XBE}
-	${LD} -o $(TOPDIR)/obj/xbeboot.elf ${OBJECTS-XBE} ${LDFLAGS-XBEBOOT}
-	${OBJCOPY} --output-target=binary --strip-all $(TOPDIR)/obj/xbeboot.elf $(TOPDIR)/xbe/$@
+	@${LD} -o $(TOPDIR)/obj/xbeboot.elf ${OBJECTS-XBE} ${LDFLAGS-XBEBOOT}
+	@${OBJCOPY} --output-target=binary --strip-all $(TOPDIR)/obj/xbeboot.elf $(TOPDIR)/xbe/$@
 
 cromwell.bin:
-	${LD} -o $(TOPDIR)/obj/2lbimage.elf ${OBJECTS-ROMBOOT} ${LDFLAGS-ROMBOOT}
-	${OBJCOPY} --output-target=binary --strip-all $(TOPDIR)/obj/2lbimage.elf $(TOPDIR)/obj/2blimage.bin
+	@${LD} -o $(TOPDIR)/obj/2lbimage.elf ${OBJECTS-ROMBOOT} ${LDFLAGS-ROMBOOT}
+	@${OBJCOPY} --output-target=binary --strip-all $(TOPDIR)/obj/2lbimage.elf $(TOPDIR)/obj/2blimage.bin
 
 # This is a local executable, so don't use a cross compiler...
 bin/imagebld: lib/imagebld/imagebld.c lib/crypt/sha1.c lib/crypt/md5.c
-	gcc -m32 -Ilib/crypt -o bin/sha1.o -c lib/crypt/sha1.c
-	gcc -m32 -Ilib/crypt -o bin/md5.o -c lib/crypt/md5.c
-	gcc -m32 -Ilib/crypt -o bin/imagebld.o -c lib/imagebld/imagebld.c
-	gcc -m32 -o bin/imagebld bin/imagebld.o bin/sha1.o bin/md5.o
+	@gcc -m32 -Ilib/crypt -o bin/sha1.o -c lib/crypt/sha1.c
+	@gcc -m32 -Ilib/crypt -o bin/md5.o -c lib/crypt/md5.c
+	@gcc -m32 -Ilib/crypt -o bin/imagebld.o -c lib/imagebld/imagebld.c
+	@gcc -m32 -o bin/imagebld bin/imagebld.o bin/sha1.o bin/md5.o
 	
 imagecompress: obj/image-crom.bin bin/imagebld
 	cp obj/image-crom.bin obj/image-crom.bin.tmp
