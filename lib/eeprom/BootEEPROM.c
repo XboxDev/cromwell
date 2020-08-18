@@ -56,33 +56,27 @@ void BootEepromPrintInfo() {
 	VIDEO_ATTR=0xffc8c8c8;
 }
 
-/* The EepromCRC algorithm was obtained from the XKUtils 0.2 source released by 
- * TeamAssembly under the GNU GPL.  
- * Specifically, from XKCRC.cpp 
- *
- * Rewritten to ANSI C by David Pye (dmp@davidmpye.dyndns.org)
- *
- * Thanks! */
+/*
+Copyright 2020 Mike Davis
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+*/
 void EepromCRC(unsigned char *crc, unsigned char *data, long dataLen) {
-	unsigned char* CRC_Data = (unsigned char *)malloc(dataLen+4);
-	int pos=0;
-	memset(crc,0x00,4);
+	uint32_t high = 0, low = 0;
 
-	memset(CRC_Data,0x00, dataLen+4);
-	//Circle shift input data one byte right
-	memcpy(CRC_Data + 0x01 , data, dataLen-1);
-	memcpy(CRC_Data, data + dataLen-1, 0x01);
+	for (uint32_t i = 0; i < dataLen / sizeof(uint32_t); i++) {
+		uint32_t val = ((uint32_t*)data)[i];
+		uint64_t sum = ((uint64_t)high << 32) | low;
 
-	for (pos=0; pos<4; ++pos) {
-		unsigned short CRCPosVal = 0xFFFF;
-		unsigned long l;
-		for (l=pos; l<dataLen; l+=4) {
-			CRCPosVal -= *(unsigned short*)(&CRC_Data[l]);
-		}
-		CRCPosVal &= 0xFF00;
-		crc[pos] = (unsigned char) (CRCPosVal >> 8);
+		high = (uint32_t)((sum + val) >> 32);
+		low += val;
 	}
-	free(CRC_Data);
+
+	*(uint32_t*)crc = ~(high + low);
 }
 
 void EepromSetWidescreen(int enable) {
