@@ -20,7 +20,7 @@
 #include "fontx16.h"  // brings in font struct
 #include <stdarg.h>
 #include "decode-jpg.h"
-#define WIDTH_SPACE_PIXELS 5
+#define WIDTH_SPACE_PIXELS 4
 
 // returns number of x pixels taken up by ascii character bCharacter
 
