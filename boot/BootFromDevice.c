@@ -27,6 +27,9 @@
 
 #define GRUB_REQUEST_SIZE (256+4)
 
+const FATX_PARTITION_SORT_ORDER[FATX_XBPARTITIONER_PARTITIONS_MAX] = { 1,  0,  5,  6,  7, 8, 9,
+																																		   10, 11, 12, 13, 2, 3, 4 };
+
 char *InitGrubRequest(int size, int drive, int partition) {
 	char *szGrub;
 
@@ -87,6 +90,7 @@ CONFIGENTRY *AddNestedConfigEntry(CONFIGENTRY *config, CONFIGENTRY *nested, char
 		while (config->nextConfigEntry != NULL)
 			config = config->nextConfigEntry;
 		config->nextConfigEntry = (CONFIGENTRY *)malloc(sizeof(CONFIGENTRY));
+		config->nextConfigEntry->previousConfigEntry = config;
 		config = config->nextConfigEntry;
 	} else {
 		/* No config entry, create new one */
@@ -96,6 +100,9 @@ CONFIGENTRY *AddNestedConfigEntry(CONFIGENTRY *config, CONFIGENTRY *nested, char
 	memset(config, 0x00, sizeof(CONFIGENTRY));
 	strncpy(config->title, title, sizeof(config->title));
 	config->nestedConfigEntry = nested;
+	config->bootType = nested->bootType;
+	config->drive = nested->drive;
+	config->partition = nested->partition;
 	return root;
 }
 
@@ -137,12 +144,26 @@ int BootFromNative(CONFIGENTRY *config) {
 	return result;
 }
 
+char DriveLetterForFATXPartitionIdx(int partitionIdx) {
+	switch (partitionIdx) {
+		case 0: return 'E';
+		case 1: return 'C';
+		case 2: return 'X';
+		case 3: return 'Y';
+		case 4: return 'Z';
+		case FATX_STOCK_PARTITIONS_MAX ... FATX_XBPARTITIONER_PARTITIONS_MAX - 1:
+						return (char)((u8)'F' + partitionIdx - FATX_STOCK_PARTITIONS_MAX);
+		default: return '?';
+	}
+}
+
 CONFIGENTRY *DetectSystemFatX() {
 	FATXPartitionTable *partitionTable;
 	CONFIGENTRY *config = NULL;
 	CONFIGENTRY *cfgLinux;
 	CONFIGENTRY *cfgReactOS;
-	char entryName[24];
+	char entryName[MAX_CONFIG_TITLE];
+	int partIdx;
 
 	for (int driveId = 0; driveId < 1; driveId++) {
 		// Check if it's a DVD/CD drive
@@ -162,16 +183,17 @@ CONFIGENTRY *DetectSystemFatX() {
 			continue;
 		}
 
-		for (int partIdx = 0; partIdx < FATX_XBPARTITIONER_PARTITIONS_MAX; partIdx++) {
+		for (int sortPartIdx = 0; sortPartIdx < FATX_XBPARTITIONER_PARTITIONS_MAX; sortPartIdx++) {
+			partIdx = FATX_PARTITION_SORT_ORDER[sortPartIdx];
 			if (partitionTable->partitions[partIdx] == NULL) {
 				continue;
 			}
 
 			cfgLinux = DetectLinuxFATX(partitionTable->partitions[partIdx]);
 			if (cfgLinux != NULL) {
-				FillConfigEntries(cfgLinux, BOOT_FATX, driveId, partIdx);
 				// TODO: Indicate non-default HDD here once that's tested and working
-				sprintf(entryName, "Linux (%c:)", DriveLetterForPartitionIdx(partIdx));
+				sprintf(entryName, "Linux (%c:)", DriveLetterForFATXPartitionIdx(partIdx));
+				FillConfigEntries(cfgLinux, BOOT_FATX, driveId, partIdx);
 				config = AddNestedConfigEntry(config, cfgLinux, entryName);
 			}
 
@@ -179,13 +201,12 @@ CONFIGENTRY *DetectSystemFatX() {
 			if (cfgReactOS != NULL) {
 				FillConfigEntries(cfgReactOS, BOOT_FATX, driveId, partIdx);
 				// TODO: Indicate non-default HDD here once that's tested and working
-				sprintf("ReactOS (%c:)", DriveLetterForPartitionIdx(partIdx));
+				sprintf("ReactOS (%c:)", DriveLetterForFATXPartitionIdx(partIdx));
 				config = AddNestedConfigEntry(config, cfgReactOS, entryName);
 			}
 		}
 		CloseFATXPartitionTable(partitionTable);
 	}
-
 	return config;
 }
 
