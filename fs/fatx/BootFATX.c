@@ -329,7 +329,7 @@ bool FATXCacheChainMapBlock(FATXPartition *partition, int blockNum) {
 #endif
 	bytesRead = FATXRawRead(partition->nDriveIndex, partition->partitionStart,
 													FATX_CHAINTABLE_BLOCKSIZE + FATX_CHAINTABLE_BLOCKSIZE * blockNum,
-													FATX_CHAINTABLE_BLOCKSIZE, partition->cachedChainMapBlock);
+													FATX_CHAINTABLE_BLOCKSIZE, (u8*)partition->cachedChainMapBlock);
 	if (bytesRead != FATX_CHAINTABLE_BLOCKSIZE) {
 		VIDEO_ATTR=0xffe8e8e8;
 #ifdef FATX_DEBUG
