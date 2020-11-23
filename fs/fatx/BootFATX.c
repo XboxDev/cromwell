@@ -154,19 +154,6 @@ int FATXSignature(int nDriveIndex, unsigned int partitionOffset) {
 	return true;
 }
 
-char DriveLetterForPartitionIdx(int partitionIdx) {
-	switch (partitionIdx) {
-		case 0: return 'E';
-		case 1: return 'C';
-		case 2: return 'X';
-		case 3: return 'Y';
-		case 4: return 'Z';
-		case FATX_STOCK_PARTITIONS_MAX ... FATX_XBPARTITIONER_PARTITIONS_MAX - 1:
-						return (char)((u8)'F' + partitionIdx - FATX_STOCK_PARTITIONS_MAX);
-		default: return '?';
-	}
-}
-
 void LoadStockPartitionTable(int driveId, FATXPartitionTable *partitionTable) {
 	#ifdef FATX_INFO
 	//printk("LoadStockPartitionTable\n");

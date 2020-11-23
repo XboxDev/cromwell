@@ -65,6 +65,8 @@ void IconMenuInit(void) {
 void InitFatXIcons(void) {
 	ICON *iconPtr=NULL;
 	CONFIGENTRY *entry = (CONFIGENTRY*)DetectSystemFatX();
+	CONFIGENTRY *countEntry;
+	int numEntries;
 
 	if (entry == NULL) {
 		return;
@@ -72,7 +74,19 @@ void InitFatXIcons(void) {
 	//Got a FATX formatted HDD; there are one or more config files present.
 	iconPtr = malloc(sizeof(ICON));
  	iconPtr->iconSlot = ICON_SOURCE_SLOT4;
-	iconPtr->szCaption="FatX (E:)";
+	iconPtr->szCaption = malloc(MAX_ICON_TITLE);
+	if (entry->nextConfigEntry == NULL) {
+		sprintf(iconPtr->szCaption, "FATX (%c:)", DriveLetterForFATXPartitionIdx(entry->partition));
+	}
+	else {
+		numEntries = 1;
+		countEntry = entry;
+		while (countEntry->nextConfigEntry != NULL) {
+			numEntries += 1;
+			countEntry = countEntry->nextConfigEntry;
+		}
+		sprintf(iconPtr->szCaption, "FATX (%d)", numEntries);
+	}
 	iconPtr->functionPtr = DrawBootMenu;
 	iconPtr->functionDataPtr = (void *)entry;
  	AddIcon(iconPtr);
