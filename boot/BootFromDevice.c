@@ -27,8 +27,7 @@
 
 #define GRUB_REQUEST_SIZE (256+4)
 
-const FATX_PARTITION_SORT_ORDER[FATX_XBPARTITIONER_PARTITIONS_MAX] = { 1,  0,  5,  6,  7, 8, 9,
-																																		   10, 11, 12, 13, 2, 3, 4 };
+const FATX_PARTITION_SORT_ORDER[FATX_XBPARTITIONER_PARTITIONS_MAX] = { 1, 0, 5, 6, 7, 8, 9, 10, 11, 12, 13, 2, 3, 4 };
 
 char *InitGrubRequest(int size, int drive, int partition) {
 	char *szGrub;
@@ -215,8 +214,7 @@ int BootFromFatX(CONFIGENTRY *config) {
 	FATXPartition* partition;
 	int result = 0;
 
-	// DVDTrayClose();
-	//
+	DVDTrayClose();
 
 	partition = partitionTable->partitions[config->partition];
 	if (!partition) {
