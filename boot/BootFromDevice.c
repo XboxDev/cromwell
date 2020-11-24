@@ -143,19 +143,6 @@ int BootFromNative(CONFIGENTRY *config) {
 	return result;
 }
 
-char DriveLetterForFATXPartitionIdx(int partitionIdx) {
-	switch (partitionIdx) {
-		case 0: return 'E';
-		case 1: return 'C';
-		case 2: return 'X';
-		case 3: return 'Y';
-		case 4: return 'Z';
-		case FATX_STOCK_PARTITIONS_MAX ... FATX_XBPARTITIONER_PARTITIONS_MAX - 1:
-						return (char)((u8)'F' + partitionIdx - FATX_STOCK_PARTITIONS_MAX);
-		default: return '?';
-	}
-}
-
 CONFIGENTRY *DetectSystemFatX() {
 	FATXPartitionTable *partitionTable;
 	CONFIGENTRY *config = NULL;
@@ -191,7 +178,7 @@ CONFIGENTRY *DetectSystemFatX() {
 			cfgLinux = DetectLinuxFATX(partitionTable->partitions[partIdx]);
 			if (cfgLinux != NULL) {
 				// TODO: Indicate non-default HDD here once that's tested and working
-				sprintf(entryName, "Linux (%c:)", DriveLetterForFATXPartitionIdx(partIdx));
+				sprintf(entryName, "Linux (%c:)", FATX_DRIVE_LETTERS[partIdx]);
 				FillConfigEntries(cfgLinux, BOOT_FATX, driveId, partIdx);
 				config = AddNestedConfigEntry(config, cfgLinux, entryName);
 			}
@@ -200,7 +187,7 @@ CONFIGENTRY *DetectSystemFatX() {
 			if (cfgReactOS != NULL) {
 				FillConfigEntries(cfgReactOS, BOOT_FATX, driveId, partIdx);
 				// TODO: Indicate non-default HDD here once that's tested and working
-				sprintf("ReactOS (%c:)", DriveLetterForFATXPartitionIdx(partIdx));
+				sprintf("ReactOS (%c:)", FATX_DRIVE_LETTERS[partIdx]);
 				config = AddNestedConfigEntry(config, cfgReactOS, entryName);
 			}
 		}

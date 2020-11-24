@@ -76,7 +76,7 @@ void InitFatXIcons(void) {
  	iconPtr->iconSlot = ICON_SOURCE_SLOT4;
 	iconPtr->szCaption = malloc(MAX_ICON_TITLE);
 	if (entry->nextConfigEntry == NULL) {
-		sprintf(iconPtr->szCaption, "FATX (%c:)", DriveLetterForFATXPartitionIdx(entry->partition));
+		sprintf(iconPtr->szCaption, "FATX (%c:)", FATX_DRIVE_LETTERS[entry->partition]);
 	}
 	else {
 		numEntries = 1;

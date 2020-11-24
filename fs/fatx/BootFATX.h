@@ -79,6 +79,10 @@
 // max filename size
 #define FATX_FILENAME_MAX 42
 
+// The drive letters, based on the partition indexes
+const char FATX_DRIVE_LETTERS[FATX_XBPARTITIONER_PARTITIONS_MAX] =
+  {'E', 'C', 'X', 'Y', 'Z', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N'};
+
 // This structure describes a FATX partition
 typedef struct {
 
