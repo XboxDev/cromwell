@@ -38,9 +38,9 @@ typedef unsigned long  ulg;
 static uch *inbuf;	     /* input buffer */
 static uch window[WSIZE];    /* Sliding window buffer */
 
-static unsigned insize = 0;  /* valid bytes in inbuf */
-static unsigned inptr = 0;   /* index of next byte to be processed in inbuf */
-static unsigned outcnt = 0;  /* bytes in output buffer */
+static unsigned insize;      /* valid bytes in inbuf */
+static unsigned inptr;       /* index of next byte to be processed in inbuf */
+static unsigned outcnt;      /* bytes in output buffer */
 
 /* gzip flag byte */
 #define ASCII_FLAG   0x01 /* bit 0 set: file probably ASCII text */
@@ -72,10 +72,11 @@ static unsigned outcnt = 0;  /* bytes in output buffer */
 
 static int  fill_inbuf(void);
 static void flush_window(void);
-static void error(char *m);
+static void error(char *);
 static void gzip_mark(void **);
 static void gzip_release(void **);
-  
+static void gzip_reset(void);
+
 /*
  * This is set up by the setup-routine at boot-time
  */
@@ -84,9 +85,9 @@ static unsigned char *real_mode; /* Pointer to real-mode data */
 char *input_data;
 int input_len;
 
-static long bytes_out = 0;
+static long bytes_out;
 static uch *output_data;
-static unsigned long output_ptr = 0;
+static unsigned long output_ptr;
 
 static void *gzip_malloc(int size);
 static void gzip_free(void *where);
@@ -131,6 +132,15 @@ static void gzip_mark(void **ptr)
 static void gzip_release(void **ptr)
 {
 	free_mem_ptr = (long) *ptr;
+}
+
+static void gzip_reset(void)
+{
+	insize = 0;
+	inptr = 0;
+	outcnt = 0;
+	bytes_out = 0;
+	output_ptr = 0;
 }
 
 /* ===========================================================================

@@ -1075,6 +1075,8 @@ static int gunzip(void)
     ulg orig_len = 0;       /* original uncompressed length */
     int res;
 
+    gzip_reset();
+
     magic[0] = (unsigned char)get_byte();
     magic[1] = (unsigned char)get_byte();
     method = (unsigned char)get_byte();
@@ -1148,7 +1150,7 @@ static int gunzip(void)
 	    }
 	    return -1;
     }
-	    
+
     /* Get the crc and original length */
     /* crc32  (see algorithm.doc)
      * uncompressed input size modulo 2^32
@@ -1157,12 +1159,12 @@ static int gunzip(void)
     orig_crc |= (ulg) get_byte() << 8;
     orig_crc |= (ulg) get_byte() << 16;
     orig_crc |= (ulg) get_byte() << 24;
-    
+
     orig_len = (ulg) get_byte();
     orig_len |= (ulg) get_byte() << 8;
     orig_len |= (ulg) get_byte() << 16;
     orig_len |= (ulg) get_byte() << 24;
-    
+
     /* Validate decompression */
     if (orig_crc != CRC_VALUE) {
 	    error("crc error");
