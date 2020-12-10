@@ -266,6 +266,8 @@ void LpcEnterConfiguration(void);
 void LpcExitConfiguration(void);
 int LpcGetSerialState(void);
 void LpcSetSerialState(int enable);
+int LpcGetSerialIRQState(void);
+void LpcSetSerialIRQState(int enable);
 
 ///////// BootPerformPicChallengeResponseAction.c
 
