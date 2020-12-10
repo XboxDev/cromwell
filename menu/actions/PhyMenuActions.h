@@ -9,9 +9,12 @@
  *                                                                         *
  ***************************************************************************/
 
-int CurrentSerialState;
+extern int CurrentSerialState;
+extern int CurrentSerialIRQState;
 
 int IsSerialEnabled(void);
 void SetSerialEnabled(void *);
+int HasSerialIRQ(void);
+void SetSerialIRQ(void *);
 
 #endif

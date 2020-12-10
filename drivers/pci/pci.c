@@ -167,12 +167,12 @@ void LpcSelectRegister(u8 index)
 	IoOutputByte(0x2E, index);
 }
 
-void LpcEnterConfiguration()
+void LpcEnterConfiguration(void)
 {
 	LpcSelectRegister(0x55);
 }
 
-void LpcExitConfiguration()
+void LpcExitConfiguration(void)
 {
 	LpcSelectRegister(0xAA);
 }
@@ -189,7 +189,7 @@ void LpcWriteRegister(u8 index, u8 value)
 	IoOutputByte(0x2F, value);
 }
 
-int LpcGetSerialState()
+int LpcGetSerialState(void)
 {
 	// Select serial device
 	LpcWriteRegister(0x07, 0x04);
@@ -205,6 +205,24 @@ void LpcSetSerialState(int enable)
 
 	// Enable device
 	LpcWriteRegister(0x30, enable ? 0x01 : 0x00);
+}
+
+int LpcGetSerialIRQState(void)
+{
+	// Select serial device
+	LpcWriteRegister(0x07, 0x04);
+
+	// Check whether device has interrupt enabled
+	return !!(LpcReadRegister(0x70) & 0x0F);
+}
+
+void LpcSetSerialIRQState(int enable)
+{
+	// Select serial device
+	LpcWriteRegister(0x07, 0x04);
+
+	// Enable device interrupt
+	LpcWriteRegister(0x70, enable ? SERIAL_IRQ : 0x00);
 }
 
 int serial_putchar(int ch)
@@ -299,9 +317,8 @@ void BootDetectMemorySize(void)
         free(fillstring);
 }
 
-void BootPciPeripheralInitialization()
+void BootPciPeripheralInitialization(void)
 {
-
 	__asm__ __volatile__ ( "cli" );
 
 	PciWriteDword(BUS_0, DEV_1, 0, 0x80, 2);  // v1.1 2BL kill ROM area
@@ -489,15 +506,17 @@ void BootPciPeripheralInitialization()
 	PciWriteDword(BUS_1, DEV_0, FUNC_0, 0x0c, 0x0);
 	PciWriteDword(BUS_1, DEV_0, FUNC_0, 0x18, 0x08);
 
-	// Enable Serial COM1 by default
-	LpcSetSerialState(1);
+	// Enable Serial COM1 by default if not already enabled
+	if (!LpcGetSerialState()) {
+		LpcSetSerialState(1);
 
-	// Set Serial Base
-	LpcWriteRegister(0x61, SERIAL_PORT & 0xFF);
-	LpcWriteRegister(0x60, SERIAL_PORT >> 8);
+		// Set Serial Base
+		LpcWriteRegister(0x61, SERIAL_PORT & 0xFF);
+		LpcWriteRegister(0x60, SERIAL_PORT >> 8);
 
-	// Set Serial Interrupt
-	LpcWriteRegister(0x70, SERIAL_IRQ);
+		// Set Serial Interrupt
+		LpcSetSerialIRQState(1);
+	}
 
 	LpcExitConfiguration();
 }
