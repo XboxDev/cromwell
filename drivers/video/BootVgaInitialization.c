@@ -338,7 +338,6 @@ void BootVgaInitializationKernelNG(CURRENT_VIDEO_MODE_DETAILS * pvmode) {
 		
 		switch (video_encoder) {
 			case ENCODER_CONEXANT:
-				I2CWriteBytetoRegister(0x45,0xc4, 0x00); // EN_OUT = 1
 		        	// Conexant init (starts at register 0x2e)
 				regs = newmode.encoder_regs;
 		        	for(i=0x2e,n1=0;i<0x100;i+=2,n1++) {
