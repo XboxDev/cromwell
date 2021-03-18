@@ -287,8 +287,12 @@
 	xcode_pciout(0x80010010, 0xfd000000);
 	
 	
-	// overflow trick
-	xcode_poke(0x00000000, 0xfc1000ea);
-	xcode_poke(0x00000004, 0x000008ff);
+	// overflow trick (execution continues in 2bBootStartup.S)
+	// mov eax, 0xfffc1000
+	// jmp eax
+	// nop
+	xcode_poke(0x00000000, 0xfc1000B8);
+	xcode_poke(0x00000004, 0x90e0ffff);
+	
 
        	xcode_END(0x806);
