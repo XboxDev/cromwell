@@ -187,7 +187,7 @@ CONFIGENTRY *DetectSystemFatX() {
 			if (cfgReactOS != NULL) {
 				FillConfigEntries(cfgReactOS, BOOT_FATX, driveId, partIdx);
 				// TODO: Indicate non-default HDD here once that's tested and working
-				sprintf("ReactOS (%c:)", FATX_DRIVE_LETTERS[partIdx]);
+				sprintf(entryName, "ReactOS (%c:)", FATX_DRIVE_LETTERS[partIdx]);
 				config = AddNestedConfigEntry(config, cfgReactOS, entryName);
 			}
 		}
