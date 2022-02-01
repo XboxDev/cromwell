@@ -87,7 +87,7 @@ static void aout_freebsd_boot(void);
 #include "elf_loader.c"
 #endif
 
-#if defined(COFF_IMAGE) 
+#if defined(COFF_IMAGE)
 #include "../arch/e1/core/coff_loader.c"
 #endif
 
@@ -156,7 +156,7 @@ static void done(void)
 		  printf ( "\n\n****** SafeBoot Image-Verification SUCCESSFUL, Integrity established ******\n\n" );
 		}
 	}
-		
+
 #endif
 	cleanup();
 }
@@ -176,7 +176,7 @@ static int prep_segment(unsigned long start, unsigned long mid, unsigned long en
 		return 0;
 	}
 	/*
-	if ((end > virt_to_phys(_text)) && 
+	if ((end > virt_to_phys(_text)) &&
 		(start < virt_to_phys(_end))) {
 		printf("segment [%lX, %lX) overlaps etherboot [%lX, %lX)\n",
 			start, end,
@@ -222,7 +222,7 @@ static int prep_segment(unsigned long start, unsigned long mid, unsigned long en
 				continue;
 			r_start = meminfo.map[i].addr;
 			r_end = r_start + meminfo.map[i].size;
-			printf("[%X%X, %X%X) type %d\n", 
+			printf("[%X%X, %X%X) type %d\n",
 				(unsigned long)(r_start >> 32),
 				(unsigned long)r_start,
 				(unsigned long)(r_end >> 32),

@@ -34,7 +34,7 @@ int LoadFATXFilefixed(FATXPartition *partition,char *filename, FATXFILEINFO *fil
 #endif
 			fileinfo->buffer = Position;
 			memset(fileinfo->buffer,0xff,fileinfo->fileSize);
-			
+
 			if(FATXLoadFromDisk(partition, fileinfo)) {
 				return true;
 			} else {
@@ -316,7 +316,7 @@ void _DumpFATXTree(FATXPartition* partition, int clusterId, int nesting) {
 				printk("WARNING: file %s has unknown flags %x\n", filename, flags);
 			}
 */
-			
+
 			// Output it
 			for(j=0; j< nesting; j++) {
 				writeBuf[j] = ' ';
@@ -333,10 +333,10 @@ void _DumpFATXTree(FATXPartition* partition, int clusterId, int nesting) {
 			}
 			*/
 			// have we hit the end of the directory yet?
-		}		
+		}
 		if (endOfDirectory) {
 			break;
-		}	
+		}
 		clusterId = getNextClusterInChain(partition, clusterId);
 	}
 }
@@ -397,7 +397,7 @@ int FATXFindFile(FATXPartition* partition,
 	    	}
 	    	i++;
   	}
-  	
+
 	// skip over any leading / characters
   	i=0;
   	while((filename[i] != 0) && (filename[i] == '/')) {
@@ -587,7 +587,7 @@ u_int32_t getNextClusterInChain(FATXPartition* partition, int clusterId) {
   	if ((nextClusterId == eocMarker) || (nextClusterId == rootFatMarker)) {
 		return -1;
 	}
-	
+
 	// is it something else unknown?
 	if (nextClusterId == 0) {
 		VIDEO_ATTR=0xffe8e8e8;
@@ -596,7 +596,7 @@ u_int32_t getNextClusterInChain(FATXPartition* partition, int clusterId) {
 	if (nextClusterId > maxCluster) {
 		printk("getNextClusterInChain : Cluster chain problem: Next cluster after %i has invalid value: %i\n", clusterId, nextClusterId);
 	}
-	
+
 	// OK!
 	return nextClusterId;
 }
@@ -604,7 +604,7 @@ u_int32_t getNextClusterInChain(FATXPartition* partition, int clusterId) {
 void LoadFATXCluster(FATXPartition* partition, int clusterId, unsigned char* clusterData) {
 	u_int64_t clusterAddress;
 	u_int64_t readSize;
-	
+
 	// work out the address of the cluster
 	clusterAddress = partition->cluster1Address + ((unsigned long long)(clusterId - 1) * partition->clusterSize);
 
@@ -616,12 +616,12 @@ void LoadFATXCluster(FATXPartition* partition, int clusterId, unsigned char* clu
 		printk("LoadFATXCluster : Out of data while reading cluster %i\n", clusterId);
 	}
 }
-	    
+
 
 int FATXRawRead(int drive, int sector, unsigned long long byte_offset, int byte_len, char *buf) {
 
 	int byte_read;
-	
+
 	byte_read = 0;
 
 //	printk("rawread: sector=0x%X, byte_offset=0x%X, len=%d\n", sector, byte_offset, byte_len);

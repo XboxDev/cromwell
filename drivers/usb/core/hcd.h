@@ -106,7 +106,7 @@ struct usb_hcd {	/* usb_bus.hcpriv points to this */
 
 	/* more shared queuing code would be good; it should support
 	 * smarter scheduling, handle transaction translators, etc;
-	 * input size of periodic table to an interrupt scheduler. 
+	 * input size of periodic table to an interrupt scheduler.
 	 * (ohci 32, uhci 1024, ehci 256/512/1024).
 	 */
 };

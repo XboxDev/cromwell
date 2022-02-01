@@ -20,7 +20,7 @@ TEXTMENU* FlashMenuInit(void) {
 	menuPtr = malloc(sizeof(TEXTMENU));
 	memset(menuPtr,0x00,sizeof(TEXTMENU));
 	strcpy(menuPtr->szCaption, "Flash Menu");
-	
+
 	for (i=0; i<2; ++i) {
 		if (tsaHarddiskInfo[i].m_fDriveExists && tsaHarddiskInfo[i].m_fAtapi) {
 			char *driveName=malloc(sizeof(char)*32);

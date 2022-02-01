@@ -4,7 +4,7 @@
  * 2003-06-21 Georg Acher (georg@acher.org)
  *
  * Concept:
- * 
+ *
  * 1) Forget all device interrupts, scheduling, semaphores, threads etc.
  * 1a) Forget all DMA and PCI helper functions
  * 2) Forget usbdevfs, procfs and ioctls
@@ -13,7 +13,7 @@
  * 5) Emulate synchronous USB-messages (usb_*_msg) with busy waiting
  *
  * To be done:
- * 6) Remove code bloat  
+ * 6) Remove code bloat
  *
  */
 
@@ -42,11 +42,11 @@ void* thread_parm;
 static struct device_driver *m_drivers[MAX_DRVS];
 static int drvs_num;
 
-/*------------------------------------------------------------------------*/ 
-/* 
+/*------------------------------------------------------------------------*/
+/*
  * Helper functions for top-level system
  */
-/*------------------------------------------------------------------------*/ 
+/*------------------------------------------------------------------------*/
 void init_wrapper(void)
 {
 	int n;
@@ -70,7 +70,7 @@ void init_wrapper(void)
 	for(n=0;n<MAX_DRVS;n++)
 		m_drivers[n]=NULL;
 }
-/*------------------------------------------------------------------------*/ 
+/*------------------------------------------------------------------------*/
 void handle_irqs(int irq)
 {
 	int n;
@@ -81,19 +81,19 @@ void handle_irqs(int irq)
 			reg_irqs[n].handler(reg_irqs[n].irq,reg_irqs[n].data,NULL);
 	}
 }
-/*------------------------------------------------------------------------*/ 
+/*------------------------------------------------------------------------*/
 void inc_jiffies(int n)
 {
 	my_jiffies+=n;
 }
-/*------------------------------------------------------------------------*/ 
+/*------------------------------------------------------------------------*/
 void do_all_timers(void)
 {
 	int n;
 	for(n=0;n<MAX_TIMERS;n++)
 	{
 		if (main_timer_list[n] &&
-		    main_timer_list[n]->function && main_timer_list[n]->expires) 
+		    main_timer_list[n]->function && main_timer_list[n]->expires)
 		{
 			void (*function)(unsigned long)=main_timer_list[n]->function;
 			unsigned long data=main_timer_list[n]->data;
@@ -106,7 +106,7 @@ void do_all_timers(void)
 		}
 	}
 }
-/*------------------------------------------------------------------------*/ 
+/*------------------------------------------------------------------------*/
 // Purpose: Remember thread procedure and data in global var
 int my_kernel_thread(int (*handler)(void*), void* parm, int flags)
 {
@@ -114,11 +114,11 @@ int my_kernel_thread(int (*handler)(void*), void* parm, int flags)
 	thread_parm=parm;
 	return 42; // PID :-)
 }
-/*------------------------------------------------------------------------*/ 
+/*------------------------------------------------------------------------*/
 /* Device management
  * As simple as possible, but as complete as necessary ...
  */
-/*------------------------------------------------------------------------*/ 
+/*------------------------------------------------------------------------*/
 
 
 /* calls probe function for hotplug (which does device matching), this is the
@@ -152,7 +152,7 @@ int my_device_add(struct device *dev)
 	dev->driver=NULL;
 	return -ENODEV;
 }
-/*------------------------------------------------------------------------*/ 
+/*------------------------------------------------------------------------*/
 int my_driver_register(struct device_driver *driver)
 {
 
@@ -164,29 +164,29 @@ int my_driver_register(struct device_driver *driver)
 	}
 	return -1;
 }
-/*------------------------------------------------------------------------*/ 
+/*------------------------------------------------------------------------*/
 int my_device_unregister(struct device *dev)
 {
 	if (dev->driver && dev->driver->remove)
 		dev->driver->remove(dev);
 	return 0;
-		
+
 }
-/*------------------------------------------------------------------------*/ 
+/*------------------------------------------------------------------------*/
 struct device *my_get_device(struct device *dev)
 {
 	return NULL;
 }
-/*------------------------------------------------------------------------*/ 
+/*------------------------------------------------------------------------*/
 void my_device_initialize(struct device *dev)
 {
 }
-/*------------------------------------------------------------------------*/ 
+/*------------------------------------------------------------------------*/
 void my_wake_up(void* p)
 {
 	need_wakeup=1;
 }
-/*------------------------------------------------------------------------*/ 
+/*------------------------------------------------------------------------*/
 /* wait until woken up (only one wait allowed!) */
 int my_schedule_timeout(int x)
 {
@@ -210,26 +210,26 @@ int my_schedule_timeout(int x)
 //	printk("schedule DONE!!!!!!\n");
 	return x;
 }
-/*------------------------------------------------------------------------*/ 
+/*------------------------------------------------------------------------*/
 void my_wait_for_completion(struct completion *x)
 {
 	int n=100;
 //	printk("wait for completion\n");
 	while(!x->done && (n>0))
 	{
-		do_all_timers();	
+		do_all_timers();
 #ifndef HAVE_IRQS
 		handle_irqs(-1);
 
 #endif
-		wait_ms(10);	
+		wait_ms(10);
 		n--;
 	}
 //	printk("wait for completion done %i\n",x->done);
 }
-/*------------------------------------------------------------------------*/ 
+/*------------------------------------------------------------------------*/
 // Helper for pci_module_init
-/*------------------------------------------------------------------------*/ 
+/*------------------------------------------------------------------------*/
 int my_pci_module_init(struct pci_driver *x)
 {
 	struct pci_dev *dev=pci_probe_dev;
@@ -242,12 +242,12 @@ int my_pci_module_init(struct pci_driver *x)
 	x->probe(dev, id);
 	return 0;
 }
-/*------------------------------------------------------------------------*/ 
+/*------------------------------------------------------------------------*/
 struct pci_dev *my_pci_find_slot(int a,int b)
 {
 	return NULL;
 }
-/*------------------------------------------------------------------------*/ 
+/*------------------------------------------------------------------------*/
 int my_request_irq(unsigned int irq,
                        int  (*handler)(int,void *, struct pt_regs *),
                        unsigned long mode, const char *desc, void *data)
@@ -262,10 +262,10 @@ int my_request_irq(unsigned int irq,
 	}
 	return 1;
 }
-/*------------------------------------------------------------------------*/ 
+/*------------------------------------------------------------------------*/
 int my_free_irq(int irq, void* p)
 {
 	/* No free... */
 	return 0;
 }
-/*------------------------------------------------------------------------*/ 
+/*------------------------------------------------------------------------*/

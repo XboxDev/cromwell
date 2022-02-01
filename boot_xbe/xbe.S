@@ -16,7 +16,7 @@ header_start:
   .long 0                               // time date stamp                 *unimportant*
   .long certificate                     // certificate address
   .long 1                               // number of section headers
-  .long section_headers                 // section headers address 
+  .long section_headers                 // section headers address
   .long 0                               // initialization flags
   .long 0x11100 ^ 0xA8FC57AB            // entry point address XOR key **GAS ISSUE: "entry" won't work**
   .long 0x18000                         // thread local storage address
@@ -53,17 +53,17 @@ normalname:
   .word 0,0,0,0,0,0,0,0,0,0,0,0,0
 
 
-      
+
 
   // alternate title ids
   .long 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
 
   .long 0xC0000005
   .long 0x80000007   // game regions: all; don't delete eepromkey
-  .long -1  // game ratings 
+  .long -1  // game ratings
   .long 0   // disk number
   .long 0   // version
-  
+
   // LAN key
   .long 0,0,0,0
 

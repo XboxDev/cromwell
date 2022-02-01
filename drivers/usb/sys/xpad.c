@@ -28,12 +28,12 @@ struct xpad_info
 };
 
 int xpad_num=0;
-/*------------------------------------------------------------------------*/ 
+/*------------------------------------------------------------------------*/
 static void xpad_irq(struct urb *urb, struct pt_regs *regs)
 {
 	struct xpad_info *xpi = urb->context;
 	unsigned char* data= urb->transfer_buffer;
-	
+
 //	struct xpad_data *xp=&XPAD_current[xpi->num];
 //	struct xpad_data *xpo=&XPAD_last[xpi->num];
 
@@ -44,12 +44,12 @@ static void xpad_irq(struct urb *urb, struct pt_regs *regs)
 
 	struct xpad_data *xp=&XPAD_current[0];
 	struct xpad_data *xpo=&XPAD_last[0];
-	
+
 	if (xpi->num<0 || xpi->num>3)
 		return;
-	
+
 	memcpy(xpo,xp,sizeof(struct xpad_data));
-	
+
 	xp->stick_left_x=(short) (((short)data[13] << 8) | data[12]);
 	xp->stick_left_y=(short) (((short)data[15] << 8) | data[14]);
 	xp->stick_right_x=(short) (((short)data[17] << 8) | data[16]);
@@ -64,11 +64,11 @@ static void xpad_irq(struct urb *urb, struct pt_regs *regs)
 	xp->keys[3] = data[7]; // y
 	xp->keys[4] = data[8]; // black
 	xp->keys[5] = data[9]; // white
-	xp->timestamp=jiffies; // FIXME: A more uniform flowing time would be better... 	
+	xp->timestamp=jiffies; // FIXME: A more uniform flowing time would be better...
 	usb_submit_urb(urb,GFP_ATOMIC);
 
 }
-/*------------------------------------------------------------------------*/ 
+/*------------------------------------------------------------------------*/
 static int xpad_probe(struct usb_interface *intf, const struct usb_device_id *id)
 {
 	struct urb *urb;
@@ -100,19 +100,19 @@ static int xpad_probe(struct usb_interface *intf, const struct usb_device_id *id
 		// Brum Brum
 		char data1[6]={0,6,0,120,0,120};
 		char data2[6]={0,6,0,0,0,0};
-		int dummy;			
+		int dummy;
 
 		usb_bulk_msg(udev, usb_sndbulkpipe(udev,2),
 			data1, 6, &dummy, 500);
 		wait_ms(500);
 		usb_bulk_msg(udev, usb_sndbulkpipe(udev,2),
-			data2, 6, &dummy, 500);		
+			data2, 6, &dummy, 500);
 	}
 	#endif
 	xpad_num++;
 	return 0;
 }
-/*------------------------------------------------------------------------*/ 
+/*------------------------------------------------------------------------*/
 static void xpad_disconnect(struct usb_interface *intf)
 {
 	struct xpad_info *xpi=usb_get_intfdata (intf);
@@ -121,7 +121,7 @@ static void xpad_disconnect(struct usb_interface *intf)
 	kfree(xpi);
 	xpad_num--;
 }
-/*------------------------------------------------------------------------*/ 
+/*------------------------------------------------------------------------*/
 static struct usb_device_id xpad_ids [] = {
 	{ USB_DEVICE(0x044f, 0x0f07) },//Thrustmaster, Inc. Controller
 	{ USB_DEVICE(0x045e, 0x0202) },//Microsoft Xbox Controller
@@ -148,13 +148,13 @@ static struct usb_device_id xpad_ids [] = {
 	{ USB_DEVICE(0x0e6f, 0x0005) },//Eclipse wireless Controlle
 	{ USB_DEVICE(0x0e6f, 0x0006) },//Edge wireless Controller
 	{ USB_DEVICE(0x0e8f, 0x0201) },//Smartjoy Frag PS2/Xpad adaptor
-	{ USB_DEVICE(0x0f30, 0x0202) },//Joytech Advanced Controller 
+	{ USB_DEVICE(0x0f30, 0x0202) },//Joytech Advanced Controller
 	{ USB_DEVICE(0x0f30, 0x8888) },//BigBen XBMiniPad Controller
 	{ USB_DEVICE(0x102c, 0xff0c) },//Joytech Wireless Advanced Controller
-	{ USB_DEVICE(0x12ab, 0x8809) },//Xbox DDR dancepad 
-	{ USB_DEVICE(0xffff, 0xffff) },//Chinese-made Xbox Controller 
+	{ USB_DEVICE(0x12ab, 0x8809) },//Xbox DDR dancepad
+	{ USB_DEVICE(0xffff, 0xffff) },//Chinese-made Xbox Controller
 	{ USB_DEVICE(0x0000, 0x0000) }, // nothing detected - FAIL
-        { }                            /* Terminating entry */   
+        { }                            /* Terminating entry */
 };
 
 
@@ -166,7 +166,7 @@ static struct usb_driver xpad_driver = {
 	.id_table =	xpad_ids,
 };
 
-/*------------------------------------------------------------------------*/ 
+/*------------------------------------------------------------------------*/
 void XPADInit(void)
 {
 	int n;
@@ -176,19 +176,19 @@ void XPADInit(void)
 		memset(&XPAD_last[n], 0, sizeof(struct xpad_data));
 	}
 	memset(&xpad_button_history, 0, sizeof(xpad_button_history));
-	
+
 	usbprintk("XPAD probe %p ",xpad_probe);
 	if (usb_register(&xpad_driver) < 0) {
 		err("Unable to register XPAD driver");
 		return;
-	}       
+	}
 }
-/*------------------------------------------------------------------------*/ 
+/*------------------------------------------------------------------------*/
 void XPADRemove(void) {
 	usb_deregister(&xpad_driver);
 }
 
-/*------------------------------------------------------------------------*/ 
+/*------------------------------------------------------------------------*/
 
 
 

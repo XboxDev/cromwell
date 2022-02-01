@@ -30,7 +30,7 @@ bool BootFlashGetDescriptor( OBJECT_FLASH *pof, KNOWN_FLASH_TYPE * pkft )
 
 	while(nTries++ <2) { // first we try 29xxx method, then 28xxx if that failed
 
-	
+
 		if(nTries!=1) { // 29xxx protocol
 
 			// make sure the flash state machine is reset
@@ -146,7 +146,7 @@ bool BootFlashGetDescriptor( OBJECT_FLASH *pof, KNOWN_FLASH_TYPE * pkft )
  // needed to cover pof->m_dwStartOffset .. (pof->m_dwStartOffset+pof->m_dwLengthUsedArea)
 
  #define MAX_ERASE_RETRIES_IN_4KBLOCK_BEFORE_FAILING 4
- 
+
 bool BootFlashEraseMinimalRegion( OBJECT_FLASH *pof )
 {
 	u32 dw=pof->m_dwStartOffset;
@@ -245,7 +245,7 @@ bool BootFlashEraseMinimalRegion( OBJECT_FLASH *pof )
 					}
 				}
 
-					// if we had a couple of unsuccessful tries at block erase already, try chip erase				
+					// if we had a couple of unsuccessful tries at block erase already, try chip erase
 					// safety features...
 				if(
 					(dwCountTries<3) &&  // other commands did not work at all

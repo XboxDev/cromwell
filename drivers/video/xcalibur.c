@@ -22,7 +22,7 @@ int xcalibur_calc_hdtv_mode(
 	){
 	*regs = (void *)malloc(0x90*sizeof(char)*4);
 	//Only 480p so far, sorry!
-	memcpy(*regs,&HDTV_XCal_Vals_480p[0],0x90*sizeof(char)*4);	
+	memcpy(*regs,&HDTV_XCal_Vals_480p[0],0x90*sizeof(char)*4);
 	return 1;
 }
 
@@ -30,7 +30,7 @@ int xcalibur_calc_mode(xbox_video_mode * mode, struct riva_regs * riva_out)
 {
 	//These registers consist of 4 bytes per address.
 	riva_out->encoder_regs = (void *)malloc(0x90*sizeof(char)*4);
-	
+
 	//Syncs.
 	switch(mode->tv_encoding) {
 		case TV_ENC_PALBDGHI:
@@ -40,7 +40,7 @@ int xcalibur_calc_mode(xbox_video_mode * mode, struct riva_regs * riva_out)
 			riva_out->ext.htotal = 800 - 1;
 			riva_out->ext.vtotal = 520 - 1;
 			break;
-			
+
 		case TV_ENC_NTSC:
 		default: // Default to NTSC
 			memcpy(riva_out->encoder_regs,&Composite_XCal_Vals_NTSC[0],0x90*sizeof(char)*4);
@@ -50,7 +50,7 @@ int xcalibur_calc_mode(xbox_video_mode * mode, struct riva_regs * riva_out)
 			riva_out->ext.vtotal = 525 - 1;
 			break;
 	}
-		
+
 	riva_out->ext.width = mode->xres;
 	riva_out->ext.height = mode->yres;
 	riva_out->ext.vcrtc = mode->yres - 1;
@@ -67,6 +67,6 @@ int xcalibur_calc_mode(xbox_video_mode * mode, struct riva_regs * riva_out)
 	riva_out->ext.crtcvstart = mode->yres + 32;
 	//increased from 32
 	riva_out->ext.crtcvtotal = mode->yres + 64;
-	
+
 	return 1;
 }

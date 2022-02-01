@@ -197,9 +197,9 @@ extern int loadkernel P((const char *fname));
 extern void rx_qdrain P((void));
 extern int tftp P((const char *name, int (*)(unsigned char *, unsigned int, unsigned int, int)));
 extern int ip_transmit P((int len, const void *buf));
-extern void build_ip_hdr P((unsigned long destip, int ttl, int protocol, 
+extern void build_ip_hdr P((unsigned long destip, int ttl, int protocol,
 	int option_len, int len, const void *buf));
-extern void build_udp_hdr P((unsigned long destip, 
+extern void build_udp_hdr P((unsigned long destip,
 	unsigned int srcsock, unsigned int destsock, int ttl,
 	int len, const void *buf));
 extern int udp_transmit P((unsigned long destip, unsigned int srcsock,
@@ -338,7 +338,7 @@ struct os_entry_regs {
 	uint32_t  edx; /* 20 */
 	uint32_t  ecx; /* 24 */
 	uint32_t  eax; /* 28 */
-	
+
 	uint32_t saved_ebp; /* 32 */
 	uint32_t saved_esi; /* 36 */
 	uint32_t saved_edi; /* 40 */

@@ -28,7 +28,7 @@
 
 
 
-/* within 1MB of 4GB is too close. 
+/* within 1MB of 4GB is too close.
  * MAX_ADDR is the maximum address we can easily do DMA to.
  */
 #define MAX_ADDR (0xfff00000UL)

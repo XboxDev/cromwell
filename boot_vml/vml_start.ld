@@ -11,16 +11,16 @@ MEMORY
 }
 
 
-LOW_ROM = 0x00100000; 
+LOW_ROM = 0x00100000;
 
 SECTIONS {
 
 		/* ROM allocations */
 
 	.vmlinuz_start LOW_ROM : AT ( 0 ){
-		
+
 		*(.vmlinuz_start);
-		
+
 	}
 
 	.rodata (LOW_ROM + SIZEOF(.vmlinuz_start)) : AT (SIZEOF(.vmlinuz_start)) {
@@ -31,9 +31,9 @@ SECTIONS {
 		*(.rodata.cst8);
 
 	}
-        
-	/* ram allocations */        
-	
+
+	/* ram allocations */
+
 	.data (LOW_ROM + SIZEOF(.vmlinuz_start) + SIZEOF(.rodata)) : AT( SIZEOF(.vmlinuz_start) + SIZEOF(.rodata) ) {
 		_start_data = .;
 		*(.data);

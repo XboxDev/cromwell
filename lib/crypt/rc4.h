@@ -3,9 +3,9 @@
 #define RC4_HEADER_INCLUDED
 
 typedef struct rc4_key
-{      
-	unsigned char state[256];       
-	unsigned char x;        
+{
+	unsigned char state[256];
+	unsigned char x;
 	unsigned char y;
 } rc4_key;
 

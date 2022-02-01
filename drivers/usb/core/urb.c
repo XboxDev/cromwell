@@ -61,7 +61,7 @@ struct urb *usb_alloc_urb(int iso_packets, int mem_flags)
 {
 	struct urb *urb;
 
-	urb = (struct urb *)kmalloc(sizeof(struct urb) + 
+	urb = (struct urb *)kmalloc(sizeof(struct urb) +
 		iso_packets * sizeof(struct usb_iso_packet_descriptor),
 		mem_flags);
 	if (!urb) {
@@ -109,8 +109,8 @@ struct urb * usb_get_urb(struct urb *urb)
 	} else
 		return NULL;
 }
-		
-		
+
+
 /*-------------------------------------------------------------------*/
 
 /**
@@ -192,7 +192,7 @@ struct urb * usb_get_urb(struct urb *urb)
  *       semaphores), or
  *   (c) current->state != TASK_RUNNING, this is the case only after
  *       you've changed it.
- * 
+ *
  * GFP_NOIO is used in the block io path and error handling of storage
  * devices.
  *
@@ -280,11 +280,11 @@ int usb_submit_urb(struct urb *urb, int mem_flags)
 			max *= mult;
 		}
 
-		if (urb->number_of_packets <= 0)		    
+		if (urb->number_of_packets <= 0)
 			return -EINVAL;
 		for (n = 0; n < urb->number_of_packets; n++) {
 			len = urb->iso_frame_desc [n].length;
-			if (len < 0 || len > max) 
+			if (len < 0 || len > max)
 				return -EMSGSIZE;
 			urb->iso_frame_desc [n].status = -EXDEV;
 			urb->iso_frame_desc [n].actual_length = 0;

@@ -57,7 +57,7 @@ void BootPrintConfig(const OPTLINUX *optLinux) {
 			printk("\n");
 			if (CharsSinceNewline>25) printk("%c",c);
 			CharsSinceNewline = 0;
-		} 
+		}
 		else printk("%c",c);
 	}
 	printk("\n");
@@ -95,18 +95,18 @@ CONFIGENTRY *DetectLinuxNative(char *szGrub) {
 		strcpy(&szGrub[4], "/linuxboot.cfg");
 		nRet=grub_open(szGrub);
 	}
-	
+
 	dwConfigSize=filemax;
 	if (nRet != 1 || errnum) {
 		//File not found
 		errnum = 0;
 		return NULL;
 	}
-	
+
 	nLen=grub_read((void *)KERNEL_SETUP, filemax);
 
 	if (nLen > MAX_CONFIG_FILESIZE) nLen = MAX_CONFIG_FILESIZE;
-	
+
 	config = ParseConfig((char *)KERNEL_SETUP, nLen, NULL);
 
 	grub_close();
@@ -131,8 +131,8 @@ int LoadLinuxNative(char *szGrub, const OPTLINUX *optLinux) {
 		wait_ms(2000);
 		return false;
 	}
-        
-	// Use INITRD_START as temporary location for loading the Kernel 
+
+	// Use INITRD_START as temporary location for loading the Kernel
 	tempBuf = (u8*)INITRD_START;
 	dwKernelSize=grub_read(tempBuf, MAX_KERNEL_SIZE);
 	memPlaceKernel(tempBuf, dwKernelSize);
@@ -171,7 +171,7 @@ int LoadLinuxNative(char *szGrub, const OPTLINUX *optLinux) {
 CONFIGENTRY *DetectLinuxFATX(FATXPartition *partition) {
 	FATXFILEINFO fileinfo;
 	CONFIGENTRY *config=NULL, *currentConfigItem=NULL;
-	
+
 	if (LoadFATXFile(partition, "/linuxboot.cfg", &fileinfo)) {
 		//Root of E has a linuxboot.cfg in
 		config = (CONFIGENTRY *)malloc(sizeof(CONFIGENTRY));
@@ -202,7 +202,7 @@ int LoadLinuxFATX(FATXPartition *partition, const OPTLINUX *optLinux) {
 
 	VIDEO_ATTR=0xffd8d8d8;
 	printk("  Loading %s from FATX", optLinux->szKernel);
-	// Use INITRD_START as temporary location for loading the Kernel 
+	// Use INITRD_START as temporary location for loading the Kernel
 	tempBuf = (u8*)INITRD_START;
 	if (!LoadFATXFilefixed(partition, optLinux->szKernel, &infokernel, tempBuf)) {
 		printk("Error loading kernel %s\n", optLinux->szKernel);
@@ -212,7 +212,7 @@ int LoadLinuxFATX(FATXPartition *partition, const OPTLINUX *optLinux) {
 		dwKernelSize = infokernel.fileSize;
 		// moving the kernel to its final location
 		memPlaceKernel(tempBuf, dwKernelSize);
-		
+
 		printk(" - %d bytes\n", infokernel.fileRead);
 	}
 
@@ -225,7 +225,7 @@ int LoadLinuxFATX(FATXPartition *partition, const OPTLINUX *optLinux) {
 			wait_ms(2000);
 			return false;
 		}
-		
+
 		dwInitrdSize = infoinitrd.fileSize;
 		printk(" - %d %d bytes\n", dwInitrdSize,infoinitrd.fileRead);
 	} else {
@@ -253,10 +253,10 @@ CONFIGENTRY *DetectLinuxCD(int cdromId) {
 
 	//Failed to load the config file
 	if (dwConfigSize <= 0) return NULL;
-        
+
 	// LinuxBoot.cfg File Loaded
 	config = ParseConfig((char *)KERNEL_SETUP, dwConfigSize, NULL);
-	
+
 	return config;
 }
 
@@ -269,7 +269,7 @@ int LoadLinuxCD(CONFIGENTRY *config) {
 	VIDEO_ATTR=0xffd8d8d8;
 	printk("  Loading %s from CD", optLinux->szKernel);
 	VIDEO_ATTR=0xffa8a8a8;
-	// Use INITRD_START as temporary location for loading the Kernel 
+	// Use INITRD_START as temporary location for loading the Kernel
 	tempBuf = (u8*)INITRD_START;
 	dwKernelSize = BootIso9660GetFile(config->drive, optLinux->szKernel, tempBuf, MAX_KERNEL_SIZE);
 
@@ -286,7 +286,7 @@ int LoadLinuxCD(CONFIGENTRY *config) {
 		VIDEO_ATTR=0xffd8d8d8;
 		printk("  Loading %s from CD", optLinux->szInitrd);
 		VIDEO_ATTR=0xffa8a8a8;
-		
+
 		dwInitrdSize = BootIso9660GetFile(config->drive, optLinux->szInitrd, (void *)INITRD_START, MAX_INITRD_SIZE);
 		if (dwInitrdSize < 0) {
 			printk("Not Found, error %d\nHalting\n", dwInitrdSize);
@@ -320,7 +320,7 @@ void ExittoLinux(const OPTLINUX *optLinux) {
 	setLED("rrrr");
 	startLinux((void*)INITRD_START, dwInitrdSize, optLinux->szAppend, 0x100000);
 }
-	
+
 
 void startLinux(void* initrdStart, unsigned long initrdSize, const char* appendLine, unsigned int entry)
 {
@@ -328,7 +328,7 @@ void startLinux(void* initrdStart, unsigned long initrdSize, const char* appendL
 	// turn off USB
 	BootStopUSB();
 	setup( (void *)KERNEL_SETUP, initrdStart, initrdSize, appendLine);
-        
+
 	if(tsaHarddiskInfo[0].m_bCableConductors == 80) {
 		if(tsaHarddiskInfo[0].m_wAtaRevisionSupported&2) nAta=1;
 		if(tsaHarddiskInfo[0].m_wAtaRevisionSupported&4) nAta=2;
@@ -345,28 +345,28 @@ void startLinux(void* initrdStart, unsigned long initrdSize, const char* appendL
 
 	// Set the LED to auto-mode
 	resetLED();
-	         
+
 	// Set framebuffer address to final location (for vesafb driver)
 	(*(unsigned int*)0xFD600800) = (0xf0000000 | ((xbox_ram*0x100000) - FB_SIZE));
-	
+
 	// disable interrupts
 	asm volatile ("cli\n");
-	
+
 	// clear idt area
 	memset((void*)IDT_LOC,0x0,1024*8);
-	
+
 	__asm__ ("movl %0,%%ebx" : : "a" (entry));	/* ebx = entry */
-	
+
 	__asm __volatile__ (
 	"wbinvd\n"
-	
+
 	// Flush the TLB
 	"xor %eax, %eax \n"
 	"mov %eax, %cr3 \n"
-	
+
 	// Load IDT table (0xB0000 = IDT_LOC)
 	"lidt 	0xB0000\n"
-	
+
 	// DR6/DR7: Clear the debug registers
 	"xor %eax, %eax \n"
 	"mov %eax, %dr6 \n"
@@ -375,16 +375,16 @@ void startLinux(void* initrdStart, unsigned long initrdSize, const char* appendL
 	"mov %eax, %dr1 \n"
 	"mov %eax, %dr2 \n"
 	"mov %eax, %dr3 \n"
-	
+
 	// Kill the LDT, if any
 	"xor	%eax, %eax \n"
 	"lldt %ax \n"
-        
+
 	// Reload CS as 0010 from the new GDT using a far jump
 	".byte 0xEA       \n"   // jmp far 0010:reload_cs
 	".long reload_cs_exit  \n"
 	".word 0x0010  \n"
-	
+
 	".align 16  \n"
 	"reload_cs_exit: \n"
 
@@ -404,7 +404,7 @@ void startLinux(void* initrdStart, unsigned long initrdSize, const char* appendL
 
 	// Set the stack pointer to give us a valid stack
 	"movl $0x03BFFFFC, %esp \n"
-	
+
 	"xor 	%eax, %eax \n"
 	"xor 	%ecx, %ecx \n"
 	"xor 	%edx, %edx \n"
@@ -424,10 +424,10 @@ void startLinux(void* initrdStart, unsigned long initrdSize, const char* appendL
 	"xor	%ebx,%ebx\n"		// clean leftover ebx (held entry point)
 	".byte	0xcb\n	"		// retf
 	);
-	
+
 	// We are not longer here, we are already in the Linux loader, we never come back here
-	
-	// See you again in Linux then	
+
+	// See you again in Linux then
 	while(1);
 }
 

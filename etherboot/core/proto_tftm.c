@@ -1,6 +1,6 @@
 /**************************************************************************
 *
-*    proto_tftm.c -- Etherboot Multicast TFTP 
+*    proto_tftm.c -- Etherboot Multicast TFTP
 *    Written 2003-2003 by Timothy Legge <tlegge@rogers.com>
 *
 *    This program is free software; you can redistribute it and/or modify
@@ -17,9 +17,9 @@
 *    along with this program; if not, write to the Free Software
 *    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 *
-*    This code is based on the DOWNLOAD_PROTO_TFTM section of 
+*    This code is based on the DOWNLOAD_PROTO_TFTM section of
 *    Etherboot 5.3 core/nic.c and:
-*    
+*
 *    Anselm Martin Hoffmeister's previous proto_tftm.c multicast work
 *    Eric Biederman's proto_slam.c
 *

@@ -83,7 +83,7 @@ struct kernel_setup_t {
 extern void* framebuffer;
 
 void setup(void* KernelPos, void* PhysInitrdPos, unsigned long InitrdSize, const char* kernel_cmdline) {
-    
+
     struct kernel_setup_t *kernel_setup = (struct kernel_setup_t*)KernelPos;
 
     memset(kernel_setup->__pad2,0x00,sizeof(kernel_setup->__pad2));
@@ -92,7 +92,7 @@ void setup(void* KernelPos, void* PhysInitrdPos, unsigned long InitrdSize, const
     memset(kernel_setup->__pad5,0x00,sizeof(kernel_setup->__pad5));
     kernel_setup->unused2=0;
     kernel_setup->unused3=0;
-    
+
     /* init kernel parameters */
     kernel_setup->loader = 0xff;		/* must be != 0 */
     kernel_setup->heap_end_ptr = 0xffff;	/* 64K heap */
@@ -129,7 +129,7 @@ void setup(void* KernelPos, void* PhysInitrdPos, unsigned long InitrdSize, const
     kernel_setup->lfb_width = vmode.width;
 
     kernel_setup->lfb_height = vmode.height; // SCREEN_HEIGHT_480;
-    
+
     kernel_setup->lfb_base =  (0xf0000000 | ((xbox_ram*0x100000) - FB_SIZE));
 
     kernel_setup->lfb_size = FB_SIZE / 0x10000;
@@ -153,7 +153,7 @@ void setup(void* KernelPos, void* PhysInitrdPos, unsigned long InitrdSize, const
     kernel_setup->a=0;
     kernel_setup->b=0;
     kernel_setup->c=0;
-    
+
     kernel_setup->root_flags=0; // allow read/write
 
     /* setup e820 memory map */

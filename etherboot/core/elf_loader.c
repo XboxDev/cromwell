@@ -56,7 +56,7 @@ static int elf_prep_segment(
 
 {
 	if (estate.check_ip_checksum) {
-		if ((istart <= estate.ip_checksum_offset) && 
+		if ((istart <= estate.ip_checksum_offset) &&
 			(iend > estate.ip_checksum_offset)) {
 			/* The checksum note is also loaded in a
 			 * PT_LOAD segment, so the computed checksum
@@ -93,7 +93,7 @@ static void process_elf_notes(unsigned char *header,
 		if (next > end) {
 			break;
 		}
-		if ((hdr->n_namesz == sizeof(ELF_NOTE_BOOT)) && 
+		if ((hdr->n_namesz == sizeof(ELF_NOTE_BOOT)) &&
 			(memcmp(n_name, ELF_NOTE_BOOT, sizeof(ELF_NOTE_BOOT)) == 0)) {
 			switch(hdr->n_type) {
 			case EIN_PROGRAM_NAME:
@@ -121,7 +121,7 @@ static void process_elf_notes(unsigned char *header,
 			}
 		}
 #if ELF_DEBUG
-		printf("n_type: %x n_name(%d): %s n_desc(%d): %s\n", 
+		printf("n_type: %x n_name(%d): %s n_desc(%d): %s\n",
 			hdr->n_type,
 			hdr->n_namesz, n_name,
 			hdr->n_descsz, n_desc);
@@ -193,7 +193,7 @@ static inline os_download_t elf32_probe(unsigned char *data, unsigned int len)
 			/* Ignore ELF notes outside of the first block */
 			continue;
 		}
-		process_elf_notes(data, 
+		process_elf_notes(data,
 			estate.p.phdr32[estate.segment].p_offset, estate.p.phdr32[estate.segment].p_filesz);
 	}
 #endif
@@ -244,7 +244,7 @@ static sector_t elf32_download(unsigned char *data, unsigned int len, int eof)
 				offset += estate.skip;
 				estate.skip = 0;
 			}
-			
+
 			if (estate.toread) {
 				unsigned int cplen;
 				cplen = len - offset;
@@ -260,9 +260,9 @@ static sector_t elf32_download(unsigned char *data, unsigned int len, int eof)
 				elf_freebsd_find_segment_end();
 			}
 		}
-		
+
 		/* Data left, but current segment finished - look for the next
-		 * segment (in file offset order) that needs to be loaded. 
+		 * segment (in file offset order) that needs to be loaded.
 		 * We can only seek forward, so select the program headers,
 		 * in the correct order.
 		 */
@@ -304,7 +304,7 @@ static sector_t elf32_download(unsigned char *data, unsigned int len, int eof)
 	estate.loc += len + (estate.skip & ~0x1ff);
 	skip_sectors = estate.skip >> 9;
 	estate.skip &= 0x1ff;
-	
+
 	if (eof) {
 		unsigned long entry;
 		unsigned long machine;
@@ -421,17 +421,17 @@ static inline os_download_t elf64_probe(unsigned char *data, unsigned int len)
 			/* Ignore ELF notes outside of the first block */
 			continue;
 		}
-		process_elf_notes(data, 
+		process_elf_notes(data,
 			estate.p.phdr64[estate.segment].p_offset, estate.p.phdr64[estate.segment].p_filesz);
 	}
 #endif
 	/* Check for Etherboot related limitations.  Memory
-	 * between _text and _end is not allowed.  
+	 * between _text and _end is not allowed.
 	 * Reasons: the Etherboot code/data area.
 	 */
 	for (estate.segment = 0; estate.segment < estate.e.elf64.e_phnum; estate.segment++) {
 		unsigned long start, mid, end, istart, iend;
-		if (estate.p.phdr64[estate.segment].p_type != PT_LOAD) 
+		if (estate.p.phdr64[estate.segment].p_type != PT_LOAD)
 			continue;
 		if ((estate.p.phdr64[estate.segment].p_paddr > ULONG_MAX) ||
 			((estate.p.phdr64[estate.segment].p_paddr + estate.p.phdr64[estate.segment].p_filesz) > ULONG_MAX) ||
@@ -448,7 +448,7 @@ static inline os_download_t elf64_probe(unsigned char *data, unsigned int len)
 		{
 			istart = estate.p.phdr64[estate.segment].p_offset;
 			iend   = istart + estate.p.phdr64[estate.segment].p_filesz;
-		} 
+		}
 		if (!prep_segment(start, mid, end, istart, iend)) {
 			return 0;
 		}
@@ -480,7 +480,7 @@ static sector_t elf64_download(unsigned char *data, unsigned int len, int eof)
 				offset += estate.skip;
 				estate.skip = 0;
 			}
-			
+
 			if (estate.toread) {
 				unsigned int cplen;
 				cplen = len - offset;
@@ -495,9 +495,9 @@ static sector_t elf64_download(unsigned char *data, unsigned int len, int eof)
 					break;
 			}
 		}
-		
+
 		/* Data left, but current segment finished - look for the next
-		 * segment (in file offset order) that needs to be loaded. 
+		 * segment (in file offset order) that needs to be loaded.
 		 * We can only seek forward, so select the program headers,
 		 * in the correct order.
 		 */
@@ -529,11 +529,11 @@ static sector_t elf64_download(unsigned char *data, unsigned int len, int eof)
 			estate.segment, estate.toread, estate.curaddr);
 #endif
 	} while (offset < len);
-	
+
 	estate.loc += len + (estate.skip & ~0x1ff);
 	skip_sectors = estate.skip >> 9;
 	estate.skip &= 0x1ff;
-	
+
 	if (eof) {
 		unsigned long entry;
 		unsigned long machine;

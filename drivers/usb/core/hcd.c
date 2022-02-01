@@ -6,7 +6,7 @@
  * (C) Copyright Deti Fliegl 1999
  * (C) Copyright Randy Dunlap 2000
  * (C) Copyright David Brownell 2000-2002
- * 
+ *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
  * Free Software Foundation; either version 2 of the License, or (at your
@@ -171,13 +171,13 @@ static const u8 fs_rh_config_descriptor [] = {
 	0x01,       /*  __u8  bNumInterfaces; (1) */
 	0x01,       /*  __u8  bConfigurationValue; */
 	0x00,       /*  __u8  iConfiguration; */
-	0x40,       /*  __u8  bmAttributes; 
+	0x40,       /*  __u8  bmAttributes;
 				 Bit 7: Bus-powered,
 				     6: Self-powered,
 				     5 Remote-wakwup,
 				     4..0: resvd */
 	0x00,       /*  __u8  MaxPower; */
-      
+
 	/* USB 1.1:
 	 * USB 2.0, single TT organization (mandatory):
 	 *	one interface, protocol 0
@@ -199,7 +199,7 @@ static const u8 fs_rh_config_descriptor [] = {
 	0x00,       /*  __u8  if_bInterfaceSubClass; */
 	0x00,       /*  __u8  if_bInterfaceProtocol; [usb1.1 or single tt] */
 	0x00,       /*  __u8  if_iInterface; */
-     
+
 	/* one endpoint (status change endpoint) */
 	0x07,       /*  __u8  ep_bLength; */
 	0x05,       /*  __u8  ep_bDescriptorType; Endpoint */
@@ -218,13 +218,13 @@ static const u8 hs_rh_config_descriptor [] = {
 	0x01,       /*  __u8  bNumInterfaces; (1) */
 	0x01,       /*  __u8  bConfigurationValue; */
 	0x00,       /*  __u8  iConfiguration; */
-	0x40,       /*  __u8  bmAttributes; 
+	0x40,       /*  __u8  bmAttributes;
 				 Bit 7: Bus-powered,
 				     6: Self-powered,
 				     5 Remote-wakwup,
 				     4..0: resvd */
 	0x00,       /*  __u8  MaxPower; */
-      
+
 	/* USB 1.1:
 	 * USB 2.0, single TT organization (mandatory):
 	 *	one interface, protocol 0
@@ -246,7 +246,7 @@ static const u8 hs_rh_config_descriptor [] = {
 	0x00,       /*  __u8  if_bInterfaceSubClass; */
 	0x00,       /*  __u8  if_bInterfaceProtocol; [usb1.1 or single tt] */
 	0x00,       /*  __u8  if_iInterface; */
-     
+
 	/* one endpoint (status change endpoint) */
 	0x07,       /*  __u8  ep_bLength; */
 	0x05,       /*  __u8  ep_bDescriptorType; Endpoint */
@@ -277,7 +277,7 @@ static int ascii2utf (char *s, u8 *utf, int utfmax)
  * rh_string - provides manufacturer, product and serial strings for root hub
  * @id: the string ID number (1: serial number, 2: product, 3: vendor)
  * @hcd: the host controller for this root hub
- * @type: string describing our driver 
+ * @type: string describing our driver
  * @data: return packet in UTF-16 LE
  * @len: length of the return packet
  *
@@ -457,7 +457,7 @@ error:
 
 static void rh_report_status (unsigned long ptr);
 
-static int rh_status_urb (struct usb_hcd *hcd, struct urb *urb) 
+static int rh_status_urb (struct usb_hcd *hcd, struct urb *urb)
 {
 	int	len = 1 + (urb->dev->maxchild / 8);
 
@@ -608,7 +608,7 @@ EXPORT_SYMBOL (usb_bus_init);
  * @op: pointer to a struct usb_operations that this bus structure should use
  * Context: !in_interrupt()
  *
- * Creates a USB host controller bus structure with the specified 
+ * Creates a USB host controller bus structure with the specified
  * usb_operations and initializes all the necessary internal objects.
  *
  * If no memory is available, NULL is returned.
@@ -712,7 +712,7 @@ void usb_deregister_bus (struct usb_bus *bus)
 EXPORT_SYMBOL (usb_deregister_bus);
 
 /**
- * usb_register_root_hub - called by HCD to register its root hub 
+ * usb_register_root_hub - called by HCD to register its root hub
  * @usb_dev: the usb root hub device to be registered.
  * @parent_dev: the parent device of this root hub.
  *
@@ -830,7 +830,7 @@ int usb_check_bandwidth (struct usb_device *dev, struct urb *urb)
 	new_alloc = old_alloc + (int) bustime;
 	if (new_alloc > FRAME_TIME_MAX_USECS_ALLOC) {
 #ifdef	DEBUG
-		char	*mode = 
+		char	*mode =
 #ifdef CONFIG_USB_BANDWIDTH
 			"";
 #else
@@ -988,7 +988,7 @@ static int hcd_submit_urb (struct urb *urb, int mem_flags)
 	struct usb_hcd		*hcd = urb->dev->bus->hcpriv;
 	struct hcd_dev		*dev = urb->dev->hcpriv;
 	unsigned long		flags;
-	
+
 
 	if (!hcd || !dev)
 		return -ENODEV;
@@ -1478,7 +1478,7 @@ static void hcd_panic (void *_hcd)
  *
  * This is called by bus glue to report a USB host controller that died
  * while operations may still have been pending.  It's called automatically
- * by the PCI glue, so only glue for non-PCI busses should need to call it. 
+ * by the PCI glue, so only glue for non-PCI busses should need to call it.
  */
 void usb_hc_died (struct usb_hcd *hcd)
 {
@@ -1486,7 +1486,7 @@ void usb_hc_died (struct usb_hcd *hcd)
 	struct hcd_dev		*dev;
 	struct urb		*urb;
 	unsigned long		flags;
-	
+
 	/* flag every pending urb as done */
 	spin_lock_irqsave (&hcd_data_lock, flags);
 	list_for_each (devlist, &hcd->dev_list) {

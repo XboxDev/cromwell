@@ -114,7 +114,7 @@ static inline void iounmap(void *virt_addr __unused)
  * Some non intel clones support out of order store. wmb() ceases to be a
  * nop for these.
  */
- 
+
 #define mb() 	__asm__ __volatile__ ("lock; addl $0,0(%%esp)": : :"memory")
 #define rmb()	mb()
 #define wmb()	mb();

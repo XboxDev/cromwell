@@ -41,7 +41,7 @@ uint16_t add_ipchksums(unsigned long offset, uint16_t sum, uint16_t new)
 	sum = ~sum & 0xFFFF;
 	new = ~new & 0xFFFF;
 	if (offset & 1) {
-		/* byte swap the sum if it came from an odd offset 
+		/* byte swap the sum if it came from an odd offset
 		 * since the computation is endian independant this
 		 * works.
 		 */
@@ -216,7 +216,7 @@ unsigned long strtoul(const char *p, const char **endp, int base)
 	if (endp)
 		*endp = p;
 	return(ret);
-	
+
 }
 
 #define K_RDWR		0x60		/* keyboard data & cmds (read/write) */

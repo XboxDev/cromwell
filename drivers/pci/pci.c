@@ -70,25 +70,25 @@ u32 PciReadDword(unsigned int bus, unsigned int dev, unsigned int func, unsigned
 	base_addr |= ((func & 0x07) << 8);	// func #
         base_addr |= ((func & 0x07) << 8);
         base_addr |= ((reg_off & 0xff));
-        
+
 	IoOutputDword(0xcf8, base_addr);
 	return IoInputDword(0xcfc);
 }
 
 
-u32 PciWriteDword(unsigned int bus, unsigned int dev, unsigned int func, unsigned int reg_off, unsigned int dw) 
+u32 PciWriteDword(unsigned int bus, unsigned int dev, unsigned int func, unsigned int reg_off, unsigned int dw)
 {
-		
+
 	u32 base_addr = 0x80000000;
 	base_addr |= ((bus & 0xFF) << 16);	// bus #
 	base_addr |= ((dev & 0x1F) << 11);	// device #
 	base_addr |= ((func & 0x07) << 8);	// func #
 	base_addr |= ((reg_off & 0xff));
 
-	IoOutputDword(0xcf8, base_addr );	
+	IoOutputDword(0xcf8, base_addr );
 	IoOutputDword(0xcfc ,dw);
 
-	return 0;    
+	return 0;
 }
 #define RTC_REG_A		10
 #define RTC_REG_B		11
@@ -110,14 +110,14 @@ u32 PciWriteDword(unsigned int bus, unsigned int dev, unsigned int func, unsigne
 #define RTC_CONTROL_DEFAULT (RTC_24H)
 
 // access to RTC CMOS memory
-u8 CMOS_READ(u8 addr) { 
-	IoOutputByte(0x70,addr); 
-	return IoInputByte(0x71); 
+u8 CMOS_READ(u8 addr) {
+	IoOutputByte(0x70,addr);
+	return IoInputByte(0x71);
 }
 
-void CMOS_WRITE(u8 val, u8 addr) { 
+void CMOS_WRITE(u8 val, u8 addr) {
 	IoOutputByte(0x70,addr);
-	IoOutputByte(0x71,val); 
+	IoOutputByte(0x71,val);
 }
 
 void BiosCmosWrite(u8 bAds, u8 bData) {
@@ -261,15 +261,15 @@ void BootAGPBUSInitialization(void)
 {
 	u32 temp;
 	PciWriteDword(BUS_0, DEV_1, FUNC_0, 0x54,   PciReadDword(BUS_0, DEV_1, FUNC_0, 0x54) | 0x88000000 );
-	
+
 	PciWriteDword(BUS_0, DEV_0, FUNC_0, 0x64,   (PciReadDword(BUS_0, DEV_0, FUNC_0, 0x64))| 0x88000000 );
-	
+
 	temp =  PciReadDword(BUS_0, DEV_0, FUNC_0, 0x6C);
 	IoOutputDword(0xcfc , temp & 0xFFFFFFFE);
 	IoOutputDword(0xcfc , temp );
-	
+
 	PciWriteDword(BUS_0, DEV_0, FUNC_0, 0x80, 0x00000100);
-    
+
 }
 
 void BootDetectMemorySize(void)
@@ -279,25 +279,25 @@ void BootDetectMemorySize(void)
 	unsigned char *fillstring;
 	void *membasetop = (void*)((64*1024*1024));
 	void *membaselow = (void*)((0));
-	
+
 	(*(unsigned int*)(0xFD000000 + 0x100200)) = 0x03070103 ;
 	(*(unsigned int*)(0xFD000000 + 0x100204)) = 0x11448000 ;
-        
+
         PciWriteDword(BUS_0, DEV_0, FUNC_0, 0x84, 0x7FFFFFF);  // 128 MB
-        
-	xbox_ram = 64;	
+
+	xbox_ram = 64;
 	fillstring = malloc(0x200);
 	memset(fillstring,0xAA,0x200);
 	memset(membasetop,0xAA,0x200);
 	asm volatile ("wbinvd\n");
-	
+
 	if (!memcmp(membasetop,fillstring,0x200)) {
-		// Looks like there is memory .. maybe a 128MB box 
+		// Looks like there is memory .. maybe a 128MB box
 		memset(fillstring,0x55,0x200);
 		memset(membasetop,0x55,0x200);
 		asm volatile ("wbinvd\n");
 		if (!memcmp(membasetop,fillstring,0x200)) {
-			// Looks like there is memory 
+			// Looks like there is memory
 			// now we are sure, we set memory
                         if (memcmp(membaselow,fillstring,0x200) == 0) {
                              	// Hell, we find the Test-string at 0x0 too !
@@ -305,8 +305,8 @@ void BootDetectMemorySize(void)
                         } else {
                         	xbox_ram = 128;
                         }
-		}		
-		
+		}
+
 	}
 	if (xbox_ram == 64) {
 		PciWriteDword(BUS_0, DEV_0, FUNC_0, 0x84, 0x3FFFFFF);  // 64 MB
@@ -331,7 +331,7 @@ void BootPciPeripheralInitialization(void)
 	PciWriteDword(BUS_0, DEV_0, FUNC_0, 0x44, 0x80000000); // new 2003-01-23 ag  trying to get single write actions on TSOP
 	PciWriteByte(BUS_0, DEV_0, FUNC_0, 0x87, 3); // kern 8001FC21
 	PciWriteByte(BUS_0, DEV_0, 8, 0, 0x42);       // Xbeboot-compare
-	
+
 	LpcEnterConfiguration();
 	LpcSelectRegister(0x26);	// Select CONFIG_PORT_LOW register (fixme: describe why it's done)
 	IoOutputByte(0x61, 0xff);
@@ -389,10 +389,10 @@ void BootPciPeripheralInitialization(void)
 
 	/* Setup the real time clock */
 	CMOS_WRITE(RTC_CONTROL_DEFAULT, RTC_CONTROL);
-	
+
 	/* Setup the frequency it operates at */
 	CMOS_WRITE(RTC_FREQ_SELECT_DEFAULT, RTC_FREQ_SELECT);
-	
+
 	/* Make certain we have a valid checksum */
 	//rtc_set_checksum(PC_CKS_RANGE_START,
   	//PC_CKS_RANGE_END,PC_CKS_LOC);
@@ -407,10 +407,10 @@ void BootPciPeripheralInitialization(void)
 	IoOutputWord(0x8023, IoInputByte(0x8023)|2);  // KERN: Interrupt enable register, b1 RESERVED in AMD docs
 	IoOutputByte(0x8002, IoInputByte(0x8002)|1);  // KERN: Enable SCI interrupt when timer status goes high
 	IoOutputWord(0x8028, IoInputByte(0x8028)|1);  // KERN: setting readonly trap event???
- 
+
 	I2CTransmitWord(0x10, 0x0b00); // Allow audio
 	//I2CTransmitWord(0x10, 0x0b01); // GAH!!!  Audio Mute!
-	
+
 	// Bus 0, Device 1, Function 0 = nForce HUB Interface - ISA Bridge
 	PciWriteDword(BUS_0, DEV_1, FUNC_0, 0x6c, 0x0e065491);
 	PciWriteByte(BUS_0, DEV_1, FUNC_0, 0x6a, 0x0003); // kern ??? gets us an int3?  vsync req
@@ -428,7 +428,7 @@ void BootPciPeripheralInitialization(void)
 	PciWriteDword(BUS_0, DEV_9, FUNC_0, 0x50, 0x00000002);  // without this there is no register footprint at IO 1F0
 	PciWriteDword(BUS_0, DEV_9, FUNC_0, 0x2c, 0x00000000); // frankenregister from xbe boot
 	PciWriteDword(BUS_0, DEV_9, FUNC_0, 0x40, 0x00000000); // frankenregister from xbe boot
-	
+
 	// below reinstated by frankenregister compare with xbe boot
 	PciWriteDword(BUS_0, DEV_9, FUNC_0, 0x60, 0xC0C0C0C0); // kern1.1 <--- this was in kern1.1 but is FATAL for good HDD access
 
@@ -478,7 +478,7 @@ void BootPciPeripheralInitialization(void)
 	IoOutputByte(0x80cd, 0x08); // Set PRDY pin on ACPI to be PRDY function
 	IoOutputByte(0x80cf, 0x08); // Set C32KHZ pin to be pin function
 	IoOutputWord(0x8020, IoInputWord(0x8020)|0x200); // ack any preceding ACPI int
-	
+
 	// Bus 0, Device 1e, Function 0 = nForce AGP Host to PCI Bridge
 	PciWriteDword(BUS_0, DEV_1e, FUNC_0, 4, PciReadDword(BUS_0, DEV_1e, FUNC_0, 4) | 7 );
 	PciWriteDword(BUS_0, DEV_1e, FUNC_0, 0x18, (PciReadDword(BUS_0, DEV_1e, FUNC_0, 0x18) &0xffffff00));

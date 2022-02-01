@@ -45,8 +45,8 @@ void AddIcon(ICON *newIcon) {
 		currentIcon = iconPtr;
 		iconPtr = iconPtr->nextIcon;
 	}
-	
-	if (currentIcon==NULL) { 
+
+	if (currentIcon==NULL) {
 		//This is the first icon in the chain
 		firstIcon = newIcon;
 	}
@@ -54,7 +54,7 @@ void AddIcon(ICON *newIcon) {
 	else currentIcon->nextIcon = newIcon;
 	iconPtr = newIcon;
 	iconPtr->nextIcon = NULL;
-	iconPtr->previousIcon = currentIcon; 
+	iconPtr->previousIcon = currentIcon;
 }
 
 static void IconMenuDraw(int nXOffset, int nYOffset) {
@@ -82,7 +82,7 @@ static void IconMenuDraw(int nXOffset, int nYOffset) {
 			printk("%s\n",iconPtr->szCaption);
 		}
 		else opaqueness = TRANSPARENTNESS;
-		
+
 		BootVideoJpegBlitBlend(
 			(u8 *)(FB_START+((vmode.width * (nYOffset-74))+nXOffset+(140*(iconcount+1))) * 4),
 			vmode.width, // dest bytes per line
@@ -129,27 +129,27 @@ static void IconMenuDraw(int nXOffset, int nYOffset) {
 
 void IconMenu(void) {
 	unsigned char *videosavepage;
-        
+
 	u32 COUNT_start;
 	u32 ticks = 1;
 	ICON *iconPtr=NULL;
 	int i;
 
-	extern int nTempCursorMbrX, nTempCursorMbrY; 
+	extern int nTempCursorMbrX, nTempCursorMbrY;
 	int nTempCursorResumeX, nTempCursorResumeY;
 	int nTempCursorX, nTempCursorY;
-	int nModeDependentOffset=(vmode.width-640)/2;  
-	
+	int nModeDependentOffset=(vmode.width-640)/2;
+
 	nTempCursorResumeX=nTempCursorMbrX;
 	nTempCursorResumeY=nTempCursorMbrY;
 
 	nTempCursorX=VIDEO_CURSOR_POSX;
 	nTempCursorY=vmode.height-80;
-	
+
 	// We save the complete framebuffer to memory (we restore at exit)
 	videosavepage = malloc(FB_SIZE);
 	memcpy(videosavepage,(void*)FB_START,FB_SIZE);
-	
+
 	VIDEO_CURSOR_POSX=((252+nModeDependentOffset)<<2);
 	VIDEO_CURSOR_POSY=nTempCursorY-100;
 
@@ -168,11 +168,11 @@ void IconMenu(void) {
 	while(1)
 	{
 		int changed=0;
-		wait_ms(75);	
+		wait_ms(75);
 		if (risefall_xpad_BUTTON(TRIGGER_XPAD_PAD_RIGHT) == 1)
 		{
 			if (selectedIcon->nextIcon!=NULL) {
-				//A bit ugly, but need to find the last visible icon, and see if 
+				//A bit ugly, but need to find the last visible icon, and see if
 				//we are moving further right from it.
 				lastVisibleIcon=firstVisibleIcon;
 				for (i=0; i<2; i++) {
@@ -182,9 +182,9 @@ void IconMenu(void) {
 					lastVisibleIcon = lastVisibleIcon->nextIcon;
 				}
 				if (selectedIcon == lastVisibleIcon) {
-					//We are moving further right, so slide all the icons along. 
+					//We are moving further right, so slide all the icons along.
 					if(lastVisibleIcon->nextIcon != NULL) {
-						firstVisibleIcon = firstVisibleIcon->nextIcon;	
+						firstVisibleIcon = firstVisibleIcon->nextIcon;
 					}
 					//As all the icons have moved, we need to refresh the entire page.
 					memcpy((void*)FB_START,videosavepage,FB_SIZE);
@@ -199,7 +199,7 @@ void IconMenu(void) {
 		{
 			if (selectedIcon->previousIcon!=NULL) {
 				if (selectedIcon == firstVisibleIcon) {
-					//We are moving further left, so slide all the icons along. 
+					//We are moving further left, so slide all the icons along.
 					if(firstVisibleIcon->previousIcon != NULL) {
 						firstVisibleIcon = firstVisibleIcon->previousIcon;
 					}
@@ -216,13 +216,13 @@ void IconMenu(void) {
 			ticks = GetTimerTicks() - COUNT_start;
 			if (ticks > (TIMER_FREQ * BOOT_TIMEWAIT)) timedOut = 1;
 		}
-		
-		if ((risefall_xpad_BUTTON(TRIGGER_XPAD_KEY_A) == 1) || risefall_xpad_BUTTON(TRIGGER_XPAD_KEY_START) == 1 || 
+
+		if ((risefall_xpad_BUTTON(TRIGGER_XPAD_KEY_A) == 1) || risefall_xpad_BUTTON(TRIGGER_XPAD_KEY_START) == 1 ||
 				timedOut) {
 			memcpy((void*)FB_START,videosavepage,FB_SIZE);
 			VIDEO_CURSOR_POSX=nTempCursorResumeX;
 			VIDEO_CURSOR_POSY=nTempCursorResumeY;
-			
+
 			//Icon selected - invoke function pointer.
 			if (selectedIcon->functionPtr!=NULL) selectedIcon->functionPtr(selectedIcon->functionDataPtr);
 			//If we come back to this menu, make sure we are redrawn, and that we replace the saved video page
@@ -237,7 +237,7 @@ void IconMenu(void) {
 			IconMenuDraw(nModeDependentOffset, nTempCursorY);
 			changed=0;
 		}
-		
+
 	}
 }
 

@@ -1,6 +1,6 @@
 /*
  * (C) Copyright David Brownell 2000-2002
- * 
+ *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
  * Free Software Foundation; either version 2 of the License, or (at your
@@ -189,7 +189,7 @@ clean_3:
 		usb_hcd_pci_remove (dev);
 
 	return retval;
-} 
+}
 EXPORT_SYMBOL (usb_hcd_pci_probe);
 
 

@@ -1,18 +1,18 @@
 /*
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or 
+ * the Free Software Foundation; either version 2 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
- * 
+ *
  */
 
 /*
@@ -38,7 +38,7 @@
 u16 current_remote_key;
 u8 remotekeyIsRepeat;
 
-struct xremote_info 
+struct xremote_info
 {
 	struct urb *urb;
 	unsigned char irpkt[8];
@@ -55,7 +55,7 @@ struct xremote_info
 static void xremote_irq(struct urb *urb, struct pt_regs *regs)
 {
 	struct xremote_info *xri = urb->context;
-        
+
 	if (urb->status) return;
 	if (urb->actual_length < 6) return;
 
@@ -69,7 +69,7 @@ static void xremote_irq(struct urb *urb, struct pt_regs *regs)
 		remotekeyIsRepeat=0;
 	}
 	else remotekeyIsRepeat=1;
-		             
+
 	usb_submit_urb(urb,GFP_ATOMIC);
 }
 
@@ -134,7 +134,7 @@ void XRemoteInit(void)
 	if (usb_register(&xremote_driver) < 0) {
 		err("Unable to register XRemote driver");
 		return;
-	}       
+	}
 }
 
 void XRemoteRemove(void) {

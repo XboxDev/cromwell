@@ -50,7 +50,7 @@ int strlen(const char * s)
 }
 
 
-int tolower(int ch) 
+int tolower(int ch)
 {
   	if ( (unsigned int)(ch - 'A') < 26u )
     		ch += 'a' - 'A';
@@ -74,7 +74,7 @@ void * memset(void *s, int c,  size_t count)
 	        :"memory");
 	return s;
 }
-                
+
 
 int memcmp(const void * cs,const void * ct,size_t count)
 {
@@ -120,7 +120,7 @@ char * strncpy(char * dest,const char *src,int count)
 char * strstr(const char * s1,const char * s2)
 {
         int l1, l2;
-	
+
 	l2 = strlen(s2);
 	if (!l2) return (char *) s1;
         l1 = strlen(s1);
@@ -200,7 +200,7 @@ int strcmp(const char * cs,const char * ct)
 }
 
 
-char *strrchr0(char *string, char ch) 
+char *strrchr0(char *string, char ch)
 {
         char *ptr = string;
 	while(*ptr != 0) {
@@ -252,15 +252,15 @@ void *memmove(void *dest, const void *src, size_t count)
 unsigned int MemoryManagerStartAddress=0;
 
 int MemoryManagerGetFree(void) {
-	
+
 	unsigned char *memsmall = (void*)MemoryManagerStartAddress;
 	int freeblocks = 0;
 	int counter;
 	for (counter=0;counter<0x400;counter++) {
-		if (memsmall[counter]==0x0) freeblocks++;	
+		if (memsmall[counter]==0x0) freeblocks++;
 	}
 	return freeblocks;
-		
+
 }
 
 void MemoryManagementInitialization(void * pvStartAddress, u32 dwTotalMemoryAllocLength)
@@ -425,7 +425,7 @@ void * malloc(size_t size) {
 	unsigned int *tempmalloc1;
 	unsigned int *tempmalloc2;
          __asm__ __volatile__  (  "cli" );
-         
+
 	temp = (size+0x200) & 0xffFFff00;
 
 	tempmalloc = t_malloc(temp);
@@ -438,7 +438,7 @@ void * malloc(size_t size) {
 	tempmalloc1[0] = (unsigned int)tempmalloc2;
 	tempmalloc1[1] = 0x1234567;
 	__asm__ __volatile__  (  "sti" );
-		
+
 	return tempmalloc;
 }
 
@@ -446,22 +446,22 @@ void free(void *ptr) {
 
 	unsigned int *tempmalloc1;
         __asm__ __volatile__  (  "cli" );
-      	
+
       	if (ptr == NULL) return;
-      	  
+
 	tempmalloc1 = ptr;
 	tempmalloc1-=2;
 	ptr = (unsigned int*)tempmalloc1[0];
         if (tempmalloc1[1]!= 0x1234567) {
         	__asm__ __volatile__  (  "sti" );
         	return ;
-	}        
+	}
 	t_free(ptr);
 	__asm__ __volatile__  (  "sti" );
 
 }
- 
- 
+
+
 
 
 

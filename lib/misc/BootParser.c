@@ -7,37 +7,37 @@ CONFIGENTRY *ParseConfig(char *szBuffer, unsigned int fileLen, char *szPath) {
 
 	CONFIGENTRY *rootEntry = (CONFIGENTRY*)malloc(sizeof(CONFIGENTRY));
 	CONFIGENTRY *currentEntry = rootEntry;
-	
+
 	memset(rootEntry,0x00,sizeof(CONFIGENTRY));
 	//Null terminate the input data
 	//Caller should have allocated an extra byte at the end of the array to enable us to do this.
 	*(szBuffer+fileLen)=0;
-	
+
 	for (linePtr = (char *)strsep(&currentPos, "\n"); linePtr != NULL; linePtr = (char *)strsep(&currentPos, "\n")) {
 		char *param, *paramdata;
 		char *p;
-		
+
 		param = (char *)strsep(&linePtr," \t");
-	
+
 		p=param+strlen(param)+1;
 		//Strip off leading whitespace
 		while (isspace(*p)) p++;
-		
+
 		paramdata = p;
-	
+
 		//Strip off trailing whitespace
 		p=paramdata+strlen(paramdata)-1;
 		while (p!=paramdata && isspace(*p)) p--;
 		*(p+1)=0;
-	
+
 		if (!strncmp(param,"title",5)) {
 			//Do we already have a title in this entry?
-			//If so, this is the start of a new 'bootitem'.  
+			//If so, this is the start of a new 'bootitem'.
 			//Otherwise, it begins a whole new entry
 			if (strlen(currentEntry->title)==0) {
 				strncpy(currentEntry->title, paramdata, strlen(paramdata));
 			}
-			else {	
+			else {
 				currentEntry->nextConfigEntry = malloc(sizeof(CONFIGENTRY));
 				memset(currentEntry->nextConfigEntry, 0x00, sizeof(CONFIGENTRY));
 				currentEntry = (CONFIGENTRY*)currentEntry->nextConfigEntry;
@@ -49,7 +49,7 @@ CONFIGENTRY *ParseConfig(char *szBuffer, unsigned int fileLen, char *szPath) {
 			//Handle 'xbox-os' naming conventions
 			chrreplace(paramdata, '\\', '/');
 
-			if (szPath!=NULL) { 
+			if (szPath!=NULL) {
 				sprintf(currentEntry->opt.Linux.szKernel, "%s/%s", szPath, paramdata);
 			}
 			else {
@@ -68,7 +68,7 @@ CONFIGENTRY *ParseConfig(char *szBuffer, unsigned int fileLen, char *szPath) {
 				continue;
 			}
 
-			if (szPath!=NULL) { 
+			if (szPath!=NULL) {
 				sprintf(currentEntry->opt.Linux.szInitrd, "%s/%s", szPath, paramdata);
 			}
 			else {
@@ -84,7 +84,7 @@ CONFIGENTRY *ParseConfig(char *szBuffer, unsigned int fileLen, char *szPath) {
 			defaultTitle = paramdata;
 		}
 	}
-	
+
 	if (defaultTitle!=NULL) {
 		//A default entry was specified. Find it and mark it default.
 		for (currentEntry = rootEntry; currentEntry!=NULL; currentEntry = currentEntry->nextConfigEntry) {
@@ -94,6 +94,6 @@ CONFIGENTRY *ParseConfig(char *szBuffer, unsigned int fileLen, char *szPath) {
 			}
 		}
 	}
-	
+
 	return rootEntry;
 }

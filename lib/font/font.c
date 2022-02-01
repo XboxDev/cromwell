@@ -32,4 +32,4 @@ main()
 	}
 	printf("\n};\n\n");
 	return 0;
-} 
+}

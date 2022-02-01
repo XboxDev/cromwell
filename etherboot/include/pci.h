@@ -58,7 +58,7 @@
 #define  PCI_STATUS_FAST_BACK	0x80	/* Accept fast-back to back */
 #define  PCI_STATUS_PARITY	0x100	/* Detected parity error */
 #define  PCI_STATUS_DEVSEL_MASK	0x600	/* DEVSEL timing */
-#define  PCI_STATUS_DEVSEL_FAST	0x000	
+#define  PCI_STATUS_DEVSEL_FAST	0x000
 #define  PCI_STATUS_DEVSEL_MEDIUM 0x200
 #define  PCI_STATUS_DEVSEL_SLOW 0x400
 #define  PCI_STATUS_SIG_TARGET_ABORT 0x800 /* Set on target abort */
@@ -81,7 +81,7 @@
 /* Header type 0 (normal devices) */
 #define PCI_CARDBUS_CIS		0x28
 #define PCI_SUBSYSTEM_VENDOR_ID	0x2c
-#define PCI_SUBSYSTEM_ID	0x2e  
+#define PCI_SUBSYSTEM_ID	0x2e
 
 #define PCI_BASE_ADDRESS_0      0x10    /* 32 bits */
 #define PCI_BASE_ADDRESS_1      0x14    /* 32 bits */
@@ -288,32 +288,32 @@ extern unsigned long pcibios_bus_base(unsigned int bus);
 extern void adjust_pci_device(struct pci_device *p);
 
 
-static inline int 
+static inline int
 pci_read_config_byte(struct pci_device *dev, unsigned int where, uint8_t *value)
 {
 	return pcibios_read_config_byte(dev->bus, dev->devfn, where, value);
 }
-static inline int 
+static inline int
 pci_write_config_byte(struct pci_device *dev, unsigned int where, uint8_t value)
 {
 	return pcibios_write_config_byte(dev->bus, dev->devfn, where, value);
 }
-static inline int 
+static inline int
 pci_read_config_word(struct pci_device *dev, unsigned int where, uint16_t *value)
 {
 	return pcibios_read_config_word(dev->bus, dev->devfn, where, value);
 }
-static inline int 
+static inline int
 pci_write_config_word(struct pci_device *dev, unsigned int where, uint16_t value)
 {
 	return pcibios_write_config_word(dev->bus, dev->devfn, where, value);
 }
-static inline int 
+static inline int
 pci_read_config_dword(struct pci_device *dev, unsigned int where, uint32_t *value)
 {
 	return pcibios_read_config_dword(dev->bus, dev->devfn, where, value);
 }
-static inline int 
+static inline int
 pci_write_config_dword(struct pci_device *dev, unsigned int where, uint32_t value)
 {
 	return pcibios_write_config_dword(dev->bus, dev->devfn, where, value);
@@ -346,7 +346,7 @@ struct pci_driver {
 	unsigned short class;
 };
 
-#define __pci_driver  
+#define __pci_driver
 extern struct pci_driver* pci_drivers;
 extern struct pci_driver* pci_drivers_end;
 

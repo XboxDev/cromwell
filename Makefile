@@ -48,7 +48,7 @@ SUBDIRS	= boot_rom fs drivers lib boot menu boot_xbe boot_vml boot_eth
 ifeq ($(ETHERBOOT), yes)
 ETH_SUBDIRS = etherboot
 CROM_CFLAGS	+= -DETHERBOOT
-ETH_INCLUDE = 	-I$(TOPDIR)/etherboot/include -I$(TOPDIR)/etherboot/arch/i386/include	
+ETH_INCLUDE = 	-I$(TOPDIR)/etherboot/include -I$(TOPDIR)/etherboot/arch/i386/include
 ETH_CFLAGS  = 	-m32 -O2 -march=pentium $(ETH_INCLUDE) -Wstrict-prototypes -fomit-frame-pointer -pipe -Ui386 -fno-builtin -fno-stack-protector -no-pie
 endif
 
@@ -72,7 +72,7 @@ OBJECTS-VML = $(TOPDIR)/boot_vml/vml_Startup.o
 ifeq ($(ETHERBOOT), yes)
 OBJECTS-ETH = $(TOPDIR)/boot_eth/eth_Startup.o
 endif
-                                             
+
 OBJECTS-ROMBOOT = $(TOPDIR)/obj/2bBootStartup.o
 OBJECTS-ROMBOOT += $(TOPDIR)/obj/2bPicResponseAction.o
 OBJECTS-ROMBOOT += $(TOPDIR)/obj/2bBootStartBios.o
@@ -80,7 +80,7 @@ OBJECTS-ROMBOOT += $(TOPDIR)/obj/sha1.o
 OBJECTS-ROMBOOT += $(TOPDIR)/obj/2bBootLibrary.o
 OBJECTS-ROMBOOT += $(TOPDIR)/obj/misc.o
 OBJECTS-ROMBOOT += $(TOPDIR)/obj/LED.o
-                                             
+
 OBJECTS-CROM = $(TOPDIR)/obj/BootStartup.o
 OBJECTS-CROM += $(TOPDIR)/obj/BootResetAction.o
 OBJECTS-CROM += $(TOPDIR)/obj/i2cio.o
@@ -136,7 +136,7 @@ OBJECTS-CROM += $(TOPDIR)/obj/BootEEPROM.o
 OBJECTS-CROM += $(TOPDIR)/obj/BootParser.o
 OBJECTS-CROM += $(TOPDIR)/obj/BootFATX.o
 #USB
-OBJECTS-CROM += $(TOPDIR)/obj/config.o 
+OBJECTS-CROM += $(TOPDIR)/obj/config.o
 OBJECTS-CROM += $(TOPDIR)/obj/hcd-pci.o
 OBJECTS-CROM += $(TOPDIR)/obj/hcd.o
 OBJECTS-CROM += $(TOPDIR)/obj/hub.o
@@ -178,7 +178,7 @@ BOOT_ETH_DIR = boot_eth/ethboot
 BOOT_ETH_SUBDIRS = ethsubdirs
 endif
 
-all: clean resources $(BOOT_ETH_SUBDIRS) cromsubdirs xromwell.xbe vmlboot $(BOOT_ETH_DIR) cromwell.bin imagecompress 
+all: clean resources $(BOOT_ETH_SUBDIRS) cromsubdirs xromwell.xbe vmlboot $(BOOT_ETH_DIR) cromwell.bin imagecompress
 
 ifeq ($(ETHERBOOT), yes)
 ethsubdirs: $(patsubst %, _dir_%, $(ETH_SUBDIRS))
@@ -194,25 +194,25 @@ dummy:
 
 resources:
 	# Background
-	${LD} -r --oformat elf32-i386 -o $(TOPDIR)/obj/backdrop.elf -T $(TOPDIR)/scripts/backdrop.ld -b binary $(TOPDIR)/pics/backdrop.jpg	
+	${LD} -r --oformat elf32-i386 -o $(TOPDIR)/obj/backdrop.elf -T $(TOPDIR)/scripts/backdrop.ld -b binary $(TOPDIR)/pics/backdrop.jpg
 
 clean:
 	find . \( -name '*.[oas]' -o -name core -o -name '.*.flags' \) -type f -print \
 		| grep -v lxdialog/ | xargs rm -f
-	rm -f $(TOPDIR)/obj/*.gz 
-	rm -f $(TOPDIR)/obj/*.bin 
+	rm -f $(TOPDIR)/obj/*.gz
+	rm -f $(TOPDIR)/obj/*.bin
 	rm -f $(TOPDIR)/obj/*.elf
-	rm -f $(TOPDIR)/image/*.bin 
-	rm -f $(TOPDIR)/image/*.xbe 
+	rm -f $(TOPDIR)/image/*.bin
+	rm -f $(TOPDIR)/image/*.xbe
 	rm -f $(TOPDIR)/xbe/*.xbe $(TOPDIR)/xbe/*.bin
 	rm -f $(TOPDIR)/xbe/*.elf
 	rm -f $(TOPDIR)/image/*.bin
 	rm -f $(TOPDIR)/bin/imagebld*
 	rm -f $(TOPDIR)/boot_vml/disk/vmlboot
 	rm -f boot_eth/ethboot
-	mkdir -p $(TOPDIR)/xbe 
+	mkdir -p $(TOPDIR)/xbe
 	mkdir -p $(TOPDIR)/image
-	mkdir -p $(TOPDIR)/obj 
+	mkdir -p $(TOPDIR)/obj
 	mkdir -p $(TOPDIR)/bin
 
 obj/image-crom.bin:
@@ -244,11 +244,11 @@ bin/imagebld: lib/imagebld/imagebld.c lib/crypt/sha1.c lib/crypt/md5.c
 	gcc -m32 -Ilib/crypt -o bin/md5.o -c lib/crypt/md5.c
 	gcc -m32 -Ilib/crypt -o bin/imagebld.o -c lib/imagebld/imagebld.c
 	gcc -m32 -o bin/imagebld bin/imagebld.o bin/sha1.o bin/md5.o
-	
+
 imagecompress: obj/image-crom.bin bin/imagebld
 	cp obj/image-crom.bin obj/image-crom.bin.tmp
 	gzip -9 obj/image-crom.bin.tmp
 	bin/imagebld -rom obj/2blimage.bin obj/image-crom.bin.tmp.gz image/cromwell.bin image/cromwell_1024.bin
 	bin/imagebld -xbe xbe/xromwell.xbe obj/image-crom.bin
-	bin/imagebld -vml boot_vml/disk/vmlboot obj/image-crom.bin 
+	bin/imagebld -vml boot_vml/disk/vmlboot obj/image-crom.bin
 

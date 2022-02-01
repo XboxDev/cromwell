@@ -19,7 +19,7 @@ struct isa_driver
 
 #ifndef __HYPERSTONE__
 #define __isa_driver	__attribute__ ((unused,__section__(".drivers.isa")))
-#else 
+#else
 #define __isa_driver	__attribute__ ((unused,__section__(".drivisa")))
 #endif
 

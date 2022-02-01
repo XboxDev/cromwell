@@ -14,7 +14,7 @@
 TEXTMENU* ResetMenuInit(void) {
 	TEXTMENUITEM *itemPtr;
 	TEXTMENU *menuPtr;
-	
+
 	menuPtr = malloc(sizeof(TEXTMENU));
 	memset(menuPtr,0x00,sizeof(TEXTMENU));
 	strcpy(menuPtr->szCaption, "Reset Menu");
@@ -32,7 +32,7 @@ TEXTMENU* ResetMenuInit(void) {
 	itemPtr->functionPtr=QuickReboot;
 	itemPtr->functionDataPtr = NULL;
 	TextMenuAddItem(menuPtr, itemPtr);
-	
+
 	itemPtr = malloc(sizeof(TEXTMENUITEM));
 	memset(itemPtr,0x00,sizeof(TEXTMENUITEM));
 	strcpy(itemPtr->szCaption, "Power off");

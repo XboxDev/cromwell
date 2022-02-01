@@ -55,7 +55,7 @@ void * memset(void *s, int c,  size_t count)
 	        :"memory");
 	return s;
 }
-                
+
 
 int memcmp(const void * cs,const void * ct,size_t count)
 {

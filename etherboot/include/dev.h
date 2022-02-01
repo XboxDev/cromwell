@@ -18,7 +18,7 @@ struct dev_id
 #define	DEV_ID_SIZE	8
 
 
-struct pci_probe_state 
+struct pci_probe_state
 {
 #ifdef CONFIG_PCI
 	struct pci_device dev;

@@ -32,7 +32,7 @@ int hostnamelen = 0;
 static uint32_t xid;
 unsigned char *end_of_rfc1533 = NULL;
 static int vendorext_isvalid;
-static const unsigned char vendorext_magic[] = {0xE4,0x45,0x74,0x68}; /* äEth */
+static const unsigned char vendorext_magic[] = {0xE4,0x45,0x74,0x68}; /* \xe4Eth */
 static const unsigned char broadcast[] = { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF };
 static const in_addr zeroIP = { 0L };
 
@@ -308,7 +308,7 @@ static int await_arp(int ival, void *ptr,
 		return 0;
 	arpreply = (struct arprequest *)&nic.packet[ETH_HLEN];
 
-	if (arpreply->opcode != htons(ARP_REPLY)) 
+	if (arpreply->opcode != htons(ARP_REPLY))
 		return 0;
 	if (memcmp(arpreply->sipaddr, ptr, sizeof(in_addr)) != 0)
 		return 0;
@@ -328,7 +328,7 @@ int ip_transmit(int len, const void *buf)
 	destip = ip->dest.s_addr;
 	if (destip == IP_BROADCAST) {
 		eth_transmit(broadcast, IP, len, buf);
-#ifdef MULTICAST_LEVEL1 
+#ifdef MULTICAST_LEVEL1
 	} else if ((destip & htonl(MULTICAST_MASK)) == htonl(MULTICAST_NETWORK)) {
 		unsigned char multicast[6];
 		unsigned long hdestip;
@@ -400,7 +400,7 @@ void build_ip_hdr(unsigned long destip, int ttl, int protocol, int option_len,
 	ip->chksum = ipchksum(buf, sizeof(struct iphdr) + option_len);
 }
 
-void build_udp_hdr(unsigned long destip, 
+void build_udp_hdr(unsigned long destip,
 	unsigned int srcsock, unsigned int destsock, int ttl,
 	int len, const void *buf)
 {
@@ -432,7 +432,7 @@ int udp_transmit(unsigned long destip, unsigned int srcsock,
 QDRAIN - clear the nic's receive queue
 **************************************************************************/
 static int await_qdrain(int ival __unused, void *ptr __unused,
-	unsigned short ptype __unused, 
+	unsigned short ptype __unused,
 	struct iphdr *ip __unused, struct udphdr *udp __unused)
 {
 	return 0;
@@ -679,17 +679,17 @@ static int rarp(void)
 BOOTP - Get my IP address and load information
 **************************************************************************/
 static int await_bootp(int ival __unused, void *ptr __unused,
-	unsigned short ptype __unused, struct iphdr *ip __unused, 
+	unsigned short ptype __unused, struct iphdr *ip __unused,
 	struct udphdr *udp)
 {
 	struct	bootp_t *bootpreply;
 	if (!udp) {
 		return 0;
 	}
-	bootpreply = (struct bootp_t *)&nic.packet[ETH_HLEN + 
+	bootpreply = (struct bootp_t *)&nic.packet[ETH_HLEN +
 		sizeof(struct iphdr) + sizeof(struct udphdr)];
-	if (nic.packetlen < ETH_HLEN + sizeof(struct iphdr) + 
-		sizeof(struct udphdr) + 
+	if (nic.packetlen < ETH_HLEN + sizeof(struct iphdr) +
+		sizeof(struct udphdr) +
 #ifdef NO_DHCP_SUPPORT
 		sizeof(struct bootp_t)
 #else
@@ -729,9 +729,9 @@ static int await_bootp(int ival __unused, void *ptr __unused,
 	memcpy((char *)BOOTP_DATA_ADDR, (char *)bootpreply, sizeof(struct bootpd_t));
 	decode_rfc1533(BOOTP_DATA_ADDR->bootp_reply.bp_vend, 0,
 #ifdef	NO_DHCP_SUPPORT
-		BOOTP_VENDOR_LEN + MAX_BOOTP_EXTLEN, 
+		BOOTP_VENDOR_LEN + MAX_BOOTP_EXTLEN,
 #else
-		DHCP_OPT_LEN + MAX_BOOTP_EXTLEN, 
+		DHCP_OPT_LEN + MAX_BOOTP_EXTLEN,
 #endif	/* NO_DHCP_SUPPORT */
 		1);
 #ifdef	REQUIRE_VCI_ETHERBOOT
@@ -857,10 +857,10 @@ static void send_igmp_reports(unsigned long now)
 			igmp.router_alert[1] = 0x04;
 			igmp.router_alert[2] = 0;
 			igmp.router_alert[3] = 0;
-			build_ip_hdr(igmptable[i].group.s_addr, 
+			build_ip_hdr(igmptable[i].group.s_addr,
 				1, IP_IGMP, sizeof(igmp.router_alert), sizeof(igmp), &igmp);
 			igmp.igmp.type = IGMPv2_REPORT;
-			if (last_igmpv1 && 
+			if (last_igmpv1 &&
 				(now < last_igmpv1 + IGMPv1_ROUTER_PRESENT_TIMEOUT)) {
 				igmp.igmp.type = IGMPv1_REPORT;
 			}
@@ -891,7 +891,7 @@ static void process_igmp(struct iphdr *ip, unsigned long now)
 	igmp = (struct igmp *)&nic.packet[sizeof(struct iphdr)];
 	if (ipchksum(igmp, ntohs(ip->len) - iplen) != 0)
 		return;
-	if ((igmp->type == IGMP_QUERY) && 
+	if ((igmp->type == IGMP_QUERY) &&
 		(ip->dest.s_addr == htonl(GROUP_ALL_HOSTS))) {
 		unsigned long interval = IGMP_INTERVAL;
 		if (igmp->response_time == 0) {
@@ -899,10 +899,10 @@ static void process_igmp(struct iphdr *ip, unsigned long now)
 		} else {
 			interval = (igmp->response_time * TICKS_PER_SEC)/10;
 		}
-		
+
 #ifdef	MDEBUG
 		printf("Received IGMP query for: %@\n", igmp->group.s_addr);
-#endif			       
+#endif
 		for(i = 0; i < MAX_IGMP; i++) {
 			uint32_t group = igmptable[i].group.s_addr;
 			if ((group == 0) || (group == igmp->group.s_addr)) {
@@ -918,7 +918,7 @@ static void process_igmp(struct iphdr *ip, unsigned long now)
 		(ip->dest.s_addr == igmp->group.s_addr)) {
 #ifdef	MDEBUG
 		printf("Received IGMP report for: %@\n", igmp->group.s_addr);
-#endif			       
+#endif
 		for(i = 0; i < MAX_IGMP; i++) {
 			if ((igmptable[i].group.s_addr == igmp->group.s_addr) &&
 				igmptable[i].time != 0) {
@@ -930,7 +930,7 @@ static void process_igmp(struct iphdr *ip, unsigned long now)
 
 void leave_group(int slot)
 {
-	/* Be very stupid and always send a leave group message if 
+	/* Be very stupid and always send a leave group message if
 	 * I have subscribed.  Imperfect but it is standards
 	 * compliant, easy and reliable to implement.
 	 *
@@ -954,7 +954,7 @@ void leave_group(int slot)
 		ip_transmit(sizeof(igmp), &igmp);
 #ifdef	MDEBUG
 		printf("Sent IGMP leave for: %@\n", igmp.igmp.group.s_addr);
-#endif	
+#endif
 	}
 	memset(&igmptable[slot], 0, sizeof(igmptable[0]));
 }
@@ -969,7 +969,7 @@ void join_group(int slot, unsigned long group)
 	}
 	/* Only join a group if we are given a multicast ip, this way
 	 * code can be given a non-multicast (broadcast or unicast ip)
-	 * and still work... 
+	 * and still work...
 	 */
 	if ((group & htonl(MULTICAST_MASK)) == htonl(MULTICAST_NETWORK)) {
 		igmptable[slot].group.s_addr = group;
@@ -996,7 +996,7 @@ int await_reply(reply_t reply, int ival, void *ptr, long timeout)
 	time = timeout + currticks();
 	/* The timeout check is done below.  The timeout is only checked if
 	 * there is no packet in the Rx queue.  This assumes that eth_poll()
-	 * needs a negligible amount of time.  
+	 * needs a negligible amount of time.
 	 */
 	for (;;) {
 		now = currticks();
@@ -1004,7 +1004,7 @@ int await_reply(reply_t reply, int ival, void *ptr, long timeout)
 		result = eth_poll();
 		if (result == 0) {
 			/* We don't have anything */
-		
+
 			/* Check for abort key only if the Rx queue is empty -
 			 * as long as we have something to process, don't
 			 * assume that something failed.  It is unlikely that
@@ -1016,7 +1016,7 @@ int await_reply(reply_t reply, int ival, void *ptr, long timeout)
 			}
 			continue;
 		}
-	
+
 		/* We have something! */
 
 		/* Find the Ethernet packet type */
@@ -1029,7 +1029,7 @@ int await_reply(reply_t reply, int ival, void *ptr, long timeout)
 		if ((ptype == IP) && (nic.packetlen >= ETH_HLEN + sizeof(struct iphdr))) {
 			unsigned ipoptlen;
 			ip = (struct iphdr *)&nic.packet[ETH_HLEN];
-			if ((ip->verhdrlen < 0x45) || (ip->verhdrlen > 0x4F)) 
+			if ((ip->verhdrlen < 0x45) || (ip->verhdrlen > 0x4F))
 				continue;
 			iplen = (ip->verhdrlen & 0xf) * 4;
 			if (ipchksum(ip, iplen) != 0)
@@ -1050,15 +1050,15 @@ int await_reply(reply_t reply, int ival, void *ptr, long timeout)
 				/* Delete the ip options, to guarantee
 				 * good alignment, and make etherboot simpler.
 				 */
-				memmove(&nic.packet[ETH_HLEN + sizeof(struct iphdr)], 
+				memmove(&nic.packet[ETH_HLEN + sizeof(struct iphdr)],
 					&nic.packet[ETH_HLEN + iplen],
 					nic.packetlen - ipoptlen);
 				nic.packetlen -= ipoptlen;
 			}
 		}
 		udp = 0;
-		if (ip && (ip->protocol == IP_UDP) && 
-			(nic.packetlen >= 
+		if (ip && (ip->protocol == IP_UDP) &&
+			(nic.packetlen >=
 			ETH_HLEN + sizeof(struct iphdr) + sizeof(struct udphdr))) {
 			udp = (struct udphdr *)&nic.packet[ETH_HLEN + sizeof(struct iphdr)];
 
@@ -1075,7 +1075,7 @@ int await_reply(reply_t reply, int ival, void *ptr, long timeout)
 		if (result > 0) {
 			return result;
 		}
-		
+
 		/* If it isn't a packet the upper layer wants see if there is a default
 		 * action.  This allows us reply to arp and igmp queryies.
 		 */
@@ -1083,7 +1083,7 @@ int await_reply(reply_t reply, int ival, void *ptr, long timeout)
 			(nic.packetlen >= ETH_HLEN + sizeof(struct arprequest))) {
 			struct	arprequest *arpreply;
 			unsigned long tmp;
-		
+
 			arpreply = (struct arprequest *)&nic.packet[ETH_HLEN];
 			memcpy(&tmp, arpreply->tipaddr, sizeof(in_addr));
 			if ((arpreply->opcode == htons(ARP_REQUEST)) &&

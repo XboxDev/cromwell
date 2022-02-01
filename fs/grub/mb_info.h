@@ -26,10 +26,10 @@ struct mod_list
   /* the memory used goes from bytes 'mod_start' to 'mod_end-1' inclusive */
   unsigned long mod_start;
   unsigned long mod_end;
-  
+
   /* Module command line */
   unsigned long cmdline;
-  
+
   /* padding to take it to 16 bytes (must be zero) */
   unsigned long pad;
 };
@@ -48,7 +48,7 @@ struct AddrRangeDesc
   unsigned long long BaseAddr;
   unsigned long long Length;
   unsigned long Type;
-  
+
   /* unspecified optional padding... */
 } __attribute__ ((packed));
 
@@ -107,21 +107,21 @@ struct multiboot_info
 {
   /* MultiBoot info version number */
   unsigned long flags;
-  
+
   /* Available memory from BIOS */
   unsigned long mem_lower;
   unsigned long mem_upper;
-  
+
   /* "root" partition */
   unsigned long boot_device;
-  
+
   /* Kernel command line */
   unsigned long cmdline;
-  
+
   /* Boot-Module list */
   unsigned long mods_count;
   unsigned long mods_addr;
-  
+
   union
   {
     struct
@@ -133,7 +133,7 @@ struct multiboot_info
       unsigned long pad;
     }
     a;
-    
+
     struct
     {
       /* (ELF) Kernel section header table */
@@ -145,18 +145,18 @@ struct multiboot_info
     e;
   }
   syms;
-  
+
   /* Memory Mapping buffer */
   unsigned long mmap_length;
   unsigned long mmap_addr;
-  
+
   /* Drive Info buffer */
   unsigned long drives_length;
   unsigned long drives_addr;
-  
+
   /* ROM configuration table */
   unsigned long config_table;
-  
+
   /* Boot Loader Name */
   unsigned long boot_loader_name;
 

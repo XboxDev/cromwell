@@ -31,22 +31,22 @@ static void usb_kbd_irq(struct urb *urb, struct pt_regs *regs)
 	int i;
 
 	if (urb->status) return;
-	
+
 	memcpy(kbd->kbd_pkt, urb->transfer_buffer, 8);
-	
+
 	current_keyboard_key = kbd->kbd_pkt[2];
-	
-	
+
+
 	#if keyboarddebug
 	ycoffset += 15;
 	ycoffset = ycoffset % 600;
 	VIDEO_CURSOR_POSX=20;
-	VIDEO_CURSOR_POSY=ycoffset;	
+	VIDEO_CURSOR_POSY=ycoffset;
 	printe(" -%02x %02x %02x %02x %02x %02x\n",kbd->kbd_pkt[0],kbd->kbd_pkt[1],kbd->kbd_pkt[2],kbd->kbd_pkt[3],kbd->kbd_pkt[4],kbd->kbd_pkt[5]);
 	#endif
-	
+
 	usb_submit_urb(urb,GFP_ATOMIC);
-		
+
 }
 
 static int usb_kbd_probe(struct usb_interface *intf, const struct usb_device_id *id)
@@ -77,7 +77,7 @@ static int usb_kbd_probe(struct usb_interface *intf, const struct usb_device_id 
 	usb_submit_urb(urb,GFP_ATOMIC);
 	usb_set_intfdata(intf,usbk);
 	#if keyboarddebug
-	printe("USB Keyboard Connected\n");	
+	printe("USB Keyboard Connected\n");
 	#endif
 }
 
@@ -115,7 +115,7 @@ void UsbKeyBoardInit(void)
 		printe("Unable to register Keyboard driver");
 		#endif
 		return;
-	}       
+	}
 }
 
 void UsbKeyBoardRemove(void) {

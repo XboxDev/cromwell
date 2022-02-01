@@ -13,20 +13,20 @@
 /*#define	DEBUG	1*/
 
 static void scan_drivers(
-	int type, 
+	int type,
 	uint32_t class, uint16_t vendor, uint16_t device,
 	const struct pci_driver *last_driver, struct pci_device *dev)
 {
 	const struct pci_driver *skip_driver = last_driver;
 	/* Assume there is only one match of the correct type */
 	const struct pci_driver *driver;
-	
+
 	for(driver = pci_drivers; driver < pci_drivers_end; driver++) {
 		int i;
 		if (driver->type != type)
 			continue;
 		if (skip_driver) {
-			if (skip_driver == driver) 
+			if (skip_driver == driver)
 				skip_driver = 0;
 			continue;
 		}
@@ -69,7 +69,7 @@ static inline int mach_pci_is_blacklisted(int bus, int dev, int fn)
 	return (bus > 1) || ((bus != 0) && ((dev != 0) || (fn != 0))) ||
         	(!bus && !dev && ((fn == 1) || (fn == 2)));
 }
-                                                        
+
 void scan_pci_bus(int type, struct pci_device *dev)
 {
 	unsigned int first_bus, first_devfn;
@@ -89,18 +89,18 @@ void scan_pci_bus(int type, struct pci_device *dev)
 		first_bus    = dev->bus;
 		first_devfn  = dev->devfn;
 		/* Re read the header type on a restart */
-		pcibios_read_config_byte(first_bus, first_devfn & ~0x7, 
+		pcibios_read_config_byte(first_bus, first_devfn & ~0x7,
 			PCI_HEADER_TYPE, &hdr_type);
 		dev->driver  = 0;
 		dev->bus     = 0;
 		dev->devfn   = 0;
 	}
-		
+
 	/* Scan all PCI buses, until we find our card.
 	 * We could be smart only scan the required buses but that
 	 * is error prone, and tricky.
 	 * By scanning all possible pci buses in order we should find
-	 * our card eventually. 
+	 * our card eventually.
 	 */
 	buses=256;
 	for (bus = first_bus; bus < buses; ++bus) {
@@ -152,29 +152,29 @@ void scan_pci_bus(int type, struct pci_device *dev)
 			dev->class = class;
 			dev->vendor = vendor;
 			dev->dev_id = device;
-			
-			
+
+
 			/* Get the ROM base address */
-			pcibios_read_config_dword(bus, devfn, 
+			pcibios_read_config_dword(bus, devfn,
 				PCI_ROM_ADDRESS, &romaddr);
 			romaddr >>= 10;
 			dev->romaddr = romaddr;
-			
+
 			/* Get the ``membase'' */
 			pcibios_read_config_dword(bus, devfn,
 				PCI_BASE_ADDRESS_1, &membase);
 			dev->membase = membase;
-				
+
 			/* Get the ``ioaddr'' */
 			for (reg = PCI_BASE_ADDRESS_0; reg <= PCI_BASE_ADDRESS_5; reg += 4) {
 				pcibios_read_config_dword(bus, devfn, reg, &ioaddr);
 				if ((ioaddr & PCI_BASE_ADDRESS_IO_MASK) == 0 || (ioaddr & PCI_BASE_ADDRESS_SPACE_IO) == 0)
 					continue;
-				
-				
+
+
 				/* Strip the I/O address out of the returned value */
 				ioaddr &= PCI_BASE_ADDRESS_IO_MASK;
-				
+
 				/* Take the first one or the one that matches in boot ROM address */
 				dev->ioaddr = ioaddr;
 			}
@@ -214,7 +214,7 @@ void adjust_pci_device(struct pci_device *p)
 	pcibios_read_config_byte(p->bus, p->devfn, PCI_LATENCY_TIMER, &pci_latency);
 	if (pci_latency < 32) {
 #if DEBUG > 0
-		printf("PCI latency timer (CFLT) is unreasonably low at %d. Setting to 32 clocks.\n", 
+		printf("PCI latency timer (CFLT) is unreasonably low at %d. Setting to 32 clocks.\n",
 			pci_latency);
 #endif
 		pcibios_write_config_byte(p->bus, p->devfn, PCI_LATENCY_TIMER, 32);
@@ -270,7 +270,7 @@ unsigned long pci_bar_size(struct pci_device *dev, unsigned int bar)
 }
 
 /**
- * pci_find_capability - query for devices' capabilities 
+ * pci_find_capability - query for devices' capabilities
  * @dev: PCI device to query
  * @cap: capability code
  *
@@ -279,17 +279,17 @@ unsigned long pci_bar_size(struct pci_device *dev, unsigned int bar)
  * device's PCI configuration space or 0 in case the device does not
  * support it.  Possible values for @cap:
  *
- *  %PCI_CAP_ID_PM           Power Management 
+ *  %PCI_CAP_ID_PM           Power Management
  *
- *  %PCI_CAP_ID_AGP          Accelerated Graphics Port 
+ *  %PCI_CAP_ID_AGP          Accelerated Graphics Port
  *
- *  %PCI_CAP_ID_VPD          Vital Product Data 
+ *  %PCI_CAP_ID_VPD          Vital Product Data
  *
- *  %PCI_CAP_ID_SLOTID       Slot Identification 
+ *  %PCI_CAP_ID_SLOTID       Slot Identification
  *
  *  %PCI_CAP_ID_MSI          Message Signalled Interrupts
  *
- *  %PCI_CAP_ID_CHSWP        CompactPCI HotSwap 
+ *  %PCI_CAP_ID_CHSWP        CompactPCI HotSwap
  */
 int pci_find_capability(struct pci_device *dev, int cap)
 {

@@ -14,8 +14,8 @@ void LockHdd(void *driveId) {
 	unsigned uIoBase = tsaHarddiskInfo[nIndexDrive].m_fwPortBase;
 	int i;
 
-	if (!Confirm("Confirm locking of drive", "Yes", "No", 0)) return;	
-	
+	if (!Confirm("Confirm locking of drive", "Yes", "No", 0)) return;
+
 	if (CalculateDrivePassword(nIndexDrive,password)) {
 		printk("Unable to calculate drive password - eeprom corrupt?");
 		return;
@@ -31,7 +31,7 @@ void LockHdd(void *driveId) {
 		if ((i+1)%5 == 0) {
 			printk("\n\n                              ");
 		}
-	}	
+	}
 	VIDEO_ATTR=0xffffff;
 	printk("\nLocking drive - please wait\n");
 	if (DriveSecurityChange(uIoBase, nIndexDrive, IDE_CMD_SECURITY_SET_PASSWORD, password)) {
@@ -47,9 +47,9 @@ void UnlockHdd(void *driveId) {
 	int nIndexDrive = *(int *)driveId;
 	u8 password[20];
 	unsigned uIoBase = tsaHarddiskInfo[nIndexDrive].m_fwPortBase;
-	
-	if (!Confirm("Confirm unlocking of drive", "Yes", "No", 0)) return;	
-	
+
+	if (!Confirm("Confirm unlocking of drive", "Yes", "No", 0)) return;
+
 	if (CalculateDrivePassword(nIndexDrive,password)) {
 		printk("Unable to calculate drive password - eeprom corrupt?  Aborting\n");
 		return;
@@ -68,12 +68,12 @@ void DisplayHddPassword(void *driveId) {
 	int nIndexDrive = *(int *)driveId;
 	u8 password[20];
 	int i;
-	
+
 	if (CalculateDrivePassword(nIndexDrive,password)) {
 		printk("Unable to calculate drive password - eeprom corrupt?");
 		return;
 	}
-	
+
 	printk("The normal password (user password) for this drive is as follows:\n\n");
 	printk("                              ");
 	VIDEO_ATTR=0xff0000;
@@ -82,7 +82,7 @@ void DisplayHddPassword(void *driveId) {
 		if ((i+1)%5 == 0) {
 			printk("\n\n                              ");
 		}
-	}	
+	}
 
 	VIDEO_ATTR=0xffffff;
 

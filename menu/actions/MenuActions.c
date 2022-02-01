@@ -28,11 +28,11 @@ void AdvancedMenu(void *textmenu) {
 void PrepareBootFromCD(void *data) {
 	//We have to go an extra step when the CD icon is selected, as unlike
 	//the other boot modes, we have not determined available OSes here yet.
-	int nTempCursorY = VIDEO_CURSOR_POSY; 
+	int nTempCursorY = VIDEO_CURSOR_POSY;
 	CONFIGENTRY *config = DetectSystemCD(*(int*)data);
 	if (config==NULL) {
 		//Clear the screen and return to the menu
-		BootVideoClearScreen(&jpegBackdrop, nTempCursorY, VIDEO_CURSOR_POSY+1);	
+		BootVideoClearScreen(&jpegBackdrop, nTempCursorY, VIDEO_CURSOR_POSY+1);
 		return;
 	}
 	DrawBootMenu(config);
@@ -57,7 +57,7 @@ void DrawBootMenu(void *rootEntry) {
 	if (timedOut) {
 		//We should be non-interactive, then.
 		//If there is a default entry, boot that.
-		for (currentConfigEntry = configEntry; currentConfigEntry != NULL; 
+		for (currentConfigEntry = configEntry; currentConfigEntry != NULL;
 			currentConfigEntry = currentConfigEntry->nextConfigEntry) {
 			if (currentConfigEntry->isDefault) {
 				BootMenuEntry(currentConfigEntry);
@@ -68,14 +68,14 @@ void DrawBootMenu(void *rootEntry) {
 		BootMenuEntry(configEntry);
 		return;
 	}
-	
+
 	menu = malloc(sizeof(TEXTMENU));
 	memset(menu,0x00,sizeof(TEXTMENU));
 	strcpy(menu->szCaption, "Boot menu");
-  
-	for (currentConfigEntry = configEntry; currentConfigEntry != NULL; 
+
+	for (currentConfigEntry = configEntry; currentConfigEntry != NULL;
 		currentConfigEntry = currentConfigEntry->nextConfigEntry) {
-	
+
 		menuPtr = malloc(sizeof(TEXTMENUITEM*));
 		memset(menuPtr, 0x00, sizeof(menuPtr));
 		if (currentConfigEntry->title == NULL) {
@@ -103,7 +103,7 @@ void DrawChildTextMenu(void *menu) {
 	TextMenu((TEXTMENU*)menu, NULL);
 }
 
-#ifdef ETHERBOOT 
+#ifdef ETHERBOOT
 extern int etherboot(void);
 void BootFromEtherboot(void *data) {
 	etherboot();

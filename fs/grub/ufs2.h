@@ -215,7 +215,7 @@ struct	direct {
  * having this limit is a good idea.
  */
 #define FSMAXSNAP 20
-	
+
 /*
  * Per cylinder group information; summarized in blocks allocated
  * from first cylinder group data blocks.  These blocks have to be
@@ -327,7 +327,7 @@ struct fs {
 	grub_int32_t	 fs_save_cgsize;	/* save real cg size to use fs_bsize */
 	grub_int32_t	 fs_sparecon32[26];	/* reserved for future constants */
 	grub_int32_t  fs_flags;		/* see FS_ flags below */
-	grub_int32_t	 fs_contigsumsize;	/* size of cluster summary array */ 
+	grub_int32_t	 fs_contigsumsize;	/* size of cluster summary array */
 	grub_int32_t	 fs_maxsymlinklen;	/* max length of an internal symlink */
 	grub_int32_t	 fs_old_inodefmt;	/* format of on-disk inodes */
 	grub_u_int64_t fs_maxfilesize;	/* maximum representable file size */

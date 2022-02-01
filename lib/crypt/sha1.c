@@ -41,7 +41,7 @@
  */
 #define SHA1CircularShift(bits,word) \
                 (((word) << (bits)) | ((word) >> (32-(bits))))
-/* Local Function Prototyptes */ void SHA1PadMessage(SHA1Context *); void SHA1ProcessMessageBlock(SHA1Context *); 
+/* Local Function Prototyptes */ void SHA1PadMessage(SHA1Context *); void SHA1ProcessMessageBlock(SHA1Context *);
 
 /*
  *  SHA1Reset
@@ -57,7 +57,7 @@
   *  Returns:
  *      sha Error Code.
  *
- */ 
+ */
 
 
 int SHA1Reset(SHA1Context *context)
@@ -318,7 +318,7 @@ void SHA1ProcessMessageBlock(SHA1Context *context)
     context->Intermediate_Hash[3] += D;
     context->Intermediate_Hash[4] += E;
 
-    context->Message_Block_Index = 0;  
+    context->Message_Block_Index = 0;
 
 
 
