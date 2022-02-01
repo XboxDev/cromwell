@@ -7,6 +7,7 @@
  *                                                                         *
  ***************************************************************************/
 #include "HddMenuActions.h"
+#include "menu/misc/Confirm.h"
 
 void LockHdd(void *driveId) {
 	int nIndexDrive = *(int *)driveId;

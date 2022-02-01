@@ -4,6 +4,8 @@
 #include "xbox.h"
 #include "string.h"
 #include "../../../../include/memory_layout.h"
+#include "../../../../include/printk.h"
+#include "../../../../include/timer.h"
 
 #include <stdarg.h>
 
@@ -110,6 +112,7 @@ static __inline uint32_t IoInputDword(uint16_t wAds) {
   __asm__ __volatile__ ("inl %w1,%0":"=a" (_v):"Nd" (wAds));
   return _v;
 }
+
 unsigned long currticks(void)
 {
 	return GetTimerTicks();

@@ -47,12 +47,6 @@
 #define	PPCB_SPKR	0x02	/* Bit 1 */
 #define	PPCB_T2GATE	0x01	/* Bit 0 */
 
-/* Ticks must be between 0 and 65535 (0 == 65536)
-   because it is a 16 bit counter */
-extern void load_timer2(unsigned int ticks);
-extern inline int timer2_running(void);
-extern void waiton_timer2(unsigned int ticks);
-
 extern void setup_timers(void);
 extern void ndelay(unsigned int nsecs);
 extern void udelay(unsigned int usecs);

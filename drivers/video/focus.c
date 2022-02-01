@@ -51,10 +51,12 @@ static const unsigned char focus_defaults[0xc4] = {
 	/*0xc0*/ 0x00,0x00,0xee,0x00
 };
 
+int focus_calc_pll_settings(focus_pll_settings *settings, volatile char *regs);
+
 int focus_calc_hdtv_mode(
 	xbox_hdtv_mode hdtv_mode,
 	unsigned char pll_int,
-	volatile void **encoder_regs
+	void **encoder_regs
 	){
 	unsigned char *regs;
 
@@ -185,7 +187,7 @@ int focus_calc_mode(xbox_video_mode * mode, struct riva_regs * riva_out)
 {
 	unsigned char b;
 
-	volatile unsigned char* regs;
+	unsigned char* regs;
 	int tv_htotal, tv_vtotal, tv_vactive, tv_hactive;
 	int vga_htotal, vga_vtotal;
 	int vsc, hsc;

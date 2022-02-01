@@ -413,6 +413,7 @@ extern char freebsd_kernel_env[FREEBSD_KERNEL_ENV_SIZE];
 /* osloader.c */
 
 /* xbox.c */
+#include "../../include/printk.h"
 #define printf printk
 #define longjmp(a,b) a(b)
 extern void restart_etherboot(int);

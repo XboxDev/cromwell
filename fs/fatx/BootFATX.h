@@ -98,7 +98,7 @@ typedef struct {
 	u8 *buffer;
 } FATXFILEINFO;
 
-int LoadFATXFilefixed(FATXPartition *partition,char *filename, FATXFILEINFO *fileinfo,u8* Position);
+int LoadFATXFilefixed(FATXPartition *partition, char *filename, FATXFILEINFO *fileinfo, u8* Position);
 int LoadFATXFile(FATXPartition *partition,char *filename, FATXFILEINFO *fileinfo);
 void PrintFAXPartitionTable(int nDriveIndex);
 int FATXSignature(int nDriveIndex,unsigned int block,u8 *ba);
@@ -110,8 +110,8 @@ void _DumpFATXTree(FATXPartition* partition, int clusterId, int nesting);
 void LoadFATXCluster(FATXPartition* partition, int clusterId, unsigned char* clusterData);
 u_int32_t getNextClusterInChain(FATXPartition* partition, int clusterId);
 void CloseFATXPartition(FATXPartition* partition);
-int FATXFindFile(FATXPartition* partition,char* filename,int clusterId, FATXFILEINFO *fileinfo);
-int _FATXFindFile(FATXPartition* partition,char* filename,int clusterId, FATXFILEINFO *fileinfo);
+int FATXFindFile(FATXPartition* partition, char* filename,int clusterId, FATXFILEINFO *fileinfo);
+int _FATXFindFile(FATXPartition* partition, char* filename,int clusterId, FATXFILEINFO *fileinfo);
 int FATXLoadFromDisk(FATXPartition* partition, FATXFILEINFO *fileinfo);
 
 #endif //	_BootFATX_H_

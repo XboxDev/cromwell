@@ -22,7 +22,7 @@ int checkForLastDirectoryEntry(unsigned char* entry) {
 	return 0;
 }
 
-int LoadFATXFilefixed(FATXPartition *partition,char *filename, FATXFILEINFO *fileinfo,u8* Position) {
+int LoadFATXFilefixed(FATXPartition *partition, char *filename, FATXFILEINFO *fileinfo, u8* Position) {
 
 	if(partition == NULL) {
 		VIDEO_ATTR=0xffe8e8e8;

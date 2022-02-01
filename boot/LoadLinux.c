@@ -21,6 +21,8 @@
 #include "BootParser.h"
 #include "config.h"
 #include "iso_fs.h"
+#include "lib/misc/LED.h"
+#include "loaders.h"
 
 //Grub bits
 unsigned long saved_drive;
@@ -188,7 +190,7 @@ CONFIGENTRY *DetectLinuxFATX(FATXPartition *partition) {
 	return config;
 }
 
-int LoadLinuxFATX(FATXPartition *partition, const OPTLINUX *optLinux) {
+int LoadLinuxFATX(FATXPartition *partition, OPTLINUX *optLinux) {
 
 	static FATXFILEINFO fileinfo;
 	static FATXFILEINFO infokernel;

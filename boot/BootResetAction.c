@@ -21,6 +21,9 @@
 #include "config.h"
 #include "video.h"
 #include "memory_layout.h"
+#include "menu/iconmenu/IconMenu.h"
+#include "lib/misc/LED.h"
+#include "drivers/video/BootVideo.h"
 
 JPEG jpegBackdrop;
 

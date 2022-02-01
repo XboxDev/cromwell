@@ -189,7 +189,7 @@ void I2CModifyBits(u8 bAds, u8 bReg, u8 bData, u8 bMask)
 
 // ----------------------------  PIC challenge/response -----------------------------------------------------------
 
-extern int I2cSetFrontpanelLed(u8 b)
+int I2cSetFrontpanelLed(u8 b)
 {
 	I2CTransmitWord( 0x10, 0x800 | b);  // sequencing thanks to Jarin the Penguin!
 	I2CTransmitWord( 0x10, 0x701);
@@ -198,7 +198,7 @@ extern int I2cSetFrontpanelLed(u8 b)
 	return ERR_SUCCESS;
 }
 
-extern int I2cResetFrontpanelLed(void)
+int I2cResetFrontpanelLed(void)
 {
 	I2CTransmitWord( 0x10, 0x700);
 

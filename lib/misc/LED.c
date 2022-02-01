@@ -17,6 +17,8 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
+#include "drivers/pci/i2c.h"
+
 // Set the pattern of the LED.
 // The pattern must be 4 characters long and must consist
 // only of 'r', 'g', 'o' and 'x'.

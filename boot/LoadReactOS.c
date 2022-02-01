@@ -14,6 +14,9 @@
 #include "BootFATX.h"
 #include "memory_layout.h"
 #include <shared.h>
+#include "lib/misc/LED.h"
+#include "video.h"
+#include "loaders.h"
 
 extern grub_error_t errnum;
 
@@ -289,7 +292,7 @@ int LoadReactOSCD(CONFIGENTRY *config) {
 	return true;
 }
 
-int ExittoReactOS(const OPTMULTIBOOT *multiboot) {
+void ExittoReactOS(const OPTMULTIBOOT *multiboot) {
 	PMULTIBOOTHEADER mbHeader;
 
 	mbHeader = CheckMultibootHeader(multiboot->pBuffer);

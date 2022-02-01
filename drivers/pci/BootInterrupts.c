@@ -110,10 +110,6 @@ const ISR_PREP isrprep[] = {
 	{ 0, 0 }
 };
 
-u32 GetTimerTicks(void) {
-	return IoInputDword(TIMER_IO);
-}
-
 void wait_smalldelay(void) {
 	wait_us(80);
 }
@@ -213,7 +209,7 @@ void BootInterruptsWriteIdt() {
 			ptspmi[n].m_wHandlerLinearAddressHigh16=(u16)(((u32)isrprep[n1].m_dwpVector)>>16);
 			n1++;
 		} else { // otherwise default handler (pretty useless, but will catch it)
-			ptspmi[n].m_wHandlerHighAddressLow16=(u16)IntHandlerUnused;
+			ptspmi[n].m_wHandlerHighAddressLow16=(u16)(u32)IntHandlerUnused;
 			ptspmi[n].m_wHandlerLinearAddressHigh16=(u16)(((u32)IntHandlerUnused)>>16);
 		}
 	}

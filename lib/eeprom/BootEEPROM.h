@@ -6,6 +6,7 @@
 #ifndef _BootEEPROM_H_
 #define _BootEEPROM_H_
 
+#include "cromwell_types.h"
 #include "VideoInitialization.h"
 //Defines for Data structure sizes..
 #define EEPROM_SIZE		0x100

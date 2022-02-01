@@ -56,6 +56,7 @@
 
 #ifdef FSYS_UFS2
 
+#include "boot.h"
 #include "shared.h"
 #include "filesys.h"
 

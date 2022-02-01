@@ -20,11 +20,3 @@ void mdelay(unsigned int msecs)
 		poll_interruptions();
 	}
 }
-
-void waiton_timer2(unsigned int ticks)
-{
-	load_timer2(ticks);
-	while(timer2_running()) {
-		poll_interruptions();
-	}
-}

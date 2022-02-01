@@ -25,7 +25,10 @@
 #include "VideoInitialization.h"
 #include "BootVgaInitialization.h"
 #include "encoder.h"
+#include "conexant.h"
+#include "focus.h"
 #include "xcalibur.h"
+#include "drivers/pci/i2c.h"
 
 void DetectVideoEncoder(void) {
 	if (I2CTransmitByteGetReturn(0x45,0x00) != ERR_I2C_ERROR_BUS) video_encoder = ENCODER_CONEXANT;
