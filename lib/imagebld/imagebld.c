@@ -76,7 +76,7 @@ void writeBiosIdentifier(unsigned char *cromimage, int biosSize) {
 	memcpy(BiosHeader->Magic,"AUTO",4);
 	BiosHeader->HeaderVersion=1;
 	BiosHeader->BiosSize= biosSize;
-	sprintf(BiosHeader->Name,"Cromwell %s",VERSION);
+	sprintf(BiosHeader->Name,"Cromwell %s",CROMWELL_VERSION);
 
 	BiosHeader->XboxVersion =       BiosID_Version10 |
 	                                BiosID_Version11 |

@@ -1,7 +1,7 @@
 ////////////////////// compile-time options ////////////////////////////////
 
 //Cromwell version number
-#define VERSION "2.41-dev"
+#define CROMWELL_VERSION "2.41-dev"
 
 // selects between the supported video modes, see boot.h for enum listing those available
 //#define VIDEO_PREFERRED_MODE VIDEO_MODE_800x600
