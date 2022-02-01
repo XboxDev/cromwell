@@ -27,9 +27,9 @@ unsigned long saved_drive;
 grub_error_t errnum;
 unsigned long saved_partition;
 unsigned long boot_drive;
-	
+
 static int nRet;
-static u32 dwKernelSize = 0, dwInitrdSize = 0;
+static s32 dwKernelSize = 0, dwInitrdSize = 0;
 
 
 void startLinux(void* initrdStart, unsigned long initrdSize, const char* appendLine, unsigned int entry);

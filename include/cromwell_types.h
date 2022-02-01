@@ -5,6 +5,7 @@
 // some typedefs to make for easy sizing
 
 //typedef unsigned long ULONG;
+typedef signed int s32;
 typedef unsigned int u32;
 typedef unsigned short u16;
 typedef unsigned char u8;
