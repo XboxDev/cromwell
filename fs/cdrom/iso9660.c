@@ -22,7 +22,7 @@ int isupper( int ch )
 	return (unsigned int)(ch - 'A') < 26u;
 }
 
-strip_blank(char *buffer, unsigned char len) {
+void strip_blank(char *buffer, unsigned char len) {
 	unsigned char i;
 	for(i = len; i > 0; i--) {
 		if(buffer[i] != ' ') {
@@ -62,7 +62,7 @@ int iso9660_name_translate(char *translated, char *old, unsigned len) {
   return i;
 }
 
-unsigned long read_dir(int driveId, struct iso_directory_record *dir_read, char *search, char *filename, struct iso_directory_record *dir_found) {
+unsigned long read_dir(int driveId, struct iso_directory_record *dir_read, const char *search, char *filename, struct iso_directory_record *dir_found) {
 	char *buffer;
 	struct iso_directory_record *dir;
 	unsigned long read_size;
@@ -183,7 +183,7 @@ unsigned long read_file(int driveId, struct iso_directory_record *dir_read, char
 	return bytes_read;
 }
 
-int BootIso9660GetFile(int driveId, char *szcPath, unsigned char *pbaFile, unsigned int dwFileLengthMax) {
+int BootIso9660GetFile(int driveId, const char *szcPath, unsigned char *pbaFile, unsigned int dwFileLengthMax) {
 	struct iso_primary_descriptor *pvd;
 	struct iso_directory_record *rootd;
 	unsigned long read_size;

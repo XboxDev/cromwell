@@ -1,7 +1,9 @@
 #ifndef _Boot_H_
 #define _Boot_H_
 
+#include <stdarg.h>
 #include "config.h"
+#include "timer.h"
 
 /***************************************************************************
       Includes used by XBox boot code
@@ -21,6 +23,7 @@
 #include "consts.h"
 #include "stdint.h"
 #include "cromwell_types.h"
+#include "printk.h"
 
 
 unsigned int cromwell_config;
@@ -240,9 +243,14 @@ int BootMenu(CONFIGENTRY *config,int nDrive,int nActivePartition, int nFATXPrese
 void ClearIDT (void);
 void BootResetAction(void);
 void BootCpuCache(bool fEnable);
-int printk(const char *szFormat, ...);
 void BiosCmosWrite(u8 bAds, u8 bData);
 u8 BiosCmosRead(u8 bAds);
+
+///////// BootFromDevice.c
+int BootFromDevice(CONFIGENTRY *config);
+CONFIGENTRY *DetectSystemCD(int cdromId);
+CONFIGENTRY *DetectSystemNative(int drive, int partition);
+CONFIGENTRY *DetectSystemFatX(void);
 
 
 ///////// BootPciPeripheralInitialization.c
@@ -299,15 +307,12 @@ void USBGetEvents(void);
 extern struct xpad_data XPAD_current[4];
 extern struct xpad_data XPAD_last[4];
 
-extern void wait_ms(u32 ticks);
-extern void wait_us(u32 ticks);
-extern void wait_smalldelay(void);
-
 
 void * memcpy(void *dest, const void *src,  size_t size);
 void * memset(void *dest, int data,  size_t size);
 int memcmp(const void *buffer1, const void *buffer2, size_t num);
-int _strncmp(const char *sz1, const char *sz2, int nMax);
+int strncmp(const char *sz1, const char *sz2, size_t nMax);
+int strcmp(const char *cs, const char *ct);
 char * strcpy(char *sz, const char *szc);
 char * _strncpy (char * dest, const char * src, size_t n);
 void chrreplace(char *string, char search, char ch);
@@ -341,11 +346,11 @@ void HMAC_SHA1( unsigned char *result,
 
 char *strrchr0(char *string, char ch);
 
-void setLED(void *pattern);
-
 int strlen(const char * s);
 int sprintf(char * buf, const char *fmt, ...);
+int vsprintf(char *buf, const char *fmt, va_list args);
 char * strncpy(char * dest,const char *src,int count);
 char * strstr(const char * s1,const char * s2);
 char * strcat(char * s, const char * append);
+char * strsep(char **s, const char *ct);
 #endif // _Boot_H_

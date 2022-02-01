@@ -6,6 +6,7 @@
 */
 
 #include "../usb_wrapper.h"
+#include "usbkey.h"
 
 void subsys_usb_init(void);
 void module_exit_usb_exit(void);

@@ -24,6 +24,8 @@
 #include "BootParser.h"
 #include "config.h"
 #include "iso_fs.h"
+#include "drivers/pci/i2c.h"
+#include "loaders.h"
 
 #define GRUB_REQUEST_SIZE (256+4)
 

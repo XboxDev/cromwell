@@ -1,6 +1,7 @@
 #include "boot.h"
 #include "VideoInitialization.h"
 #include "BootEEPROM.h"
+#include "drivers/pci/i2c.h"
 
 void BootEepromReadEntireEEPROM() {
 	int i;

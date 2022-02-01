@@ -10,6 +10,7 @@
 /* This is where you should customise the menu, by adding your own icons.
  * The code in IconMenu.c should normally be left alone.
  */
+#include "boot.h"
 #include "include/config.h"
 #include "BootIde.h"
 #include "IconMenu.h"

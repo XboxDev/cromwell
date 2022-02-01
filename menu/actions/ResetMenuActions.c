@@ -7,6 +7,7 @@
  *                                                                         *
  ***************************************************************************/
 #include "ResetMenuActions.h"
+#include "drivers/pci/i2c.h"
 
 void SlowReboot(void *ignored){
 	I2CRebootSlow();

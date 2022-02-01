@@ -19,6 +19,7 @@
  */
 
 #include <shared.h>
+#include "boot.h"
 
 char *
 convert_to_ascii (char *buf, int c,...)

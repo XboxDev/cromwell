@@ -16,6 +16,10 @@
 
 void BootPciInterruptEnable()  {	__asm__ __volatile__  (  "sti" ); }
 
+u32 GetTimerTicks(void) {
+	return IoInputDword(TIMER_IO);
+}
+
 
 void * memcpy(void * to, const void * from, size_t n)
 {

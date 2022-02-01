@@ -31,4 +31,9 @@ typedef struct {
 
 void BootVgaInitializationKernelNG(CURRENT_VIDEO_MODE_DETAILS * pvmode);
 
+
+int VideoDumpAddressAndData(u32 dwAds, const u8 * baData, u32 dwCountBytesUsable);
+char *VideoEncoderName(void);
+char *AvCableName(void);
+
 #endif // _BootVideo_H_

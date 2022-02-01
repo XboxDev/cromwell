@@ -19,6 +19,9 @@
 
 #ifdef FSYS_FAT
 
+#pragma GCC diagnostic ignored "-Wstringop-overflow"
+
+#include "boot.h"
 #include "shared.h"
 #include "filesys.h"
 #include "fat.h"

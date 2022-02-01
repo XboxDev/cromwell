@@ -248,7 +248,7 @@ void bprintf(const char *fmt, ...)
 
 	va_start(args, fmt);
 	/* FIXME: vsprintf should know the size of buffer */
-	vsprintf(&buf, fmt, args);
+	vsprintf(buf, fmt, args);
 	va_end(args);
 
 	for (i = 0; i < strlen(buf); i++)

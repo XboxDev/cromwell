@@ -7,6 +7,7 @@
  *                                                                         *
  ***************************************************************************/
 #include "FlashMenuActions.h"
+#include "boot/loaders.h"
 
 void FlashBiosFromCD(void *cdromId) {
 #ifdef FLASH

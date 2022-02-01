@@ -43,4 +43,6 @@ void AddIcon(ICON *newIcon);
 //This draws and handles input for the main menu
 void IconMenu(void);
 
+void IconMenuInit(void);
+
 #endif
