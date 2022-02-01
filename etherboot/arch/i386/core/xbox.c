@@ -19,7 +19,7 @@ extern uint32_t PciWriteDword(unsigned int bus, unsigned int dev, unsigned int f
 extern void BootResetAction(void);
 extern void BootStopUSB(void);
 
-struct meminfo meminfo = 
+struct meminfo meminfo =
 {
 	640,
 	0,
@@ -46,7 +46,7 @@ int etherboot(void)
 	{
 		printk("eth_probe failed\n");
 	}
-	else 
+	else
 	{
 		if (eth_load_configuration(dev) != 0)
 		{
@@ -285,7 +285,7 @@ int xstart32(unsigned long entry_point, ...)
 				memmove((void*)INITRD_START, initrd, initrdSize);
 			}
 		}
-		
+
 		// look for kernel command line
 		if (ret && (seg[S_PARAMS] != 0))
 		{

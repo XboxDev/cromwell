@@ -14,18 +14,18 @@
  *   (at your option) any later version.                                   *
  *                                                                         *
  ***************************************************************************/
-/* 
-	Rewritten from Original .bin linking to compiler system by Lehner Franz (franz@caos.at) 
+/*
+	Rewritten from Original .bin linking to compiler system by Lehner Franz (franz@caos.at)
 	Rewritten to Dual Boot concept for 2BL loading
-	New written CPU Inits by Lehner Franz (franz@caos.at) 
-	Written New Working Xcodes + Xcode compiler by Lehner Franz (franz@caos.at) 
-	Focus support by Lehner Franz (franz@caos.at) 
-	Xcalibur support by Lehner Franz (franz@caos.at) 
+	New written CPU Inits by Lehner Franz (franz@caos.at)
+	Written New Working Xcodes + Xcode compiler by Lehner Franz (franz@caos.at)
+	Focus support by Lehner Franz (franz@caos.at)
+	Xcalibur support by Lehner Franz (franz@caos.at)
 */
- 
+
 	//The bytecode interpreter begins here
 	xcode_pciout(0x80000884, 0x00008001);
-	xcode_pciout(0x80000810, 0x00008001);	
+	xcode_pciout(0x80000810, 0x00008001);
 	xcode_pciout(0x80000804, 0x00000003);
 	xcode_outb(0x00008049, 0x00000008);
 	xcode_outb(0x000080d9, 0x00000000);
@@ -33,7 +33,7 @@
 	xcode_pciout(0x8000f04c, 0x00000001);
 	xcode_pciout(0x8000f018, 0x00010100);
 	xcode_pciout(0x80000084, 0x07ffffff);
-	
+
 	xcode_pciout(0x8000f020, 0x0ff00f00);
 	xcode_pciout(0x8000f024, 0xf7f0f000);
 	xcode_pciout(0x80010010, 0x0f000000);
@@ -50,30 +50,30 @@
 	xcode_poke(0x0f0010cc, 0x66660000);
 
 	xcode_peek(0x0f101000);
-	
+
 	xcode_bittoggle(0x000c0000,0x00000000);
 
 	xcode_ifgoto(0x00000000,6);
-	
+
 	xcode_peek(0x0f101000);
-	
+
 	xcode_bittoggle(0xe1f3ffff,0x80000000);
 
-	
+
 	xcode_poke_a(0x0f101000);
 	xcode_poke(0x0f0010b8, 0xeeee0000);
 	xcode_goto(11);
-	
+
 	xcode_ifgoto(0x000c0000,6);
 
 	xcode_peek(0x0f101000);
 	xcode_bittoggle(0xe1f3ffff,0x860c0000);
 	xcode_poke_a(0x0f101000);
-	
+
 	xcode_poke(0x0f0010b8, 0xffff0000);
         xcode_goto(5);
 	xcode_peek(0x0f101000);
-	
+
 	xcode_bittoggle(0xe1f3ffff,0x820c0000);
 	xcode_poke_a(0x0f101000);
 	xcode_poke(0x0f0010b8, 0x11110000);
@@ -91,20 +91,20 @@
 	xcode_poke(0x0f10032c, 0xffffcfff);
 	xcode_poke(0x0f100328, 0x00000001);
 	xcode_poke(0x0f100338, 0x000000df);
-	
+
 	// Set up the SM - bus controller
 	xcode_pciout(0x80000904, 0x00000001);
 	xcode_pciout(0x80000914, 0x0000c001);
 	xcode_pciout(0x80000918, 0x0000c201);
 	xcode_outb(0x0000c200, 0x00000070);
-	
-	
+
+
 	//VIDEO INIT CODE
 	/* It is necessary to write to the video encoder, as the PIC
-	snoops the I2C traffic and will reset us if it doesn't see what 
+	snoops the I2C traffic and will reset us if it doesn't see what
 	it judges as 'appropriate' traffic.  Conexant is the most urgent,
 	as on 1.0 Xboxes, the PIC was very strict and reset us earlier
-	than later models 
+	than later models
 	*/
 
 	//CONEXANT START
@@ -113,7 +113,7 @@
 	xcode_outb(SMBUS+8, 0x000000ba);
 	xcode_outb(SMBUS+6, 0x0000003f);
 	xcode_outb(SMBUS+2, 0x0000000a);
-				
+
 	xcode_inb(SMBUS);
 	xcode_ifgoto(0x00000010,2); //Write failed, forward 2
 	xcode_goto(4); //Success, skip to next conexant write.
@@ -136,14 +136,14 @@
 	//I2CTransmitWord(0x45,0xc401);
 	SMB_xcode_Write(0xc4,0x01);		// +6
 
-	xcode_goto(36); //Video complete -> VIDEND 
+	xcode_goto(36); //Video complete -> VIDEND
 
 
 	//FOCUS START
 	//Clear the error from the previous attempts
 	xcode_outb(SMBUS, 0x000000ff);
 	xcode_outb(SMBUS, 0x00000010);
-	
+
 	//Set focus address
 	xcode_outb(0x0000c004, 0x000000d4);
 	//I2CTransmitWord(0x6a,0x0c00);
@@ -158,26 +158,26 @@
 	xcode_goto(9);	//Write failed, on to Xcalibur
 	xcode_outb(SMBUS, 0x00000010); //Next focus write.
 	//I2CTransmitWord(0x6a,0x0d20);
-	SMB_xcode_Write(0x0d,0x20);	 
+	SMB_xcode_Write(0x0d,0x20);
 	xcode_goto(16); //video complete -> VIDEND
 
-	//XCALIBUR START	
+	//XCALIBUR START
 	/* We don't check to see if these writes fail, as
 	we've already tried Conexant and Focus - Oh dear,
-	not another encoder...  :(    
+	not another encoder...  :(
 	*/
 
 	//Clear the error from the previous attempts
 	xcode_outb(SMBUS, 0x000000ff);
 	xcode_outb(SMBUS, 0x00000010);
-	
+
 	xcode_outb(0x0000c004, 0x000000E0);
 	//I2CTransmitWord(0x70,0x00);
 	SMB_xcode_Write(0x0,0x0);		// +6
 	//I2CTransmitWord(0x70,0x00);
-	SMB_xcode_Write(0xb8,0x00);		// +6	
+	SMB_xcode_Write(0xb8,0x00);		// +6
 
-	
+
 	//VIDEND - Encoder 'init' complete.
 
         // PIC SLAVE Address (Write)
@@ -198,7 +198,7 @@
 
 	// If SMC version does not match ... ?????
 	xcode_inb(SMBUS+6);
-	
+
 	xcode_poke(0x0f680500, 0x00011c01);
 	xcode_poke(0x0f68050c, 0x000a0400);
 	xcode_poke(0x0f001220, 0x00000000);
@@ -215,7 +215,7 @@
 	xcode_poke(0x0f001214, 0x09090909);
 	xcode_poke(0x0f00122c, 0xaaaaaaaa);
 	xcode_goto(3);
-     
+
 	xcode_poke(0x0f001214, 0x09090909);
 	xcode_poke(0x0f00122c, 0xaaaaaaaa);
 	xcode_poke(0x0f001230, 0xffffffff);
@@ -245,7 +245,7 @@
 
 
 	xcode_pciin_a(0x80000860);
-	xcode_bittoggle(0xffffffff,0x00000400);   
+	xcode_bittoggle(0xffffffff,0x00000400);
 	xcode_pciout_a(0x80000860);
 
 	xcode_pciout(0x8000084c, 0x0000fdde);
@@ -266,9 +266,9 @@
 
 
 	xcode_outb(SMBUS, 0x00000010);
-	
+
 	/* ----  Report Memory Size to PIC scratch register ---- */
-        
+
         // We emulate Good memory result to PIC
 
 	//xcode_pciin_a(0x8000183c);
@@ -279,20 +279,20 @@
 	xcode_outb(SMBUS+4, 0x00000020);
 
 	SMB_xcode_Write(0x13,0x0f);		// +6
-	SMB_xcode_Write(0x12,0xf0);		// +6		
+	SMB_xcode_Write(0x12,0xf0);		// +6
 
 	/* ---- Reload Nvidia Registers  ------------------------*/
-	
+
 	xcode_pciout(0x8000f020, 0xfdf0fd00);
 	xcode_pciout(0x80010010, 0xfd000000);
-	
-	
+
+
 	// overflow trick (execution continues in 2bBootStartup.S)
 	// mov eax, 0xfffc1000
 	// jmp eax
 	// nop
 	xcode_poke(0x00000000, 0xfc1000B8);
 	xcode_poke(0x00000004, 0x90e0ffff);
-	
+
 
        	xcode_END(0x806);

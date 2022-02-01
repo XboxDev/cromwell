@@ -25,7 +25,7 @@ struct list_head {
 } while (0)
 
 /*
- * Insert a new entry between two known consecutive entries. 
+ * Insert a new entry between two known consecutive entries.
  *
  * This is only for internal list manipulation where we know
  * the prev/next entries already!
@@ -98,7 +98,7 @@ static inline void list_del(struct list_head *entry)
 static inline void list_del_init(struct list_head *entry)
 {
 	__list_del(entry->prev, entry->next);
-	INIT_LIST_HEAD(entry); 
+	INIT_LIST_HEAD(entry);
 }
 
 /**
@@ -199,7 +199,7 @@ static inline void list_splice_init(struct list_head *list,
 #define list_for_each_prev(pos, head) \
 	for (pos = (head)->prev; pos != (head); \
         	pos = pos->prev)
-        	
+
 /**
  * list_for_each_safe	-	iterate over a list safe against removal of list entry
  * @pos:	the &struct list_head to use as a loop counter.

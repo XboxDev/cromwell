@@ -15,14 +15,14 @@ extern void cpuid(int op, int *eax, int *ebx, int *ecx, int *edx)
                   "=d" (*edx)
                 : "a" (op)
                 : "cc");
-}			  
+}
 
 extern void intel_interrupts_on()
 {
     unsigned long low, high;
-    
+
    // printk("Disabling local apic...");
-    
+
     /* this is so interrupts work. This is very limited scope --
      * linux will do better later, we hope ...
      */

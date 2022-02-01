@@ -2,7 +2,7 @@
 #define _XCALIBUR_REGS_H_
 #include "xcalibur.h"
 
-#define u32 unsigned long 
+#define u32 unsigned long
 
 const u32 Composite_XCal_Vals_PAL[] = {
 	0x02000000, 0x36005003, 0x00000000, 0x00000000,

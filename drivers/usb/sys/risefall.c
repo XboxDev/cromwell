@@ -9,13 +9,13 @@ extern unsigned char xpad_button_history[7];
 extern unsigned int current_keyboard_key;
 
 int risefall_xpad_BUTTON(unsigned char selected_Button) {
-	
-      	int xpad_id; 
+
+      	int xpad_id;
 	int match;
 	extern int xpad_num;
-	
-	// USB keyboard section 
-	
+
+	// USB keyboard section
+
 	match=0;
 	if (current_keyboard_key!=0) {
 		switch (selected_Button) {
@@ -46,15 +46,15 @@ int risefall_xpad_BUTTON(unsigned char selected_Button) {
 			return 1;
 		}
 	}
-	
+
 	// Xbox IR remote section
-	
+
 	match=0;
 	if (!remotekeyIsRepeat) {
 		/* We only grab the key event when the button is first pressed.
-		 * If it's being held down, we ignore the multiple events this 
+		 * If it's being held down, we ignore the multiple events this
 		 * generates */
-		
+
 		switch (selected_Button) {
 			case TRIGGER_XPAD_KEY_A:
 		   		if (current_remote_key == RC_KEY_SELECT) match=1;
@@ -83,34 +83,34 @@ int risefall_xpad_BUTTON(unsigned char selected_Button) {
 			return 1;
 		}
 	}
-       	
+
 	// Xbox controller section
 	if (selected_Button < 6) {
-       	
+
        		unsigned char Button;
-       	
+
        		Button = XPAD_current[0].keys[selected_Button];
-	
+
 		if ((Button>0x30)&&(xpad_button_history[selected_Button]==0)) {
 			// Button Rising Edge
-			xpad_button_history[selected_Button] = 1;		
+			xpad_button_history[selected_Button] = 1;
 			return 1;
-		}	
-		
+		}
+
 		if ((Button==0x00)&&(xpad_button_history[selected_Button]==1)) {
 			// Button Falling Edge
-			xpad_button_history[selected_Button] = 0;		
+			xpad_button_history[selected_Button] = 0;
 			return -1;
-		}	
+		}
 	}
- 	
+
  	if ((selected_Button > 5) & (selected_Button < 10) ) {
-	
+
 		unsigned char Buttonmask;
-       	      
+
 		switch (selected_Button) {
 			case TRIGGER_XPAD_PAD_UP :
-				   Buttonmask = XPAD_PAD_UP; 
+				   Buttonmask = XPAD_PAD_UP;
 				   break;
 			case TRIGGER_XPAD_PAD_DOWN :
 				   Buttonmask = XPAD_PAD_DOWN;
@@ -121,13 +121,13 @@ int risefall_xpad_BUTTON(unsigned char selected_Button) {
 			case TRIGGER_XPAD_PAD_RIGHT :
 				   Buttonmask = XPAD_PAD_RIGHT;
 				   break;
-		}		
-       	    
+		}
+
 		// Rising Edge
 		if (((XPAD_current[0].pad&Buttonmask) != 0) & ((xpad_button_history[6]&Buttonmask) == 0)) {
 			xpad_button_history[6] ^= Buttonmask;  // Flip the Bit
 			return 1;
-		}				
+		}
 		// Falling Edge
 		if (((XPAD_current[0].pad&Buttonmask) == 0) & ((xpad_button_history[6]&Buttonmask) != 0)) {
 			xpad_button_history[6] ^= Buttonmask;  // Flip the Bit

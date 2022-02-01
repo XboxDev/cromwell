@@ -119,22 +119,22 @@ void wait_smalldelay(void) {
 }
 
 void wait_us(u32 ticks) {
-        
+
 	/*
 	  	32 Bit range = 1200 sec ! => 20 min
 		1. sec = 0x369E99
 		1 ms =  3579,545
-					
+
 	*/
-	
+
 	u32 COUNT_start;
 	u32 temp;
 	u32 COUNT_TO;
 	u32 HH;
-	
+
 	// Maximum Input range
 	if (ticks>(1200*1000)) ticks = 1200*1000;
-	
+
 	COUNT_TO = (u32) ((float)(ticks*3.579545));
 	COUNT_start = GetTimerTicks();
 
@@ -145,29 +145,29 @@ void wait_us(u32 ticks) {
 		temp = HH-COUNT_start;
 		// We reached the counter
 		if (temp>COUNT_TO) break;
-	
+
 	};
-	
+
 
 }
 
 void wait_ms(u32 ticks) {
-        
+
 	/*
 	  	32 Bit range = 1200 sec ! => 20 min
 		1. sec = 0x369E99
 		1 ms =  3579,545
-					
+
 	*/
-	
+
 	u32 COUNT_start;
 	u32 temp;
 	u32 COUNT_TO;
 	u32 HH;
-	
+
 	// Maximum Input range
 	if (ticks>(1200*1000)) ticks = 1200*1000;
-	
+
 	COUNT_TO = (u32) ((float)(ticks*3579.545));
 	COUNT_start = GetTimerTicks();
 
@@ -178,7 +178,7 @@ void wait_ms(u32 ticks) {
 		// We reached the counter
 		if (temp>COUNT_TO) break;
 	};
-	
+
 
 }
 
@@ -260,24 +260,24 @@ void IntHandlerCSmc(void)
 	u8 bStatus, nBit=0;
         unsigned int temp;
         u8 temp_AV_mode;
-        
+
 	nCountInterruptsSmc++;
-   
-        
+
+
 	temp = IoInputWord(0x8000);
 	if (temp!=0x0) {
 		IoOutputWord(0x8000,temp);
 		//printk("System Timer wants to sleep we kill him");
 	//	return;
 		}
-        
-   
-	
+
+
+
 	bStatus=I2CTransmitByteGetReturn(0x10, 0x11); // Query PIC for interrupt reason
-	
+
 	// we do nothing, if there is not Interrupt reason
 	if (bStatus==0x0) return;
-	
+
 	while(nBit<7) {
 		if(bStatus & 1) {
 			u8 b=0x04;
@@ -319,7 +319,7 @@ void IntHandlerCSmc(void)
 					break;
 
 				case 3: // AV CABLE HAS BEEN PLUGGED IN
-					       
+
 					temp_AV_mode =I2CTransmitByteGetReturn(0x10, 0x04);
 					// Compare to global variable
 					if (VIDEO_AV_MODE != temp_AV_mode ) {
@@ -329,7 +329,7 @@ void IntHandlerCSmc(void)
 						BootVgaInitializationKernelNG((CURRENT_VIDEO_MODE_DETAILS *)&vmode);
 						wait_ms(200);
 						BootVgaInitializationKernelNG((CURRENT_VIDEO_MODE_DETAILS *)&vmode);
-						
+
 					}
 					break;
 
@@ -402,8 +402,8 @@ void IntHandlerCTimer0(void)
 {
 	BIOS_TICK_COUNT++;
 }
- 
- 
+
+
 // USB interrupt
 
 void IntHandler1C(void)
@@ -429,7 +429,7 @@ void IntHandler2C(void)
 void IntHandler3VsyncC(void)  // video VSYNC
 {
 	*((volatile u32 *)0xfd600100)=0x1;  // clear VSYNC int
-} 
+}
 
 
 void IntHandler4C(void)

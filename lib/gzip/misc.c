@@ -1,7 +1,7 @@
 /*
  * misc.c
- * 
- * This is a collection of several routines from gzip-1.0.3 
+ *
+ * This is a collection of several routines from gzip-1.0.3
  * adapted for Linux.
  *
  * malloc by Hannu Savolainen 1993 and Matthias Urlichs 1994
@@ -52,7 +52,7 @@ static unsigned outcnt;      /* bytes in output buffer */
 #define RESERVED     0xC0 /* bit 6,7:   reserved */
 
 #define get_byte()  (inptr < insize ? inbuf[inptr++] : fill_inbuf())
-		
+
 /* Diagnostic functions */
 #ifdef DEBUG
 #  define Assert(cond,msg) {if(!(cond)) error(msg);}
@@ -168,9 +168,9 @@ static void flush_window(void)
     ulg c = crc;         /* temporary variable */
     unsigned n;
     uch *in, *out, ch;
-    
+
     in = window;
-    out = &output_data[output_ptr]; 
+    out = &output_data[output_ptr];
     for (n = 0; n < outcnt; n++) {
 	    ch = *out++ = *in++;
 	    c = crc_32_tab[((int)c ^ ch) & 0xff] ^ (c >> 8);
@@ -199,7 +199,7 @@ int decompress_kernel(char *out, char *data, int len)
 {
 	input_data = data;
 	input_len = len;
-	
+
 	output_data = out;
 
 	free_mem_ptr = 0x01000000;

@@ -107,7 +107,7 @@ struct cpuinfo_x86 {
 /*
  * Generic CPUID function
  */
-static inline void cpuid(int op, 
+static inline void cpuid(int op,
 	unsigned int *eax, unsigned int *ebx, unsigned int *ecx, unsigned int *edx)
 {
 	__asm__("cpuid"
@@ -179,7 +179,7 @@ static inline unsigned int cpuid_edx(unsigned int op)
 
 
 #define MSR_K6_EFER			0xC0000080
-/* EFER bits: */ 
+/* EFER bits: */
 #define _EFER_SCE 0  /* SYSCALL/SYSRET */
 #define _EFER_LME 8  /* Long mode enable */
 #define _EFER_LMA 10 /* Long mode active (read-only) */

@@ -41,32 +41,32 @@ extern void BootResetAction ( void ) {
 	int nFATXPresent=false;
 	int nTempCursorX, nTempCursorY;
 	int n, nx;
-	
+
         memcpy(&cromwell_config,(void*)(0x03A00000+0x20),4);
         memcpy(&cromwell_retryload,(void*)(0x03A00000+0x24),4);
 	memcpy(&cromwell_loadbank,(void*)(0x03A00000+0x28),4);
         memcpy(&cromwell_Biostype,(void*)(0x03A00000+0x2C),4);
- 	
+
 	VIDEO_CURSOR_POSX=40;
-	VIDEO_CURSOR_POSY=140; 	
-        
+	VIDEO_CURSOR_POSY=140;
+
 	VIDEO_AV_MODE = 0xff;
-	nInteruptable = 0;	
+	nInteruptable = 0;
 
 	// prep our BIOS console print state
 	VIDEO_ATTR=0xffffffff;
 
 	// init malloc() and free() structures
 	MemoryManagementInitialization((void *)MEMORYMANAGERSTART, MEMORYMANAGERSIZE);
-	
-	BootInterruptsWriteIdt();	
+
+	BootInterruptsWriteIdt();
 
 	// initialize the PCI devices
 	//bprintf("BOOT: starting PCI init\n");
 	BootPciPeripheralInitialization();
 	// Reset the AGP bus and start with good condition
 	BootAGPBUSInitialization();
-	
+
 	// We disable The CPU Cache
        	cache_disable();
 	// We Update the Microcode of the CPU
@@ -75,14 +75,14 @@ extern void BootResetAction ( void ) {
        	cache_enable();
        	//setup_ioapic();
 	// We look how much memory we have ..
-	BootDetectMemorySize();     
-	
+	BootDetectMemorySize();
+
 	BootEepromReadEntireEEPROM();
-        
+
         // Load and Init the Background image
         // clear the Video Ram
 	memset((void *)FB_START,0x00,0x400000);
-	
+
 	BootVgaInitializationKernelNG((CURRENT_VIDEO_MODE_DETAILS *)&vmode);
 
 	{ // decode and malloc backdrop bitmap
@@ -101,17 +101,17 @@ extern void BootResetAction ( void ) {
 
 	I2CTransmitWord(0x10, 0x1a01); // unknown, done immediately after reading out eeprom data
 	I2CTransmitWord(0x10, 0x1b04); // unknown
-	
+
 	/* Here, the interrupts are Switched on now */
 	BootPciInterruptEnable();
         /* We allow interrupts */
-	nInteruptable = 1;	
+	nInteruptable = 1;
 
 	I2CTransmitWord(0x10, 0x1901); // no reset on eject
-         
+
 	VIDEO_CURSOR_POSY=vmode.ymargin;
 	VIDEO_CURSOR_POSX=(vmode.xmargin/*+64*/)*4;
-#ifndef SILENT_MODE	
+#ifndef SILENT_MODE
 	if (cromwell_config==XROMWELL) 	printk("\2Xromwell " VERSION "\2\n" );
 	if (cromwell_config==CROMWELL)	printk("\2Cromwell BIOS " VERSION "\2\n" );
 	VIDEO_CURSOR_POSY=vmode.ymargin+32;
@@ -129,7 +129,7 @@ extern void BootResetAction ( void ) {
 	printk("Cable: ");
 	VIDEO_ATTR=0xffc8c800;
 	printk("%s  ", AvCableName());
-        
+
 	if (I2CGetTemperature(&n, &nx)) {
 		VIDEO_ATTR=0xffc8c8c8;
 		printk("CPU Temp: ");
@@ -140,7 +140,7 @@ extern void BootResetAction ( void ) {
 		VIDEO_ATTR=0xffc8c800;
 		printk("%doC  ", nx);
 	}
-	
+
 	printk("\n");
 #endif
 	setLED("rrrr");
@@ -190,7 +190,7 @@ extern void BootResetAction ( void ) {
        	wait_ms(200);
 #ifndef SILENT_MODE
 	printk("Ready\n");
-#endif	
+#endif
 	// reuse BIOS status area
 
 #ifndef DEBUG_MODE
@@ -212,5 +212,5 @@ extern void BootResetAction ( void ) {
 	IconMenuInit();
 	IconMenu();
 	//Should never come back here.
-	while(1);  
+	while(1);
 }

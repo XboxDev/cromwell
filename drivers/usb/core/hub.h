@@ -11,7 +11,7 @@
 #include <linux/list.h>
 #include <linux/workqueue.h>
 #include <linux/compiler.h>	/* likely()/unlikely() */
-#endif 
+#endif
 /*
  * Hub request types
  */
@@ -55,16 +55,16 @@
 #define USB_PORT_FEAT_TEST              21
 #define USB_PORT_FEAT_INDICATOR         22
 
-/* 
+/*
  * Hub Status and Hub Change results
  * See USB 2.0 spec Table 11-19 and Table 11-20
  */
 struct usb_port_status {
 	__u16 wPortStatus;
-	__u16 wPortChange;	
+	__u16 wPortChange;
 } __attribute__ ((packed));
 
-/* 
+/*
  * wPortStatus bit field
  * See USB 2.0 spec Table 11-21
  */
@@ -81,7 +81,7 @@ struct usb_port_status {
 #define USB_PORT_STAT_INDICATOR         0x1000
 /* bits 13 to 15 are reserved */
 
-/* 
+/*
  * wPortChange bit field
  * See USB 2.0 spec Table 11-22
  * Bits 0 to 4 shown, bits 5 to 15 are reserved
@@ -93,7 +93,7 @@ struct usb_port_status {
 #define USB_PORT_STAT_C_RESET		0x0010
 
 /*
- * wHubCharacteristics (masks) 
+ * wHubCharacteristics (masks)
  * See USB 2.0 spec Table 11-13, offset 3
  */
 #define HUB_CHAR_LPSM		0x0003 /* D1 .. D0 */
@@ -119,8 +119,8 @@ struct usb_hub_status {
 #define HUB_CHANGE_OVERCURRENT	0x0002
 
 
-/* 
- * Hub descriptor 
+/*
+ * Hub descriptor
  * See USB 2.0 spec Table 11-13
  */
 

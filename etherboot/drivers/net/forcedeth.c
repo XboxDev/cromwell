@@ -1,5 +1,5 @@
 /**************************************************************************
-*    forcedeth.c -- Etherboot device driver for the NVIDIA nForce 
+*    forcedeth.c -- Etherboot device driver for the NVIDIA nForce
 *			media access controllers.
 *
 * Note: This driver is based on the Linux driver that was based on
@@ -29,15 +29,15 @@
 *
 *	(C) 2003 Manfred Spraul
 *		See Linux Driver for full information
-*	
+*
 *	Linux Driver Version 0.22, 19 Jan 2004
-* 
-* 
+*
+*
 *    REVISION HISTORY:
 *    ================
 *    v1.0	01-31-2004	timlegge	Initial port of Linux driver
-*    v1.1	02-03-2004	timlegge	Large Clean up, first release 
-*    
+*    v1.1	02-03-2004	timlegge	Large Clean up, first release
+*
 *    Indent Options: indent -kr -i8
 ***************************************************************************/
 
@@ -878,7 +878,7 @@ static void forcedeth_disable(struct dev *dev __unused)
 	/* This function serves 3 purposes.
 	 * This disables DMA and interrupts so we don't receive
 	 *  unexpected packets or interrupts from the card after
-	 *  etherboot has finished. 
+	 *  etherboot has finished.
 	 * This frees resources so etherboot may use
 	 *  this driver on another interface
 	 * This allows etherboot to reinitialize the interface
@@ -913,7 +913,7 @@ static void forcedeth_disable(struct dev *dev __unused)
  */
 static inline int is_valid_ether_addr( u8 *addr ) {
         const char zaddr[6] = {0,};
-                                                                                
+
         return !(addr[0]&1) && memcmp( addr, zaddr, 6);
 }
 
@@ -949,7 +949,7 @@ static int forcedeth_probe(struct dev *dev, struct pci_device *pci)
 	if (!BASE)
 		return 0;
 	//rx_ring[0] = rx_ring;
-	//tx_ring[0] = tx_ring; 
+	//tx_ring[0] = tx_ring;
 
 	/* read the mac address */
 	base = (u8 *) BASE;

@@ -70,7 +70,7 @@
 /*
 #define boot_post_macro(value)                     \
 		movb    $(value), %al                           ;\
-		outb    %al, $0x80 
+		outb    %al, $0x80
 */
 
 #endif // _Consts_H_

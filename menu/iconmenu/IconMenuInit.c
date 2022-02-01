@@ -39,7 +39,7 @@ void IconMenuInit(void) {
 	//Load the config file from FATX and native, and add the icons, if found.
 	InitFatXIcons();
 	InitNativeIcons();
-	
+
 #ifdef ETHERBOOT
 	//Etherboot icon - if it's compiled in, it's always available.
 	iconPtr = malloc(sizeof(ICON));
@@ -47,7 +47,7 @@ void IconMenuInit(void) {
 	iconPtr->szCaption = "Etherboot";
 	iconPtr->functionPtr = BootFromEtherboot;
 	AddIcon(iconPtr);
-#endif	
+#endif
 
 #ifdef ADVANCED_MENU
 	iconPtr = malloc(sizeof(ICON));
@@ -66,7 +66,7 @@ void InitFatXIcons(void) {
 	ICON *iconPtr=NULL;
 	u8 ba[512];
 	int driveId=0;
-	
+
 	if (tsaHarddiskInfo[driveId].m_fDriveExists && !tsaHarddiskInfo[driveId].m_fAtapi) {
 		memset(ba,0x00,512);
 		BootIdeReadSector(driveId, ba, 3, 0, 512);
@@ -92,19 +92,19 @@ void InitFatXIcons(void) {
 void InitNativeIcons(void) {
 	ICON *iconPtr=NULL;
 	u8 ba[512];
-	int driveId;	
+	int driveId;
 
 	for (driveId=0; driveId<2; driveId++) {
 		if (tsaHarddiskInfo[driveId].m_fDriveExists && !tsaHarddiskInfo[driveId].m_fAtapi) {
 			volatile u8 *pb;
 			int n=0, nPos=0;
-			
+
 			memset(ba,0x00,512);
 			BootIdeReadSector(driveId, ba, 0, 0, 512);
-			        
+
 			//See if there is an MBR - no MBR means no native boot options for this drive.
 			if( !(ba[0x1fe]==0x55) || !(ba[0x1ff]==0xaa)) continue;
-	
+
 			pb=&ba[0x1be];
 			//Check the primary partitions
 			for (n=0; n<4; n++,pb+=16) {
@@ -113,7 +113,7 @@ void InitNativeIcons(void) {
 					CONFIGENTRY *entry = (CONFIGENTRY*)DetectSystemNative(driveId, n);
 					if (entry!=NULL) {
 						//There is a valid config file here.
-						//Add an icon for this partition 
+						//Add an icon for this partition
 						iconPtr = malloc(sizeof(ICON));
 			  			iconPtr->iconSlot = ICON_SOURCE_SLOT1;
 						iconPtr->szCaption=malloc(10);
@@ -125,7 +125,7 @@ void InitNativeIcons(void) {
 					}
 				}
 			}
-			
+
 		}
 	}
 }

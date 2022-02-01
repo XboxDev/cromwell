@@ -9,7 +9,7 @@
 //
 // This program is distributed in the hope that it will be useful, but
 // WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General 
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General
 // Public License for more details.
 //
 // The latest version of the GPL can be retrieved at:
@@ -47,7 +47,7 @@
 #define CR0_ENABLE_PAGING		0x80000000
 
 #define FRAMEBUFFER 0xF0040240
-#define TEXTBUFFER (FRAMEBUFFER + 80 * 640 * 4) 
+#define TEXTBUFFER (FRAMEBUFFER + 80 * 640 * 4)
 
 
 //#define DebugOut
@@ -126,7 +126,7 @@ NtAllocateVirtualMemory:
 .org 0x1080
 cromwellstart:
 	.long 0x3000		// Start of the ROM image
-cromwellsize:	
+cromwellsize:
 	.long 0x00060000	// Size  of the ROM image   (this Value will be overwritten by Imagebld)
 
 .org 0x1100
@@ -143,7 +143,7 @@ _start:
     mov ebx, 0		// x position
     mov ecx, 0		// y position
 
-    lea esi, text1 
+    lea esi, text1
     mov eax, MmAllocateContiguousMemoryEx
     call strhexout
 
@@ -153,11 +153,11 @@ _start:
 
     lea esi, text3
     mov eax, NtAllocateVirtualMemory
-    call strhexout 
-  
+    call strhexout
+
     lea esi, text_kernel
     mov eax, offset kernel
-    call strhexout 
+    call strhexout
     #endif
 
 // 1. use MmAllocateContiguousMemoryEx to allocate physical memory
@@ -168,7 +168,7 @@ _start:
         push	PAGE_READWRITE
         push	0
         push	RETAIL_RAM_SIZE / 2 - 1
-	push	MIN_KERNEL_ADDRESS + (KERNEL_MAX_SIZE) 
+	push	MIN_KERNEL_ADDRESS + (KERNEL_MAX_SIZE)
         push	(KERNEL_MAX_SIZE)
         call	dword ptr [MmAllocateContiguousMemoryEx]
         mov	[kernelram], eax
@@ -182,8 +182,8 @@ _start:
     call strhexout
     pop eax		// kernelram
     #endif
-    
-    
+
+
 // 3. MmGetPhysicalAddress that memory
     push ebx
     push ecx
@@ -197,16 +197,16 @@ _start:
 
     #ifdef DebugOut
     lea esi, text_phys_kernelram
-    call strhexout 
+    call strhexout
     #endif
 
 // 2. put kernel there
-    
+
     // UWEI
     push ecx
     mov esi, offset kernel
     mov edi, dword ptr [kernelram]
-    mov ecx, [cromwellsize]    
+    mov ecx, [cromwellsize]
     rep movsb
     pop ecx
 
@@ -229,7 +229,7 @@ _start:
 
     #ifdef DebugOut
     lea esi, text_bootloaderram
-    call strhexout 
+    call strhexout
     #endif
 
 
@@ -246,7 +246,7 @@ _start:
 
     #ifdef DebugOut
     lea esi, text_phys_bootloaderram
-    call strhexout 
+    call strhexout
     #endif
 
 // 6. use NtAllocateVirtualMemory to allocate virtual memory at that virtual address
@@ -273,7 +273,7 @@ _start:
 
     #ifdef DebugOut
     lea esi, text_allocvirt
-    call strhexout 
+    call strhexout
     #endif
 
 
@@ -285,7 +285,7 @@ _start:
 	mov	edi, [bootloaderram]
 	mov	ecx, PAGE_SIZE / 4
 	rep 	movsb
-	
+
 
 // Copy to #6
 // The phys_bootloaderram looks strange, but it's correct.  It was made into
@@ -295,7 +295,7 @@ _start:
 	mov	edi, [phys_bootloaderram]
 	mov	ecx, PAGE_SIZE / 4
 	rep 	movsb
-	
+
 
 //	mov	ebp, dword ptr [phys_pm_kernelram]	// kernel
         mov	esi, dword ptr [phys_kernelram]		// kernel information structure
@@ -364,18 +364,18 @@ ptr_newloc:
 
 newloc:
  	// copy the Cromwell to it's new position
-	mov	edi, KERNEL_RAM_ADDRESS 
-	mov	ecx, KERNEL_MAX_SIZE 
+	mov	edi, KERNEL_RAM_ADDRESS
+	mov	ecx, KERNEL_MAX_SIZE
 	rep 	movsb
 
-	
-// Kill Interrupt Handler  
-   
+
+// Kill Interrupt Handler
+
    	cli
- 
-	
-// Interrupt Handler Now Dead      
-        
+
+
+// Interrupt Handler Now Dead
+
 	//jmp newflash
 	// Jump into Cromwell & start Kernel
 	.byte	0xea //  = ljmp
@@ -434,7 +434,7 @@ l2:
 lx:
 	jmp lx
 
-	
+
 // taken from linux/arch/i386/boot/boot.S
 // SS entry was added
 .align 16
@@ -471,12 +471,12 @@ gdt_48_base:
 
 
 
-    
+
 //    call flash
 //infinite:
 //    jmp infinite
 
-   
+
 strhexout:
     push eax
     call strout
@@ -485,7 +485,7 @@ strhexout:
 cr:
     mov al, 0xa
     jmp chrout
-    
+
 strout:
 // esi: text
 // ebx: x position (will be updated)
@@ -498,7 +498,7 @@ strout:
     jmp strout
 charend:
     ret
-    
+
 hexout32:
     push eax
     shr eax, 16
@@ -609,14 +609,14 @@ text_setup_sects:
 //text_phys_pm_kernelram:
     //.ascii "phys_pm_kernelram: 0x"
     //.byte 0
-        
+
 ptr_PAGE_SIZE:
     .long PAGE_SIZE
 
 my_command_line:
     .ascii "devfs=mount"
     .byte 0
-    
+
 // Variables
 
 .align 4

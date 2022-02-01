@@ -13,15 +13,15 @@
 #include "VideoInitialization.h"
 
 TEXTMENU *TextMenuInit(void) {
-	
+
 	TEXTMENUITEM *itemPtr;
 	TEXTMENU *menuPtr;
-	
+
 	//Create the root menu - MANDATORY
 	menuPtr = malloc(sizeof(TEXTMENU));
 	strcpy(menuPtr->szCaption, "Main Menu");
 	menuPtr->firstMenuItem=NULL;
-	
+
 	//PERIPHERALS MENU
 	itemPtr = malloc(sizeof(TEXTMENUITEM));
 	memset(itemPtr,0x00,sizeof(TEXTMENUITEM));
@@ -45,7 +45,7 @@ TEXTMENU *TextMenuInit(void) {
 	itemPtr->functionPtr=DrawChildTextMenu;
 	itemPtr->functionDataPtr = (void *)HddMenuInit();
 	TextMenuAddItem(menuPtr, itemPtr);
-	
+
 #ifdef FLASH
 	//FLASH MENU
 	itemPtr = malloc(sizeof(TEXTMENUITEM));
@@ -61,6 +61,6 @@ TEXTMENU *TextMenuInit(void) {
 	itemPtr->functionPtr=DrawChildTextMenu;
 	itemPtr->functionDataPtr = (void *)ResetMenuInit();
 	TextMenuAddItem(menuPtr, itemPtr);
-	
+
 	return menuPtr;
 }

@@ -269,7 +269,7 @@ int LoadReactOSCD(CONFIGENTRY *config) {
 	dwSize = BootIso9660GetFile(config->drive, config->szPath, FREELDR_LOAD_AREA, FREELDR_MAX_SIZE);
 
 	if (dwSize < 0) {
-		printk("Not Found, error %d\nHalting\n", dwSize); 
+		printk("Not Found, error %d\nHalting\n", dwSize);
 		wait_ms(2000);
 		return false;
 	} else {

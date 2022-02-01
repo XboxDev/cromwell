@@ -63,7 +63,7 @@ static int await_rpc(int ival, void *ptr,
 	unsigned short ptype, struct iphdr *ip, struct udphdr *udp)
 {
 	struct rpc_t *rpc;
-	if (!udp) 
+	if (!udp)
 		return 0;
 	if (arptable[ARP_CLIENT].ipaddr.s_addr != ip->dest.s_addr)
 		return 0;

@@ -11,7 +11,7 @@ struct microcode {
 	unsigned int rev;
 	unsigned int date;
 	unsigned int sig;
-	
+
 	unsigned int cksum;
 	unsigned int ldrver;
 	unsigned int pf;
@@ -22,13 +22,13 @@ struct microcode {
 
 const unsigned int microcode_updates [] = {
  /*
-       Copyright  Intel Corporation, 1995, 96, 97, 98, 99, 2000, 2001. 
-       
-       These microcode updates are distributed for the sole purpose of 
+       Copyright  Intel Corporation, 1995, 96, 97, 98, 99, 2000, 2001.
+
+       These microcode updates are distributed for the sole purpose of
        installation in the BIOS or Operating System of computer systems
        which include a Genuine Intel microprocessor sold or distributed
        to or by you. You are not authorized to use this material for
-       any other purpose.  
+       any other purpose.
 */
 
 /*  MU168608.inc  */
@@ -298,9 +298,9 @@ const unsigned int microcode_updates [] = {
 
 
 };
- 
- 
- 
+
+
+
 void display_cpuid_update_microcode(void)
 {
 	unsigned int eax, ebx, ecx, edx;
@@ -323,7 +323,7 @@ void display_cpuid_update_microcode(void)
 	}
 //	printk("\n\n");
 //	printk("microcode_info: sig = 0x%08x pf=0x%08x rev = 0x%08x\n",sig, pf, rev);
-  
+
 	m = (struct microcode *)microcode_updates;
 	// We have 2 microocde Tables
 	for(i = 0; i < 2; i++) {

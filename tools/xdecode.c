@@ -1,5 +1,5 @@
 /***************************************************************************
-               xdecode - Xbox bios Xcode 'decompiler'     
+               xdecode - Xbox bios Xcode 'decompiler'
   			-------------------
     begin                : Sat Jan 21 2005
     copyright            : (C) 2005 by David Pye <dmp@davidmpye.dyndns.org>
@@ -52,17 +52,17 @@ void show_usage();
 
 
 int main(int argc, char **argv) {
-	
+
 	struct option options[] = {
 		{ "help", no_argument, NULL, 'h' },
 		{ "overflow-trick", no_argument, NULL, 't' },
-	};	
+	};
 
 	char c;
 	int option_index = 0;
 
 	prog_name = argv[0];
-	
+
 	while ((c = getopt_long(argc, argv, "ht", options, &option_index)) != -1) {
 		switch (c) {
 			case 'h':
@@ -93,14 +93,14 @@ int process_xcodes(const char *filename) {
 		fprintf(stderr, "%s: Error - unable to open file %s: %s\n", prog_name, filename, strerror(errno));
 		exit(1);
 	}
-	
+
 	if (fseek(bios_image, XCODE_START_OFFSET, SEEK_SET) == -1) {
 		fprintf(stderr, "%s: Seek error (offset 0x%04x): %s\n", prog_name, XCODE_START_OFFSET, strerror(errno));
 		exit(1);
 	}
 
-	fread(xcode_segment, 1, MAX_XCODES * XCODE_LENGTH, bios_image);	
-	
+	fread(xcode_segment, 1, MAX_XCODES * XCODE_LENGTH, bios_image);
+
 	for (xcode_index = 0; xcode_index < MAX_XCODES; xcode_index++) {
 		xcode code;
 		code.op = xcode_segment[XCODE_LENGTH*xcode_index];
@@ -153,7 +153,7 @@ int process_xcodes(const char *filename) {
 				break;
 			case 0xEE:
 				if (insert_overflow_trick) {
-					printf("%s\n", overflow_trick);				
+					printf("%s\n", overflow_trick);
 				}
 				printf("xcode_END(0x%08" PRIx32 ")\n",code.val1);
 				free(xcode_segment);

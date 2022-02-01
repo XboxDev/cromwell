@@ -44,7 +44,7 @@ void BootEepromPrintInfo() {
 	VIDEO_ATTR=0xffc8c8c8;
 	printk("Serial: ");
 	VIDEO_ATTR=0xffc8c800;
-	
+
 	{
 		char sz[13];
 		memcpy(sz, &eeprom.SerialNumber[0], 12);
@@ -56,9 +56,9 @@ void BootEepromPrintInfo() {
 	VIDEO_ATTR=0xffc8c8c8;
 }
 
-/* The EepromCRC algorithm was obtained from the XKUtils 0.2 source released by 
- * TeamAssembly under the GNU GPL.  
- * Specifically, from XKCRC.cpp 
+/* The EepromCRC algorithm was obtained from the XKUtils 0.2 source released by
+ * TeamAssembly under the GNU GPL.
+ * Specifically, from XKCRC.cpp
  *
  * Rewritten to ANSI C by David Pye (dmp@davidmpye.dyndns.org)
  *
@@ -86,15 +86,15 @@ void EepromCRC(unsigned char *crc, unsigned char *data, long dataLen) {
 }
 
 void EepromSetWidescreen(int enable) {
-	//Changing this setting requires that Checksum3 
+	//Changing this setting requires that Checksum3
 	//be recalculated.
-	
+
 	unsigned char sum[4];
 	if (enable) {
 		//Enable WS
 		WriteToSMBus(0x54, 0x96, 0, 1);
 		eeprom.VideoFlags[2] = 0x01;
-	} 
+	}
 	else {
 		//Disable WSS
 		WriteToSMBus(0x54, 0x96, 0, 0);
@@ -111,7 +111,7 @@ void EepromSetWidescreen(int enable) {
 void EepromSetVideoStandard(VIDEO_STANDARD standard) {
 	//Changing this setting requires that Checksum2
 	//be recalculated.
-	unsigned char sum[4]; 
+	unsigned char sum[4];
 	unsigned int i;
 
 	//Write the four bytes to the EEPROM
@@ -120,7 +120,7 @@ void EepromSetVideoStandard(VIDEO_STANDARD standard) {
 	}
 
 	memcpy(eeprom.VideoStandard, &standard, 0x04);
-	
+
 	EepromCRC(sum,eeprom.SerialNumber,0x28);
 	WriteToSMBus(0x54, 0x30, 0, sum[0]);
 	WriteToSMBus(0x54, 0x31, 0, sum[1]);

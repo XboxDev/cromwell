@@ -47,7 +47,7 @@
 // File attribute: hidden
 #define FATX_FILEATTR_HIDDEN 0x02
 
-// File attribute: system 
+// File attribute: system
 #define FATX_FILEATTR_SYSTEM 0x04
 
 // File attribute: archive
@@ -63,7 +63,7 @@
 typedef struct {
 
   int nDriveIndex;
- 
+
   // The starting byte of the partition
   u_int64_t partitionStart;
 
@@ -84,10 +84,10 @@ typedef struct {
     u_int16_t *words;
     u_int32_t *dwords;
   } clusterChainMap;
-  
+
   // Address of cluster 1
   u_int64_t cluster1Address;
-  
+
 } FATXPartition;
 
 typedef struct {

@@ -14,17 +14,17 @@
  *   (at your option) any later version.                                   *
  *                                                                         *
  ***************************************************************************/
-/* 
-	Rewritten from Original .bin linking to compiler system by Lehner Franz (franz@caos.at) 
+/*
+	Rewritten from Original .bin linking to compiler system by Lehner Franz (franz@caos.at)
 	Rewritten to Dual Boot concept for 2BL loading
-	New written CPU Inits by Lehner Franz (franz@caos.at) 
-	Written New Working Xcodes + Xcode compiler by Lehner Franz (franz@caos.at) 
-	Focus support by Lehner Franz (franz@caos.at) 
-	Xcalibur support by Lehner Franz (franz@caos.at) 
+	New written CPU Inits by Lehner Franz (franz@caos.at)
+	Written New Working Xcodes + Xcode compiler by Lehner Franz (franz@caos.at)
+	Focus support by Lehner Franz (franz@caos.at)
+	Xcalibur support by Lehner Franz (franz@caos.at)
 */
- 
+
 #include "2bconsts.h"
- 
+
 #define xcode_peek(val1) .byte 0x2; .long val1 ; .long 0x0 ;
 #define xcode_poke(val1,val2) .byte 0x3; .long val1 ; .long val2 ;
 #define xcode_pciout(val1,val2) .byte 0x4; .long val1 ; .long val2 ;
@@ -34,12 +34,12 @@
 
 #define xcode_ifgoto(val1,val2) .byte 0x8; .long val1 ; .long (9*(val2-1)) ;
 
-#define xcode_outb(val1,val2) .byte 0x11; .long val1 ; .long val2 ;			    
-#define xcode_inb(val1) .byte 0x12; .long val1 ; .long 0x0 ;			    
+#define xcode_outb(val1,val2) .byte 0x11; .long val1 ; .long val2 ;
+#define xcode_inb(val1) .byte 0x12; .long val1 ; .long 0x0 ;
 
-#define xcode_poke_a(val1) .byte 0x7; .long 0x3; .long val1 ;  
-#define xcode_pciout_a(val1) .byte 0x7; .long 0x4; .long val1 ;  
-#define xcode_outb_a(val1) .byte 0x7; .long 0x11; .long val1 ;  
+#define xcode_poke_a(val1) .byte 0x7; .long 0x3; .long val1 ;
+#define xcode_pciout_a(val1) .byte 0x7; .long 0x4; .long val1 ;
+#define xcode_outb_a(val1) .byte 0x7; .long 0x11; .long val1 ;
 
 #define xcode_goto(val1) .byte 0x9; .long 0x0; .long (9*(val1-1));
 
@@ -53,7 +53,7 @@
 					xcode_outb(SMBUS+2, 0x0000000a); \
         				xcode_inb(SMBUS); \
         				xcode_ifgoto(0x00000010,-1); \
-					xcode_outb(SMBUS, 0x00000010); 
+					xcode_outb(SMBUS, 0x00000010);
 
 .code32
 
@@ -61,7 +61,7 @@
 
 .org 0x0
 	/* MCPX Magic Values - clock timings*/
-	
+
 	.long 0xff000009
 	.long 0xff000008
 	.long 0x2b16d065
@@ -73,7 +73,7 @@
 	#ifndef MCPXREVD5
 	.long 0xc8fc7c8a	// MCPX =< D5
 	.long 0x44290213
-	.long 0x90004998		
+	.long 0x90004998
 	.long 0x00000000
 	#else
 	.long 0xc8b4588a	// MCPX 1.6 > D5
@@ -84,56 +84,56 @@
 
 	.long 0xffffffff
 	.long 0xffffffff
-	
+
 	.org 0x40
-	.long _start_checksum	// This number will be overwritten  
+	.long _start_checksum	// This number will be overwritten
 				// With imagebld, but we need a temp value
-	
+
 	.org 0x6c
 	.long 0x00000107
-	
+
 	.org 0x70		// MCPX Config Area
 	.long 0x0000000f
 	.long 0x40004400
-	
+
 	#ifndef MCPXREVD5
 	.long 0x12d10070
 	.long 0x00000c90
 	#else
 	.long 0x16ce0090
-	.long 0x00000dc0	
+	.long 0x00000dc0
 	#endif
-	
+
 	//The bytecode interpreter begins here
 	.org 0x80
 #include "Xcodes.h"
 
 	// Note: never change this from offset 0x1000 ....
-	// This is the Main Entry point ....        
+	// This is the Main Entry point ....
         .org 0x1000
-        
+
        	// Good Morning CPU
 
 	// NOTE:
 	/*
 		We come here form the high rom section Jump
 	*/
-	
+
         // Clear Intel Interrupts in Processor Register
 	// Everytime very good, specially when comming out of a running envoronment
-		
+
 	movl	$0x1b, %ecx
 	xor	%eax, %eax
 	xor	%edx, %edx
 	wrmsr
-        
+
 	// Interrupts now Dead
 
 	xor	%eax, %eax
 	xor	%edx, %edx
 	xor	%ecx, %ecx
-	
-	// kill the cache  = Disable bit 30 + 29 = CD + NW 
+
+	// kill the cache  = Disable bit 30 + 29 = CD + NW
 	// CD = Cache Disable (disable = 1)
 	// NW Not write through (disable = 1)
        	mov 	%cr0, %eax
@@ -154,7 +154,7 @@
 /*
   We are setting the Ram Init's now to set up the Regions in the Ram
 
-*/ 
+*/
 
 	// MTRR for RAM
 	// from address 0, Writeback Caching, 128MB range
@@ -193,7 +193,7 @@
 	movl	$0x0000000f, %edx
 	movl	$0xfff00800, %eax
 	wrmsr
-	
+
 
         xor	%eax, %eax
 	xor	%edx, %edx
@@ -204,25 +204,25 @@
         wrmsr
 
 	movl	$0x208, %ecx		// IA32_MTRR_PHYS Base 4
-        wrmsr                                                   
+        wrmsr
 	movl	$0x209, %ecx		// IA32_MTRR_PHYS_MASK 4
-        wrmsr                                                   
+        wrmsr
 
 	movl	$0x20a, %ecx		// IA32_MTRR_PHYS Base 5
-        wrmsr                                                   
+        wrmsr
 	movl	$0x20b, %ecx		// IA32_MTRR_PHYS_MASK 5
-        wrmsr                                                   
+        wrmsr
 
 	movl	$0x20c, %ecx		// IA32_MTRR_PHYS Base 6
-        wrmsr                                                   
+        wrmsr
 	movl	$0x20d, %ecx		// IA32_MTRR_PHYS_MASK 6
         wrmsr
 
 	movl	$0x20e, %ecx		// IA32_MTRR_PHYS Base 7
         wrmsr
 	movl	$0x20f, %ecx		// IA32_MTRR_PHYS_MASK 7
-        wrmsr                                                   
-                                              
+        wrmsr
+
 
 	// Define Memory in IA32_MTRR_DEF_TYPE
 	movl	$0x2ff, %ecx
@@ -231,7 +231,7 @@
 	wrmsr
 
 	/* turn on normal cache */
-	//  bit 30 + 29 = CD + NW 
+	//  bit 30 + 29 = CD + NW
 	// CD = Cache Disable (disable = 1)
 	// NW Not write through (disable = 1)
 	movl	%cr0, %eax
@@ -241,14 +241,14 @@
 
         cld
 
-	// copy everything into RAM 
+	// copy everything into RAM
 
 	mov 	$_ram_location, %edi
 	mov 	$_start_ramcopy, %esi
 	mov 	$(_size_ramcopy + 100), %ecx
 	shr	$2,%ecx    // We dividy / 4, as we copy Dword oriented
 	rep 	movsl
-	
+
         jmp   initaftermemcpy
 
 
@@ -258,13 +258,13 @@
 */
 
 .section .text, "ax"
-                         
-       // Note: We are in Memory here, not in Flash anylonger, 
+
+       // Note: We are in Memory here, not in Flash anylonger,
        // we have been copy'd here and linked for memory, as we reside in section .text
        // Look to LDscript
-       
+
 .global	MemoryChecksum
-MemoryChecksum:      	
+MemoryChecksum:
 	// The SHA-1 Hashsum is dumped here after with ImageBLD
       	.byte 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,0x00, 0x00
 	.byte 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,0x00, 0x00
@@ -272,7 +272,7 @@ MemoryChecksum:
 	.long 0x00  // Will be dumped in by imagebld ->compressed_image_start;
 	.long 0x00  // Will be dumped in by imagebld ->compressed_image_size;
 	.long 0x00  // Will be dumped in by imagebld ->0 .. 256kb image, 1 .. 1MB image
-	
+
 	.org 0x40  // We have linkbase for this programm = 0x100000 + 0x40 = divisable /4 .. so CPU likes it
 tableGdt:
 
@@ -283,7 +283,7 @@ tableGdt:
 	.byte 0xff, 0xff, 0x00, 0x00, 0x00, 0x9b, 0x8f, 0x00 // 0x20 code16 (8f indicates 4K granularity, ie, huge limit)
 	.byte 0xff, 0xff, 0x00, 0x00, 0x00, 0x93, 0x8f, 0x00 // 0x28 data16
 	.byte 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 // Dummy
-	
+
 tableGdtDescriptor:
 
 	.word 0x30
@@ -295,15 +295,15 @@ tableIdtDescriptor:
 	.word 2048
 	.long 0x400000
 	.word 0x0	// fill Word, so we get alliged again
-		
+
 initaftermemcpy:
 /*
   These Init Codes Can be found in the 2'nd Bootloader
 
-*/ 
-        // We set up a GDT now, this is not necessary needed, 
+*/
+        // We set up a GDT now, this is not necessary needed,
         // but it is preferred, as we have more ability with commands
-        
+
         // We clear the IDT in RAM
         xor %eax,%eax
 	mov $0x5000,%ecx
@@ -338,7 +338,7 @@ reload_cs:
 	xor %eax, %eax
 	mov %eax, %fs
 	mov %eax, %gs
-	
+
 	movl	$ 0x1ffff0,%esp
 
 	mov	$0x8, %al
@@ -346,23 +346,23 @@ reload_cs:
 	out	%al, %dx
 
 	// Enable IDE and NIC
-	mov 	$0x8000088C, %eax 
-	movw 	$0xcf8, %dx 
-	outl	%eax, %dx 
-	movw 	$0xcfc, %dx 
-	movl 	$0x40000000, %eax 
+	mov 	$0x8000088C, %eax
+	movw 	$0xcf8, %dx
 	outl	%eax, %dx
-	
-      	
-	// CPU Whoami   ? sesless ?
-	mov 	$0x80000080, %eax 
-	movw 	$0xcf8, %dx 
-	outl	%eax, %dx 
-	movw 	$0xcfc, %dx 
-	movl 	$0x100, %eax 
-	outl	%eax, %dx 
+	movw 	$0xcfc, %dx
+	movl 	$0x40000000, %eax
+	outl	%eax, %dx
 
-        
+
+	// CPU Whoami   ? sesless ?
+	mov 	$0x80000080, %eax
+	movw 	$0xcf8, %dx
+	outl	%eax, %dx
+	movw 	$0xcfc, %dx
+	movl 	$0x100, %eax
+	outl	%eax, %dx
+
+
 	// this can be found in BootResetAction.c
-	jmp 	BootStartBiosLoader  
-                         
+	jmp 	BootStartBiosLoader
+

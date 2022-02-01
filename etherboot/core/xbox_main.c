@@ -22,7 +22,7 @@ Literature dealing with the network protocols:
 #include "timer.h"
 #include "cpu.h"
 
-int	url_port;		
+int	url_port;
 
 #ifdef	IMAGE_FREEBSD
 int freebsd_howto = 0;
@@ -62,7 +62,7 @@ static const struct proto protos[] = {
 
 int loadkernel(const char *fname)
 {
-	static const struct proto * const last_proto = 
+	static const struct proto * const last_proto =
 		&protos[sizeof(protos)/sizeof(protos[0])];
 	const struct proto *proto;
 	in_addr ip;
@@ -127,7 +127,7 @@ int loadkernel(const char *fname)
 
 
 /**************************************************************************
-CLEANUP - shut down networking and console so that the OS may be called 
+CLEANUP - shut down networking and console so that the OS may be called
 **************************************************************************/
 void cleanup(void)
 {

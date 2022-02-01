@@ -239,7 +239,7 @@ int BootMenu(CONFIGENTRY *config,int nDrive,int nActivePartition, int nFATXPrese
 ////////// BootResetActions.c
 void ClearIDT (void);
 void BootResetAction(void);
-void BootCpuCache(bool fEnable) ;
+void BootCpuCache(bool fEnable);
 int printk(const char *szFormat, ...);
 void BiosCmosWrite(u8 bAds, u8 bData);
 u8 BiosCmosRead(u8 bAds);

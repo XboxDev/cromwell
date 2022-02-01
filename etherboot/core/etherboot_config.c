@@ -52,7 +52,7 @@ void print_config(void)
 		printf("[%s]", driver->name);
 	}
 }
-#endif	
+#endif
 #ifdef CONFIG_ISA
 {
 	const struct isa_driver *driver;
@@ -61,7 +61,7 @@ void print_config(void)
 	}
 
 }
-#endif	
+#endif
 	putchar('\n');
 #if	(BOOTP_SERVER != 67) || (BOOTP_CLIENT != 68)
 	printf("This Etherboot uses non-standard ports %d and %d\n",
@@ -73,8 +73,8 @@ void print_config(void)
 static int pci_probe(struct dev *dev, const char *type_name)
 {
 /*
- *	NIC probing is in pci device order, followed by the 
- *      link order of the drivers.  A driver that matches 
+ *	NIC probing is in pci device order, followed by the
+ *      link order of the drivers.  A driver that matches
  *      on vendor and device id will supersede a driver
  *      that matches on pci class.
  *
@@ -97,10 +97,10 @@ static int pci_probe(struct dev *dev, const char *type_name)
 			dev->index = -1;
 		}
 		state->advance = 1;
-		
+
 		if (state->dev.driver == 0)
 			break;
-		
+
 #if 0
 		/* FIXME the romaddr code needs a total rethought to be useful */
 		if (state->dev.romaddr != ((unsigned long) rom.rom_segment << 4)) {
@@ -114,7 +114,7 @@ static int pci_probe(struct dev *dev, const char *type_name)
 		dev->devid.vendor_id = htons(state->dev.vendor);
 		dev->devid.device_id = htons(state->dev.dev_id);
 		/* FIXME how do I handle dev->index + PROBE_AGAIN?? */
-		
+
 		printf("[%s]", state->dev.name);
 		if (state->dev.driver->probe(dev, &state->dev)) {
 			state->advance = (dev->index == -1);
@@ -150,7 +150,7 @@ static int isa_probe(struct dev *dev, const char *type_name)
 			dev->index = -1;
 		}
 		state->advance = 1;
-		
+
 		if (state->driver >= isa_drivers_end)
 			break;
 
@@ -177,15 +177,15 @@ static int isa_probe(struct dev *dev, const char *type_name)
 #endif
 
 static const char *driver_name[] = {
-	"nic", 
-	"disk", 
+	"nic",
+	"disk",
 	"floppy",
 };
 int probe(struct dev *dev)
 {
 	const char *type_name;
 	type_name = "";
-	if ((dev->type >= 0) && 
+	if ((dev->type >= 0) &&
 		(dev->type < sizeof(driver_name)/sizeof(driver_name[0]))) {
 		type_name = driver_name[dev->type];
 	}
@@ -208,7 +208,7 @@ int probe(struct dev *dev)
 	if ((dev->to_probe != PROBE_PCI) &&
 		(dev->to_probe != PROBE_ISA)) {
 		dev->how_probe = PROBE_FAILED;
-		
+
 	}
 	return dev->how_probe;
 }

@@ -306,7 +306,7 @@ sub dump_segments
 		0,			# p_memsz == p_filesz
 		0,			# p_flags
 		0));			# p_align
-					
+
 	@segdescs = @{$self->{segdescs}};
 	$nsegs = $#segdescs;	# number of program header entries
 	# fill in e_phnum
@@ -334,7 +334,7 @@ sub dump_segments
 #	substr($self->{data}, HEADERSIZE - $note_len, $note_len) = $notes
 }
 
-sub finalise_image 
+sub finalise_image
 {
 	my ($self) = @_;
 	# Fill in the checksum

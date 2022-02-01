@@ -32,11 +32,11 @@ TEXTMENU *VideoMenuInit(void) {
 	itemPtr->functionPtr=SetWidescreen;
 	itemPtr->functionDataPtr = itemPtr->szCaption;
 	TextMenuAddItem(menuPtr, itemPtr);
-	
-	
+
+
 	itemPtr = malloc(sizeof(TEXTMENUITEM));
 	memset(itemPtr,0x00,sizeof(TEXTMENUITEM));
-	
+
 	switch(*((VIDEO_STANDARD *)&eeprom.VideoStandard)) {
 		case NTSC_M:
 			strcpy(itemPtr->szCaption, "TV Standard: NTSC-USA");

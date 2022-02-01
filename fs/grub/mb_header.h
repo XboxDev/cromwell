@@ -25,17 +25,17 @@ struct multiboot_header
 {
   /* Must be MULTIBOOT_MAGIC - see below.  */
   unsigned magic;
-  
+
   /* Feature flags - see below.  */
   unsigned flags;
-  
+
   /*
    * Checksum
    *
    * The above fields plus this one must equal 0 mod 2^32.
    */
   unsigned checksum;
-  
+
   /* These are only valid if MULTIBOOT_AOUT_KLUDGE is set.  */
   unsigned header_addr;
   unsigned load_addr;

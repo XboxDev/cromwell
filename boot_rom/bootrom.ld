@@ -7,11 +7,11 @@ MEMORY
 }
 
 
-RAM_CODE = 0x00100000; 
+RAM_CODE = 0x00100000;
 
 /* this should be changed depending the actual size of the rom */
 ROM_SIZE = 256K;
-LOW_ROM = 0xfffc0000; 
+LOW_ROM = 0xfffc0000;
 
 
 TOP_ROM = ( LOW_ROM + ROM_SIZE - 512 );
@@ -46,7 +46,7 @@ SECTIONS {
 		*(.got);
 		*(.got.*);
 	}
-       	
+
        	.rodata ( RAM_CODE + SIZEOF(.text) + SIZEOF(.data) ) : AT ( SIZEOF(.low_rom) + SIZEOF(.text) + SIZEOF(.data)) {
 		*(.rodata);
 		*(.rodata.str1.1);
@@ -55,7 +55,7 @@ SECTIONS {
 		*(.rodata.cst4);
 		*(.rodata.cst8);
 	}
-        
+
 	.bss ( RAM_CODE + SIZEOF(.text) + SIZEOF(.data) + SIZEOF(.rodata) ) : AT ( SIZEOF(.low_rom) + SIZEOF(.text) + SIZEOF(.data) + SIZEOF(.rodata)) {
 		_bss = .;
 		*(.bss)
@@ -68,14 +68,14 @@ SECTIONS {
         /* We need to copy the .data section to to upper memory */
 
         _size_ramcopy = SIZEOF(.text) + SIZEOF(.data) + SIZEOF(.rodata) + SIZEOF(.bss);
-	_size_sha1hash = SIZEOF(.text) + SIZEOF(.data) + SIZEOF(.rodata);                
+	_size_sha1hash = SIZEOF(.text) + SIZEOF(.data) + SIZEOF(.rodata);
 /*
 	.high_rom TOP_ROM : AT (TOP_ROM_LOAD) {
 		_start_top_rom = . ;
 		. = . + ( 512 - sizeof_top );
 		*(.high_rom);
 		_end_top_rom = . ;
-	} = 0x90909090      
+	} = 0x90909090
 */
 
 }

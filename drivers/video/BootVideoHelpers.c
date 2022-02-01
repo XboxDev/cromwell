@@ -28,7 +28,7 @@ unsigned int BootVideoGetCharacterWidth(u8 bCharacter, bool fDouble)
 {
 	unsigned int nStart, nWidth;
 	int nSpace=WIDTH_SPACE_PIXELS;
-	
+
 	if(fDouble) nSpace=8;
 
 		// we only have glyphs for 0x21 through 0x7e inclusive
@@ -87,7 +87,7 @@ void BootVideoJpegBlitBlend(
 	while(y--) {
 
 		for(n=0;n<x;n++) {
-			
+
 			dw = ((*((u32 *)pFront))|0xff000000)&0xffc0c0c0;
 
 			if(dw!=m_rgbaTransparent) {
@@ -205,10 +205,10 @@ int BootVideoOverlayString(u32 * pdwaTopLeftDestination, u32 m_dwCountBytesPerLi
 }
 
 bool BootVideoJpegUnpackAsRgb(u8 *pbaJpegFileImage, JPEG * pJpeg) {
-  
+
 	struct jpeg_decdata *decdata;
 	int size, width, height, depth;
-  
+
 	decdata = (struct jpeg_decdata *)malloc(sizeof(struct jpeg_decdata));
 	memset(decdata, 0x0, sizeof(struct jpeg_decdata));
 
@@ -222,13 +222,13 @@ bool BootVideoJpegUnpackAsRgb(u8 *pbaJpegFileImage, JPEG * pJpeg) {
 	pJpeg->height = ((height +15) & ~ 15);
 	pJpeg->bpp = depth >> 3;
 
-	if((jpeg_decode(pbaJpegFileImage, pJpeg->pData, 
+	if((jpeg_decode(pbaJpegFileImage, pJpeg->pData,
 		((width + 15) & ~15), ((height + 15) & ~15), depth, decdata)) != 0) {
 		printk("Error decode picture\n");
 		// We dont really want this to lockup - those poor TSOPers!
 		//while(1);
 	}
-	
+
 	pJpeg->pBackdrop = BootVideoGetPointerToEffectiveJpegTopLeft(pJpeg);
 	/*
 	BootVideoJpegBlitBlend(
@@ -244,7 +244,7 @@ bool BootVideoJpegUnpackAsRgb(u8 *pbaJpegFileImage, JPEG * pJpeg) {
 	*/
 
 	free(decdata);
-  
+
 	return false;
 }
 
@@ -332,7 +332,7 @@ void BootVideoChunkedPrint(const char * szBuffer) {
 				vmode.width*4, VIDEO_ATTR, &szBuffer[nDone]
 			);
 			nDone=n+1;
-			VIDEO_CURSOR_POSY+=16; 
+			VIDEO_CURSOR_POSY+=16;
 			VIDEO_CURSOR_POSX=vmode.xmargin<<2;
 		}
 		n++;
@@ -343,13 +343,13 @@ void BootVideoChunkedPrint(const char * szBuffer) {
 			(u32 *)((FB_START) + VIDEO_CURSOR_POSY * (vmode.width*4) + VIDEO_CURSOR_POSX),
 			vmode.width*4, VIDEO_ATTR, &szBuffer[nDone]
 		)<<2;
-		if (VIDEO_CURSOR_POSX > (vmode.width - 
+		if (VIDEO_CURSOR_POSX > (vmode.width -
 			vmode.xmargin) <<2)
 		{
-			VIDEO_CURSOR_POSY+=16; 
+			VIDEO_CURSOR_POSY+=16;
 			VIDEO_CURSOR_POSX=vmode.xmargin<<2;
 		}
-		
+
 	}
 
 }
@@ -367,7 +367,7 @@ int printk(const char *szFormat, ...) {  // printk displays to video
 	szBuffer[sizeof(szBuffer)-1]=0;
         if (wLength>(sizeof(szBuffer)-1)) wLength = sizeof(szBuffer)-1;
 	szBuffer[wLength]='\0';
-	        
+
 	BootVideoChunkedPrint(szBuffer);
 	return wLength;
 }
@@ -378,7 +378,7 @@ int console_putchar(int c)
 	buf[0] = (char)c;
 	buf[1] = 0;
 	BootVideoChunkedPrint(buf);
-	return (int)buf[0];	
+	return (int)buf[0];
 }
 
 //Fix for BSD

@@ -146,7 +146,7 @@ int rawread(int drive, int sector, int byte_offset, int byte_len, char *buf) {
 			errnum = ERR_READ;
 			return 1;
 		}
-		
+
 		buf += bytes_to_copy;
 		byte_len -= bytes_to_copy;
 		sector++;
@@ -156,9 +156,9 @@ int rawread(int drive, int sector, int byte_offset, int byte_len, char *buf) {
 	return !(errnum);
 }
 
-			
 
-	
+
+
 //  int slen = (byte_offset + byte_len + SECTOR_SIZE - 1) >> SECTOR_BITS;
 
   //if (byte_len <= 0)
@@ -190,7 +190,7 @@ int rawread(int drive, int sector, int byte_offset, int byte_len, char *buf) {
 	  errnum = ERR_GEOM;
 	  return 0;
 	}
-      
+
       /*  Get first sector of track  */
       soff = sector % buf_geom.sectors;
       track = sector - soff;
@@ -248,7 +248,7 @@ int rawread(int drive, int sector, int byte_offset, int byte_len, char *buf) {
 	      if (buf_track == 0 || slen >= 2)
 	{
 		  /* We already read the sector 1, copy it to sector 0 */
-		  memmove ((char *) BUFFERADDR, 
+		  memmove ((char *) BUFFERADDR,
 			   (char *) BUFFERADDR + SECTOR_SIZE, SECTOR_SIZE);
 		}
 	      else
@@ -259,7 +259,7 @@ int rawread(int drive, int sector, int byte_offset, int byte_len, char *buf) {
 		}
 	    }
 	}
-	  
+
       if (size > ((num_sect * SECTOR_SIZE) - byte_offset))
 	size = (num_sect * SECTOR_SIZE) - byte_offset;
 
@@ -354,7 +354,7 @@ rawwrite (int drive, int sector, char *buf)
 	  || PC_SLICE_TYPE (SCRATCHADDR, 3) == PC_SLICE_TYPE_EZD)
 	sector = 1;
     }
-  
+
   memmove ((char *) SCRATCHADDR, buf, SECTOR_SIZE);
   if (biosdisk (BIOSDISK_WRITE, drive, &buf_geom,
 		sector, 1, SCRATCHSEG))
@@ -387,10 +387,10 @@ devwrite (int sector, int sector_count, char *buf)
 #endif /* GRUB_UTIL && __linux__ */
     {
       int i;
-      
+
       for (i = 0; i < sector_count; i++)
 	{
-	  if (! rawwrite (current_drive, part_start + sector + i, 
+	  if (! rawwrite (current_drive, part_start + sector + i,
 			  buf + (i << SECTOR_BITS)))
 	      return 0;
 
@@ -405,7 +405,7 @@ sane_partition (void)
   /* network drive */
   if (current_drive == NETWORK_DRIVE)
     return 1;
-  
+
   if (!(current_partition & 0xFF000000uL)
       && (current_drive & 0xFFFFFF7F) < 8
       && (current_partition & 0xFF) == 0xFF
@@ -504,14 +504,14 @@ set_partition_hidden_flag (int hidden)
   unsigned long start, len, offset, ext_offset;
   int entry, type;
   char mbr[512];
-  
+
   /* The drive must be a hard disk.  */
   if (! (current_drive & 0x80))
     {
       errnum = ERR_BAD_ARGUMENT;
       return 1;
     }
-  
+
   /* The partition must be a PC slice.  */
   if ((current_partition >> 16) == 0xFF
       || (current_partition & 0xFFFF) != 0xFFFF)
@@ -519,30 +519,30 @@ set_partition_hidden_flag (int hidden)
       errnum = ERR_BAD_ARGUMENT;
       return 1;
     }
-  
+
   /* Look for the partition.  */
-  while (next_partition (current_drive, 0xFFFFFF, &part, &type,           
+  while (next_partition (current_drive, 0xFFFFFF, &part, &type,
 			 &start, &len, &offset, &entry,
 			 &ext_offset, mbr))
-    {                                                                       
+    {
       if (part == current_partition)
 	{
 	  /* Found.  */
 	  if (hidden)
 	    PC_SLICE_TYPE (mbr, entry) |= PC_SLICE_TYPE_HIDDEN_FLAG;
 	  else
-	    PC_SLICE_TYPE (mbr, entry) &= ~PC_SLICE_TYPE_HIDDEN_FLAG;       
-	  
+	    PC_SLICE_TYPE (mbr, entry) &= ~PC_SLICE_TYPE_HIDDEN_FLAG;
+
 	  /* Write back the MBR to the disk.  */
 	  buf_track = -1;
 	  if (! rawwrite (current_drive, offset, mbr))
 	    return 1;
-	  
+
 	  /* Succeed.  */
 	  return 0;
 	}
     }
-  
+
   return 1;
 }
 
@@ -609,7 +609,7 @@ next_partition (unsigned long drive, unsigned long dest,
 	      errnum = ERR_BAD_PART_TABLE;
 	      return 0;
 	    }
-	  
+
 	  bsd_part_no = -1;
 	}
 
@@ -630,7 +630,7 @@ next_partition (unsigned long drive, unsigned long dest,
 	      if ((drive & 0x80) && BSD_LABEL_DTYPE (buf) == DTYPE_SCSI)
 		bsd_evil_hack = 4;
 #endif /* ! STAGE1_5 */
-	      
+
 	      return 1;
 	    }
 	}
@@ -691,7 +691,7 @@ next_partition (unsigned long drive, unsigned long dest,
 	  errnum = ERR_NO_PART;
 	  return 0;
 	}
-      
+
       *type = PC_SLICE_TYPE (buf, *entry);
       *start = *offset + PC_SLICE_START (buf, *entry);
       *len = PC_SLICE_LENGTH (buf, *entry);
@@ -704,13 +704,13 @@ next_partition (unsigned long drive, unsigned long dest,
 	  || (! IS_PC_SLICE_TYPE_EXTENDED (*type)
 	      && *type != PC_SLICE_TYPE_NONE))
 	pc_slice_no++;
-      
+
       *partition = (pc_slice_no << 16) | 0xFFFF;
       return 1;
     }
 
   /* Start the body of this function.  */
-  
+
 #ifndef STAGE1_5
   if (current_drive == NETWORK_DRIVE)
     return 0;
@@ -723,7 +723,7 @@ next_partition (unsigned long drive, unsigned long dest,
     {
       if (*type == PC_SLICE_TYPE_NONE)
 	*type = PC_SLICE_TYPE_FREEBSD;
-      
+
       /* Get next BSD partition, if any.  */
       if (next_bsd_partition ())
 	return 1;
@@ -738,7 +738,7 @@ next_partition (unsigned long drive, unsigned long dest,
       /* Ignore the error.  */
       errnum = ERR_NONE;
     }
-	  
+
   return next_pc_slice ();
 }
 
@@ -770,12 +770,12 @@ real_open_partition (int flags)
       pc_slice = current_partition >> 16;
       return ret;
     }
-  
+
 #ifndef STAGE1_5
   /* network drive */
   if (current_drive == NETWORK_DRIVE)
     return 1;
-  
+
   if (! sane_partition ())
     return 0;
 #endif
@@ -806,12 +806,12 @@ real_open_partition (int flags)
 
   /* Initialize CURRENT_PARTITION for next_partition.  */
   current_partition = 0xFFFFFF;
-  
+
   while (next ())
     {
 #ifndef STAGE1_5
     loop_start:
-      
+
       cur_part_offset = part_offset;
       cur_part_addr = BOOT_PART_TABLE + (entry << 4);
 #endif /* ! STAGE1_5 */
@@ -835,18 +835,18 @@ real_open_partition (int flags)
 		    {
 		      int got_part = 0;
 		      int saved_slice = current_slice;
-		      
+
 		      while (next ())
 			{
 			  if (bsd_part == 0xFF)
 			    break;
-			  
+
 			  if (! got_part)
 			    {
 			      grub_printf ("[BSD sub-partitions immediately follow]\n");
 			      got_part = 1;
 			    }
-			  
+
 			  grub_printf ("     BSD Partition num: \'%c\', ",
 				       bsd_part + 'a');
 			  check_and_print_mount ();
@@ -855,13 +855,13 @@ real_open_partition (int flags)
 		      if (! got_part)
 			grub_printf (" No BSD sub-partition found, partition type 0x%x\n",
 				     saved_slice);
-		      
+
 		      if (errnum)
 			{
 			  errnum = ERR_NONE;
 			  break;
 			}
-		      
+
 		      goto loop_start;
 		    }
 		}
@@ -870,7 +870,7 @@ real_open_partition (int flags)
 		  if (bsd_part != 0xFF)
 		    {
 		      char str[16];
-		      
+
 		      if (! (current_drive & 0x80)
 			  || (dest_partition >> 16) == pc_slice)
 			grub_sprintf (str, "%c)", bsd_part + 'a');
@@ -882,16 +882,16 @@ real_open_partition (int flags)
 		  else if (! IS_PC_SLICE_TYPE_BSD (current_slice))
 		    {
 		      char str[8];
-		      
+
 		      grub_sprintf (str, "%d)", pc_slice);
 		      print_a_completion (str);
 		    }
 		}
 	    }
-	  
+
 	  errnum = ERR_NONE;
 #endif /* ! STAGE1_5 */
-	  
+
 	  /* Check if this is the destination partition.  */
 	  if (! flags
 	      && (dest_partition == current_partition
@@ -909,12 +909,12 @@ real_open_partition (int flags)
 	  current_partition = 0xFFFFFF;
 	  check_and_print_mount ();
 	}
-      
+
       errnum = ERR_NONE;
       return 1;
     }
 #endif /* ! STAGE1_5 */
-  
+
   return 0;
 }
 
@@ -955,11 +955,11 @@ set_device (char *device)
 
   /* The `partition' part must always have a valid number.  */
   current_partition = partition;
-  
+
   return device + sizeof (unsigned long);
-  
+
 #else /* ! STAGE1_5 */
-  
+
   int result = 0;
 
   incomplete = 0;
@@ -1013,7 +1013,7 @@ set_device (char *device)
 #endif /* SUPPORT_NETBOOT */
 	    {
 	      safe_parse_maxint (&device, (int *) &current_drive);
-	      
+
 	      disk_choice = 0;
 	      if (ch == 'h')
 		current_drive += 0x80;
@@ -1052,7 +1052,7 @@ set_device (char *device)
 
 	      if (*device == ',')
 		device++;
-	      
+
 	      if (*device >= 'a' && *device <= 'h')
 		{
 		  current_partition = (((*(device++) - 'a') << 8)
@@ -1080,7 +1080,7 @@ set_device (char *device)
 
   if (! sane_partition ())
     return 0;
-  
+
   if (result)
     return device + 1;
   else
@@ -1091,7 +1091,7 @@ set_device (char *device)
     }
 
   return 0;
-  
+
 #endif /* ! STAGE1_5 */
 }
 
@@ -1126,7 +1126,7 @@ set_bootdev (int hdbias)
 		   0, SECTOR_SIZE, (char *) SCRATCHADDR))
 	{
 	  char *dst, *src;
-      
+
 	  /* Need only the partition table.
 	     XXX: We cannot use grub_memmove because BOOT_PART_TABLE
 	     (0x07be) is less than 0x1000.  */
@@ -1134,18 +1134,18 @@ set_bootdev (int hdbias)
 	  src = (char *) SCRATCHADDR + BOOTSEC_PART_OFFSET;
 	  while (dst < (char *) BOOT_PART_TABLE + BOOTSEC_PART_LENGTH)
 	    *dst++ = *src++;
-	  
+
 	  /* Set the active flag of the booted partition.  */
 	  for (i = 0; i < 4; i++)
 	    PC_SLICE_FLAG (BOOT_PART_TABLE, i) = 0;
-	  
+
 	  *((unsigned char *) cur_part_addr) = PC_SLICE_FLAG_BOOTABLE;
 	  boot_part_addr = cur_part_addr;
 	}
       else
 	return 0;
     }
-  
+
   /*
    *  Set BSD boot device.
    */
@@ -1177,16 +1177,16 @@ setup_part (char *filename)
       current_drive = 0xFF;
       return 0;
     }
-  
+
 # ifndef NO_BLOCK_FILES
   if (*filename != '/')
     open_partition ();
   else
 # endif /* ! NO_BLOCK_FILES */
     open_device ();
-  
+
 #else /* ! STAGE1_5 */
-  
+
   if (*filename == '(')
     {
       if ((filename = set_device (filename)) == 0)
@@ -1217,9 +1217,9 @@ setup_part (char *filename)
 # endif /* ! NO_BLOCK_FILES */
 	open_device ();
     }
-  
+
 #endif /* ! STAGE1_5 */
-  
+
   if (errnum && (*filename == '/' || errnum != ERR_FSYS_MOUNT))
     return 0;
   else
@@ -1245,12 +1245,12 @@ print_fsys_type (void)
   if (! do_completion)
     {
       printf (" Filesystem type ");
-      
+
       if (fsys_type != NUM_FSYS)
 	printf ("is %s, ", fsys_table[fsys_type].name);
       else
 	printf ("unknown, ");
-      
+
       if (current_partition == 0xFFFFFF)
 	printf ("using whole disk\n");
       else
@@ -1268,11 +1268,11 @@ print_a_completion (char *name)
   /* If NAME is "." or "..", do not count it.  */
   if (grub_strcmp (name, ".") == 0 || grub_strcmp (name, "..") == 0)
     return;
-  
+
   if (do_completion)
     {
       char *buf = unique_string;
-      
+
       if (! unique)
 	while ((*buf++ = *name++))
 	  ;
@@ -1289,7 +1289,7 @@ print_a_completion (char *name)
     }
   else
     grub_printf (" %s", name);
-  
+
   unique++;
 }
 
@@ -1316,7 +1316,7 @@ print_completions (int is_filename, int is_completion)
 
       if (! is_completion)
 	grub_printf (" Possible commands are:");
-      
+
       for (builtin = builtin_table; (*builtin); builtin++)
 	{
 	  /* If *BUILTIN cannot be run in the command-line, skip it.  */
@@ -1336,13 +1336,13 @@ print_completions (int is_filename, int is_completion)
 	      *u++ = ' ';
 	      *u = 0;
 	    }
-	  
+
 	  grub_strcpy (buf, unique_string);
 	}
 
       if (! is_completion)
 	grub_putchar ('\n');
-      
+
       print_error ();
       do_completion = 0;
       if (errnum)
@@ -1442,7 +1442,7 @@ print_completions (int is_filename, int is_completion)
 		  if (! is_completion)
 		    grub_printf (" Possible partitions are:\n");
 		  real_open_partition (1);
-		  
+
 		  if (is_completion && *unique_string)
 		    {
 		      ptr = buf;
@@ -1458,18 +1458,18 @@ print_completions (int is_filename, int is_completion)
 	  /* filename completions */
 	  if (! is_completion)
 	    grub_printf (" Possible files are:");
-	  
+
 	  dir (buf);
-	  
+
 	  if (is_completion && *unique_string)
 	    {
 	      ptr += grub_strlen (ptr);
 	      while (*ptr != '/')
 		ptr--;
 	      ptr++;
-	      
+
 	      grub_strcpy (ptr, unique_string);
-	      
+
 	      if (unique == 1)
 		{
 		  ptr += grub_strlen (unique_string);
@@ -1477,12 +1477,12 @@ print_completions (int is_filename, int is_completion)
 		  /* Check if the file UNIQUE_STRING is a directory.  */
 		  *ptr = '/';
 		  *(ptr + 1) = 0;
-		  
+
 		  dir (buf);
-		  
+
 		  /* Restore the original unique value.  */
 		  unique = 1;
-		  
+
 		  if (errnum)
 		    {
 		      /* Regular file */
@@ -1492,7 +1492,7 @@ print_completions (int is_filename, int is_completion)
 		    }
 		}
 	    }
-	  
+
 	  if (! is_completion)
 	    grub_putchar ('\n');
 	}
@@ -1757,14 +1757,14 @@ dir (char *dirname)
 }
 #endif /* STAGE1_5 */
 
-void 
+void
 grub_close (void)
 {
 #ifndef NO_BLOCK_FILES
   if (block_file)
     return;
 #endif /* NO_BLOCK_FILES */
-  
+
   if (fsys_table[fsys_type].close_func != 0)
     (*(fsys_table[fsys_type].close_func)) ();
 }

@@ -32,7 +32,7 @@ static inline os_download_t aout_probe(unsigned char *data, unsigned int len)
 	if ((astate.head.a_midmag & 0xffff) != 0x010BL) {
 		return 0;
 	}
-	
+
 	printf("(a.out");
 	aout_freebsd_probe();
 	printf(")... ");

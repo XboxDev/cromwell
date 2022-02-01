@@ -44,7 +44,7 @@ TEXTMENU *HddMenuInit(void) {
 				*(int*)itemPtr->functionDataPtr = i;
 				TextMenuAddItem(menuPtr, itemPtr);
 			}
-	
+
 			//Add a 'display password' menu
 			itemPtr = malloc(sizeof(TEXTMENUITEM));
 			memset(itemPtr,0x00,sizeof(TEXTMENUITEM));
@@ -53,7 +53,7 @@ TEXTMENU *HddMenuInit(void) {
 			itemPtr->functionDataPtr = malloc(sizeof(int));
 			*(int*)itemPtr->functionDataPtr = i;
 			TextMenuAddItem(menuPtr, itemPtr);
-		
+
 		}
 	}
 	return menuPtr;

@@ -25,17 +25,17 @@
 // g = Green
 // o = Orange
 // x = Off
-// 
+//
 // E.g. rgog will cycle through red, green, orange, green and then loop.
 
 void setLED(char *pattern) {
 	int i, r, g;
 	r = g = 0;
-	
+
 	for (i=0; i<4; ++i) {
 		switch (pattern[i]) {
 			case 'r':
-				r++; 
+				r++;
 				break;
 			case 'g':
 				g++;

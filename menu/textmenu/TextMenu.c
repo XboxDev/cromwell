@@ -14,39 +14,39 @@ int breakOutOfMenu = 0;
 void TextMenuAddItem(TEXTMENU *menu, TEXTMENUITEM *newMenuItem) {
 	TEXTMENUITEM *menuItem = menu->firstMenuItem;
 	TEXTMENUITEM *currentMenuItem=NULL;
-	
+
 	while (menuItem != NULL) {
 		currentMenuItem = menuItem;
 		menuItem = menuItem->nextMenuItem;
 	}
-	
-	if (currentMenuItem==NULL) { 
+
+	if (currentMenuItem==NULL) {
 		//This is the first icon in the chain
 		menu->firstMenuItem = newMenuItem;
 	}
 	//Append to the end of the chain
 	else currentMenuItem->nextMenuItem = newMenuItem;
 	newMenuItem->nextMenuItem = NULL;
-	newMenuItem->previousMenuItem = currentMenuItem; 
+	newMenuItem->previousMenuItem = currentMenuItem;
 }
 
 void TextMenuDraw(TEXTMENU* menu, TEXTMENUITEM *firstVisibleMenuItem, TEXTMENUITEM *selectedItem) {
 	TEXTMENUITEM *item=NULL;
 	int menucount;
-	
+
 	VIDEO_CURSOR_POSX=75;
 	VIDEO_CURSOR_POSY=125;
-	
+
 	//Draw the menu title.
 	VIDEO_ATTR=0xff00ff;
 	printk("\2          %s\n",menu->szCaption);
 	VIDEO_CURSOR_POSY+=30;
-	
+
 	//Draw the menu items
 	VIDEO_CURSOR_POSX=150;
-	
-	//If we were moving up, the 
-	
+
+	//If we were moving up, the
+
 	item=firstVisibleMenuItem;
 	for (menucount=0; menucount<8; menucount++) {
 		if (item==NULL) {
@@ -66,13 +66,13 @@ void TextMenuDraw(TEXTMENU* menu, TEXTMENUITEM *firstVisibleMenuItem, TEXTMENUIT
 void TextMenu(TEXTMENU *menu, TEXTMENUITEM *selectedItem) {
 	TEXTMENUITEM *itemPtr, *selectedMenuItem, *firstVisibleMenuItem;
 	BootVideoClearScreen(&jpegBackdrop, 0, 0xffff);
-	
+
 	if (selectedItem!=NULL) selectedMenuItem = selectedItem;
 	else selectedMenuItem = menu->firstMenuItem;
-	
+
 	firstVisibleMenuItem = menu->firstMenuItem;
 	TextMenuDraw(menu, firstVisibleMenuItem, selectedMenuItem);
-	
+
 	//Main menu event loop.
 	while(1)
 	{
@@ -89,7 +89,7 @@ void TextMenu(TEXTMENU *menu, TEXTMENUITEM *selectedItem) {
 				selectedMenuItem = selectedMenuItem->previousMenuItem;
 				TextMenuDraw(menu, firstVisibleMenuItem, selectedMenuItem);
 			}
-		} 
+		}
 		else if (risefall_xpad_BUTTON(TRIGGER_XPAD_PAD_DOWN) == 1) {
 			int i=0;
 			if (selectedMenuItem->nextMenuItem!=NULL) {
@@ -112,7 +112,7 @@ void TextMenu(TEXTMENU *menu, TEXTMENUITEM *selectedItem) {
 			VIDEO_ATTR=0xffffff;
 			//Menu item selected - invoke function pointer.
 			if (selectedMenuItem->functionPtr!=NULL) selectedMenuItem->functionPtr(selectedMenuItem->functionDataPtr);
-			//Clear the screen again	
+			//Clear the screen again
 			BootVideoClearScreen(&jpegBackdrop, 0, 0xffff);
 			VIDEO_ATTR=0xffffff;
 			//Did the function that was run set the 'Quit the menu' flag?

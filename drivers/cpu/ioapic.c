@@ -71,7 +71,7 @@ void setup_ioapic(void)
 			printk("IO APIC not responding.\n");
 			return;
 		}
-		printk("for IRQ, reg 0x%08x value 0x%08x 0x%08x\n", 
+		printk("for IRQ, reg 0x%08x value 0x%08x 0x%08x\n",
 			a->reg, a->value_low, a->value_high);
 	}
 }

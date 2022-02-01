@@ -94,7 +94,7 @@ int remove_irq_handler ( irq_t irq, segoff_t *handler,
 
 int install_trivial_irq_handler ( irq_t irq ) {
 	segoff_t trivial_irq_handler_segoff = SEGOFF(trivial_irq_handler);
-	
+
 	if ( trivial_irq_installed_on != IRQ_NONE ) {
 		DBG ( "Can install trivial IRQ handler only once\n" );
 		return 0;
@@ -163,7 +163,7 @@ int trivial_irq_triggered ( irq_t irq ) {
 	uint16_t trivial_irq_this_trigger_count = *trivial_irq_trigger_count;
 	int triggered = ( trivial_irq_this_trigger_count -
 			  trivial_irq_previous_trigger_count );
-	
+
 	/* irq is not used at present, but we have it in the API for
 	 * future-proofing; in case we want the facility to have
 	 * multiple trivial IRQ handlers installed simultaneously.
@@ -171,7 +171,7 @@ int trivial_irq_triggered ( irq_t irq ) {
 	 * Avoid compiler warning about unused variable.
 	 */
 	if ( irq == IRQ_NONE ) {};
-	
+
 	trivial_irq_previous_trigger_count = trivial_irq_this_trigger_count;
 	return triggered ? 1 : 0;
 }
@@ -233,7 +233,7 @@ void send_nonspecific_eoi ( irq_t irq ) {
 	DBG ( "Sending non-specific EOI for IRQ %d\n", irq );
 	if ( irq >= IRQ_PIC_CUTOFF ) {
 		outb ( ICR_EOI_NON_SPECIFIC, PIC2_ICR );
-	}		
+	}
 	outb ( ICR_EOI_NON_SPECIFIC, PIC1_ICR );
 }
 
@@ -255,7 +255,7 @@ void send_specific_eoi ( irq_t irq ) {
 #ifdef DEBUG_IRQ
 void dump_irq_status ( void ) {
 	int irq = 0;
-	
+
 	for ( irq = 0; irq < 16; irq++ ) {
 		if ( irq_enabled ( irq ) ) {
 			printf ( "IRQ%d enabled, ISR at %hx:%hx\n", irq,

@@ -31,12 +31,12 @@ static void usb_api_blocking_completion(struct urb *urb, struct pt_regs *regs)
 
 // Starts urb and waits for completion or timeout
 static int usb_start_wait_urb(struct urb *urb, int timeout, int* actual_length)
-{ 
+{
 	DECLARE_WAITQUEUE(wait, current);
 	struct usb_api_data awd;
 	int status;
 
-	init_waitqueue_head(&awd.wqh); 	
+	init_waitqueue_head(&awd.wqh);
 	awd.done = 0;
 
 	set_current_state(TASK_UNINTERRUPTIBLE);
@@ -51,9 +51,9 @@ static int usb_start_wait_urb(struct urb *urb, int timeout, int* actual_length)
 		remove_wait_queue(&awd.wqh, &wait);
 		return status;
 	}
-	
+
 	while (timeout && !awd.done)
-	{		
+	{
 		timeout = schedule_timeout(timeout);
 		set_current_state(TASK_UNINTERRUPTIBLE);
 		rmb();
@@ -85,7 +85,7 @@ static int usb_start_wait_urb(struct urb *urb, int timeout, int* actual_length)
 
 /*-------------------------------------------------------------------*/
 // returns status (negative) or length (positive)
-int usb_internal_control_msg(struct usb_device *usb_dev, unsigned int pipe, 
+int usb_internal_control_msg(struct usb_device *usb_dev, unsigned int pipe,
 			    struct usb_ctrlrequest *cmd,  void *data, int len, int timeout)
 {
 	struct urb *urb;
@@ -95,7 +95,7 @@ int usb_internal_control_msg(struct usb_device *usb_dev, unsigned int pipe,
 	urb = usb_alloc_urb(0, GFP_NOIO);
 	if (!urb)
 		return -ENOMEM;
-  
+
 	usb_fill_control_urb(urb, usb_dev, pipe, (unsigned char*)cmd, data, len,
 		   usb_api_blocking_completion, 0);
 
@@ -123,7 +123,7 @@ int usb_internal_control_msg(struct usb_device *usb_dev, unsigned int pipe,
  *
  *	This function sends a simple control message to a specified endpoint
  *	and waits for the message to complete, or timeout.
- *	
+ *
  *	If successful, it returns the number of bytes transferred, otherwise a negative error number.
  *
  *	Don't use this function from within an interrupt context, like a
@@ -138,7 +138,7 @@ int usb_control_msg(struct usb_device *dev, unsigned int pipe, __u8 request, __u
 {
 	struct usb_ctrlrequest *dr = kmalloc(sizeof(struct usb_ctrlrequest), GFP_NOIO);
 	int ret;
-	
+
 	if (!dr)
 		return -ENOMEM;
 
@@ -148,7 +148,7 @@ int usb_control_msg(struct usb_device *dev, unsigned int pipe, __u8 request, __u
 	dr->wIndex = cpu_to_le16p(&index);
 	dr->wLength = cpu_to_le16p(&size);
 
-	//dbg("usb_control_msg");	
+	//dbg("usb_control_msg");
 
 	ret = usb_internal_control_msg(dev, pipe, dr, data, size, timeout);
 
@@ -171,9 +171,9 @@ int usb_control_msg(struct usb_device *dev, unsigned int pipe, __u8 request, __u
  *
  *	This function sends a simple bulk message to a specified endpoint
  *	and waits for the message to complete, or timeout.
- *	
+ *
  *	If successful, it returns 0, otherwise a negative error number.
- *	The number of actual bytes transferred will be stored in the 
+ *	The number of actual bytes transferred will be stored in the
  *	actual_length paramater.
  *
  *	Don't use this function from within an interrupt context, like a
@@ -183,7 +183,7 @@ int usb_control_msg(struct usb_device *dev, unsigned int pipe, __u8 request, __u
  *      method can wait for it to complete.  Since you don't have a handle on
  *      the URB used, you can't cancel the request.
  */
-int usb_bulk_msg(struct usb_device *usb_dev, unsigned int pipe, 
+int usb_bulk_msg(struct usb_device *usb_dev, unsigned int pipe,
 			void *data, int len, int *actual_length, int timeout)
 {
 	struct urb *urb;
@@ -307,7 +307,7 @@ static void sg_complete (struct urb *urb, struct pt_regs *regs)
 int usb_sg_init (
 	struct usb_sg_request	*io,
 	struct usb_device	*dev,
-	unsigned		pipe, 
+	unsigned		pipe,
 	unsigned		period,
 	struct scatterlist	*sg,
 	int			nents,
@@ -564,7 +564,7 @@ int usb_get_descriptor(struct usb_device *dev, unsigned char type, unsigned char
 {
 	int i = 5;
 	int result;
-	
+
 	memset(buf,0,size);	// Make sure we parse really received data
 
 	while (i--) {
@@ -732,7 +732,7 @@ int usb_clear_halt(struct usb_device *dev, int pipe)
 {
 	int result;
 	int endp = usb_pipeendpoint(pipe);
-	
+
 	if (usb_pipein (pipe))
 		endp |= USB_DIR_IN;
 
@@ -909,7 +909,7 @@ int usb_set_configuration(struct usb_device *dev, int configuration)
 	int i, ret;
 	struct usb_host_config *cp = NULL;
 	void (*disable)(struct usb_device *, int) = dev->bus->op->disable;
-	
+
 	for (i=0; i<dev->descriptor.bNumConfigurations; i++) {
 		if (dev->config[i].desc.bConfigurationValue == configuration) {
 			cp = &dev->config[i];
@@ -954,7 +954,7 @@ int usb_set_configuration(struct usb_device *dev, int configuration)
  * @buf: where to put the string
  * @size: how big is "buf"?
  * Context: !in_interrupt ()
- * 
+ *
  * This converts the UTF-16LE encoded strings returned by devices, from
  * usb_get_string_descriptor(), to null-terminated ISO-8859-1 encoded ones
  * that are more usable in most kernel contexts.  Note that all characters
@@ -1004,14 +1004,14 @@ int usb_string(struct usb_device *dev, int index, char *buf, size_t size)
 	}
 
 	/*
-	 * ask for the length of the string 
+	 * ask for the length of the string
 	 */
 
 	err = usb_get_string(dev, dev->string_langid, index, tbuf, 2);
 	if(err<2)
 		goto errout;
-	len=tbuf[0];	
-	
+	len=tbuf[0];
+
 	err = usb_get_string(dev, dev->string_langid, index, tbuf, len);
 	if (err < 0)
 		goto errout;

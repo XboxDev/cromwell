@@ -17,11 +17,11 @@ void SetWidescreen(void *menuItemText) {
 	char *text = (char *)menuItemText;
 	if (!strcmp(text, "Display Size: Widescreen")) {
 		strcpy(text, "Display Size: Normal");
-		EepromSetWidescreen(0);	
+		EepromSetWidescreen(0);
 	}
 	else if (!strcmp(text, "Display Size: Normal")) {
 		strcpy(text, "Display Size: Widescreen");
-		EepromSetWidescreen(1);	
+		EepromSetWidescreen(1);
 	}
 }
 

@@ -54,7 +54,7 @@ static inline os_download_t tagged_probe(unsigned char *data, unsigned int len)
 	/* Copy first 4 longwords */
 	memcpy(&tctx.img, data, sizeof(tctx.img));
 	/* Memory location where we are supposed to save it */
-	tctx.segaddr = tctx.linlocation = 
+	tctx.segaddr = tctx.linlocation =
 		((tctx.img.u.segoff.ds) << 4) + tctx.img.u.segoff.bx;
 	if (!prep_segment(tctx.segaddr, tctx.segaddr + 512, tctx.segaddr + 512,
 			  0, 512)) {
@@ -64,8 +64,8 @@ static inline os_download_t tagged_probe(unsigned char *data, unsigned int len)
 	loc = 512;
 	for(sh = (struct segheader *)(data
 				      + ((tctx.img.length & 0x0F) << 2)
-				      + ((tctx.img.length & 0xF0) >> 2) ); 
-		(sh->length > 0) && ((unsigned char *)sh < data + 512); 
+				      + ((tctx.img.length & 0xF0) >> 2) );
+		(sh->length > 0) && ((unsigned char *)sh < data + 512);
 		sh = (struct segheader *)((unsigned char *)sh
 					  + ((sh->length & 0x0f) << 2) + ((sh->length & 0xf0) >> 2)) ) {
 		if (!prep_segment(
@@ -76,7 +76,7 @@ static inline os_download_t tagged_probe(unsigned char *data, unsigned int len)
 			return 0;
 		}
 		loc = loc + sh->imglength;
-		if (sh->flags & 0x04) 
+		if (sh->flags & 0x04)
 			break;
 	}
 	if (!(sh->flags & 0x04))
@@ -88,7 +88,7 @@ static inline os_download_t tagged_probe(unsigned char *data, unsigned int len)
 		+ ((tctx.img.length & 0xF0) >> 2);
 	/* Remember to skip the first 512 data bytes */
 	tctx.first = 1;
-	
+
 	return tagged_download;
 
 }
@@ -102,7 +102,7 @@ static sector_t tagged_download(unsigned char *data, unsigned int len, int eof)
 			len -= 512;
 			data += 512;
 			/* and fall through to deal with rest of block */
-		} else 
+		} else
 			return 0;
 	}
 	for (;;) {
@@ -128,11 +128,11 @@ static sector_t tagged_download(unsigned char *data, unsigned int len, int eof)
 					if (result == 0)
 						result = -2;
 					longjmp(restart_etherboot, result);
-						
+
 				} else {
 					gateA20_unset();
-					xstart16(tctx.img.execaddr, 
-						tctx.img.u.location, 
+					xstart16(tctx.img.execaddr,
+						tctx.img.u.location,
 						(void*)virt_to_phys(BOOTP_DATA_ADDR));
 					longjmp(restart_etherboot, -2);
 				}
@@ -154,7 +154,7 @@ static sector_t tagged_download(unsigned char *data, unsigned int len, int eof)
 			tctx.segaddr += ((sh.length & 0x0F) << 2)
 				+ ((sh.length & 0xF0) >> 2);
 			/* Avoid lock-up */
-			if ( sh.length == 0 ) longjmp(restart_etherboot, -2); 
+			if ( sh.length == 0 ) longjmp(restart_etherboot, -2);
 		}
 		if ((len <= 0) && !eof)
 			break;
@@ -164,6 +164,6 @@ static sector_t tagged_download(unsigned char *data, unsigned int len, int eof)
 		tctx.curaddr += i;
 		len -= i;
 		data += i;
-	} 
+	}
 	return 0;
 }

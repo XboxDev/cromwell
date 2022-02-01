@@ -86,7 +86,7 @@ ufs2_mount (void)
 
   sblockloc = -1;
   type = 0;
-  
+
   if (! (((current_drive & 0x80) || (current_slice != 0))
 	 && ! IS_PC_SLICE_TYPE_BSD_WITH_FS (current_slice, FS_BSDFFS)))
     {
@@ -105,17 +105,17 @@ ufs2_mount (void)
 		{
 		  continue;
 		}
-	      
+
 	      retval = 1;
 	      sblockloc = sblock_try[i];
 	      break;
 	    }
 	}
     }
-  
+
   mapblock = -1;
   mapblock_offset = -1;
-  
+
   return retval;
 }
 
@@ -123,10 +123,10 @@ static grub_int64_t
 block_map (int file_block)
 {
   int bnum, offset, bsize;
-  
+
   if (file_block < NDADDR)
     return (INODE_UFS2->di_db[file_block]);
-  
+
   /* If the blockmap loaded does not include FILE_BLOCK,
      load a new blockmap.  */
 
@@ -137,7 +137,7 @@ block_map (int file_block)
 	{
 	  offset = ((file_block - NDADDR) % NINDIR (SUPERBLOCK));
 	  bsize = MAPBUF_LEN;
-	  
+
 	  if (offset + MAPBUF_LEN > SUPERBLOCK->fs_bsize)
 	    offset = (SUPERBLOCK->fs_bsize - MAPBUF_LEN) / sizeof (int);
 	}
@@ -146,7 +146,7 @@ block_map (int file_block)
 	  bsize = SUPERBLOCK->fs_bsize;
 	  offset = 0;
 	}
-      
+
       if (! devread (bnum, offset * sizeof (int), bsize, (char *) MAPBUF))
 	{
 	  mapblock = -1;
@@ -155,12 +155,12 @@ block_map (int file_block)
 	  errnum = ERR_FSYS_CORRUPT;
 	  return -1;
 	}
-      
+
       mapblock = bnum;
       mapblock_bsize = bsize;
       mapblock_offset = offset;
     }
-  
+
   return (((grub_int64_t *) MAPBUF)[((file_block - NDADDR) % NINDIR (SUPERBLOCK))
 				    - mapblock_offset]);
 }
@@ -178,7 +178,7 @@ ufs2_read (char *buf, int len)
       size = blksize (SUPERBLOCK, INODE_UFS2, logno);
 
       if ((map = block_map (logno)) < 0)
-	break; 
+	break;
 
       size -= off;
 
@@ -317,7 +317,7 @@ ufs2_embed (int *start_sector, int needed_sectors)
      familiar with BSD should check for this.  */
   if (needed_sectors > 14)
     return 0;
-  
+
   *start_sector = 1;
 #if 1
   /* FIXME: Disable the embedding in FFS until someone checks if

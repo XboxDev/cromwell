@@ -10,7 +10,7 @@
 	CPU_FEATURE_P(cpu_info.x86_capability, LM) && \
 	CPU_FEATURE_P(cpu_info.x86_capability, PAE) && \
 	CPU_FEATURE_P(cpu_info.x86_capability, PSE))
-			
+
 #define ELF_CHECK_X86_64_ARCH(x) \
 	(EM_CURRENT_64_PRESENT && ((x).e_machine == EM_X86_64))
 #define __unused_i386

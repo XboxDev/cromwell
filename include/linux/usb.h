@@ -253,7 +253,7 @@ struct usb_device {
 	int string_langid;		/* language ID for strings */
 
 	void *hcpriv;			/* Host Controller private data */
-	
+
 	struct list_head filelist;
 	struct dentry *usbfs_dentry;	/* usbfs dentry entry for the device */
 	struct dentry *usbdevfs_dentry;	/* usbdevfs dentry entry for the device */
@@ -373,7 +373,7 @@ static inline int usb_make_path (struct usb_device *dev, char *buf, size_t size)
 	.match_flags = USB_DEVICE_ID_MATCH_DEV_INFO, .bDeviceClass = (cl), .bDeviceSubClass = (sc), .bDeviceProtocol = (pr)
 
 /**
- * USB_INTERFACE_INFO - macro used to describe a class of usb interfaces 
+ * USB_INTERFACE_INFO - macro used to describe a class of usb interfaces
  * @cl: bInterfaceClass value
  * @sc: bInterfaceSubClass value
  * @pr: bInterfaceProtocol value
@@ -407,7 +407,7 @@ static inline int usb_make_path (struct usb_device *dev, char *buf, size_t size)
  *	do (or don't) show up otherwise in the filesystem.
  * @id_table: USB drivers use ID table to support hotplugging.
  *	Export this with MODULE_DEVICE_TABLE(usb,...).  This must be set
- *	or your driver's probe function will never get called. 
+ *	or your driver's probe function will never get called.
  *
  * USB drivers must provide a name, probe() and disconnect() methods,
  * and an id_table.  Other driver fields are optional.
@@ -462,7 +462,7 @@ struct usb_class_driver {
 	char *name;
 	struct file_operations *fops;
 	mode_t mode;
-	int minor_base;	
+	int minor_base;
 };
 
 /*
@@ -549,7 +549,7 @@ typedef void (*usb_complete_t)(struct urb *, struct pt_regs *);
  *	transferred.  It will normally be the same as requested, unless
  *	either an error was reported or a short read was performed.
  *	The URB_SHORT_NOT_OK transfer flag may be used to make such
- *	short reads be reported as errors. 
+ *	short reads be reported as errors.
  * @setup_packet: Only used for control transfers, this points to eight bytes
  *	of setup data.  Control transfers always start by sending this data
  *	to the device.  Then transfer_buffer is read or written, if needed.
@@ -570,7 +570,7 @@ typedef void (*usb_complete_t)(struct urb *, struct pt_regs *);
  * @complete: Completion handler. This URB is passed as the parameter to the
  *	completion function.  The completion function may then do what
  *	it likes with the URB, including resubmitting or freeing it.
- * @iso_frame_desc: Used to provide arrays of ISO transfer buffers and to 
+ * @iso_frame_desc: Used to provide arrays of ISO transfer buffers and to
  *	collect the transfer status for each buffer.
  *
  * This structure identifies USB transfer requests.  URBs must be allocated by
@@ -604,7 +604,7 @@ typedef void (*usb_complete_t)(struct urb *, struct pt_regs *);
  * The URB_ASYNC_UNLINK transfer flag affects later invocations of
  * the usb_unlink_urb() routine.
  *
- * All URBs must also initialize 
+ * All URBs must also initialize
  * transfer_buffer and transfer_buffer_length.  They may provide the
  * URB_SHORT_NOT_OK transfer flag, indicating that short reads are
  * to be treated as errors; that flag is invalid for write requests.
@@ -901,7 +901,7 @@ struct usb_sg_request {
 int usb_sg_init (
 	struct usb_sg_request	*io,
 	struct usb_device	*dev,
-	unsigned		pipe, 
+	unsigned		pipe,
 	unsigned		period,
 	struct scatterlist	*sg,
 	int			nents,
@@ -1021,7 +1021,7 @@ void usb_show_string(struct usb_device *dev, char *id, int index);
 #define warn(format, arg...) printk(KERN_WARNING __FILE__ ": " format "\n" , ## arg)
 #endif
 
-#ifndef DEBUG_MODE                                                               
+#ifndef DEBUG_MODE
 #define info(format, arg...) do {} while (0)
 #define err(format, arg...) do {} while (0)
 #define warn(format, arg...) do {} while (0)

@@ -7,7 +7,7 @@
 #
 .PHONY: dummy
 
-CFLAGSBR = -Wall -Werror 
+CFLAGSBR = -Wall -Werror
 
 #
 # Special variables which should not be exported

@@ -59,7 +59,7 @@ char *AvCableName(void) {
 	char *vga_name="VGA";
 	char *vgasog_name="VGA SoG";
 	char *unknown_name="Unknown";
-	
+
 	xbox_av_type av_type = DetectAvType();
 	switch (av_type) {
 		case AV_SCART_RGB:
@@ -80,7 +80,7 @@ char *AvCableName(void) {
 }
 
 void BootVgaInitializationKernelNG(CURRENT_VIDEO_MODE_DETAILS * pvmode) {
-	xbox_tv_encoding tv_encoding; 
+	xbox_tv_encoding tv_encoding;
 	xbox_av_type av_type;
 	u8 b;
 	RIVA_HW_INST riva;
@@ -89,10 +89,10 @@ void BootVgaInitializationKernelNG(CURRENT_VIDEO_MODE_DETAILS * pvmode) {
 	int i=0;
 	GPU_PARAMETER gpu;
 	xbox_video_mode encoder_mode;
-	
+
 	tv_encoding = DetectVideoStd();
 	DetectVideoEncoder();
-	
+
         // Dump to global variable
 	VIDEO_AV_MODE=I2CTransmitByteGetReturn(0x10, 0x04);
 	av_type = DetectAvType();
@@ -147,7 +147,7 @@ void BootVgaInitializationKernelNG(CURRENT_VIDEO_MODE_DETAILS * pvmode) {
 	MMIO_H_OUT32 (riva.PCRTC, 0, 0x800, pvmode->m_dwFrameBufferStart);
 
 	IoOutputByte(0x80d3, 5);  // Kill all video out using an ACPI control pin
-	
+
 	MMIO_H_OUT32(riva.PRAMDAC,0,0x884,0x0);
 	MMIO_H_OUT32(riva.PRAMDAC,0,0x888,0x0);
 	MMIO_H_OUT32(riva.PRAMDAC,0,0x88c,0x10001000);
@@ -165,19 +165,19 @@ void BootVgaInitializationKernelNG(CURRENT_VIDEO_MODE_DETAILS * pvmode) {
 	}
 	else {
 		MMIO_H_OUT32(riva.PRAMDAC,0,0x880,0);
-		//Other encoders use RGB	
+		//Other encoders use RGB
 		MMIO_H_OUT32(riva.PRAMDAC,0,0x630,0x0);
 		MMIO_H_OUT32(riva.PRAMDAC,0,0x84c,0x0);
 		MMIO_H_OUT32(riva.PRAMDAC,0,0x8c4,0x0);
 	}
-	
+
 	writeCrtNv (&riva, 0, 0x14, 0x00);
 	writeCrtNv (&riva, 0, 0x17, 0xe3); // Set CRTC mode register
 	writeCrtNv (&riva, 0, 0x19, 0x10); // ?
 	writeCrtNv (&riva, 0, 0x1b, 0x05); // arbitration0
 	writeCrtNv (&riva, 0, 0x22, 0xff); // ?
 	writeCrtNv (&riva, 0, 0x33, 0x11); // ?
-	
+
 	if (av_type == AV_HDTV) {
 		unsigned char pll_int;
 		xbox_hdtv_mode hdtv_mode = HDTV_480p;
@@ -188,7 +188,7 @@ void BootVgaInitializationKernelNG(CURRENT_VIDEO_MODE_DETAILS * pvmode) {
 		else if (video_mode->yres > 600) {
 			hdtv_mode = HDTV_720p;
 		}*/
-		
+
 		// Settings for 720x480@60Hz (480p)
 		pvmode->width=720;
 		pvmode->height=480;
@@ -201,7 +201,7 @@ void BootVgaInitializationKernelNG(CURRENT_VIDEO_MODE_DETAILS * pvmode) {
 			gpu.nvhtotal = 779;
 			gpu.nvvtotal = 524;
 		}
-		else {	
+		else {
 			/* HDTV uses hardcoded settings for these - these are the
 			 * correct ones for 480p */
 			gpu.nvhtotal = 858;
@@ -216,7 +216,7 @@ void BootVgaInitializationKernelNG(CURRENT_VIDEO_MODE_DETAILS * pvmode) {
 		gpu.crtchdispend = pvmode->width;
 		gpu.crtcvstart = gpu.nvvstart;
 		gpu.crtcvtotal = gpu.nvvtotal;
-		
+
 		pll_int = (unsigned char)((double)27027 * 6.0 / 13.5e3 + 0.5);
 		switch (video_encoder) {
 			case ENCODER_CONEXANT:
@@ -237,7 +237,7 @@ void BootVgaInitializationKernelNG(CURRENT_VIDEO_MODE_DETAILS * pvmode) {
 		pvmode->height=600;
 		pvmode->xmargin=20;
 		pvmode->ymargin=20;
-	
+
 		gpu.xres = pvmode->width;
        		gpu.nvhstart = 900;
 		gpu.nvhtotal = 1028;
@@ -249,7 +249,7 @@ void BootVgaInitializationKernelNG(CURRENT_VIDEO_MODE_DETAILS * pvmode) {
 		gpu.crtcvstart = gpu.nvvstart;
 		gpu.crtcvtotal = gpu.nvvtotal;
 		pll_int = (unsigned char)((double)36000 * 6.0 / 13.5e3 + 0.5);
-	
+
 		switch (video_encoder) {
 			case ENCODER_CONEXANT:
 				encoder_ok = conexant_calc_vga_mode(av_type, pll_int, &(newmode.encoder_regs));
@@ -260,7 +260,7 @@ void BootVgaInitializationKernelNG(CURRENT_VIDEO_MODE_DETAILS * pvmode) {
 				break;
 		}
 	}
-	else {	
+	else {
 	/* All other cable types - normal SDTV */
 		switch(pvmode->m_nVideoModeIndex) {
 			case VIDEO_MODE_640x480:
@@ -293,8 +293,8 @@ void BootVgaInitializationKernelNG(CURRENT_VIDEO_MODE_DETAILS * pvmode) {
 				pvmode->xmargin=20;
 				pvmode->ymargin=20; // lines
 				break;
-		}	
-		encoder_mode.xres = pvmode->width; 
+		}
+		encoder_mode.xres = pvmode->width;
 		encoder_mode.yres = pvmode->height;
 		encoder_mode.tv_encoding = tv_encoding;
 		encoder_mode.bpp = 32;
@@ -314,7 +314,7 @@ void BootVgaInitializationKernelNG(CURRENT_VIDEO_MODE_DETAILS * pvmode) {
 				encoder_ok = xcalibur_calc_mode(&encoder_mode, &newmode);
 				break;
 		}
-        	
+
 		gpu.xres = pvmode->width;
 	       	gpu.nvhstart = newmode.ext.hsyncstart;
 		gpu.nvhtotal = newmode.ext.htotal;
@@ -333,9 +333,9 @@ void BootVgaInitializationKernelNG(CURRENT_VIDEO_MODE_DETAILS * pvmode) {
 		unsigned long *XCal_Reg;
 		int n1=0;
 
-		//Set up the GPU 
+		//Set up the GPU
 		SetGPURegister(&gpu, pvmode->m_pbBaseAddressVideo);
-		
+
 		switch (video_encoder) {
 			case ENCODER_CONEXANT:
 		        	// Conexant init (starts at register 0x2e)
@@ -354,7 +354,7 @@ void BootVgaInitializationKernelNG(CURRENT_VIDEO_MODE_DETAILS * pvmode) {
 							I2CWriteBytetoRegister(0x45,i, regs[n1]);
 							break;
 					}
-					wait_us(500);	
+					wait_us(500);
 				}
                 		// Timing Reset
 				b=I2CTransmitByteGetReturn(0x45,0x6c) & (0x7f);
@@ -373,29 +373,29 @@ void BootVgaInitializationKernelNG(CURRENT_VIDEO_MODE_DETAILS * pvmode) {
 				//Xlb init
 				XCal_Reg = newmode.encoder_regs;
 				regs = malloc(4);
-				
+
 				ReadfromSMBus(0x70,4,4,&i);
 				WriteToSMBus(0x70,4,4,0x0F000000);
 				ReadfromSMBus(0x70,0,4,&i);
 				WriteToSMBus(0x70,0,4,0x00000000);
-			               
+
 				for(i = 0; i < 0x90; i++) {
 					//Endianness.
 					memcpy(regs,(unsigned char*)(&XCal_Reg[i])+3,0x01);
 					memcpy(regs+1,(unsigned char*)(&XCal_Reg[i])+2,0x01);
 					memcpy(regs+2,(unsigned char*)(&XCal_Reg[i])+1,0x01);
 					memcpy(regs+3,(unsigned char*)(&XCal_Reg[i]),0x01);
-				
+
 					WriteToSMBus(0x70, i, 4, *(unsigned long*)regs);
 					wait_us(500);
 				}
 				free(regs);
 				break;
-		}	
+		}
 	}
 	//Free the malloc'd registers
 	free(newmode.encoder_regs);
-        
+
 	NVDisablePalette (&riva, 0);
 	writeCrtNv (&riva, 0, 0x44, 0x03);
 	NVInitGrSeq(&riva);
@@ -413,7 +413,7 @@ void BootVgaInitializationKernelNG(CURRENT_VIDEO_MODE_DETAILS * pvmode) {
 		I2CTransmitWord(0x45, (0xaa<<8)|0);
 		I2CTransmitWord(0x45, (0xac<<8)|0);
 	}
-	
+
 	NVWriteSeq(&riva, 0x01, 0x01);  /* reenable display */
 
 	//Turn on the output
