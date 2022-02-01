@@ -55,4 +55,7 @@ SECTIONS {
 		_heap = . ;
 	}
 
+	/DISCARD/ : {
+		*(.note.gnu.property)
+	}
 }
