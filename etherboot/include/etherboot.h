@@ -173,7 +173,7 @@ struct rom_info {
 	unsigned short	rom_length;
 };
 
-extern inline int rom_address_ok(struct rom_info *rom, int assigned_rom_segment)
+static inline int rom_address_ok(struct rom_info *rom, int assigned_rom_segment)
 {
 	return (assigned_rom_segment < 0xC000
 		|| assigned_rom_segment == rom->rom_segment);

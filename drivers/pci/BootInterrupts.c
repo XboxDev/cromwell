@@ -18,6 +18,9 @@ volatile bool fSeenPowerdown;
 volatile TRAY_STATE traystate;
 unsigned int wait_ms_time;
 
+volatile u32 BIOS_TICK_COUNT;
+volatile u32 DVD_TRAY_STATE;
+
 volatile int nInteruptable = 0;
 
 // interrupt service stubs defined in BootStartup.S
@@ -185,9 +188,7 @@ void BootInterruptsWriteIdt() {
 
 	// init storage used by ISRs
 
-	VIDEO_VSYNC_POSITION=0;
 	BIOS_TICK_COUNT=0;
-	VIDEO_VSYNC_DIR=0;
 	nCountI2cinterrupts=0;
 	nCountUnusedInterrupts=0;
 	nCountUnusedInterruptsPic2=0;
@@ -195,9 +196,6 @@ void BootInterruptsWriteIdt() {
 	nCountInterruptsIde=0;
 	fSeenPowerdown=false;
 	traystate=ETS_OPEN_OR_OPENING;
-	VIDEO_LUMASCALING=0;
-	VIDEO_RSCALING=0;
-	VIDEO_BSCALING=0;
 
 		// set up default exception, interrupt vectors to dummy stubs
 

@@ -3,6 +3,8 @@
 #include "BootEEPROM.h"
 #include "drivers/pci/i2c.h"
 
+EEPROMDATA eeprom;
+
 void BootEepromReadEntireEEPROM() {
 	int i;
 	u8 *pb=(u8 *)&eeprom;

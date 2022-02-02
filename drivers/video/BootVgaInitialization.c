@@ -30,6 +30,9 @@
 #include "xcalibur.h"
 #include "drivers/pci/i2c.h"
 
+unsigned int video_encoder;
+u8 VIDEO_AV_MODE;
+
 void DetectVideoEncoder(void) {
 	if (I2CTransmitByteGetReturn(0x45,0x00) != ERR_I2C_ERROR_BUS) video_encoder = ENCODER_CONEXANT;
 	else if (I2CTransmitByteGetReturn(0x6a,0x00) != ERR_I2C_ERROR_BUS) video_encoder = ENCODER_FOCUS;

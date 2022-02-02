@@ -57,6 +57,7 @@ typedef struct {
 #define IDE_DEFAULT_COMMAND { 0xFFu, 0x01, 0x00, 0x0000, IDE_DH_DEFAULT | IDE_DH_SLAVE }
 #define printk_debug bprintf
 
+tsHarddiskInfo tsaHarddiskInfo[2];  // static struct stores data about attached drives
 
 const char * const szaSenseKeys[] = {
 	"No Sense", "Recovered Error", "Not Ready", "Medium Error",

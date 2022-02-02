@@ -53,12 +53,12 @@ ETH_INCLUDE = -isystem$(TOPDIR)/include -I$(TOPDIR)/etherboot/include -I$(TOPDIR
 ETH_CFLAGS  = 	-m32 -O2 -march=pentium -nostdinc $(ETH_INCLUDE) -Wstrict-prototypes -fomit-frame-pointer -pipe -Ui386 -fno-builtin -fno-stack-protector -no-pie
 endif
 
-LDFLAGS-ROM     = -s -S -T $(TOPDIR)/scripts/ldscript-crom.ld -z muldefs
-LDFLAGS-XBEBOOT = -s -S -T $(TOPDIR)/scripts/xbeboot.ld -z muldefs
-LDFLAGS-ROMBOOT = -s -S -T $(TOPDIR)/boot_rom/bootrom.ld -z muldefs
-LDFLAGS-VMLBOOT = -s -S -T $(TOPDIR)/boot_vml/vml_start.ld -z muldefs
+LDFLAGS-ROM     = -s -S -T $(TOPDIR)/scripts/ldscript-crom.ld
+LDFLAGS-XBEBOOT = -s -S -T $(TOPDIR)/scripts/xbeboot.ld
+LDFLAGS-ROMBOOT = -s -S -T $(TOPDIR)/boot_rom/bootrom.ld
+LDFLAGS-VMLBOOT = -s -S -T $(TOPDIR)/boot_vml/vml_start.ld
 ifeq ($(ETHERBOOT), yes)
-LDFLAGS-ETHBOOT = -s -S -T $(TOPDIR)/boot_eth/eth_start.ld -z muldefs
+LDFLAGS-ETHBOOT = -s -S -T $(TOPDIR)/boot_eth/eth_start.ld
 endif
 
 # add the option for gcc 3.3 only

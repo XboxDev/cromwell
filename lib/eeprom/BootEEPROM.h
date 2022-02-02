@@ -98,7 +98,7 @@ typedef struct _EEPROMDATA {
    u8		UNKNOWN6[64];				// 0xC0 - 0xFF Unknown Codes / Memory timing data ?
 } EEPROMDATA;
 
-EEPROMDATA eeprom;
+extern EEPROMDATA eeprom;
 
 void BootEepromReadEntireEEPROM(void);
 void BootEepromPrintInfo(void);

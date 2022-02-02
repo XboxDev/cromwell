@@ -96,7 +96,7 @@ void *memcpy(void *dest, const void *src,  size_t size);
 void *memset(void *dest, int data,  size_t size);
 int memcmp(const void *pb, const void *pb1, size_t n);
 
-unsigned char *BufferIN;
-int BufferINlen;
-unsigned char *BufferOUT;
-int BufferOUTPos;
+extern unsigned char *BufferIN;
+extern int BufferINlen;
+extern unsigned char *BufferOUT;
+extern int BufferOUTPos;
