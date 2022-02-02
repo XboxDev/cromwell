@@ -26,12 +26,12 @@
 #include "printk.h"
 
 
-unsigned int cromwell_config;
-unsigned int cromwell_retryload;
-unsigned int cromwell_loadbank;
-unsigned int cromwell_Biostype;
+extern unsigned int cromwell_config;
+extern unsigned int cromwell_retryload;
+extern unsigned int cromwell_loadbank;
+extern unsigned int cromwell_Biostype;
 
-unsigned int xbox_ram;
+extern unsigned int xbox_ram;
 
 #define XROMWELL	0
 #define CROMWELL	1
@@ -55,20 +55,15 @@ static inline double max (double a, double b)
 #define ASSERT(exp) { if(!(exp)) { bprintf("Assert failed file " __FILE__ " line %d\n", __LINE__); } }
 
 extern volatile CURRENT_VIDEO_MODE_DETAILS vmode;
-unsigned int video_encoder;
+extern unsigned int video_encoder;
 
-volatile u32 VIDEO_CURSOR_POSX;
-volatile u32 VIDEO_CURSOR_POSY;
-volatile u32 VIDEO_ATTR;
-volatile u32 VIDEO_LUMASCALING;
-volatile u32 VIDEO_RSCALING;
-volatile u32 VIDEO_BSCALING;
-volatile u32 BIOS_TICK_COUNT;
-volatile u32 VIDEO_VSYNC_POSITION;
-volatile u32 VIDEO_VSYNC_DIR;
-volatile u32 DVD_TRAY_STATE;
+extern volatile u32 VIDEO_CURSOR_POSX;
+extern volatile u32 VIDEO_CURSOR_POSY;
+extern volatile u32 VIDEO_ATTR;
+extern volatile u32 BIOS_TICK_COUNT;
+extern volatile u32 DVD_TRAY_STATE;
 
-u8 VIDEO_AV_MODE ;
+extern u8 VIDEO_AV_MODE;
 
 #define DVD_CLOSED 		0
 #define DVD_CLOSING 		1

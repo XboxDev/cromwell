@@ -22,6 +22,10 @@
 #include "decode-jpg.h"
 #define WIDTH_SPACE_PIXELS 5
 
+volatile u32 VIDEO_CURSOR_POSX;
+volatile u32 VIDEO_CURSOR_POSY;
+volatile u32 VIDEO_ATTR;
+
 // returns number of x pixels taken up by ascii character bCharacter
 
 unsigned int BootVideoGetCharacterWidth(u8 bCharacter, bool fDouble)

@@ -17,6 +17,11 @@
 #include "sha1.h"
 #include "lib/misc/LED.h"
 
+unsigned char *BufferIN;
+int BufferINlen;
+unsigned char *BufferOUT;
+int BufferOUTPos;
+
 extern int decompress_kernel(char*out, char *data, int len);
 
 u32 PciWriteDword(unsigned int bus, unsigned int dev, unsigned int func, unsigned int reg_off, unsigned int dw)

@@ -3,8 +3,6 @@
 #define __BOOTIDE_H__
 #include "boot.h"
 
-tsHarddiskInfo tsaHarddiskInfo[2];  // static struct stores data about attached drives
-
 typedef enum {
 	IDE_CMD_NOOP = 0,
 	IDE_CMD_RECALIBRATE = 0x10,

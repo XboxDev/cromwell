@@ -25,6 +25,11 @@
 #include "lib/misc/LED.h"
 #include "drivers/video/BootVideo.h"
 
+unsigned int cromwell_config;
+unsigned int cromwell_retryload;
+unsigned int cromwell_loadbank;
+unsigned int cromwell_Biostype;
+
 JPEG jpegBackdrop;
 
 int nTempCursorMbrX, nTempCursorMbrY;

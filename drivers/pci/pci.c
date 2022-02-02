@@ -14,6 +14,8 @@
  *                                                                         *
  ***************************************************************************/
 
+unsigned int xbox_ram;
+
 u8 PciReadByte(unsigned int bus, unsigned int dev, unsigned int func, unsigned int reg_off)
 {
 	u32 base_addr = 0x80000000;
