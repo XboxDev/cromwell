@@ -281,10 +281,13 @@ struct usbdevfs_hub_portinfo
 /* Module/export macros */
 /*------------------------------------------------------------------------*/
 
+#define __stringify_1(x...) #x
+#define __stringify(x...) __stringify_1(x)
+
 #define MODULE_AUTHOR(a)
 #define MODULE_DESCRIPTION(a)
 #define MODULE_LICENSE(a)
-#define MODULE_DEVICE_TABLE(type,name) void* module_table_##name=&name
+#define MODULE_DEVICE_TABLE(type, name) extern typeof(name) module_table_##name __attribute__ ((unused, alias(__stringify(name))))
 
 #define __devinit
 #define __exit
