@@ -141,7 +141,7 @@ ohci_hub_descriptor (
 	desc->bitmap [0] = rh & RH_B_DR;
 	if (ports > 7) {
 		desc->bitmap [1] = (rh & RH_B_DR) >> 8;
-		desc->bitmap [2] = desc->bitmap [3] = 0xff;
+		desc->bitmap [2] = 0xff;
 	} else
 		desc->bitmap [1] = 0xff;
 }
