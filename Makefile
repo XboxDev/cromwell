@@ -19,18 +19,19 @@ GITREV = $(shell \
   fi)
 
 ETHERBOOT := yes
-INCLUDE = -I$(TOPDIR)/grub -I$(TOPDIR)/include -I$(TOPDIR)/ -I./ -I$(TOPDIR)/fs/cdrom \
+INCLUDE = -isystem$(TOPDIR)/include \
+	-I$(TOPDIR)/grub -I$(TOPDIR)/include -I$(TOPDIR)/ -I./ -I$(TOPDIR)/fs/cdrom \
 	-I$(TOPDIR)/fs/fatx -I$(TOPDIR)/fs/grub -I$(TOPDIR)/lib/eeprom -I$(TOPDIR)/lib/crypt \
 	-I$(TOPDIR)/drivers/video -I$(TOPDIR)/drivers/ide -I$(TOPDIR)/drivers/flash -I$(TOPDIR)/lib/misc \
 	-I$(TOPDIR)/boot_xbe/ -I$(TOPDIR)/fs/grub -I$(TOPDIR)/lib/font \
 	-I$(TOPDIR)/startuploader -I$(TOPDIR)/drivers/cpu \
-	-I$(TOPDIR)/lib/jpeg/ -I$(TOPDIR)/menu/actions -I$(TOPDIR)/menu/textmenu -I$(TOPDIR)/menu/iconmenu
+	-I$(TOPDIR)/lib/jpeg/ -I$(TOPDIR)/menu/actions -I$(TOPDIR)/menu/textmenu -I$(TOPDIR)/menu/iconmenu \
 
 #These are intended to be non-overridable.
-CROM_CFLAGS=$(INCLUDE) -m32 -fno-builtin -fno-stack-protector -no-pie -DGITREV=\\\"$(GITREV)\\\"
+CROM_CFLAGS=$(INCLUDE) -m32 -fno-builtin -nostdinc -fno-stack-protector -no-pie -DGITREV=\\\"$(GITREV)\\\"
 
 #You can override these if you wish.
-CFLAGS= -m32 -O2 -g -march=pentium -pipe -fomit-frame-pointer -Wstrict-prototypes -fno-builtin -fno-stack-protector -no-pie
+CFLAGS= -m32 -O2 -g -march=pentium -nostdinc -pipe -fomit-frame-pointer -Wstrict-prototypes -fno-builtin -fno-stack-protector -no-pie
 
 # add the option for gcc 3.3 only, again, non-overridable
 ifeq ($(GCC_3.3), 1)
@@ -48,8 +49,8 @@ SUBDIRS	= boot_rom fs drivers lib boot menu boot_xbe boot_vml boot_eth
 ifeq ($(ETHERBOOT), yes)
 ETH_SUBDIRS = etherboot
 CROM_CFLAGS	+= -DETHERBOOT
-ETH_INCLUDE = 	-I$(TOPDIR)/etherboot/include -I$(TOPDIR)/etherboot/arch/i386/include
-ETH_CFLAGS  = 	-m32 -O2 -march=pentium $(ETH_INCLUDE) -Wstrict-prototypes -fomit-frame-pointer -pipe -Ui386 -fno-builtin -fno-stack-protector -no-pie
+ETH_INCLUDE = -isystem$(TOPDIR)/include -I$(TOPDIR)/etherboot/include -I$(TOPDIR)/etherboot/arch/i386/include
+ETH_CFLAGS  = 	-m32 -O2 -march=pentium -nostdinc $(ETH_INCLUDE) -Wstrict-prototypes -fomit-frame-pointer -pipe -Ui386 -fno-builtin -fno-stack-protector -no-pie
 endif
 
 LDFLAGS-ROM     = -s -S -T $(TOPDIR)/scripts/ldscript-crom.ld -z muldefs
