@@ -1,0 +1,33 @@
+name: CI
+
+on: [push, pull_request]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Install Dependencies
+      run: sudo apt install gcc-multilib
+    - name: Checkout
+      uses: actions/checkout@v2
+    - name: Create Build Tag
+      id: build_tag
+      run: echo "::set-output name=BUILD_TAG::build-$(date -u +'%Y%m%d')-$(git rev-parse --short HEAD)"
+    - name: Build
+      run: make
+    - name: Upload Artifacts
+      uses: actions/upload-artifact@v2
+      with:
+        path: |
+          image/cromwell.bin
+          image/cromwell_1024.bin
+          xbe/xromwell.xbe
+    - name: Create Release
+      if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+      uses: softprops/action-gh-release@v1
+      with:
+        files: |
+          image/cromwell.bin
+          image/cromwell_1024.bin
+          xbe/xromwell.xbe
+        tag_name: ${{ steps.build_tag.outputs.BUILD_TAG }}
