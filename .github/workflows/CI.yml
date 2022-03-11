@@ -7,7 +7,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Install Dependencies
-      run: sudo apt install gcc-multilib
+      run: sudo apt update && sudo apt install gcc-multilib
     - name: Checkout
       uses: actions/checkout@v2
     - name: Create Build Tag
