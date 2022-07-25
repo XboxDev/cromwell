@@ -136,6 +136,12 @@ reload_cs:
 	// Set the stack pointer to give us a valid stack
 	movl $STACK_TOP, %esp
 
+	// Clear out .bss
+	xor %eax, %eax
+	mov $BSS_SIZE_L, %ecx
+	mov $BSS_BASE, %edi
+	rep stosl
+
     // We clear the IDT in RAM   (IDT located @  0xb0000 )
 	xor %eax, %eax
 	movl $0x5000/4, %ecx

@@ -339,7 +339,14 @@ reload_cs:
 	mov %eax, %fs
 	mov %eax, %gs
 
-	movl	$ 0x1ffff0,%esp
+	// Set the stack pointer to give us a valid stack
+	movl $0x1ffff0, %esp
+
+	// Clear out .bss
+	xor %eax, %eax
+	mov $BSS_SIZE_L, %ecx
+	mov $BSS_BASE, %edi
+	rep stosl
 
 	mov	$0x8, %al
 	mov	$0x61, %dx

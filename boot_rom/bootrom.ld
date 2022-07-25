@@ -57,12 +57,14 @@ SECTIONS {
 	}
 
 	.bss ( RAM_CODE + SIZEOF(.text) + SIZEOF(.data) + SIZEOF(.rodata) ) : AT ( SIZEOF(.low_rom) + SIZEOF(.text) + SIZEOF(.data) + SIZEOF(.rodata)) {
+		BSS_BASE = .;
 		_bss = .;
 		*(.bss)
 		*(.sbss)
 		*(COMMON)
 		_ebss = . ;
 		_heap = . ;
+		BSS_END = .;
 	}
 
         /* We need to copy the .data section to to upper memory */
@@ -79,3 +81,7 @@ SECTIONS {
 */
 
 }
+
+BSS_SIZE = BSS_END - BSS_BASE;
+BSS_SIZE_L = BSS_SIZE / 4;
+
