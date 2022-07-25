@@ -11,7 +11,7 @@
 void subsys_usb_init(void);
 void module_exit_usb_exit(void);
 
-extern struct pci_device_id  *module_table_pci_ids;
+extern const struct pci_device_id module_table_pci_ids;
 
 // straigth call...
 int usb_hcd_pci_probe (struct pci_dev *dev, const struct pci_device_id *id);
@@ -49,7 +49,7 @@ void BootStartUSB(void)
         init_wrapper();
         subsys_usb_init();
         hub_thread_handler=thread_handler;
-	usb_hcd_pci_probe(&xx_ohci_dev, module_table_pci_ids);
+	usb_hcd_pci_probe(&xx_ohci_dev, &module_table_pci_ids);
 	XPADInit();
 
 	XRemoteInit();
