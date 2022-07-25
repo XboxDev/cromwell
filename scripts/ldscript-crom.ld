@@ -59,13 +59,19 @@ SECTIONS {
 	/* the data (initialized globals) is moved to ram by the startup code */
 
 	.bss (LOW_ROM + SIZEOF(.text) + SIZEOF(.rodata) + SIZEOF(.data)) : AT( SIZEOF(.text) + SIZEOF(.rodata) + SIZEOF(.data)) {
+		BSS_BASE = .;
 		_bss = .;
 		*(.bss)
 		*(.sbss)
 		*(COMMON)
 		_ebss = . ;
 		_heap = . ;
+		BSS_END = .;
 	}
 
 	_end_complete_rom = SIZEOF(.text) + SIZEOF(.rodata) + SIZEOF(.data) + SIZEOF(.bss);
 }
+
+BSS_SIZE = BSS_END - BSS_BASE;
+BSS_SIZE_L = BSS_SIZE / 4;
+
