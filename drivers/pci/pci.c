@@ -205,6 +205,12 @@ void LpcSetSerialState(int enable)
 	// Select serial device
 	LpcWriteRegister(0x07, 0x04);
 
+	if (enable) {
+		// Set serial base
+		LpcWriteRegister(0x61, SERIAL_PORT & 0xFF);
+		LpcWriteRegister(0x60, SERIAL_PORT >> 8);
+	}
+
 	// Enable device
 	LpcWriteRegister(0x30, enable ? 0x01 : 0x00);
 }
@@ -511,10 +517,6 @@ void BootPciPeripheralInitialization(void)
 	// Enable Serial COM1 by default if not already enabled
 	if (!LpcGetSerialState()) {
 		LpcSetSerialState(1);
-
-		// Set Serial Base
-		LpcWriteRegister(0x61, SERIAL_PORT & 0xFF);
-		LpcWriteRegister(0x60, SERIAL_PORT >> 8);
 
 		// Set Serial Interrupt
 		LpcSetSerialIRQState(1);
