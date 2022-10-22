@@ -1,33 +1,27 @@
-/*
- * loader script
- */
-
 OUTPUT_FORMAT ("elf32-i386");
 OUTPUT_ARCH(i386);
+
 MEMORY
 {
-	ram (rwx) : ORIGIN = 0, LENGTH = 64M
-	rom (rx)  : ORIGIN = 0x03A00000, LENGTH = 2M
+	RAM (RW) : ORIGIN = 0, LENGTH = 64M
+	ROM (RX) : ORIGIN = 0x03a00000 /* 58MiB */, LENGTH = 256K /* this should be changed depending on the actual size of the ROM */
 }
 
-/* this should be changed depending the actual size of the rom */
-ROM_SIZE = 256K;
-LOW_ROM = 0x03A00000; /* 58MB */
+ROM_BASE = ORIGIN(ROM);
+ROM_SIZE = LENGTH(ROM);
+ROM_END  = ROM_BASE + ROM_SIZE;
 
-SECTIONS {
-	/DISCARD/ : { *(.note.gnu.property) }
-
+SECTIONS
+{
 	/* ROM allocations */
 
-	.text LOW_ROM : AT ( 0 ){
-		_start_low_rom = . ;
+	.text ROM_BASE : AT ( 0 ) {
 		*(.text);
 		*(.text.*)
 		*(.eh_frame)
-		_end_low_rom = . ;
 	}
 
-	.rodata (LOW_ROM + SIZEOF(.text)) : AT (SIZEOF(.text)) {
+	.rodata (ROM_BASE + SIZEOF(.text)) : AT (SIZEOF(.text)) {
 		*(.rodata);
 		*(.rodata.str1.1);
 		*(.rodata.str1.32);
@@ -45,7 +39,7 @@ SECTIONS {
 
 	/* RAM allocations */
 
-	.data (LOW_ROM + SIZEOF(.text) + SIZEOF(.rodata)) : AT( SIZEOF(.text) + SIZEOF(.rodata) ) {
+	.data (ROM_BASE + SIZEOF(.text) + SIZEOF(.rodata)) : AT( SIZEOF(.text) + SIZEOF(.rodata) ) {
 		_start_data = .;
 		*(.data);
 		*(.data.*);
@@ -58,7 +52,7 @@ SECTIONS {
 
 	/* the data (initialized globals) is moved to ram by the startup code */
 
-	.bss (LOW_ROM + SIZEOF(.text) + SIZEOF(.rodata) + SIZEOF(.data)) : AT( SIZEOF(.text) + SIZEOF(.rodata) + SIZEOF(.data)) {
+	.bss (ROM_BASE + SIZEOF(.text) + SIZEOF(.rodata) + SIZEOF(.data)) : AT( SIZEOF(.text) + SIZEOF(.rodata) + SIZEOF(.data)) {
 		BSS_BASE = .;
 		_bss = .;
 		*(.bss)
@@ -70,6 +64,18 @@ SECTIONS {
 	}
 
 	_end_complete_rom = SIZEOF(.text) + SIZEOF(.rodata) + SIZEOF(.data) + SIZEOF(.bss);
+
+	/DISCARD/ : {
+		*(.note.gnu.property)
+		*(.comment)
+		*(.note.GNU-stack)
+		*(.eh_frame)
+		*(.rela.eh_frame)
+		*(.shstrtab)
+		*(.symtab)
+		*(.strtab)
+		*(.got.plt)
+	}
 }
 
 BSS_SIZE = BSS_END - BSS_BASE;

@@ -11,6 +11,7 @@
 
 #include <stdarg.h>
 #include <stdlib.h>
+#include <stddef.h>
 #include "sha1.h"
 #include "md5.h"
 
@@ -43,7 +44,6 @@ struct Checksumstruct {
 
 
 struct BiosIdentifier {
-
 	unsigned char   Magic[4];               // AUTO
 	unsigned char   HeaderVersion;
 	unsigned char   XboxVersion;            // Which Xbox Version does it Work ? (Options)
@@ -52,10 +52,18 @@ struct BiosIdentifier {
 	unsigned char   Option1;
 	unsigned char   Option2;
 	unsigned char   Option3;
+	unsigned char   Padding1;
 	unsigned int    BiosSize;               // in Bytes
+#if 0 // disabled to make use of the reset vector with MCPX X2 southbridges
 	char Name[32];
 	unsigned char MD5Hash[16];
-};
+#else
+	char Name[20];
+	unsigned int    nForceTableOffset;      // nForce boards read this table before executing at the reset vector
+	unsigned char   Padding2[8];
+	unsigned char   ResetVector[16];
+#endif
+} __attribute__((packed));
 
 void showUsage();
 
@@ -69,14 +77,14 @@ void shax(unsigned char *result, unsigned char *data, unsigned int len)
 }
 
 
-void writeBiosIdentifier(unsigned char *cromimage, int biosSize) {
+void writeBiosIdentifier(unsigned char *cromimage, int biosSize, unsigned int resetvectorbase) {
 	struct BiosIdentifier *BiosHeader = (struct BiosIdentifier *)&cromimage[biosSize-sizeof(struct BiosIdentifier)];
-	MD5_CTX hashcontext;
-       	unsigned char digest[16];
+//	MD5_CTX hashcontext;
+	memset(BiosHeader, 0, offsetof(typeof(*BiosHeader), ResetVector));
 	memcpy(BiosHeader->Magic,"AUTO",4);
 	BiosHeader->HeaderVersion=1;
 	BiosHeader->BiosSize= biosSize;
-	sprintf(BiosHeader->Name,"Cromwell %s",CROMWELL_VERSION);
+	snprintf(BiosHeader->Name, sizeof(BiosHeader->Name), "Cromwell %s", CROMWELL_VERSION);
 
 	BiosHeader->XboxVersion =       BiosID_Version10 |
 	                                BiosID_Version11 |
@@ -89,9 +97,11 @@ void writeBiosIdentifier(unsigned char *cromimage, int biosSize) {
 	BiosHeader->VideoEncoder =      BiosID_VideoEncoder_Conexant |
 	                                BiosID_VideoEncoder_Focus;
 
-	MD5Init(&hashcontext);
-	MD5Update(&hashcontext, cromimage, biosSize-16);
-	MD5Final(BiosHeader->MD5Hash, &hashcontext);
+//	MD5Init(&hashcontext);
+//	MD5Update(&hashcontext, cromimage, biosSize-16);
+//	MD5Final(BiosHeader->MD5Hash, &hashcontext);
+
+	BiosHeader->nForceTableOffset = resetvectorbase;
 }
 
 int xberepair ( const char * xbeimage,
@@ -289,13 +299,14 @@ int romcopy (
 	unsigned char *flash256;
 	unsigned char *flash1024;
 	unsigned char *crom;
-	unsigned int freeflashspace = 256*1024;
-       	unsigned int romsize=0;
-       	unsigned int a=0;
+	signed int freeflashspace = 256*1024;
+	unsigned int romsize=0;
+	unsigned int a=0;
 	struct Checksumstruct bootloaderstruct ;
-       	unsigned int bootloaderpos;
-       	unsigned int temp;
-      	struct stat fileinfo;
+	unsigned int bootloaderpos;
+	unsigned int resetvectorbase;
+	unsigned int temp;
+	struct stat fileinfo;
 
 	loaderimage = malloc(256*1024);
 	flash256 = malloc(256*1024);
@@ -334,39 +345,14 @@ int romcopy (
 
 	// Ok, we have loaded both images, we can continue
 
-	// this is very nasty, but simple , we Dump a GDT to the TOP rom
-
-        memset(&loaderimage[0x3fe00],0x90,512);
-        memset(&loaderimage[0x3ffd0],0x00,32);
-        loaderimage[0x3ffcf] = 0xfc;
-        loaderimage[0x3ffd0] = 0xea;
-    	loaderimage[0x3ffd2] = 0x10;
-    	loaderimage[0x3ffd3] = 0xfc;
-    	loaderimage[0x3ffd4] = 0xff;
-    	loaderimage[0x3ffd5] = 0x08;
-    	loaderimage[0x3ffd7] = 0x90;
-
-    	loaderimage[0x3ffe0] = 0xff;
-    	loaderimage[0x3ffe1] = 0xff;
-    	loaderimage[0x3ffe5] = 0x9b;
-    	loaderimage[0x3ffe6] = 0xcf;
-    	loaderimage[0x3ffe8] = 0xff;
-    	loaderimage[0x3ffe9] = 0xff;
-    	loaderimage[0x3ffed] = 0x93;
-    	loaderimage[0x3ffee] = 0xcf;
-
-    	loaderimage[0x3fff4] = 0x18;
-    	loaderimage[0x3fff5] = 0x00;
-    	loaderimage[0x3fff6] = 0xd8;
-    	loaderimage[0x3fff7] = 0xff;
-	loaderimage[0x3fff8] = 0xff;
-	loaderimage[0x3fff9] = 0xff;
-
-	// We have dumped the GDT now, we continue
-
-	memcpy(&bootloaderpos,&loaderimage[0x40],4);   	// This can be foun in the 2bBootStartup.S
-	memset(&loaderimage[0x40],0x0,4);    		// We do not need this helper sum anymore
+	bootloaderpos = *(unsigned int *)&loaderimage[0x40];    // This can be found in 2bBootStartup.S
+	resetvectorbase = *(unsigned int *)&loaderimage[0x44];
+	*(unsigned int *)&loaderimage[0x40] = 0;                // Not needed anymore
+	*(unsigned int *)&loaderimage[0x44] = 0;
 	memcpy(&bootloaderstruct,&loaderimage[bootloaderpos],sizeof(struct Checksumstruct));
+
+	// Apply the SmartXX bios identifier data
+	writeBiosIdentifier(loaderimage, 256*1024, resetvectorbase);
 
 	memcpy(flash256,loaderimage,256*1024);
 	memcpy(flash1024,loaderimage,256*1024);
@@ -381,9 +367,8 @@ int romcopy (
 
 	bootloaderstruct.compressed_image_start = temp;
 	bootloaderstruct.compressed_image_size =  romsize;
-	//freeflashspace = freeflashspace - 512; // We decrement the TOP ROM
-	// We have no TOP ROM anymore
-	freeflashspace = freeflashspace - bootloaderstruct.compressed_image_start;
+	freeflashspace -= 4*1024; // decrement for the Reset Vector Block at the top of ROM
+	freeflashspace -= bootloaderstruct.compressed_image_start;
 
 	bootloaderstruct.Biossize_type = 0; // Means it is a 256 kbyte Image
 	memcpy(&flash256[bootloaderpos],&bootloaderstruct,sizeof(struct Checksumstruct));
@@ -435,12 +420,10 @@ int romcopy (
 #endif
 
 	// In 1MB flash we need the Image 2 times, as ... you know
-	memset(&flash1024[(0*256*1024)+bootloaderstruct.compressed_image_start],0xff,256*1024-bootloaderstruct.compressed_image_start-512);
 	memcpy(&flash1024[3*256*1024],&flash1024[0],256*1024);
 
 	// Ok, the 2BL loader is ready, we now go to the "Kernel"
-       	memset(&flash256[bootloaderstruct.compressed_image_start+20+romsize],0xff,256*1024-(bootloaderstruct.compressed_image_start+20+romsize)-512);
-      	// The first 20 bytes of the compressed image are the checksum
+	// The first 20 bytes of the compressed image are the checksum
 	memcpy(&flash256[bootloaderstruct.compressed_image_start+20],&crom[0],romsize);
 	SHA1Reset(&context);
 	SHA1Input(&context,&flash256[bootloaderstruct.compressed_image_start+20],romsize);
@@ -461,9 +444,6 @@ int romcopy (
       	printf("\n");
 #endif
 
-	//Apply the SmartXX bios identifier data
-      	writeBiosIdentifier(flash256, 256*1024);
-      	writeBiosIdentifier(flash1024, 1024*1024);
 	// Write the 256 /1024 Kbyte Image Back
       	f = fopen(binname256, "w");
 	fwrite(flash256, 1, 256*1024, f);

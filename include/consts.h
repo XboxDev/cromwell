@@ -16,19 +16,58 @@
  *                                                                         *
  ***************************************************************************/
 
+#define INLINE __inline__ __attribute__((always_inline))
+#define PACKED __attribute__((packed))
+
+#define inb(addr) IoInputByte((addr))
+#define inw(addr) IoInputWord((addr))
+#define inl(addr) IoInputDword((addr))
+#define outb(val,addr) IoOutputByte((addr), (val))
+#define outw(val,addr) IoOutputWord((addr), (val))
+#define outl(val,addr) IoOutputDword((addr), (val))
+#define readb(addr) (*(volatile u8 *)(addr))
+#define readw(addr) (*(volatile u16 *)(addr))
+#define readl(addr) (*(volatile u32 *)(addr))
+#define writeb(val,addr) ((*(volatile u8 *)(addr)) = (val))
+#define writew(val,addr) ((*(volatile u16 *)(addr)) = (val))
+#define writel(val,addr) ((*(volatile u32 *)(addr)) = (val))
+
 #define PCI_CFG_ADDR 0x0CF8
 #define PCI_CFG_DATA 0x0CFC
 
+#define MTRR_DEF 0x2ff
+#define MTRR_DEF_TYPE 0x800
+#define MTRR_PHYSBASE 0x200
+#define MTRR_LAST 0x20F
+#define WB_CACHE 6
+#define BASE0_H 0
+#define BASE0_L WB_CACHE
+#define MASK0_H 0x0F
+#define MASK0_L 0xFC000800
+#define BASE1_H 0
+#define BASE1_L 0xFFF80005
+#define MASK1_H 0x0F
+#define MASK1_L 0x0FFF80800
 
 #define TIMER_IO   0x8008
 #define TIMER_FREQ 0x369E99
 
-#define I2C_IO_BASE 0xC000
+#define I2C_IO_BASE         0xc000
+#define SMBUS               I2C_IO_BASE /* PME0 */
+#define SMBUS_HST_BSY       0x08 /* PME0 - host controller busy */
+#define SMBUS_HCYC_STS      0x10 /* PME0 - host cycle complete status */
+#define SMBUS_SMC_ADDR      0x10 /* PIC16 (PIC16LC63A-04/SO) system management controller */
+#define SMBUS_CONEXANT_ADDR 0x45 /* Conexant (CX25871) video encoder */
+#define SMBUS_ADM1032_ADDR  0x54 /* Analog Devices temperature sensor (National Semiconductor LM90 compatible) */
+#define SMBUS_FOCUS_ADDR    0x6a /* Focus (FS454) video encoder */
+#define SMBUS_XCALIBUR_ADDR 0x70 /* Xcalibur video encoder */
 
 #define SERIAL_PORT 0x3F8
 #define SERIAL_IRQ  4
 #define SERIAL_THR  0
 #define SERIAL_LSR  5
+
+#define NV2A_MMIO_BASE 0xfd000000
 
 #define BUS_0 0
 #define BUS_1 1
@@ -67,12 +106,13 @@
 #define DEV_1f 0x1f
 
 #define FUNC_0 0
-/*
-#define boot_post_macro(value)                     \
-		movb    $(value), %al                           ;\
-		outb    %al, $0x80
-*/
+#define FUNC_1 1
+#define FUNC_2 2
+#define FUNC_3 3
+#define FUNC_4 4
+#define FUNC_5 5
+#define FUNC_6 6
+#define FUNC_7 7
 
 #endif // _Consts_H_
-
 
