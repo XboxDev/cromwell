@@ -329,7 +329,6 @@ void BootPciPeripheralInitialization(void)
 {
 	__asm__ __volatile__ ( "cli" );
 
-	PciWriteDword(BUS_0, DEV_1, 0, 0x80, 2);  // v1.1 2BL kill ROM area
 	if(PciReadByte(BUS_0, DEV_1, 0, 0x8)>=0xd1) { // check revision
 		PciWriteDword(BUS_0, DEV_1, 0, 0xc8, 0x8f00);  // v1.1 2BL <-- death
 	}

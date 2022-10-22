@@ -1,33 +1,39 @@
 OUTPUT_FORMAT ("elf32-i386");
 OUTPUT_ARCH(i386);
+
 MEMORY
 {
-	ram (rwx) : ORIGIN = 0, LENGTH = 64M
-	rom (rx)  : ORIGIN = 0xFFFC0000, LENGTH = 256K
+	RAM (RW) : ORIGIN = 0, LENGTH = 64M
+	ROM (RX) : ORIGIN = 0xfffc0000, LENGTH = 256K /* this should be changed depending on the actual size of the ROM */
 }
-
 
 RAM_CODE = 0x00100000;
 
-/* this should be changed depending the actual size of the rom */
-ROM_SIZE = 256K;
-LOW_ROM = 0xfffc0000;
+ROM_BASE = ORIGIN(ROM);
+ROM_SIZE = LENGTH(ROM);
+ROM_END  = ROM_BASE + ROM_SIZE;
 
+RESET_VECTOR_BLOCK_SIZE = 4K;
+RESET_VECTOR_BLOCK_BASE = ROM_END - RESET_VECTOR_BLOCK_SIZE;
 
-TOP_ROM = ( LOW_ROM + ROM_SIZE - 512 );
-TOP_ROM_LOAD = ( ROM_SIZE - 512 );
+SECTIONS
+{
+	/* ROM allocations */
 
-SECTIONS {
-	/DISCARD/ : { *(.note.gnu.property) }
-
-	/* ROM Part of the programm */
-
-	.low_rom LOW_ROM : AT ( 0x0 ){
+	.low_rom ROM_BASE : AT ( 0 ) {
 		*(.low_rom);
 		_end_rom = . ;
 	}
 
-	/* RAM Part of the programm */
+	.reset_vector (RESET_VECTOR_BLOCK_BASE) : AT (RESET_VECTOR_BLOCK_BASE - ROM_BASE) {
+		_reset_vector_base = .;
+		*(.reset_vector_base)
+		*(.reset_vector.*)
+		. = ALIGN(RESET_VECTOR_BLOCK_SIZE) - 16;
+		*(.reset_vector)
+	} >ROM = 0x00
+
+	/* RAM allocations */
 
 	.text (RAM_CODE) : AT( SIZEOF(.low_rom) ) {
 		_ram_location = .;
@@ -35,7 +41,7 @@ SECTIONS {
 		*(.text);
 		*(.text.*)
 		*(.eh_frame)
-		_start_checksum = _start_ramcopy - LOW_ROM;
+		_start_checksum = _start_ramcopy - ROM_BASE;
 	}
 
 	.data (RAM_CODE + SIZEOF(.text)) : AT( SIZEOF(.low_rom) + SIZEOF(.text)) {
@@ -47,7 +53,7 @@ SECTIONS {
 		*(.got.*);
 	}
 
-       	.rodata ( RAM_CODE + SIZEOF(.text) + SIZEOF(.data) ) : AT ( SIZEOF(.low_rom) + SIZEOF(.text) + SIZEOF(.data)) {
+	.rodata ( RAM_CODE + SIZEOF(.text) + SIZEOF(.data) ) : AT ( SIZEOF(.low_rom) + SIZEOF(.text) + SIZEOF(.data)) {
 		*(.rodata);
 		*(.rodata.str1.1);
 		*(.rodata.str1.4);
@@ -67,19 +73,22 @@ SECTIONS {
 		BSS_END = .;
 	}
 
-        /* We need to copy the .data section to to upper memory */
+	/* We need to copy the .data section to upper memory */
 
-        _size_ramcopy = SIZEOF(.text) + SIZEOF(.data) + SIZEOF(.rodata) + SIZEOF(.bss);
+	_size_ramcopy = SIZEOF(.text) + SIZEOF(.data) + SIZEOF(.rodata) + SIZEOF(.bss);
 	_size_sha1hash = SIZEOF(.text) + SIZEOF(.data) + SIZEOF(.rodata);
-/*
-	.high_rom TOP_ROM : AT (TOP_ROM_LOAD) {
-		_start_top_rom = . ;
-		. = . + ( 512 - sizeof_top );
-		*(.high_rom);
-		_end_top_rom = . ;
-	} = 0x90909090
-*/
 
+	/DISCARD/ : {
+		*(.note.gnu.property)
+		*(.comment)
+		*(.note.GNU-stack)
+		*(.eh_frame)
+		*(.rela.eh_frame)
+		*(.shstrtab)
+		*(.symtab)
+		*(.strtab)
+		*(.got.plt)
+	}
 }
 
 BSS_SIZE = BSS_END - BSS_BASE;

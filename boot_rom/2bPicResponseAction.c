@@ -14,6 +14,36 @@
 
 #include "2bload.h"
 
+void smbus_smc_challenge_response(void)
+{
+    register u8 x1c, x1d, x1e, x1f;
+    register u8 b1, b2, b3, b4;
+    register int i;
+
+    smbus_read_addr(SMBUS_SMC_ADDR);
+    smbus_read_start(0x1c);
+    if (!smbus_cycle_completed()) return;
+    x1c = smbus_read_data();
+    x1d = smbus_read(0x1d);
+    x1e = smbus_read(0x1e);
+    x1f = smbus_read(0x1f);
+
+    b1  = 0x33;
+    b2  = 0xed;
+    b3  = x1c << 2;
+    b3 ^= x1d + 0x39;
+    b3 ^= x1e >> 2;
+    b3 ^= x1f + 0x63;
+    b4  = x1c + 0x0b;
+    b4 ^= x1d >> 2;
+    b4 ^= x1e + 0x1b;
+
+    for (i = 0; i < 4; b1 += b2 ^ b3, b2 += b1 ^ b4, ++i);
+
+    smbus_write_addr(SMBUS_SMC_ADDR);
+    smbus_write(0x20, b1);
+    smbus_write(0x21, b2);
+}
 
 // ----------------------------  I2C -----------------------------------------------------------
 //
@@ -83,65 +113,6 @@ int I2CTransmitWord(u8 bPicAddressI2cFormat, u16 wDataToWrite)
 		}
 	}
 	return ERR_I2C_ERROR_BUS;
-}
-
-// ----------------------------  PIC challenge/response -----------------------------------------------------------
-//
-// given four bytes, returns a u16
-// LSB of return is the 'first' byte, MSB is the 'second' response byte
-
-u16 BootPicManipulation(
-	u8 bC,
-	u8  bD,
-	u8  bE,
-	u8  bF
-) {
-	int n=4;
-	u8
-		b1 = 0x33,
-		b2 = 0xed,
-		b3 = ((bC<<2) ^ (bD +0x39) ^ (bE >>2) ^ (bF +0x63)),
-		b4 = ((bC+0x0b) ^ (bD>>2) ^ (bE +0x1b))
-	;
-
-	while(n--) {
-		b1 += b2 ^ b3;
-		b2 += b1 ^ b4;
-	}
-
-	return (u16) ((((u16)b2)<<8) | b1);
-}
-
-// actual business of getting I2C data from PIC and reissuing munged version
-// returns zero if all okay, else error code
-
-int BootPerformPicChallengeResponseAction()
-{
-	u8 bC, bD, bE, bF;
-	int n;
-
-	n=I2CTransmitByteGetReturn( 0x10, 0x1c );
-	if(n<0) return n;
-	bC=n;
-	n=I2CTransmitByteGetReturn( 0x10, 0x1d );
-	if(n<0) return n;
-	bD=n;
-	n=I2CTransmitByteGetReturn( 0x10, 0x1e );
-	if(n<0) return n;
-	bE=n;
-	n=I2CTransmitByteGetReturn( 0x10, 0x1f );
-	if(n<0) return n;
-	bF=n;
-
-	{
-		u16 w=BootPicManipulation(bC, bD, bE, bF);
-
-		I2CTransmitWord( 0x10, 0x2000 | (w&0xff));
-		I2CTransmitWord( 0x10, 0x2100 | (w>>8) );
-	}
-
-	// continues as part of video setup....
-	return ERR_SUCCESS;
 }
 
 extern int I2cSetFrontpanelLed(u8 b)
