@@ -241,21 +241,26 @@ int LoadReactOSFATX(FATXPartition *partition, CONFIGENTRY *config) {
 }
 
 CONFIGENTRY *DetectReactOSCD(int cdromId) {
-	long dwSize;
+	long dwFreeldrSize, dwSetupldrSize;
 	CONFIGENTRY *config;
 
-	dwSize = BootIso9660GetFile(cdromId, "/loader/setupldr.sys", FREELDR_LOAD_AREA, FREELDR_MAX_SIZE);
+	dwFreeldrSize = BootIso9660GetFile(cdromId, "/loader/freeldr.sys", FREELDR_LOAD_AREA, FREELDR_MAX_SIZE);
 
 	// Failed to load freeloader
-	if (dwSize <= 0)
-		return NULL;
+	if (dwFreeldrSize <= 0)
+	{
+		/* Try setupldr.sys for older versions of ReactOS */
+		dwSetupldrSize = BootIso9660GetFile(cdromId, "/loader/setupldr.sys", FREELDR_LOAD_AREA, FREELDR_MAX_SIZE);
+		if (dwSetupldrSize <= 0)
+			return NULL;
+	}
 
 	// Freeloader found
 	config = (CONFIGENTRY *)malloc(sizeof(CONFIGENTRY));
 	memset(config, 0x00, sizeof(CONFIGENTRY));
 	config->bootSystem = SYS_REACTOS;
 	strcpy(config->title, "ReactOS");
-	strcpy(config->szPath, "/loader/setupldr.sys");
+	strcpy(config->szPath, (dwFreeldrSize > 0) ? "/loader/freeldr.sys" : "/loader/setupldr.sys");
 
 	return config;
 }
