@@ -23,6 +23,34 @@
 	Xcalibur support by Lehner Franz (franz@caos.at)
 */
 
+#define xcode_peek(val1) .byte 0x2; .long val1 ; .long 0x0 ;
+#define xcode_poke(val1,val2) .byte 0x3; .long val1 ; .long val2 ;
+#define xcode_pciout(val1,val2) .byte 0x4; .long val1 ; .long val2 ;
+#define xcode_pciin_a(val1) .byte 0x5; .long val1 ; .long 0x0 ;
+
+#define xcode_bittoggle(val1,val2) .byte 0x6; .long val1 ; .long val2 ;
+
+#define xcode_ifgoto(val1,val2) .byte 0x8; .long val1 ; .long (9*(val2-1)) ;
+
+#define xcode_outb(val1,val2) .byte 0x11; .long val1 ; .long val2 ;
+#define xcode_inb(val1) .byte 0x12; .long val1 ; .long 0x0 ;
+
+#define xcode_poke_a(val1) .byte 0x7; .long 0x3; .long val1 ;
+#define xcode_pciout_a(val1) .byte 0x7; .long 0x4; .long val1 ;
+#define xcode_outb_a(val1) .byte 0x7; .long 0x11; .long val1 ;
+
+#define xcode_goto(val1) .byte 0x9; .long 0x0; .long (9*(val1-1));
+
+#define xcode_END(val1) .byte 0xEE; .long val1 ; .long 0x0;
+
+#define SMB_xcode_Write(val1,val2) \
+	xcode_outb(SMBUS+8, val1); \
+	xcode_outb(SMBUS+6, val2); \
+	xcode_outb(SMBUS+2, 0x0000000a); \
+	xcode_inb(SMBUS); \
+	xcode_ifgoto(0x00000010,-1); \
+	xcode_outb(SMBUS, 0x00000010);
+
 	//The bytecode interpreter begins here
 	xcode_pciout(0x80000884, 0x00008001);
 	xcode_pciout(0x80000810, 0x00008001);
@@ -291,7 +319,7 @@
 	// mov eax, 0xfffc1000
 	// jmp eax
 	// nop
-	xcode_poke(0x00000000, 0xfc1000B8);
+	xcode_poke(0x00000000, 0xfc1000b8);
 	xcode_poke(0x00000004, 0x90e0ffff);
 
 
