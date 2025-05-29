@@ -9,14 +9,14 @@ jobs:
     - name: Install Dependencies
       run: sudo apt update && sudo apt install gcc-multilib
     - name: Checkout
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
     - name: Create Build Tag
       id: build_tag
       run: echo "::set-output name=BUILD_TAG::build-$(date -u +'%Y%m%d')-$(git rev-parse --short HEAD)"
     - name: Build
       run: make
     - name: Upload Artifacts
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v4
       with:
         path: |
           image/cromwell.bin
@@ -24,7 +24,7 @@ jobs:
           xbe/xromwell.xbe
     - name: Create Release
       if: github.event_name == 'push' && github.ref == 'refs/heads/master'
-      uses: softprops/action-gh-release@v1
+      uses: softprops/action-gh-release@v2.2.2
       with:
         files: |
           image/cromwell.bin
