@@ -28,10 +28,10 @@ INCLUDE = -isystem$(TOPDIR)/include \
 	-I$(TOPDIR)/lib/jpeg/ -I$(TOPDIR)/menu/actions -I$(TOPDIR)/menu/textmenu -I$(TOPDIR)/menu/iconmenu \
 
 #These are intended to be non-overridable.
-CROM_CFLAGS=$(INCLUDE) -m32 -fno-builtin -nostdinc -fno-stack-protector -no-pie -DGITREV=\\\"$(GITREV)\\\"
+CROM_CFLAGS=$(INCLUDE) -std=gnu99 -m32 -fno-builtin -nostdinc -fno-stack-protector -no-pie -DGITREV=\\\"$(GITREV)\\\"
 
 #You can override these if you wish.
-CFLAGS= -m32 -O2 -g -march=pentium -nostdinc -pipe -fomit-frame-pointer -Wstrict-prototypes -fno-builtin -fno-stack-protector -no-pie
+CFLAGS= -std=gnu99 -m32 -O2 -g -march=pentium -nostdinc -pipe -fomit-frame-pointer -Wstrict-prototypes -fno-builtin -fno-stack-protector -no-pie
 
 # add the option for gcc 3.3 only, again, non-overridable
 ifeq ($(GCC_3.3), 1)
@@ -50,7 +50,7 @@ ifeq ($(ETHERBOOT), yes)
 ETH_SUBDIRS = etherboot
 CROM_CFLAGS	+= -DETHERBOOT
 ETH_INCLUDE = -isystem$(TOPDIR)/include -I$(TOPDIR)/etherboot/include -I$(TOPDIR)/etherboot/arch/i386/include
-ETH_CFLAGS  = 	-m32 -O2 -march=pentium -nostdinc $(ETH_INCLUDE) -Wstrict-prototypes -fomit-frame-pointer -pipe -Ui386 -fno-builtin -fno-stack-protector -no-pie
+ETH_CFLAGS  = 	-std=gnu99 -m32 -O2 -march=pentium -nostdinc $(ETH_INCLUDE) -Wstrict-prototypes -fomit-frame-pointer -pipe -Ui386 -fno-builtin -fno-stack-protector -no-pie
 endif
 
 LDFLAGS-ROM     = -s -S -T $(TOPDIR)/scripts/ldscript-crom.ld
