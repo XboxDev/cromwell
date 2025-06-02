@@ -57,7 +57,7 @@ struct BiosIdentifier {
 	unsigned char MD5Hash[16];
 };
 
-void showUsage();
+void showUsage(char *progname);
 
 void shax(unsigned char *result, unsigned char *data, unsigned int len)
 {
